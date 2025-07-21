@@ -233,13 +233,11 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
 
       console.log('Upload bem-sucedido para:', filePath);
 
-      const { data: urlData } = supabase.storage
-        .from('sla-anexos')
-        .getPublicUrl(filePath);
-
+      // Para buckets privados, vamos usar apenas o caminho do arquivo
+      // A URL será gerada no momento do download
       uploadedFiles.push({
         nome: file.name, // Manter nome original para exibição
-        url: urlData.publicUrl,
+        url: filePath, // Guardar apenas o caminho, não a URL pública
         tamanho: file.size,
         tipo: file.type
       });
@@ -437,10 +435,21 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const downloadAttachment = async (url: string, fileName: string) => {
+  const downloadAttachment = async (filePath: string, fileName: string) => {
     try {
-      const response = await fetch(url);
-      const blob = await response.blob();
+      console.log('Tentando baixar anexo:', { filePath, fileName });
+      
+      // Para buckets privados, usar URL assinada para download
+      const { data, error } = await supabase.storage
+        .from('sla-anexos')
+        .download(filePath);
+
+      if (error) {
+        console.error('Erro no download do Storage:', error);
+        throw error;
+      }
+
+      const blob = new Blob([data], { type: 'application/octet-stream' });
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
@@ -449,7 +458,10 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
       link.click();
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
+      
+      console.log('Download realizado com sucesso');
     } catch (error) {
+      console.error('Erro ao baixar anexo:', error);
       toast({
         title: "Erro no download",
         description: "Não foi possível baixar o arquivo.",
