@@ -65,6 +65,66 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          email: string
+          id: string
+          nome_completo: string
+          updated_at: string
+          user_id: string
+          user_type: Database["public"]["Enums"]["user_type"]
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          nome_completo: string
+          updated_at?: string
+          user_id: string
+          user_type?: Database["public"]["Enums"]["user_type"]
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          nome_completo?: string
+          updated_at?: string
+          user_id?: string
+          user_type?: Database["public"]["Enums"]["user_type"]
+        }
+        Relationships: []
+      }
+      setores: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sla_demandas: {
         Row: {
           arquivos: Json | null
@@ -79,12 +139,19 @@ export type Database = {
           pontuacao_reputacao: number
           pontuacao_total: number
           pontuacao_urgencia: number
+          prazo_interno: string | null
+          prioridade_operacional:
+            | Database["public"]["Enums"]["prioridade_operacional"]
+            | null
+          responsavel_interno: string | null
+          setor_id: string | null
           solicitante: string
           status: string
           tags: string[] | null
           ticket_number: string | null
           time_responsavel: string
           titulo: string
+          updated_at: string | null
         }
         Insert: {
           arquivos?: Json | null
@@ -99,12 +166,19 @@ export type Database = {
           pontuacao_reputacao: number
           pontuacao_total: number
           pontuacao_urgencia: number
+          prazo_interno?: string | null
+          prioridade_operacional?:
+            | Database["public"]["Enums"]["prioridade_operacional"]
+            | null
+          responsavel_interno?: string | null
+          setor_id?: string | null
           solicitante: string
           status?: string
           tags?: string[] | null
           ticket_number?: string | null
           time_responsavel: string
           titulo: string
+          updated_at?: string | null
         }
         Update: {
           arquivos?: Json | null
@@ -119,14 +193,29 @@ export type Database = {
           pontuacao_reputacao?: number
           pontuacao_total?: number
           pontuacao_urgencia?: number
+          prazo_interno?: string | null
+          prioridade_operacional?:
+            | Database["public"]["Enums"]["prioridade_operacional"]
+            | null
+          responsavel_interno?: string | null
+          setor_id?: string | null
           solicitante?: string
           status?: string
           tags?: string[] | null
           ticket_number?: string | null
           time_responsavel?: string
           titulo?: string
+          updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sla_demandas_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sla_logs: {
         Row: {
@@ -242,6 +331,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_setores: {
+        Row: {
+          created_at: string
+          id: string
+          setor_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          setor_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          setor_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_setores_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_setores_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string | null
@@ -284,7 +409,8 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      prioridade_operacional: "alta" | "media" | "baixa"
+      user_type: "administrador_master" | "colaborador_setor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -411,6 +537,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      prioridade_operacional: ["alta", "media", "baixa"],
+      user_type: ["administrador_master", "colaborador_setor"],
+    },
   },
 } as const
