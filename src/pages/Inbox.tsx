@@ -56,7 +56,9 @@ export default function Inbox() {
   }, []);
 
   useEffect(() => {
-    filterTickets();
+    if (tickets.length > 0) {
+      filterTickets();
+    }
   }, [tickets, searchTerm, statusFilter, criticalityFilter]);
 
   const loadTickets = async () => {
