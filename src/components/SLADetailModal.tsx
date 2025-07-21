@@ -126,6 +126,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [attachments, setAttachments] = useState<FileList | null>(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -795,10 +796,37 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                                 <Button variant="ghost" size="sm" className="h-8">
                                   <Paperclip className="h-4 w-4" />
                                 </Button>
-                              </div>
-                              <Button variant="ghost" size="sm" className="h-8">
-                                <Smile className="h-4 w-4" />
-                              </Button>
+                               </div>
+                               <div className="relative">
+                                 <Button 
+                                   variant="ghost" 
+                                   size="sm" 
+                                   className="h-8"
+                                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                 >
+                                   <Smile className="h-4 w-4" />
+                                 </Button>
+                                 {showEmojiPicker && (
+                                   <div className="absolute bottom-full left-0 mb-2 p-2 bg-background border rounded-lg shadow-lg z-50">
+                                     <div className="grid grid-cols-6 gap-1">
+                                       {['😀', '😊', '👍', '👎', '❤️', '🎉', '😢', '😮', '😡', '🤔', '💡', '🔥', '✅', '❌', '⚠️', '📝', '🚀', '💯'].map((emoji) => (
+                                         <Button
+                                           key={emoji}
+                                           variant="ghost"
+                                           size="sm"
+                                           className="h-8 w-8 p-0 text-lg hover:bg-muted"
+                                           onClick={() => {
+                                             setNewComment(prev => prev + emoji);
+                                             setShowEmojiPicker(false);
+                                           }}
+                                         >
+                                           {emoji}
+                                         </Button>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 )}
+                               </div>
                             </div>
                             <Button 
                               onClick={handleAddComment}
