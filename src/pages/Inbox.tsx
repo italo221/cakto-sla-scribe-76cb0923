@@ -16,13 +16,14 @@ import SupabaseStatus from "@/components/SupabaseStatus";
 import { TicketCountdown } from "@/components/TicketCountdown";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 
-interface SLA {
+interface Ticket {
   id: string;
   ticket_number: string;
   titulo: string;
   time_responsavel: string;
   solicitante: string;
   descricao: string;
+  tipo_ticket: string;
   status: string;
   nivel_criticidade: string;
   pontuacao_total: number;
@@ -41,24 +42,24 @@ interface SLA {
 }
 
 export default function Inbox() {
-  const [slas, setSlas] = useState<SLA[]>([]);
-  const [filteredSlas, setFilteredSlas] = useState<SLA[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [criticalityFilter, setCriticalityFilter] = useState('all');
-  const [selectedSLA, setSelectedSLA] = useState<SLA | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
-    loadSLAs();
+    loadTickets();
   }, []);
 
   useEffect(() => {
-    filterSLAs();
-  }, [slas, searchTerm, statusFilter, criticalityFilter]);
+    filterTickets();
+  }, [tickets, searchTerm, statusFilter, criticalityFilter]);
 
-  const loadSLAs = async () => {
+  const loadTickets = async () => {
     try {
       const { data, error } = await supabase
         .from('sla_demandas')
@@ -68,7 +69,7 @@ export default function Inbox() {
       
       // Aplicar ordenação inteligente
       const sortedData = (data || []).sort((a, b) => {
-        // 1. Prioridade por status - SLAs ativos primeiro
+        // 1. Prioridade por status - Tickets ativos primeiro
         const statusPriority = {
           'aberto': 4,
           'em_andamento': 3, 
@@ -95,16 +96,16 @@ export default function Inbox() {
         const scoreDiff = (b.pontuacao_total || 0) - (a.pontuacao_total || 0);
         if (scoreDiff !== 0) return scoreDiff;
         
-        // 4. Por último, para SLAs ativos, mais antigos primeiro (urgência)
+        // 4. Por último, para tickets ativos, mais antigos primeiro (urgência)
         if ((statusPriority[a.status] || 0) >= 2 && (statusPriority[b.status] || 0) >= 2) {
           return new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime();
         }
         
-        // 5. Para SLAs resolvidos/fechados, mais recentes primeiro
+        // 5. Para tickets resolvidos/fechados, mais recentes primeiro
         return new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime();
       });
       
-      setSlas(sortedData);
+      setTickets(sortedData);
     } catch (error) {
       console.error('Erro ao carregar SLAs:', error);
     } finally {
@@ -112,33 +113,33 @@ export default function Inbox() {
     }
   };
 
-  const filterSLAs = () => {
-    let filtered = slas;
+  const filterTickets = () => {
+    let filtered = tickets;
 
     // Filtro por termo de busca (incluindo tags)
     if (searchTerm) {
-      filtered = filtered.filter(sla => 
-        sla.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        sla.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        sla.solicitante.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        sla.time_responsavel.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (sla.ticket_number && sla.ticket_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (sla.tags && sla.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
+      filtered = filtered.filter(ticket => 
+        ticket.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.solicitante.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.time_responsavel.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (ticket.ticket_number && ticket.ticket_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (ticket.tags && ticket.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
       );
     }
 
     // Filtro por status
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(sla => sla.status === statusFilter);
+      filtered = filtered.filter(ticket => ticket.status === statusFilter);
     }
 
     // Filtro por criticidade
     if (criticalityFilter !== 'all') {
-      filtered = filtered.filter(sla => sla.nivel_criticidade === criticalityFilter);
+      filtered = filtered.filter(ticket => ticket.nivel_criticidade === criticalityFilter);
     }
 
-    // Manter a mesma ordenação inteligente aplicada no loadSLAs
-    setFilteredSlas(filtered);
+    // Manter a mesma ordenação inteligente aplicada no loadTickets
+    setFilteredTickets(filtered);
   };
 
   const getStatusBadge = (status: string) => {
@@ -187,19 +188,19 @@ export default function Inbox() {
     return tempos[criticality as keyof typeof tempos] || '7 dias úteis';
   };
 
-  const handleOpenSLADetail = (sla: SLA) => {
-    setSelectedSLA(sla);
+  const handleOpenTicketDetail = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
     setModalOpen(true);
   };
 
-  const handleUpdateSelectedSLA = (updatedSLA: SLA) => {
-    setSelectedSLA(updatedSLA);
+  const handleUpdateSelectedTicket = (updatedTicket: Ticket) => {
+    setSelectedTicket(updatedTicket);
     // Also update in the main list for immediate visual feedback
-    setSlas(currentSlas => currentSlas.map(s => s.id === updatedSLA.id ? updatedSLA : s));
+    setTickets(currentTickets => currentTickets.map(t => t.id === updatedTicket.id ? updatedTicket : t));
   };
 
-  const handleCloseSLADetail = () => {
-    setSelectedSLA(null);
+  const handleCloseTicketDetail = () => {
+    setSelectedTicket(null);
     setModalOpen(false);
   };
 
@@ -229,25 +230,25 @@ export default function Inbox() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">
-                Caixa de Entrada - SLAs
+                Caixa de Entrada - Tickets
                 <Badge variant="secondary" className="ml-3 text-lg font-mono">
-                  {filteredSlas.length}
+                  {filteredTickets.length}
                 </Badge>
               </h1>
-              <p className="text-muted-foreground">Gerencie todas as demandas e acompanhe o status dos SLAs</p>
+              <p className="text-muted-foreground">Gerencie todas as demandas e acompanhe o status dos tickets</p>
             </div>
             
             {/* Indicadores de urgência */}
             <div className="flex gap-2">
-              {filteredSlas.filter(s => s.status !== 'resolvido' && s.status !== 'fechado').length > 0 && (
+              {filteredTickets.filter(s => s.status !== 'resolvido' && s.status !== 'fechado').length > 0 && (
                 <Badge variant="destructive" className="animate-pulse">
                   <AlertCircle className="w-3 h-3 mr-1" />
-                  {filteredSlas.filter(s => s.status !== 'resolvido' && s.status !== 'fechado').length} ativos
+                  {filteredTickets.filter(s => s.status !== 'resolvido' && s.status !== 'fechado').length} ativos
                 </Badge>
               )}
-              {filteredSlas.filter(s => s.nivel_criticidade === 'P0' && s.status !== 'resolvido' && s.status !== 'fechado').length > 0 && (
+              {filteredTickets.filter(s => s.nivel_criticidade === 'P0' && s.status !== 'resolvido' && s.status !== 'fechado').length > 0 && (
                 <Badge variant="destructive" className="animate-glow-pulse">
-                  🚨 {filteredSlas.filter(s => s.nivel_criticidade === 'P0' && s.status !== 'resolvido' && s.status !== 'fechado').length} críticos
+                  🚨 {filteredTickets.filter(s => s.nivel_criticidade === 'P0' && s.status !== 'resolvido' && s.status !== 'fechado').length} críticos
                 </Badge>
               )}
             </div>
@@ -307,25 +308,25 @@ export default function Inbox() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-red-600">{slas.filter(s => s.status === 'aberto').length}</div>
+              <div className="text-2xl font-bold text-red-600">{tickets.filter(s => s.status === 'aberto').length}</div>
               <p className="text-sm text-muted-foreground">Abertos</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-yellow-600">{slas.filter(s => s.status === 'em_andamento').length}</div>
+              <div className="text-2xl font-bold text-yellow-600">{tickets.filter(s => s.status === 'em_andamento').length}</div>
               <p className="text-sm text-muted-foreground">Em Andamento</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-green-600">{slas.filter(s => s.status === 'resolvido').length}</div>
+              <div className="text-2xl font-bold text-green-600">{tickets.filter(s => s.status === 'resolvido').length}</div>
               <p className="text-sm text-muted-foreground">Resolvidos</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-gray-600">{slas.filter(s => s.status === 'fechado').length}</div>
+              <div className="text-2xl font-bold text-gray-600">{tickets.filter(s => s.status === 'fechado').length}</div>
               <p className="text-sm text-muted-foreground">Fechados</p>
             </CardContent>
           </Card>
@@ -336,14 +337,14 @@ export default function Inbox() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                SLAs - Ordenação Inteligente
+                Tickets - Ordenação Inteligente
                 <Badge variant="outline" className="font-mono">
-                  {filteredSlas.length} total
+                  {filteredTickets.length} total
                 </Badge>
-                {filteredSlas.filter(s => s.status === 'aberto').length > 0 && (
+                {filteredTickets.filter(s => s.status === 'aberto').length > 0 && (
                   <Badge variant="destructive">
                     <Clock className="w-3 h-3 mr-1" />
-                    {filteredSlas.filter(s => s.status === 'aberto').length} abertos
+                    {filteredTickets.filter(s => s.status === 'aberto').length} abertos
                   </Badge>
                 )}
               </CardTitle>
@@ -354,72 +355,72 @@ export default function Inbox() {
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[600px]">
-              {filteredSlas.length === 0 ? (
+              {filteredTickets.length === 0 ? (
                 <div className="text-center py-8">
                   <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium text-foreground mb-2">Nenhum SLA encontrado</h3>
-                  <p className="text-muted-foreground">Tente ajustar os filtros ou criar um novo SLA.</p>
+                  <h3 className="text-lg font-medium text-foreground mb-2">Nenhum ticket encontrado</h3>
+                  <p className="text-muted-foreground">Tente ajustar os filtros ou criar um novo ticket.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {filteredSlas.map((sla) => (
-                    <Card key={sla.id} className="p-4">
+                  {filteredTickets.map((ticket) => (
+                    <Card key={ticket.id} className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <div className="flex items-center gap-2">
                               <Badge variant="secondary" className="font-mono text-xs">
-                                {sla.ticket_number || `#${sla.id.slice(0, 8)}`}
+                                {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
                               </Badge>
-                              <h3 className="font-semibold text-lg">{sla.titulo}</h3>
+                              <h3 className="font-semibold text-lg">{ticket.titulo}</h3>
                             </div>
-                            {getStatusBadge(sla.status)}
-                            {getCriticalityBadge(sla.nivel_criticidade)}
+                            {getStatusBadge(ticket.status)}
+                            {getCriticalityBadge(ticket.nivel_criticidade)}
                             <TicketCountdown 
-                              dataCriacao={sla.data_criacao}
-                              criticidade={sla.nivel_criticidade}
-                              status={sla.status}
+                              dataCriacao={ticket.data_criacao}
+                              criticidade={ticket.nivel_criticidade}
+                              status={ticket.status}
                               compact
                             />
-                            {sla.tags && sla.tags.length > 0 && (
+                            {ticket.tags && ticket.tags.length > 0 && (
                               <div className="flex gap-1">
-                                {sla.tags.slice(0, 3).map((tag: string, index: number) => (
+                                {ticket.tags.slice(0, 3).map((tag: string, index: number) => (
                                   <Badge key={index} variant="outline" className="text-xs">
                                     🏷️ {tag}
                                   </Badge>
                                 ))}
-                                {sla.tags.length > 3 && (
+                                {ticket.tags.length > 3 && (
                                   <Badge variant="outline" className="text-xs">
-                                    +{sla.tags.length - 3}
+                                    +{ticket.tags.length - 3}
                                   </Badge>
                                 )}
                               </div>
                             )}
                           </div>
                           
-                          <p className="text-muted-foreground mb-3">{sla.descricao}</p>
+                          <p className="text-muted-foreground mb-3">{ticket.descricao}</p>
                           
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div>
                               <span className="font-medium">Solicitante:</span>
-                              <p className="text-muted-foreground">{sla.solicitante}</p>
+                              <p className="text-muted-foreground">{ticket.solicitante}</p>
                             </div>
                             <div>
                               <span className="font-medium">Time Responsável:</span>
-                              <p className="text-muted-foreground">{sla.time_responsavel}</p>
+                              <p className="text-muted-foreground">{ticket.time_responsavel}</p>
                             </div>
                             <div>
                               <span className="font-medium">Pontuação:</span>
-                              <p className="text-muted-foreground">{sla.pontuacao_total} pontos</p>
+                              <p className="text-muted-foreground">{ticket.pontuacao_total} pontos</p>
                             </div>
                             <div>
                               <span className="font-medium">Tempo Médio:</span>
-                              <p className="text-muted-foreground">{getTempoMedioResolucao(sla.nivel_criticidade)}</p>
+                              <p className="text-muted-foreground">{getTempoMedioResolucao(ticket.nivel_criticidade)}</p>
                             </div>
                           </div>
                           
                           <div className="mt-3 text-xs text-muted-foreground">
-                            Criado em {format(new Date(sla.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                            Criado em {format(new Date(ticket.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                           </div>
                         </div>
                         
@@ -427,7 +428,7 @@ export default function Inbox() {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => handleOpenSLADetail(sla)}
+                            onClick={() => handleOpenTicketDetail(ticket)}
                           >
                             Ver Detalhes
                           </Button>
@@ -445,11 +446,11 @@ export default function Inbox() {
 
       {/* Modal de Detalhes do SLA */}
       <TicketDetailModal
-        sla={selectedSLA}
+        sla={selectedTicket}
         isOpen={modalOpen}
-        onClose={handleCloseSLADetail}
-        onUpdate={loadSLAs}
-        setSelectedSLA={handleUpdateSelectedSLA}
+        onClose={handleCloseTicketDetail}
+        onUpdate={loadTickets}
+        setSelectedSLA={handleUpdateSelectedTicket}
       />
     </div>
   );

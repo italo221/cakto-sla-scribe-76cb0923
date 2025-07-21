@@ -24,10 +24,11 @@ interface UploadedFile {
   url: string;
 }
 
-interface SLAData {
+interface TicketData {
   titulo: string;
   time_responsavel: string;
   descricao: string;
+  tipo_ticket: string;
   pontuacao: {
     financeiro: number;
     cliente: number;
@@ -103,19 +104,20 @@ const criteriaQuestions = {
   operacional: "Está travando outras áreas?"
 };
 
-type Step = 'welcome' | 'titulo' | 'time' | 'descricao' | 'criteria' | 'observacoes' | 'complete' | 'validation-error' | 'update-mode' | 'query-mode';
+type Step = 'welcome' | 'titulo' | 'tipo' | 'time' | 'descricao' | 'criteria' | 'observacoes' | 'complete' | 'validation-error' | 'update-mode' | 'query-mode';
 
-export default function SLAChat() {
+export default function TicketChat() {
   const { user, isAdmin } = useAuth();
   const [step, setStep] = useState<Step>('welcome');
   const [currentCriteria, setCurrentCriteria] = useState<string>('financeiro');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [slaData, setSlaData] = useState<SLAData>({
+  const [ticketData, setTicketData] = useState<TicketData>({
     titulo: '',
     time_responsavel: '',
     descricao: '',
+    tipo_ticket: 'bug',
     pontuacao: {
       financeiro: 0,
       cliente: 0,
@@ -542,7 +544,7 @@ export default function SLAChat() {
     return result;
   };
 
-  const calculateCriticality = (pontuacao: SLAData['pontuacao']) => {
+  const calculateCriticality = (pontuacao: TicketData['pontuacao']) => {
     const total = Object.values(pontuacao).reduce((sum, value) => sum + value, 0);
     
     if (total >= 30) return 'P0';
@@ -576,21 +578,21 @@ export default function SLAChat() {
     
     switch (step) {
       case 'titulo':
-        setSlaData(prev => ({ ...prev, titulo: value }));
-        setStep('time');
-        addMessage('assistant', '👥 **Time Responsável:**\nQual time será responsável? (ex: Produto, Compliance, Suporte, Marketing...)');
+        setTicketData(prev => ({ ...prev, titulo: value }));
+        setStep('tipo');
+        addMessage('assistant', '🏷️ **Tipo do Ticket:**\nSelecione o tipo desta demanda:');
         break;
         
       // case 'time': removido porque agora usa seleção por botões
         
       case 'descricao':
-        setSlaData(prev => ({ ...prev, descricao: value }));
+        setTicketData(prev => ({ ...prev, descricao: value }));
         setStep('criteria');
         showCriteriaQuestion('financeiro');
         break;
         
       case 'observacoes':
-        setSlaData(prev => ({ 
+        setTicketData(prev => ({
           ...prev, 
           observacoes: value,
           arquivos: uploadedFiles
@@ -620,7 +622,7 @@ export default function SLAChat() {
   };
 
   const handleCriteriaSelection = (criteria: string, value: number) => {
-    setSlaData(prev => ({
+    setTicketData(prev => ({
       ...prev,
       pontuacao: {
         ...prev.pontuacao,
@@ -645,10 +647,17 @@ export default function SLAChat() {
   };
 
   const handleTimeSelection = (timeSelected: string) => {
-    setSlaData(prev => ({ ...prev, time_responsavel: timeSelected }));
+    setTicketData(prev => ({ ...prev, time_responsavel: timeSelected }));
     addMessage('user', timeSelected);
     setStep('descricao');
     addMessage('assistant', '📝 **Descrição Resumida da Demanda:**\nDescreva brevemente o que está acontecendo (seja claro e direto)');
+  };
+
+  const handleTipoSelection = (tipoSelected: string) => {
+    setTicketData(prev => ({ ...prev, tipo_ticket: tipoSelected }));
+    addMessage('user', tipoSelected === 'bug' ? 'Bug' : 'Sugestão de Melhoria');
+    setStep('time');
+    addMessage('assistant', '👥 **Time Responsável:**\nQual time será responsável? (ex: Produto, Compliance, Suporte, Marketing...)');
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -701,7 +710,7 @@ export default function SLAChat() {
   };
 
   // Validações conforme especificação V2
-  const validateSLAData = (data: SLAData, total: number, criticality: string) => {
+  const validateTicketData = (data: TicketData, total: number, criticality: string) => {
     const errors: string[] = [];
     
     // Validar título (mínimo 5 caracteres)
@@ -840,7 +849,7 @@ export default function SLAChat() {
   };
 
   // Salvar SLA no Supabase com geração automática de tags
-  const saveSLAToSupabase = async (data: SLAData, total: number, criticality: string) => {
+  const saveTicketToSupabase = async (data: TicketData, total: number, criticality: string) => {
     try {
       // Gerar tags automaticamente usando AI
       const tags = await generateSLATags({
@@ -859,6 +868,7 @@ export default function SLAChat() {
           time_responsavel: data.time_responsavel.trim(),
           solicitante: 'Sistema Autenticado', // Será substituído por auth quando implementada
           descricao: data.descricao.trim(),
+          tipo_ticket: data.tipo_ticket,
           pontuacao_financeiro: data.pontuacao.financeiro,
           pontuacao_cliente: data.pontuacao.cliente,
           pontuacao_reputacao: data.pontuacao.reputacao,
@@ -925,11 +935,11 @@ export default function SLAChat() {
   };
 
   const showFinalResult = async () => {
-    const total = Object.values(slaData.pontuacao).reduce((sum, value) => sum + value, 0);
-    const criticality = calculateCriticality(slaData.pontuacao);
+    const total = Object.values(ticketData.pontuacao).reduce((sum, value) => sum + value, 0);
+    const criticality = calculateCriticality(ticketData.pontuacao);
 
     // Validar dados antes de salvar
-    const validationErrors = validateSLAData(slaData, total, criticality);
+    const validationErrors = validateTicketData(ticketData, total, criticality);
     
     if (validationErrors.length > 0) {
       addMessage('assistant', `⚠️ **Detectei um problema nos dados:**\n\n${validationErrors.join('\n')}\n\nVocê quer revisar ou abrir um novo SLA?`);
@@ -938,13 +948,14 @@ export default function SLAChat() {
     }
 
     const finalJson = {
-      titulo: slaData.titulo,
-      time_responsavel: slaData.time_responsavel,
-      descricao: slaData.descricao,
-      pontuacao: slaData.pontuacao,
+      titulo: ticketData.titulo,
+      time_responsavel: ticketData.time_responsavel,
+      descricao: ticketData.descricao,
+      tipo_ticket: ticketData.tipo_ticket,
+      pontuacao: ticketData.pontuacao,
       pontuacao_total: total,
       nivel_criticidade: criticality,
-      observacoes: slaData.observacoes,
+      observacoes: ticketData.observacoes,
       arquivos: uploadedFiles.map(file => ({
         nome: file.name,
         tamanho: formatFileSize(file.size),
@@ -956,7 +967,7 @@ export default function SLAChat() {
     addMessage('assistant', `⏳ **Processando SLA...**\n\n📊 **Pontuação Total:** ${total} pontos\n🏷️ **Nível de Criticidade:** ${criticality}\n\n💾 Salvando no sistema...`);
 
     try {
-      const slaResult = await saveSLAToSupabase(slaData, total, criticality);
+      const slaResult = await saveTicketToSupabase(ticketData, total, criticality);
       
       // Calcular tempo médio de resolução baseado na criticidade
       const getTempoMedioResolucao = (nivel: string) => {
@@ -1320,6 +1331,39 @@ export default function SLAChat() {
                   </div>
                 )}
 
+                {step === 'tipo' && (
+                  <div className="bg-chat-assistant border rounded-lg p-4">
+                    <div className="grid grid-cols-1 gap-3">
+                      <Button
+                        variant="outline"
+                        className="h-auto p-4 justify-start hover:bg-accent hover:text-accent-foreground transition-colors"
+                        onClick={() => handleTipoSelection('bug')}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 rounded-full bg-red-500" />
+                          <div className="text-left">
+                            <div className="font-medium">🐛 Bug</div>
+                            <div className="text-sm text-muted-foreground">Algo que não está funcionando corretamente</div>
+                          </div>
+                        </div>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="h-auto p-4 justify-start hover:bg-accent hover:text-accent-foreground transition-colors"
+                        onClick={() => handleTipoSelection('sugestao_melhoria')}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 rounded-full bg-blue-500" />
+                          <div className="text-left">
+                            <div className="font-medium">💡 Sugestão de Melhoria</div>
+                            <div className="text-sm text-muted-foreground">Ideia para melhorar alguma funcionalidade</div>
+                          </div>
+                        </div>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {step === 'time' && (
                   <div className="bg-chat-assistant border rounded-lg p-4">
                     <div className="grid grid-cols-2 gap-3">
@@ -1363,10 +1407,11 @@ export default function SLAChat() {
                         onClick={() => {
                           addMessage('user', 'Abrir novo SLA');
                           // Resetar todos os dados
-                          setSlaData({
+                          setTicketData({
                             titulo: '',
                             time_responsavel: '',
                             descricao: '',
+                            tipo_ticket: 'bug',
                             pontuacao: {
                               financeiro: 0,
                               cliente: 0,
@@ -1415,18 +1460,18 @@ export default function SLAChat() {
                           <Calculator className="h-5 w-5" />
                           Resumo da Pontuação
                         </h3>
-                        <Badge className={getCriticalityColor(calculateCriticality(slaData.pontuacao))}>
-                          {calculateCriticality(slaData.pontuacao)}
+                        <Badge className={getCriticalityColor(calculateCriticality(ticketData.pontuacao))}>
+                          {calculateCriticality(ticketData.pontuacao)}
                         </Badge>
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>Financeiro: {slaData.pontuacao.financeiro} pts</div>
-                        <div>Cliente: {slaData.pontuacao.cliente} pts</div>
-                        <div>Reputação: {slaData.pontuacao.reputacao} pts</div>
-                        <div>Urgência: {slaData.pontuacao.urgencia} pts</div>
-                        <div>Operacional: {slaData.pontuacao.operacional} pts</div>
+                        <div>Financeiro: {ticketData.pontuacao.financeiro} pts</div>
+                        <div>Cliente: {ticketData.pontuacao.cliente} pts</div>
+                        <div>Reputação: {ticketData.pontuacao.reputacao} pts</div>
+                        <div>Urgência: {ticketData.pontuacao.urgencia} pts</div>
+                        <div>Operacional: {ticketData.pontuacao.operacional} pts</div>
                         <div className="font-semibold">
-                          Total: {Object.values(slaData.pontuacao).reduce((sum, value) => sum + value, 0)} pts
+                          Total: {Object.values(ticketData.pontuacao).reduce((sum, value) => sum + value, 0)} pts
                         </div>
                       </div>
                     </Card>

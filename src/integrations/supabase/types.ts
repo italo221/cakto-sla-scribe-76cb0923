@@ -304,6 +304,7 @@ export type Database = {
           tags: string[] | null
           ticket_number: string | null
           time_responsavel: string
+          tipo_ticket: string
           titulo: string
           updated_at: string | null
         }
@@ -331,6 +332,7 @@ export type Database = {
           tags?: string[] | null
           ticket_number?: string | null
           time_responsavel: string
+          tipo_ticket?: string
           titulo: string
           updated_at?: string | null
         }
@@ -358,6 +360,7 @@ export type Database = {
           tags?: string[] | null
           ticket_number?: string | null
           time_responsavel?: string
+          tipo_ticket?: string
           titulo?: string
           updated_at?: string | null
         }
