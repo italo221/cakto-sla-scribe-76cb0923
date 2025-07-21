@@ -1283,22 +1283,45 @@ export default function TicketChat() {
                   </div>
                 )}
 
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
+                {messages.map((message) => {
+                  const isErrorMessage = message.content.includes('❌');
+                  
+                  const copyToClipboard = () => {
+                    navigator.clipboard.writeText(message.content).then(() => {
+                      toast({
+                        title: "Copiado!",
+                        description: "Mensagem de erro copiada para a área de transferência",
+                        duration: 2000,
+                      });
+                    });
+                  };
+
+                  return (
                     <div
-                      className={`max-w-[80%] p-4 rounded-lg whitespace-pre-line ${
-                        message.type === 'user'
-                          ? 'bg-chat-user text-chat-user-foreground'
-                          : 'bg-chat-assistant text-chat-assistant-foreground border'
-                      }`}
+                      key={message.id}
+                      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      {message.content}
+                      <div
+                        className={`max-w-[80%] p-4 rounded-lg whitespace-pre-line relative group ${
+                          message.type === 'user'
+                            ? 'bg-chat-user text-chat-user-foreground'
+                            : 'bg-chat-assistant text-chat-assistant-foreground border'
+                        }`}
+                      >
+                        {message.content}
+                        {isErrorMessage && message.type === 'assistant' && (
+                          <button
+                            onClick={copyToClipboard}
+                            className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background border border-border"
+                            title="Copiar mensagem de erro"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {step === 'criteria' && (
                   <div className="bg-chat-assistant border rounded-lg p-4">

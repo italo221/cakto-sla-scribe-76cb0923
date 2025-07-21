@@ -1,7 +1,7 @@
 import * as React from "react"
 import * as ToastPrimitives from "@radix-ui/react-toast"
 import { cva, type VariantProps } from "class-variance-authority"
-import { X } from "lucide-react"
+import { X, Copy } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -101,13 +101,46 @@ ToastTitle.displayName = ToastPrimitives.Title.displayName
 const ToastDescription = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Description>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Description>
->(({ className, ...props }, ref) => (
-  <ToastPrimitives.Description
-    ref={ref}
-    className={cn("text-sm opacity-90", className)}
-    {...props}
-  />
-))
+>(({ className, children, ...props }, ref) => {
+  const isErrorMessage = typeof children === 'string' && children.includes('❌');
+  
+  const copyToClipboard = () => {
+    if (typeof children === 'string') {
+      navigator.clipboard.writeText(children).then(() => {
+        // Visual feedback que foi copiado
+        const button = document.activeElement as HTMLButtonElement;
+        if (button) {
+          const originalHTML = button.innerHTML;
+          button.innerHTML = '<svg class="h-3 w-3 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>';
+          setTimeout(() => {
+            button.innerHTML = originalHTML;
+          }, 1000);
+        }
+      });
+    }
+  };
+
+  return (
+    <div className="relative group">
+      <ToastPrimitives.Description
+        ref={ref}
+        className={cn("text-sm opacity-90", className)}
+        {...props}
+      >
+        {children}
+      </ToastPrimitives.Description>
+      {isErrorMessage && (
+        <button
+          onClick={copyToClipboard}
+          className="absolute top-0 right-0 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background border border-border"
+          title="Copiar mensagem de erro"
+        >
+          <Copy className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  )
+})
 ToastDescription.displayName = ToastPrimitives.Description.displayName
 
 type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
