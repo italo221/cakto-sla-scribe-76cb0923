@@ -32,8 +32,9 @@ const Documentation = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+            <TabsTrigger value="database">Banco de Dados</TabsTrigger>
             <TabsTrigger value="sla-creation">Criar SLA</TabsTrigger>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="inbox">Caixa de Entrada</TabsTrigger>
@@ -130,6 +131,352 @@ const Documentation = () => {
                     <p className="text-sm text-muted-foreground">
                       Webhooks e automações
                     </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="database" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>🗄️ Documentação do Banco de Dados</CardTitle>
+                <CardDescription>
+                  Estrutura completa do banco PostgreSQL do Sistema SLA - Guia para desenvolvedores
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-900 mb-2">📋 Visão Geral</h4>
+                  <p className="text-sm text-blue-800">
+                    O sistema utiliza PostgreSQL com Supabase, incluindo Row Level Security (RLS), 
+                    triggers automáticos e funções personalizadas para garantir integridade e segurança dos dados.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tabela Principal - SLA Demandas */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-green-700">🟩 sla_demandas</CardTitle>
+                <CardDescription>Tabela principal que armazena todas as demandas de SLA</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-gray-300 text-sm">
+                    <thead className="bg-green-50">
+                      <tr>
+                        <th className="border border-gray-300 p-2 text-left">Campo</th>
+                        <th className="border border-gray-300 p-2 text-left">Tipo</th>
+                        <th className="border border-gray-300 p-2 text-center">Obrigatório</th>
+                        <th className="border border-gray-300 p-2 text-left">Descrição</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td className="border border-gray-300 p-2 font-mono">id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Identificador único (gerado automaticamente)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">ticket_number</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">🔄</td><td className="border border-gray-300 p-2">Número do ticket (auto: TICKET-YYYY-NNNN)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">titulo</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Título curto da demanda</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">descricao</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Descrição detalhada da solicitação</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">time_responsavel</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Nome do setor responsável</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">solicitante</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Quem criou a demanda</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">pontuacao_financeiro</td><td className="border border-gray-300 p-2">integer</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Impacto financeiro (0-10 pontos)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">pontuacao_cliente</td><td className="border border-gray-300 p-2">integer</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Impacto no cliente (0-10 pontos)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">pontuacao_reputacao</td><td className="border border-gray-300 p-2">integer</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Impacto reputacional (0-10 pontos)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">pontuacao_urgencia</td><td className="border border-gray-300 p-2">integer</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Urgência da demanda (0-10 pontos)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">pontuacao_operacional</td><td className="border border-gray-300 p-2">integer</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Impacto operacional (0-10 pontos)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">pontuacao_total</td><td className="border border-gray-300 p-2">integer</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Soma automática de todas as pontuações</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">nivel_criticidade</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">P0 (CRÍTICA), P1 (ALTA), P2 (MÉDIA), P3 (BAIXA)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">observacoes</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">❌</td><td className="border border-gray-300 p-2">Campo livre com contexto extra</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">status</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">aberto, em_andamento, resolvido, fechado</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">tags</td><td className="border border-gray-300 p-2">text[]</td><td className="border border-gray-300 p-2 text-center">❌</td><td className="border border-gray-300 p-2">Array de palavras-chave (geradas por IA)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">setor_id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">❌</td><td className="border border-gray-300 p-2">FK para tabela setores</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">responsavel_interno</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">❌</td><td className="border border-gray-300 p-2">Pessoa responsável dentro do setor</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">prioridade_operacional</td><td className="border border-gray-300 p-2">enum</td><td className="border border-gray-300 p-2 text-center">❌</td><td className="border border-gray-300 p-2">baixa, media, alta, critica</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">prazo_interno</td><td className="border border-gray-300 p-2">timestamptz</td><td className="border border-gray-300 p-2 text-center">❌</td><td className="border border-gray-300 p-2">Prazo interno definido pelo setor</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">arquivos</td><td className="border border-gray-300 p-2">jsonb</td><td className="border border-gray-300 p-2 text-center">❌</td><td className="border border-gray-300 p-2">Metadados de arquivos anexados</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">data_criacao</td><td className="border border-gray-300 p-2">timestamptz</td><td className="border border-gray-300 p-2 text-center">🔄</td><td className="border border-gray-300 p-2">Gerado automaticamente (now())</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">updated_at</td><td className="border border-gray-300 p-2">timestamptz</td><td className="border border-gray-300 p-2 text-center">🔄</td><td className="border border-gray-300 p-2">Atualizado automaticamente por trigger</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tabela de Logs de Ação */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-yellow-700">🟨 sla_action_logs</CardTitle>
+                <CardDescription>Histórico detalhado de todas as ações realizadas nos SLAs</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-gray-300 text-sm">
+                    <thead className="bg-yellow-50">
+                      <tr>
+                        <th className="border border-gray-300 p-2 text-left">Campo</th>
+                        <th className="border border-gray-300 p-2 text-left">Tipo</th>
+                        <th className="border border-gray-300 p-2 text-center">Obrigatório</th>
+                        <th className="border border-gray-300 p-2 text-left">Descrição</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td className="border border-gray-300 p-2 font-mono">id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Identificador único do log</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">sla_id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">FK para sla_demandas</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">acao</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Tipo: criado, resolvido, transferido, fechado</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">autor_id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">ID do usuário que executou a ação</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">autor_email</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">E-mail do autor (para facilitar consultas)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">setor_origem_id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">❌</td><td className="border border-gray-300 p-2">Setor anterior (em transferências)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">setor_destino_id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">❌</td><td className="border border-gray-300 p-2">Novo setor (em transferências)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">justificativa</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">❌</td><td className="border border-gray-300 p-2">Motivo da ação (obrigatório em transferências)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">dados_anteriores</td><td className="border border-gray-300 p-2">jsonb</td><td className="border border-gray-300 p-2 text-center">❌</td><td className="border border-gray-300 p-2">Estado anterior do SLA (para auditoria)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">dados_novos</td><td className="border border-gray-300 p-2">jsonb</td><td className="border border-gray-300 p-2 text-center">❌</td><td className="border border-gray-300 p-2">Estado novo do SLA (para auditoria)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">timestamp</td><td className="border border-gray-300 p-2">timestamptz</td><td className="border border-gray-300 p-2 text-center">🔄</td><td className="border border-gray-300 p-2">Data/hora da ação (now())</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tabela de Comentários */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-purple-700">🟣 sla_comentarios_internos</CardTitle>
+                <CardDescription>Comentários e discussões internas sobre os SLAs</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-gray-300 text-sm">
+                    <thead className="bg-purple-50">
+                      <tr>
+                        <th className="border border-gray-300 p-2 text-left">Campo</th>
+                        <th className="border border-gray-300 p-2 text-left">Tipo</th>
+                        <th className="border border-gray-300 p-2 text-center">Obrigatório</th>
+                        <th className="border border-gray-300 p-2 text-left">Descrição</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td className="border border-gray-300 p-2 font-mono">id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Identificador único</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">sla_id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">FK para sla_demandas</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">setor_id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">FK para setores (controle de acesso)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">autor_id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">ID do usuário que comentou</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">autor_nome</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Nome do autor (cache para performance)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">comentario</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Conteúdo do comentário</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">created_at</td><td className="border border-gray-300 p-2">timestamptz</td><td className="border border-gray-300 p-2 text-center">🔄</td><td className="border border-gray-300 p-2">Data/hora do comentário</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tabela de Usuários (Profiles) */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-blue-700">🟦 profiles</CardTitle>
+                <CardDescription>Perfis de usuários e controle de acesso</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-gray-300 text-sm">
+                    <thead className="bg-blue-50">
+                      <tr>
+                        <th className="border border-gray-300 p-2 text-left">Campo</th>
+                        <th className="border border-gray-300 p-2 text-left">Tipo</th>
+                        <th className="border border-gray-300 p-2 text-center">Obrigatório</th>
+                        <th className="border border-gray-300 p-2 text-left">Descrição</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td className="border border-gray-300 p-2 font-mono">id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Identificador único do perfil</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">user_id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">FK para auth.users (Supabase Auth)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">email</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">E-mail do usuário (usado como login)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">nome_completo</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Nome completo do usuário</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">user_type</td><td className="border border-gray-300 p-2">enum</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">administrador_master, colaborador_setor</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">ativo</td><td className="border border-gray-300 p-2">boolean</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Se o usuário está ativo (default: true)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">created_at</td><td className="border border-gray-300 p-2">timestamptz</td><td className="border border-gray-300 p-2 text-center">🔄</td><td className="border border-gray-300 p-2">Data de criação do perfil</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">updated_at</td><td className="border border-gray-300 p-2">timestamptz</td><td className="border border-gray-300 p-2 text-center">🔄</td><td className="border border-gray-300 p-2">Última atualização (trigger)</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tabela de Setores */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-orange-700">🟫 setores</CardTitle>
+                <CardDescription>Cadastro de times/departamentos da empresa</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-gray-300 text-sm">
+                    <thead className="bg-orange-50">
+                      <tr>
+                        <th className="border border-gray-300 p-2 text-left">Campo</th>
+                        <th className="border border-gray-300 p-2 text-left">Tipo</th>
+                        <th className="border border-gray-300 p-2 text-center">Obrigatório</th>
+                        <th className="border border-gray-300 p-2 text-left">Descrição</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td className="border border-gray-300 p-2 font-mono">id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Identificador único do setor</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">nome</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Nome do setor (único)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">descricao</td><td className="border border-gray-300 p-2">text</td><td className="border border-gray-300 p-2 text-center">❌</td><td className="border border-gray-300 p-2">Descrição do setor</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">ativo</td><td className="border border-gray-300 p-2">boolean</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Se o setor está ativo (default: true)</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">created_at</td><td className="border border-gray-300 p-2">timestamptz</td><td className="border border-gray-300 p-2 text-center">🔄</td><td className="border border-gray-300 p-2">Data de criação</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">updated_at</td><td className="border border-gray-300 p-2">timestamptz</td><td className="border border-gray-300 p-2 text-center">🔄</td><td className="border border-gray-300 p-2">Última atualização (trigger)</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tabela de Relacionamento */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-gray-700">⚫ user_setores</CardTitle>
+                <CardDescription>Relacionamento N:N entre usuários e setores (controle de acesso)</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-gray-300 text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="border border-gray-300 p-2 text-left">Campo</th>
+                        <th className="border border-gray-300 p-2 text-left">Tipo</th>
+                        <th className="border border-gray-300 p-2 text-center">Obrigatório</th>
+                        <th className="border border-gray-300 p-2 text-left">Descrição</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td className="border border-gray-300 p-2 font-mono">id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">Identificador único</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">user_id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">FK para profiles.user_id</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">setor_id</td><td className="border border-gray-300 p-2">UUID</td><td className="border border-gray-300 p-2 text-center">✅</td><td className="border border-gray-300 p-2">FK para setores.id</td></tr>
+                      <tr><td className="border border-gray-300 p-2 font-mono">created_at</td><td className="border border-gray-300 p-2">timestamptz</td><td className="border border-gray-300 p-2 text-center">🔄</td><td className="border border-gray-300 p-2">Data da atribuição</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-4 p-3 bg-gray-100 rounded">
+                  <p className="text-sm"><strong>Constraint:</strong> UNIQUE(user_id, setor_id) - Evita duplicatas</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Triggers e Funções */}
+            <Card>
+              <CardHeader>
+                <CardTitle>⚙️ Triggers e Funções Automáticas</CardTitle>
+                <CardDescription>Automatizações implementadas no banco de dados</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <h4 className="font-semibold">🎟️ Geração de Tickets</h4>
+                    <div className="bg-muted p-3 rounded text-sm">
+                      <p><strong>Função:</strong> generate_ticket_number()</p>
+                      <p><strong>Trigger:</strong> auto_generate_ticket</p>
+                      <p><strong>Formato:</strong> TICKET-YYYY-NNNN</p>
+                      <p className="text-muted-foreground">Gera automaticamente número do ticket baseado no ano e sequência.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <h4 className="font-semibold">📅 Updated At</h4>
+                    <div className="bg-muted p-3 rounded text-sm">
+                      <p><strong>Função:</strong> update_updated_at_column()</p>
+                      <p><strong>Tabelas:</strong> profiles, setores, sla_demandas</p>
+                      <p className="text-muted-foreground">Atualiza automaticamente o campo updated_at em cada UPDATE.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <h4 className="font-semibold">👤 Perfis de Usuário</h4>
+                    <div className="bg-muted p-3 rounded text-sm">
+                      <p><strong>Função:</strong> handle_new_user()</p>
+                      <p><strong>Trigger:</strong> on_auth_user_created</p>
+                      <p className="text-muted-foreground">Cria automaticamente um perfil quando um usuário é registrado no Supabase Auth.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <h4 className="font-semibold">📊 Logs de Ação</h4>
+                    <div className="bg-muted p-3 rounded text-sm">
+                      <p><strong>Função:</strong> log_sla_action()</p>
+                      <p><strong>Função:</strong> add_sla_comment()</p>
+                      <p className="text-muted-foreground">Funções de conveniência para registrar ações e comentários com segurança.</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* RLS e Segurança */}
+            <Card>
+              <CardHeader>
+                <CardTitle>🔒 Row Level Security (RLS)</CardTitle>
+                <CardDescription>Políticas de segurança implementadas no banco</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                  <h4 className="font-semibold text-red-900 mb-2">⚠️ Importante</h4>
+                  <p className="text-sm text-red-800">
+                    Todas as tabelas possuem RLS habilitado. Usuários só podem acessar dados conforme suas permissões.
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <h4 className="font-semibold">🔑 Funções de Verificação</h4>
+                    <ul className="text-sm space-y-1">
+                      <li>• <code>is_admin(user_id)</code> - Verifica se é admin</li>
+                      <li>• <code>user_has_setor_access(setor_id)</code> - Verifica acesso ao setor</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h4 className="font-semibold">👥 Níveis de Acesso</h4>
+                    <ul className="text-sm space-y-1">
+                      <li>• <strong>Administrador Master:</strong> Acesso total</li>
+                      <li>• <strong>Colaborador Setor:</strong> Apenas setores atribuídos</li>
+                      <li>• <strong>Próprios dados:</strong> Perfil pessoal</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Relacionamentos */}
+            <Card>
+              <CardHeader>
+                <CardTitle>🔗 Relacionamentos Entre Tabelas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">Foreign Keys</h4>
+                      <ul className="space-y-1">
+                        <li>• sla_demandas.setor_id → setores.id</li>
+                        <li>• sla_action_logs.sla_id → sla_demandas.id</li>
+                        <li>• sla_comentarios_internos.sla_id → sla_demandas.id</li>
+                        <li>• sla_comentarios_internos.setor_id → setores.id</li>
+                        <li>• user_setores.user_id → profiles.user_id</li>
+                        <li>• user_setores.setor_id → setores.id</li>
+                        <li>• profiles.user_id → auth.users.id</li>
+                      </ul>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">Índices Sugeridos</h4>
+                      <ul className="space-y-1">
+                        <li>• sla_demandas(status, data_criacao)</li>
+                        <li>• sla_demandas(setor_id, status)</li>
+                        <li>• sla_action_logs(sla_id, timestamp)</li>
+                        <li>• sla_comentarios_internos(sla_id)</li>
+                        <li>• user_setores(user_id)</li>
+                        <li>• profiles(user_id) - UNIQUE</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </CardContent>
