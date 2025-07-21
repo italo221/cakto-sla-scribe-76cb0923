@@ -949,29 +949,35 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                                     {format(new Date(comment.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
                                   </span>
                                 </div>
-                                <p className="text-sm leading-relaxed break-words">{comment.comentario}</p>
-                                
-                                {/* Anexos do comentário */}
-                                {comment.anexos && comment.anexos.length > 0 && (
-                                  <div className="mt-2 space-y-1">
-                                    <div className="text-xs text-muted-foreground mb-1">📎 Anexos ({comment.anexos.length}):</div>
-                                    {comment.anexos.map((anexo, index) => (
-                                      <div key={index} className="flex items-center gap-2 p-2 bg-muted/30 rounded text-xs">
-                                        <FileText className="h-3 w-3 text-muted-foreground" />
-                                        <span className="flex-1">{anexo.nome}</span>
-                                        <span className="text-muted-foreground">({formatFileSize(anexo.tamanho)})</span>
+                                <div className="space-y-2">
+                                  <p className="text-sm leading-relaxed break-words">{comment.comentario}</p>
+                                  
+                                  {/* Botão de anexos integrado */}
+                                  {comment.anexos && comment.anexos.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                      {comment.anexos.map((anexo, index) => (
                                         <Button
-                                          variant="ghost"
+                                          key={index}
+                                          variant="outline"
                                           size="sm"
-                                          className="h-6 w-6 p-0"
+                                          className="h-auto p-2 flex items-center gap-2 bg-muted/10 hover:bg-muted/30 border-dashed"
                                           onClick={() => downloadAttachment(anexo.url, anexo.nome)}
                                         >
-                                          <Download className="h-3 w-3" />
+                                          <Paperclip className="h-3 w-3 text-muted-foreground" />
+                                          <div className="flex flex-col items-start">
+                                            <span className="text-xs font-medium truncate max-w-[120px]">
+                                              {anexo.nome}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                              {formatFileSize(anexo.tamanho)}
+                                            </span>
+                                          </div>
+                                          <Download className="h-3 w-3 ml-1 opacity-70" />
                                         </Button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           ))
