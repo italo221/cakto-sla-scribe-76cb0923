@@ -199,11 +199,18 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
     
     for (let i = 0; i < attachments.length; i++) {
       const file = attachments[i];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${comentarioId}/${Date.now()}_${file.name}`;
+      
+      // Sanitizar nome do arquivo removendo caracteres especiais
+      const sanitizedFileName = file.name
+        .replace(/[^a-zA-Z0-9.-]/g, '_') // Substitui caracteres especiais por underscore
+        .replace(/_{2,}/g, '_') // Remove underscores duplicados
+        .replace(/^_|_$/g, ''); // Remove underscores do início e fim
+      
+      const fileExt = sanitizedFileName.split('.').pop();
+      const fileName = `${comentarioId}/${Date.now()}_${sanitizedFileName}`;
       const filePath = `${sla.id}/${fileName}`;
 
-      console.log('Fazendo upload do arquivo:', file.name, 'para:', filePath);
+      console.log('Fazendo upload do arquivo:', file.name, 'como:', sanitizedFileName, 'para:', filePath);
 
       const { error: uploadError } = await supabase.storage
         .from('sla-anexos')
@@ -226,7 +233,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
         .getPublicUrl(filePath);
 
       uploadedFiles.push({
-        nome: file.name,
+        nome: file.name, // Manter nome original para exibição
         url: urlData.publicUrl,
         tamanho: file.size,
         tipo: file.type
