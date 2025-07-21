@@ -189,8 +189,12 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
   };
 
   const uploadAttachments = async (comentarioId: string) => {
-    if (!attachments || attachments.length === 0) return [];
+    if (!attachments || attachments.length === 0) {
+      console.log('Nenhum anexo para upload');
+      return [];
+    }
 
+    console.log('Iniciando upload de', attachments.length, 'anexos');
     const uploadedFiles = [];
     
     for (let i = 0; i < attachments.length; i++) {
@@ -199,14 +203,23 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
       const fileName = `${comentarioId}/${Date.now()}_${file.name}`;
       const filePath = `${sla.id}/${fileName}`;
 
+      console.log('Fazendo upload do arquivo:', file.name, 'para:', filePath);
+
       const { error: uploadError } = await supabase.storage
         .from('sla-anexos')
         .upload(filePath, file);
 
       if (uploadError) {
-        console.error('Erro ao fazer upload:', uploadError);
+        console.error('Erro ao fazer upload do arquivo', file.name, ':', uploadError);
+        toast({
+          title: "Erro no upload",
+          description: `Falha ao enviar ${file.name}: ${uploadError.message}`,
+          variant: "destructive",
+        });
         continue;
       }
+
+      console.log('Upload bem-sucedido para:', filePath);
 
       const { data: urlData } = supabase.storage
         .from('sla-anexos')
@@ -220,6 +233,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
       });
     }
 
+    console.log('Upload finalizado. Arquivos enviados:', uploadedFiles.length);
     return uploadedFiles;
   };
 
