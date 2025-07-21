@@ -174,8 +174,22 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "sla_action_logs_setor_destino_fkey"
+            columns: ["setor_destino_id"]
+            isOneToOne: false
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "sla_action_logs_setor_destino_id_fkey"
             columns: ["setor_destino_id"]
+            isOneToOne: false
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sla_action_logs_setor_origem_fkey"
+            columns: ["setor_origem_id"]
             isOneToOne: false
             referencedRelation: "setores"
             referencedColumns: ["id"]
@@ -241,6 +255,20 @@ export type Database = {
           },
           {
             foreignKeyName: "sla_comentarios_internos_sla_id_fkey"
+            columns: ["sla_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sla_comentarios_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sla_comentarios_sla_id_fkey"
             columns: ["sla_id"]
             isOneToOne: false
             referencedRelation: "sla_demandas"
@@ -368,7 +396,15 @@ export type Database = {
           tipo_acao?: string
           usuario_responsavel?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sla_logs_id_demanda_fkey"
+            columns: ["id_demanda"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_kyc: {
         Row: {
