@@ -187,16 +187,6 @@ const Auth = () => {
               Faça login ou cadastre-se para continuar
             </CardDescription>
             
-            {/* Credenciais de Teste */}
-            <Alert className="mt-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>🔑 Credenciais de Teste:</strong><br />
-                E-mail: <code className="bg-muted px-1 rounded">teste@gmail.com</code><br />
-                Senha: <code className="bg-muted px-1 rounded">123456</code><br />
-                <small className="text-muted-foreground">Este usuário já é administrador master</small>
-              </AlertDescription>
-            </Alert>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
@@ -219,7 +209,7 @@ const Auth = () => {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="teste@gmail.com"
+                      placeholder="seu@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -232,7 +222,7 @@ const Auth = () => {
                     <Input
                       id="password"
                       type="password"
-                      placeholder="123456"
+                      placeholder="Digite sua senha"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -252,9 +242,6 @@ const Auth = () => {
                     )}
                   </Button>
                   
-                  <div className="text-center text-sm text-muted-foreground">
-                    Use as credenciais de teste acima ou crie uma nova conta
-                  </div>
                 </form>
               </TabsContent>
 
