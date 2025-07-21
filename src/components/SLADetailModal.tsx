@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   MessageSquare, 
   Send, 
@@ -99,6 +100,7 @@ interface ActionLog {
 }
 
 export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADetailModalProps) {
+  const { user, isAdmin, setores: userSetores } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [actionLogs, setActionLogs] = useState<ActionLog[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -111,12 +113,12 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
   const { toast } = useToast();
 
   useEffect(() => {
-    if (sla && isOpen) {
+    if (sla && isOpen && user) {
       loadComments();
       loadActionLogs();
       loadSetores();
     }
-  }, [sla, isOpen]);
+  }, [sla, isOpen, user]);
 
   const loadComments = async () => {
     if (!sla) return;
@@ -168,17 +170,31 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
   };
 
   const handleAddComment = async () => {
-    if (!sla || !newComment.trim()) return;
+    if (!sla || !newComment.trim() || !user) return;
 
     setCommentLoading(true);
     try {
-      // Vamos usar um setor padrão ou permitir que o usuário selecione
-      const defaultSetorId = setores[0]?.id;
+      // Para administradores, usar o setor do SLA
+      // Para colaboradores, usar um dos setores do usuário
+      let comentarioSetorId;
       
-      if (!defaultSetorId) {
+      if (isAdmin) {
+        comentarioSetorId = sla.setor_id;
+      } else {
+        // Usuário colaborador: usar um setor que ele tem acesso
+        const setorDoUsuario = userSetores.find(us => us.setor_id === sla.setor_id);
+        if (setorDoUsuario) {
+          comentarioSetorId = setorDoUsuario.setor_id;
+        } else if (userSetores.length > 0) {
+          // Se não tem acesso ao setor do SLA, usar o primeiro setor do usuário
+          comentarioSetorId = userSetores[0].setor_id;
+        }
+      }
+      
+      if (!comentarioSetorId) {
         toast({
           title: "Erro",
-          description: "Nenhum setor disponível para comentários.",
+          description: "Você não tem permissão para comentar neste SLA.",
           variant: "destructive",
         });
         return;
@@ -186,7 +202,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
 
       const { error } = await supabase.rpc('add_sla_comment', {
         p_sla_id: sla.id,
-        p_setor_id: defaultSetorId,
+        p_setor_id: comentarioSetorId,
         p_comentario: newComment.trim()
       });
 
@@ -349,7 +365,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden animate-scale-in">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -596,54 +612,63 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
             </div>
             
             {/* Conteúdo das Tabs */}
+            <div className="animate-fade-in">
             {activeTab === 'comments' ? (
-              <Card className="flex-1 flex flex-col min-h-[500px]">
+              <Card className="flex-1 flex flex-col min-h-[500px] max-h-[500px]">
                 <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
                   {/* Área de Novo Comentário */}
-                  <div className="p-4 border-b bg-muted/10">
-                    <div className="flex gap-3">
-                      <Avatar className="h-8 w-8 mt-1">
-                        <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                          EU
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 space-y-3">
-                        <Textarea
-                          placeholder="Escreva um comentário... Use @ para mencionar alguém"
-                          value={newComment}
-                          onChange={(e) => setNewComment(e.target.value)}
-                          className="min-h-[80px] resize-none border-0 bg-background shadow-sm focus:ring-2 focus:ring-primary/20"
-                        />
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="sm" className="h-8">
-                              <Smile className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-8">
-                              <Edit3 className="h-4 w-4" />
+                  {user && (
+                    <div className="p-4 border-b bg-muted/10 flex-shrink-0">
+                      <div className="flex gap-3">
+                        <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
+                          <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                            {user.user_metadata?.nome_completo?.substring(0, 2)?.toUpperCase() || 'EU'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 space-y-3 min-w-0">
+                          <Textarea
+                            placeholder="Escreva um comentário... Use @ para mencionar alguém"
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            className="min-h-[80px] max-h-[120px] resize-none border-0 bg-background shadow-sm focus:ring-2 focus:ring-primary/20"
+                          />
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Button variant="ghost" size="sm" className="h-8">
+                                <Smile className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" className="h-8">
+                                <Edit3 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <Button 
+                              onClick={handleAddComment}
+                              disabled={!newComment.trim() || commentLoading}
+                              size="sm"
+                              className="h-8"
+                            >
+                              {commentLoading ? (
+                                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                              ) : (
+                                <Send className="h-4 w-4 mr-2" />
+                              )}
+                              {commentLoading ? 'Publicando...' : 'Publicar'}
                             </Button>
                           </div>
-                          <Button 
-                            onClick={handleAddComment}
-                            disabled={!newComment.trim() || commentLoading}
-                            size="sm"
-                            className="h-8"
-                          >
-                            {commentLoading ? (
-                              <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
-                            ) : (
-                              <Send className="h-4 w-4 mr-2" />
-                            )}
-                            {commentLoading ? 'Publicando...' : 'Publicar'}
-                          </Button>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Lista de Comentários */}
-                  <ScrollArea className="flex-1 p-4">
-                    {comments.length === 0 ? (
+                  <ScrollArea className="flex-1 p-4 overflow-y-auto">
+                    {!user ? (
+                      <div className="text-center text-muted-foreground py-12">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                        <h3 className="font-medium mb-2">Faça login para ver comentários</h3>
+                        <p className="text-sm">Você precisa estar logado para visualizar e participar das discussões</p>
+                      </div>
+                    ) : comments.length === 0 ? (
                       <div className="text-center text-muted-foreground py-12">
                         <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-30" />
                         <h3 className="font-medium mb-2">Nenhum comentário ainda</h3>
@@ -702,10 +727,16 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
               </Card>
             ) : (
               /* Histórico de Ações */
-              <Card className="flex-1 flex flex-col min-h-[500px]">
+              <Card className="flex-1 flex flex-col min-h-[500px] max-h-[500px]">
                 <CardContent className="flex-1 flex flex-col overflow-hidden p-4">
-                  <ScrollArea className="flex-1">
-                    {actionLogs.length === 0 ? (
+                  <ScrollArea className="flex-1 overflow-y-auto">
+                    {!user ? (
+                      <div className="text-center text-muted-foreground py-12">
+                        <History className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                        <h3 className="font-medium mb-2">Faça login para ver o histórico</h3>
+                        <p className="text-sm">Você precisa estar logado para visualizar o histórico de ações</p>
+                      </div>
+                    ) : actionLogs.length === 0 ? (
                       <div className="text-center text-muted-foreground py-12">
                         <History className="h-12 w-12 mx-auto mb-4 opacity-30" />
                         <h3 className="font-medium mb-2">Nenhuma ação registrada</h3>
@@ -752,6 +783,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
                 </CardContent>
               </Card>
             )}
+            </div>
           </div>
         </div>
       </DialogContent>
