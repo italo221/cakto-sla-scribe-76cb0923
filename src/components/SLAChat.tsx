@@ -74,6 +74,19 @@ const criteriaOptions: Record<string, CriteriaOption[]> = {
   ]
 };
 
+const timeOptions = [
+  "Produto",
+  "Compliance", 
+  "Suporte",
+  "Marketing",
+  "Comercial",
+  "Financeiro",
+  "Tecnologia",
+  "Recursos Humanos",
+  "Jurídico",
+  "Operações"
+];
+
 const criteriaLabels = {
   financeiro: "🔢 1. Financeiro",
   cliente: "👥 2. Cliente", 
@@ -158,11 +171,7 @@ export default function SLAChat() {
         addMessage('assistant', '👥 **Time Responsável:**\nQual time será responsável? (ex: Produto, Compliance, Suporte, Marketing...)');
         break;
         
-      case 'time':
-        setSlaData(prev => ({ ...prev, time_responsavel: value }));
-        setStep('solicitante');
-        addMessage('assistant', '🙋‍♂️ **Nome do Solicitante:**\nQuem está fazendo a solicitação? (ex: João Silva – Comercial)');
-        break;
+      // case 'time': removido porque agora usa seleção por botões
         
       case 'solicitante':
         setSlaData(prev => ({ ...prev, solicitante: value }));
@@ -220,6 +229,13 @@ export default function SLAChat() {
       addMessage('assistant', '📝 **Observações (opcional):**\nHá links úteis, prints ou contextos extras que gostaria de adicionar? (Se não houver, digite "não" ou "nenhuma")');
       setStep('observacoes');
     }
+  };
+
+  const handleTimeSelection = (timeSelected: string) => {
+    setSlaData(prev => ({ ...prev, time_responsavel: timeSelected }));
+    addMessage('user', timeSelected);
+    setStep('solicitante');
+    addMessage('assistant', '🙋‍♂️ **Nome do Solicitante:**\nQuem está fazendo a solicitação? (ex: João Silva – Comercial)');
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -525,6 +541,26 @@ export default function SLAChat() {
                   </div>
                 )}
 
+                {step === 'time' && (
+                  <div className="bg-chat-assistant border rounded-lg p-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      {timeOptions.map((timeOption) => (
+                        <Button
+                          key={timeOption}
+                          variant="outline"
+                          className="h-auto p-4 justify-start hover:bg-accent hover:text-accent-foreground transition-colors"
+                          onClick={() => handleTimeSelection(timeOption)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 rounded-full bg-blue-500" />
+                            <span className="text-sm font-medium">{timeOption}</span>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {step === 'complete' && (
                   <div className="space-y-4">
                     {(window as any).slaId && (
@@ -584,7 +620,7 @@ export default function SLAChat() {
               </div>
             </ScrollArea>
 
-            {(step === 'titulo' || step === 'time' || step === 'solicitante' || step === 'descricao' || step === 'observacoes') && (
+            {(step === 'titulo' || step === 'solicitante' || step === 'descricao' || step === 'observacoes') && (
               <div className="border-t p-4 space-y-4">
                 {/* Seção de upload de arquivos apenas para observações */}
                 {step === 'observacoes' && (
