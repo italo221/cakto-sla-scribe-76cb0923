@@ -21,7 +21,8 @@ import {
   AlertCircle,
   Plus,
   UserX,
-  Save
+  Save,
+  Loader2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -205,12 +206,20 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [setorDialogOpen, setSetorDialogOpen] = useState(false);
+  const [userDialogOpen, setUserDialogOpen] = useState(false);
+  const [creatingUser, setCreatingUser] = useState(false);
   
   // Form states
   const [selectedUser, setSelectedUser] = useState("");
   const [selectedSetor, setSelectedSetor] = useState("");
   const [newSetorName, setNewSetorName] = useState("");
   const [newSetorDesc, setNewSetorDesc] = useState("");
+  
+  // User form states
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserType, setNewUserType] = useState<"administrador_master" | "colaborador_setor">("colaborador_setor");
   
   const { toast } = useToast();
   const { user, isAdmin: userIsAdmin, loading: authLoading } = useAuth();
@@ -306,6 +315,67 @@ const Admin = () => {
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  // Create user
+  const handleCreateUser = async () => {
+    if (!newUserName.trim() || !newUserEmail.trim() || !newUserPassword.trim()) {
+      toast({
+        title: "Erro",
+        description: "Todos os campos são obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newUserPassword.length < 6) {
+      toast({
+        title: "Erro",
+        description: "A senha deve ter pelo menos 6 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCreatingUser(true);
+
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: newUserEmail.trim(),
+        password: newUserPassword,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            nome_completo: newUserName.trim(),
+            user_type: newUserType
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Usuário criado com sucesso!",
+        description: `O usuário "${newUserName}" foi criado. Um e-mail de confirmação foi enviado.`,
+      });
+
+      setNewUserName("");
+      setNewUserEmail("");
+      setNewUserPassword("");
+      setNewUserType("colaborador_setor");
+      setUserDialogOpen(false);
+      fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao criar usuário",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingUser(false);
     }
   };
 
@@ -606,6 +676,106 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
           </TabsList>
 
           <TabsContent value="users" className="space-y-6">
+            {/* Card para criar novo usuário */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserPlus className="h-5 w-5" />
+                  Criar Novo Usuário
+                </CardTitle>
+                <CardDescription>
+                  Adicione um novo usuário ao sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar Usuário
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Criar Novo Usuário</DialogTitle>
+                      <DialogDescription>
+                        Preencha as informações para criar um novo usuário
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="user-name">Nome Completo</Label>
+                        <Input
+                          id="user-name"
+                          value={newUserName}
+                          onChange={(e) => setNewUserName(e.target.value)}
+                          placeholder="Ex: João Silva"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="user-email">E-mail</Label>
+                        <Input
+                          id="user-email"
+                          type="email"
+                          value={newUserEmail}
+                          onChange={(e) => setNewUserEmail(e.target.value)}
+                          placeholder="Ex: joao@empresa.com"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="user-password">Senha</Label>
+                        <Input
+                          id="user-password"
+                          type="password"
+                          value={newUserPassword}
+                          onChange={(e) => setNewUserPassword(e.target.value)}
+                          placeholder="Mínimo 6 caracteres"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="user-type">Tipo de Usuário</Label>
+                        <Select value={newUserType} onValueChange={(value) => setNewUserType(value as "administrador_master" | "colaborador_setor")}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="colaborador_setor">
+                              <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4" />
+                                Colaborador de Setor
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="administrador_master">
+                              <div className="flex items-center gap-2">
+                                <Shield className="h-4 w-4" />
+                                Administrador Master
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={handleCreateUser} className="flex-1" disabled={creatingUser}>
+                          {creatingUser ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Criando...
+                            </>
+                          ) : (
+                            "Criar Usuário"
+                          )}
+                        </Button>
+                        <Button variant="outline" onClick={() => setUserDialogOpen(false)}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </CardContent>
+            </Card>
+
+            {/* Card de usuários existentes */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
