@@ -81,6 +81,7 @@ export type Database = {
           pontuacao_urgencia: number
           solicitante: string
           status: string
+          tags: string[] | null
           time_responsavel: string
           titulo: string
         }
@@ -99,6 +100,7 @@ export type Database = {
           pontuacao_urgencia: number
           solicitante: string
           status?: string
+          tags?: string[] | null
           time_responsavel: string
           titulo: string
         }
@@ -117,6 +119,7 @@ export type Database = {
           pontuacao_urgencia?: number
           solicitante?: string
           status?: string
+          tags?: string[] | null
           time_responsavel?: string
           titulo?: string
         }

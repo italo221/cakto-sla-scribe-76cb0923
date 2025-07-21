@@ -102,7 +102,7 @@ const criteriaQuestions = {
   operacional: "Está travando outras áreas?"
 };
 
-type Step = 'welcome' | 'titulo' | 'time' | 'descricao' | 'criteria' | 'observacoes' | 'complete' | 'validation-error';
+type Step = 'welcome' | 'titulo' | 'time' | 'descricao' | 'criteria' | 'observacoes' | 'complete' | 'validation-error' | 'update-mode';
 
 export default function SLAChat() {
   const [step, setStep] = useState<Step>('welcome');
@@ -461,6 +461,235 @@ export default function SLAChat() {
     }
   };
 
+  // Funções para atualização de SLA (V3)
+  const buscarSLAPorId = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('sla_demandas')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        throw new Error(`SLA não encontrado: ${error.message}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro ao buscar SLA:', error);
+      throw error;
+    }
+  };
+
+  const validarCampoAtualização = (campo: string, valor: any) => {
+    const camposPermitidos = [
+      'status', 'nivel_criticidade', 'pontuacao_financeiro', 'pontuacao_cliente',
+      'pontuacao_reputacao', 'pontuacao_urgencia', 'pontuacao_operacional',
+      'observacoes', 'tags', 'descricao', 'time_responsavel'
+    ];
+
+    if (!camposPermitidos.includes(campo)) {
+      return { valido: false, erro: `Campo '${campo}' não pode ser alterado` };
+    }
+
+    // Validações específicas por campo
+    switch (campo) {
+      case 'status':
+        const statusValidos = ['aberto', 'em_andamento', 'resolvido', 'fechado'];
+        if (!statusValidos.includes(valor)) {
+          return { valido: false, erro: `Status deve ser: ${statusValidos.join(', ')}` };
+        }
+        break;
+
+      case 'nivel_criticidade':
+        const niveisValidos = ['P0', 'P1', 'P2', 'P3'];
+        if (!niveisValidos.includes(valor)) {
+          return { valido: false, erro: `Nível de criticidade deve ser: ${niveisValidos.join(', ')}` };
+        }
+        break;
+
+      case 'pontuacao_financeiro':
+      case 'pontuacao_cliente':
+      case 'pontuacao_reputacao':
+      case 'pontuacao_urgencia':
+      case 'pontuacao_operacional':
+        const pontuacao = Number(valor);
+        if (isNaN(pontuacao) || pontuacao < 0 || pontuacao > 10) {
+          return { valido: false, erro: 'Pontuação deve ser um número entre 0 e 10' };
+        }
+        break;
+
+      case 'descricao':
+        if (typeof valor !== 'string' || valor.trim().length < 10) {
+          return { valido: false, erro: 'Descrição deve ter no mínimo 10 caracteres' };
+        }
+        break;
+
+      case 'time_responsavel':
+        if (!timeOptions.includes(valor)) {
+          return { valido: false, erro: `Time deve ser um dos: ${timeOptions.join(', ')}` };
+        }
+        break;
+
+      case 'tags':
+        if (!Array.isArray(valor)) {
+          return { valido: false, erro: 'Tags devem ser uma lista' };
+        }
+        break;
+    }
+
+    return { valido: true };
+  };
+
+  const atualizarSLA = async (id: string, alteracoes: Record<string, any>) => {
+    try {
+      // Buscar estado atual
+      const slaAtual = await buscarSLAPorId(id);
+      
+      // Validar todas as alterações
+      for (const [campo, valor] of Object.entries(alteracoes)) {
+        const validacao = validarCampoAtualização(campo, valor);
+        if (!validacao.valido) {
+          throw new Error(validacao.erro);
+        }
+
+        // Verificar se valor é idêntico ao atual
+        if (slaAtual[campo] === valor) {
+          addMessage('assistant', `⚠️ O campo '${campo}' já está com esse valor. Nenhuma alteração feita.`);
+          return;
+        }
+      }
+
+      // Aplicar atualização
+      const { error } = await supabase
+        .from('sla_demandas')
+        .update(alteracoes)
+        .eq('id', id);
+
+      if (error) {
+        throw new Error(`Erro ao atualizar SLA: ${error.message}`);
+      }
+
+      // Gerar log da alteração
+      const logData = {
+        tipo_acao: 'atualizacao',
+        id_demanda: id,
+        usuario_responsavel: 'Sistema Autenticado',
+        dados_criados: {
+          alteracoes: Object.fromEntries(
+            Object.entries(alteracoes).map(([campo, valorNovo]) => [
+              campo,
+              {
+                antes: slaAtual[campo],
+                depois: valorNovo
+              }
+            ])
+          )
+        },
+        origem: 'chat_lovable'
+      };
+
+      await supabase.from('sla_logs').insert(logData);
+
+      // Mostrar resultado
+      const alteracoesTexto = Object.entries(alteracoes)
+        .map(([campo, valorNovo]) => `${campo}: de "${slaAtual[campo]}" para "${valorNovo}"`)
+        .join('\n');
+
+      addMessage('assistant', `🔁 **Demanda #${id} atualizada com sucesso.**\n\n${alteracoesTexto}\n\nLog gerado para auditoria ✅`);
+
+    } catch (error) {
+      console.error('Erro ao atualizar SLA:', error);
+      addMessage('assistant', `❌ **Erro ao atualizar SLA:**\n\n${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    }
+  };
+
+  const interpretarComandoNaturalUpdate = (comando: string) => {
+    const comandoLower = comando.toLowerCase();
+    
+    // Extrair ID da demanda
+    const idMatch = comandoLower.match(/#(\w+)/);
+    if (!idMatch) {
+      addMessage('assistant', '⚠️ **ID da demanda não encontrado.**\n\nPor favor, inclua o ID da demanda (ex: #28)');
+      return;
+    }
+    
+    const id = idMatch[1];
+    const alteracoes: Record<string, any> = {};
+
+    // Detectar alterações de status
+    if (comandoLower.includes('status')) {
+      if (comandoLower.includes('resolvido')) alteracoes.status = 'resolvido';
+      else if (comandoLower.includes('em andamento')) alteracoes.status = 'em_andamento';
+      else if (comandoLower.includes('fechado')) alteracoes.status = 'fechado';
+      else if (comandoLower.includes('aberto')) alteracoes.status = 'aberto';
+    }
+
+    // Detectar alterações de criticidade/urgência
+    if (comandoLower.includes('urgência') || comandoLower.includes('criticidade')) {
+      if (comandoLower.includes('p0') || comandoLower.includes('muito urgente')) alteracoes.nivel_criticidade = 'P0';
+      else if (comandoLower.includes('p1') || comandoLower.includes('urgente')) alteracoes.nivel_criticidade = 'P1';
+      else if (comandoLower.includes('p2') || comandoLower.includes('normal')) alteracoes.nivel_criticidade = 'P2';
+      else if (comandoLower.includes('p3') || comandoLower.includes('sem pressa')) alteracoes.nivel_criticidade = 'P3';
+    }
+
+    // Detectar alterações de time
+    if (comandoLower.includes('time') || comandoLower.includes('responsável')) {
+      const timeEncontrado = timeOptions.find(time => 
+        comandoLower.includes(time.toLowerCase())
+      );
+      if (timeEncontrado) {
+        alteracoes.time_responsavel = timeEncontrado;
+      }
+    }
+
+    // Detectar alterações de pontuação
+    const pontuacaoMatch = comandoLower.match(/(financeiro|cliente|reputação|reputacao|urgência|urgencia|operacional).*?(\d+)/);
+    if (pontuacaoMatch) {
+      const [, tipo, valor] = pontuacaoMatch;
+      const campo = `pontuacao_${tipo.replace('ã', 'a').replace('ê', 'e')}`;
+      alteracoes[campo] = Number(valor);
+    }
+
+    if (Object.keys(alteracoes).length === 0) {
+      addMessage('assistant', '⚠️ **Não consegui interpretar o que você quer alterar.**\n\nExemplos de comandos:\n- "Atualiza o status da #28 para resolvido"\n- "Muda a urgência da #13 para P1"\n- "Troca o time da #20 para Suporte"');
+      return;
+    }
+
+    // Aplicar alterações
+    atualizarSLA(id, alteracoes);
+  };
+
+  // Modificar o handleInput para detectar comandos de atualização
+  const handleInputWithUpdate = (value: string) => {
+    const comandoLower = value.toLowerCase();
+    
+    // Detectar se é um comando de atualização
+    const isUpdateCommand = 
+      comandoLower.includes('atualiza') || 
+      comandoLower.includes('muda') || 
+      comandoLower.includes('altera') || 
+      comandoLower.includes('troca') || 
+      comandoLower.includes('corrige') ||
+      (comandoLower.includes('#') && (
+        comandoLower.includes('status') || 
+        comandoLower.includes('urgência') || 
+        comandoLower.includes('criticidade') ||
+        comandoLower.includes('time') ||
+        comandoLower.includes('pontuação')
+      ));
+
+    if (isUpdateCommand && step !== 'update-mode') {
+      addMessage('user', value);
+      setStep('update-mode');
+      interpretarComandoNaturalUpdate(value);
+      return;
+    }
+
+    // Comportamento normal para outros casos
+    handleInput(value);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-chat-background">
       <div className="container mx-auto max-w-4xl p-4">
@@ -486,6 +715,13 @@ export default function SLAChat() {
                         Sou sua assistente virtual para abertura de SLAs. Vou te guiar através de algumas perguntas 
                         para organizar sua demanda, calcular a pontuação de criticidade e classificar o nível de prioridade.
                       </p>
+                      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <h3 className="text-sm font-semibold text-blue-800 mb-2">🔄 Nova Funcionalidade V3:</h3>
+                        <p className="text-xs text-blue-700">
+                          Agora você também pode atualizar SLAs existentes usando linguagem natural!<br/>
+                          Exemplos: "Atualiza o status da #28 para resolvido" ou "Muda a urgência da #13 para P1"
+                        </p>
+                      </div>
                     </div>
                     <Button onClick={handleStart} size="lg" className="px-8">
                       Iniciar Nova Demanda de SLA
@@ -672,7 +908,7 @@ export default function SLAChat() {
               </div>
             </ScrollArea>
 
-            {(step === 'titulo' || step === 'descricao' || step === 'observacoes') && (
+            {(step === 'titulo' || step === 'descricao' || step === 'observacoes' || step === 'update-mode' || step === 'complete') && (
               <div className="border-t p-4 space-y-4">
                 {/* Seção de upload de arquivos apenas para observações */}
                 {step === 'observacoes' && (
@@ -746,7 +982,7 @@ export default function SLAChat() {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
                           if (inputValue.trim()) {
-                            handleInput(inputValue.trim());
+                            handleInputWithUpdate(inputValue.trim());
                           }
                         }
                       }}
