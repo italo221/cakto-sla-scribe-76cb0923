@@ -97,6 +97,7 @@ interface SLADetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
+  setSelectedSLA?: (sla: SLA) => void; // Add this to update parent state immediately
 }
 
 interface ActionLog {
@@ -111,7 +112,7 @@ interface ActionLog {
   dados_novos?: any;
 }
 
-export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADetailModalProps) {
+export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSelectedSLA }: SLADetailModalProps) {
   const { user, isAdmin, setores: userSetores } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [actionLogs, setActionLogs] = useState<ActionLog[]>([]);
@@ -120,7 +121,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
   const [selectedSetor, setSelectedSetor] = useState('');
   const [transferLoading, setTransferLoading] = useState(false);
   const [commentLoading, setCommentLoading] = useState(false);
-  const [statusLoading, setStatusLoading] = useState(false);
+  const [statusLoading, setStatusLoading] = useState<string | null>(null); // Track which status button is loading
   const [activeTab, setActiveTab] = useState<'comments' | 'history'>('comments');
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [attachments, setAttachments] = useState<FileList | null>(null);
@@ -303,9 +304,13 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
   const handleChangeStatus = async (newStatus: string) => {
     if (!sla) return;
 
-    setStatusLoading(true);
+    setStatusLoading(newStatus); // Set which specific status is loading
     try {
       const oldStatus = sla.status;
+      
+      // Update UI immediately for better UX
+      const updatedSLA = { ...sla, status: newStatus };
+      setSelectedSLA?.(updatedSLA);
       
       const { error } = await supabase
         .from('sla_demandas')
@@ -330,13 +335,15 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
       onUpdate();
       loadActionLogs();
     } catch (error: any) {
+      // Revert UI change on error
+      setSelectedSLA?.(sla);
       toast({
         title: "Erro ao alterar status",
         description: error.message,
         variant: "destructive",
       });
     } finally {
-      setStatusLoading(false);
+      setStatusLoading(null);
     }
   };
 
@@ -468,7 +475,9 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
                 criticidade={sla.nivel_criticidade}
                 status={sla.status}
               />
-              {getStatusBadge(sla.status)}
+              <div className={`transition-all duration-300 ${statusLoading ? 'animate-pulse' : ''}`}>
+                {getStatusBadge(sla.status)}
+              </div>
               {getCriticalityBadge(sla.nivel_criticidade)}
             </div>
           </div>
@@ -504,10 +513,20 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
               <Button 
                 variant="default" 
                 onClick={() => handleChangeStatus('em_andamento')}
-                className="gap-2"
+                disabled={statusLoading !== null}
+                className="gap-2 min-w-[120px]"
               >
-                <Play className="h-4 w-4" />
-                Iniciar
+                {statusLoading === 'em_andamento' ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                    Iniciando...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4" />
+                    Iniciar
+                  </>
+                )}
               </Button>
             )}
             
@@ -516,18 +535,38 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
                 <Button 
                   variant="default" 
                   onClick={() => handleChangeStatus('resolvido')}
-                  className="gap-2"
+                  disabled={statusLoading !== null}
+                  className="gap-2 min-w-[120px]"
                 >
-                  <CheckCircle className="h-4 w-4" />
-                  Resolver
+                  {statusLoading === 'resolvido' ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                      Resolvendo...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4" />
+                      Resolver
+                    </>
+                  )}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => handleChangeStatus('pausado')}
-                  className="gap-2"
+                  disabled={statusLoading !== null}
+                  className="gap-2 min-w-[120px]"
                 >
-                  <Pause className="h-4 w-4" />
-                  Pausar
+                  {statusLoading === 'pausado' ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                      Pausando...
+                    </>
+                  ) : (
+                    <>
+                      <Pause className="h-4 w-4" />
+                      Pausar
+                    </>
+                  )}
                 </Button>
               </>
             )}
@@ -536,10 +575,20 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
               <Button 
                 variant="default" 
                 onClick={() => handleChangeStatus('em_andamento')}
-                className="gap-2"
+                disabled={statusLoading !== null}
+                className="gap-2 min-w-[120px]"
               >
-                <Play className="h-4 w-4" />
-                Retomar
+                {statusLoading === 'em_andamento' ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                    Retomando...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4" />
+                    Retomar
+                  </>
+                )}
               </Button>
             )}
             
@@ -548,18 +597,38 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
                 <Button 
                   variant="default" 
                   onClick={() => handleChangeStatus('fechado')}
-                  className="gap-2"
+                  disabled={statusLoading !== null}
+                  className="gap-2 min-w-[120px]"
                 >
-                  <X className="h-4 w-4" />
-                  Fechar SLA
+                  {statusLoading === 'fechado' ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                      Fechando...
+                    </>
+                  ) : (
+                    <>
+                      <X className="h-4 w-4" />
+                      Fechar SLA
+                    </>
+                  )}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => handleChangeStatus('em_andamento')}
-                  className="gap-2"
+                  disabled={statusLoading !== null}
+                  className="gap-2 min-w-[120px]"
                 >
-                  <RotateCcw className="h-4 w-4" />
-                  Reabrir SLA
+                  {statusLoading === 'em_andamento' ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                      Reabrindo...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="h-4 w-4" />
+                      Reabrir SLA
+                    </>
+                  )}
                 </Button>
               </>
             )}

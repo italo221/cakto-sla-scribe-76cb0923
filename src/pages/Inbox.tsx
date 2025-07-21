@@ -192,6 +192,12 @@ export default function Inbox() {
     setModalOpen(true);
   };
 
+  const handleUpdateSelectedSLA = (updatedSLA: SLA) => {
+    setSelectedSLA(updatedSLA);
+    // Also update in the main list for immediate visual feedback
+    setSlas(currentSlas => currentSlas.map(s => s.id === updatedSLA.id ? updatedSLA : s));
+  };
+
   const handleCloseSLADetail = () => {
     setSelectedSLA(null);
     setModalOpen(false);
@@ -443,6 +449,7 @@ export default function Inbox() {
         isOpen={modalOpen}
         onClose={handleCloseSLADetail}
         onUpdate={loadSLAs}
+        setSelectedSLA={handleUpdateSelectedSLA}
       />
     </div>
   );
