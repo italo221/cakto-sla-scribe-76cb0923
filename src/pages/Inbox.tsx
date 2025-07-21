@@ -14,6 +14,7 @@ import Navigation from "@/components/Navigation";
 
 interface SLA {
   id: string;
+  ticket_number: string;
   titulo: string;
   time_responsavel: string;
   solicitante: string;
@@ -66,7 +67,8 @@ export default function Inbox() {
         sla.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
         sla.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
         sla.solicitante.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        sla.time_responsavel.toLowerCase().includes(searchTerm.toLowerCase())
+        sla.time_responsavel.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (sla.ticket_number && sla.ticket_number.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -163,7 +165,7 @@ export default function Inbox() {
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por título, descrição, solicitante..."
+                  placeholder="Buscar por ticket, título, descrição, solicitante..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -247,7 +249,12 @@ export default function Inbox() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-lg">#{sla.id.slice(0, 8)} - {sla.titulo}</h3>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="font-mono text-xs">
+                                {sla.ticket_number || `#${sla.id.slice(0, 8)}`}
+                              </Badge>
+                              <h3 className="font-semibold text-lg">{sla.titulo}</h3>
+                            </div>
                             {getStatusBadge(sla.status)}
                             {getCriticalityBadge(sla.nivel_criticidade)}
                           </div>

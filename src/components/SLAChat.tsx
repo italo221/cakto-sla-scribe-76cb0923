@@ -340,7 +340,7 @@ export default function SLAChat() {
             data_upload: new Date().toISOString()
           })) : null
         })
-        .select('id')
+        .select('id, ticket_number')
         .single();
 
       if (slaError) {
@@ -381,7 +381,7 @@ export default function SLAChat() {
         // Não falhar por causa do log, apenas avisar
       }
 
-      return slaResult.id;
+      return { id: slaResult.id, ticket_number: slaResult.ticket_number };
     } catch (error) {
       console.error('Erro completo:', error);
       throw error;
@@ -420,7 +420,7 @@ export default function SLAChat() {
     addMessage('assistant', `⏳ **Processando SLA...**\n\n📊 **Pontuação Total:** ${total} pontos\n🏷️ **Nível de Criticidade:** ${criticality}\n\n💾 Salvando no sistema...`);
 
     try {
-      const slaId = await saveSLAToSupabase(slaData, total, criticality);
+      const slaResult = await saveSLAToSupabase(slaData, total, criticality);
       
       // Calcular tempo médio de resolução baseado na criticidade
       const getTempoMedioResolucao = (nivel: string) => {
@@ -435,11 +435,11 @@ export default function SLAChat() {
       
       const tempoMedio = getTempoMedioResolucao(criticality);
       
-      addMessage('assistant', `✅ **SLA registrado com sucesso no sistema!**\n\n🆔 **ID:** #${slaId}\n📊 **Pontuação Total:** ${total} pontos\n🏷️ **Nível de Criticidade:** ${criticality}\n⏱️ **Tempo Médio de Resolução:** ${tempoMedio}\n\n🔔 A equipe responsável será notificada.`);
+      addMessage('assistant', `✅ **SLA registrado com sucesso no sistema!**\n\n🎫 **Ticket:** ${slaResult.ticket_number || `#${slaResult.id.slice(0, 8)}`}\n🆔 **ID:** #${slaResult.id}\n📊 **Pontuação Total:** ${total} pontos\n🏷️ **Nível de Criticidade:** ${criticality}\n⏱️ **Tempo Médio de Resolução:** ${tempoMedio}\n\n🔔 A equipe responsável será notificada.`);
       
       // Salvar o JSON para exibição
-      (window as any).finalSlaJson = { ...finalJson, id: slaId };
-      (window as any).slaId = slaId;
+      (window as any).finalSlaJson = { ...finalJson, id: slaResult.id, ticket_number: slaResult.ticket_number };
+      (window as any).slaId = slaResult.id;
       
     } catch (error) {
       console.error('Erro ao salvar SLA:', error);
@@ -997,7 +997,7 @@ export default function SLAChat() {
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           if (inputValue.trim()) {
-                            handleInput(inputValue.trim());
+                            handleInputWithUpdate(inputValue.trim());
                           }
                         }
                       }}

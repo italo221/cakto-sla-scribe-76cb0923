@@ -82,6 +82,7 @@ export type Database = {
           solicitante: string
           status: string
           tags: string[] | null
+          ticket_number: string | null
           time_responsavel: string
           titulo: string
         }
@@ -101,6 +102,7 @@ export type Database = {
           solicitante: string
           status?: string
           tags?: string[] | null
+          ticket_number?: string | null
           time_responsavel: string
           titulo: string
         }
@@ -120,6 +122,7 @@ export type Database = {
           solicitante?: string
           status?: string
           tags?: string[] | null
+          ticket_number?: string | null
           time_responsavel?: string
           titulo?: string
         }
@@ -262,6 +265,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_ticket_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_stats: {
         Args: { user_email: string }
         Returns: {
