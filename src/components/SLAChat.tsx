@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Copy, FileText, MessageCircle, Calculator, Upload, X, File, Image, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
@@ -105,6 +106,7 @@ const criteriaQuestions = {
 type Step = 'welcome' | 'titulo' | 'time' | 'descricao' | 'criteria' | 'observacoes' | 'complete' | 'validation-error' | 'update-mode' | 'query-mode';
 
 export default function SLAChat() {
+  const { user, isAdmin } = useAuth();
   const [step, setStep] = useState<Step>('welcome');
   const [currentCriteria, setCurrentCriteria] = useState<string>('financeiro');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -183,15 +185,23 @@ export default function SLAChat() {
   };
 
   const getSLAsAbertos = async (query: string): Promise<string> => {
+    if (!user) return 'Você precisa estar logado para visualizar SLAs.';
+    
+    // RLS automaticamente filtra baseado no usuário e seus setores
     const { data, error } = await supabase
       .from('sla_demandas')
-      .select('ticket_number, titulo, nivel_criticidade, time_responsavel, data_criacao, status')
+      .select('ticket_number, titulo, nivel_criticidade, time_responsavel, data_criacao, status, setor_id')
       .eq('status', 'aberto')
       .order('data_criacao', { ascending: false })
       .limit(5);
 
     if (error) throw error;
-    if (!data || data.length === 0) return '📋 **Nenhum SLA aberto encontrado!**\n\n✅ Todas as demandas foram resolvidas.';
+    if (!data || data.length === 0) {
+      const resultMsg = isAdmin 
+        ? '📋 **Nenhum SLA aberto encontrado!**\n\n✅ Todas as demandas foram resolvidas.'
+        : '📋 **Nenhum SLA aberto nos seus setores!**\n\n✅ Seus setores não têm demandas abertas no momento.';
+      return resultMsg;
+    }
 
     let result = `🧩 **SLAs Abertos** (${data.length} encontrados)\n\n`;
     

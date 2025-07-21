@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Clock, AlertTriangle, CheckCircle, Users, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SLAMetrics {
   total: number;
@@ -30,6 +31,7 @@ const COLORS = {
 };
 
 export default function SLADashboard() {
+  const { user, isAdmin } = useAuth();
   const [metrics, setMetrics] = useState<SLAMetrics>({
     total: 0,
     abertos: 0,
@@ -42,10 +44,14 @@ export default function SLADashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchSLAMetrics();
-  }, []);
+    if (user) {
+      fetchSLAMetrics();
+    }
+  }, [user, isAdmin]);
 
   const fetchSLAMetrics = async () => {
+    if (!user) return;
+    
     try {
       setLoading(true);
       
@@ -53,9 +59,18 @@ export default function SLADashboard() {
       const trintaDiasAtras = new Date();
       trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
       
+      // RLS irá automaticamente filtrar baseado no usuário e seus setores
       const { data, error } = await supabase
         .from('sla_demandas')
-        .select('id, titulo, status, nivel_criticidade, time_responsavel, data_criacao')
+        .select(`
+          id, 
+          titulo, 
+          status, 
+          nivel_criticidade, 
+          time_responsavel, 
+          data_criacao,
+          setor_id
+        `)
         .gte('data_criacao', trintaDiasAtras.toISOString())
         .order('data_criacao', { ascending: false });
 
