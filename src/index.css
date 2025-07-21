@@ -22,10 +22,10 @@ All colors MUST be HSL.
     --popover-foreground: 240 10% 10%;
 
     /* Primary brand colors */
-    --primary: 261 83% 58%;
+    --primary: 142 76% 42%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 261 83% 52%;
-    --primary-light: 261 83% 95%;
+    --primary-hover: 142 76% 36%;
+    --primary-light: 142 76% 95%;
 
     /* Secondary colors */
     --secondary: 240 5% 96%;
@@ -38,9 +38,9 @@ All colors MUST be HSL.
     --muted-hover: 240 5% 91%;
 
     /* Accent colors */
-    --accent: 261 83% 98%;
-    --accent-foreground: 261 83% 58%;
-    --accent-hover: 261 83% 95%;
+    --accent: 142 76% 98%;
+    --accent-foreground: 142 76% 42%;
+    --accent-hover: 142 76% 95%;
 
     /* Status colors */
     --destructive: 0 84% 60%;
@@ -55,24 +55,24 @@ All colors MUST be HSL.
     --warning-foreground: 0 0% 100%;
     --warning-light: 45 93% 95%;
     
-    --info: 221 83% 53%;
+    --info: 158 64% 52%;
     --info-foreground: 0 0% 100%;
-    --info-light: 221 83% 95%;
+    --info-light: 158 64% 95%;
 
     /* Interactive elements */
     --border: 240 6% 90%;
     --input: 240 6% 90%;
-    --ring: 261 83% 58%;
+    --ring: 142 76% 42%;
 
     /* Chat specific */
     --chat-background: 240 10% 99%;
-    --chat-user: 261 83% 58%;
+    --chat-user: 142 76% 42%;
     --chat-user-foreground: 0 0% 100%;
     --chat-assistant: 0 0% 100%;
     --chat-assistant-foreground: 240 10% 10%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(261 83% 58%), hsl(261 83% 68%));
+    --gradient-primary: linear-gradient(135deg, hsl(142 76% 42%), hsl(142 76% 52%));
     --gradient-background: linear-gradient(180deg, hsl(240 10% 99%), hsl(240 10% 96%));
     --gradient-surface: linear-gradient(135deg, hsl(0 0% 100%), hsl(240 8% 98%));
 
@@ -95,7 +95,7 @@ All colors MUST be HSL.
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 142 76% 42%;
 
     /* Animation timing */
     --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -114,10 +114,10 @@ All colors MUST be HSL.
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 261 83% 58%;
+    --primary: 142 76% 42%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 261 83% 52%;
-    --primary-light: 261 83% 15%;
+    --primary-hover: 142 76% 36%;
+    --primary-light: 142 76% 15%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -143,22 +143,22 @@ All colors MUST be HSL.
     --warning-foreground: 222.2 84% 4.9%;
     --warning-light: 45 93% 15%;
 
-    --info: 221 83% 53%;
+    --info: 158 64% 52%;
     --info-foreground: 210 40% 98%;
-    --info-light: 221 83% 15%;
+    --info-light: 158 64% 15%;
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 142 76% 42%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary: 142 76% 42%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 142 76% 42%;
   }
 }
 
