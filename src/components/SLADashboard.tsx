@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { TrendingUp, Clock, AlertTriangle, CheckCircle, Users, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +17,8 @@ import {
   Pie,
   Cell,
 } from "recharts";
+
+type DateRange = '30dias' | '7dias' | 'hoje' | 'ontem';
 
 interface SLAMetrics {
   total: number;
@@ -57,12 +60,54 @@ export default function SLADashboard() {
   });
   const [slaData, setSlaData] = useState<SLAData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedRange, setSelectedRange] = useState<DateRange>('30dias');
 
   useEffect(() => {
     if (user) {
       fetchSLAMetrics();
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, selectedRange]);
+
+  const getDateRange = (range: DateRange) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    switch (range) {
+      case '30dias':
+        const trintaDiasAtras = new Date(today);
+        trintaDiasAtras.setDate(today.getDate() - 30);
+        return { start: trintaDiasAtras, end: now };
+      
+      case '7dias':
+        const seteDiasAtras = new Date(today);
+        seteDiasAtras.setDate(today.getDate() - 7);
+        return { start: seteDiasAtras, end: now };
+      
+      case 'hoje':
+        const fimDodia = new Date(today);
+        fimDodia.setHours(23, 59, 59, 999);
+        return { start: today, end: fimDodia };
+      
+      case 'ontem':
+        const ontem = new Date(today);
+        ontem.setDate(today.getDate() - 1);
+        const fimOntem = new Date(ontem);
+        fimOntem.setHours(23, 59, 59, 999);
+        return { start: ontem, end: fimOntem };
+      
+      default:
+        return { start: today, end: now };
+    }
+  };
+
+  const getRangeLabel = (range: DateRange) => {
+    switch (range) {
+      case '30dias': return 'Últimos 30 dias';
+      case '7dias': return 'Últimos 7 dias'; 
+      case 'hoje': return 'Hoje';
+      case 'ontem': return 'Ontem';
+    }
+  };
 
   const fetchSLAMetrics = async () => {
     if (!user) return;
@@ -70,9 +115,7 @@ export default function SLADashboard() {
     try {
       setLoading(true);
       
-      // Buscar dados dos últimos 30 dias
-      const trintaDiasAtras = new Date();
-      trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+      const { start, end } = getDateRange(selectedRange);
       
       // RLS irá automaticamente filtrar baseado no usuário e seus setores
       const { data, error } = await supabase
@@ -87,7 +130,8 @@ export default function SLADashboard() {
           updated_at,
           setor_id
         `)
-        .gte('data_criacao', trintaDiasAtras.toISOString());
+        .gte('data_criacao', start.toISOString())
+        .lte('data_criacao', end.toISOString());
 
       if (error) throw error;
 
@@ -188,10 +232,15 @@ export default function SLADashboard() {
   };
 
   const getDailyData = () => {
+    const { start } = getDateRange(selectedRange);
     const dailyCount: Record<string, number> = {};
     
-    // Inicializar últimos 30 dias com 0
-    for (let i = 29; i >= 0; i--) {
+    // Calcular número de dias no período
+    const diffTime = Math.abs(new Date().getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Inicializar período com 0
+    for (let i = diffDays - 1; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
@@ -252,10 +301,24 @@ export default function SLADashboard() {
           <h1 className="text-3xl font-bold">Dashboard SLA</h1>
           <p className="text-muted-foreground">Acompanhe as métricas e desempenho dos SLAs</p>
         </div>
-        <Badge variant="secondary" className="text-sm">
-          <Calendar className="w-4 h-4 mr-1" />
-          Últimos 30 dias
-        </Badge>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {(['30dias', '7dias', 'hoje', 'ontem'] as DateRange[]).map((range) => (
+              <Button
+                key={range}
+                variant={selectedRange === range ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSelectedRange(range)}
+              >
+                {getRangeLabel(range)}
+              </Button>
+            ))}
+          </div>
+          <Badge variant="secondary" className="text-sm">
+            <Calendar className="w-4 h-4 mr-1" />
+            {getRangeLabel(selectedRange)}
+          </Badge>
+        </div>
       </div>
 
       {/* Métricas principais */}
@@ -381,7 +444,7 @@ export default function SLADashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            SLAs Criados por Dia (Últimos 30 dias)
+            SLAs Criados por Dia - {getRangeLabel(selectedRange)}
           </CardTitle>
         </CardHeader>
         <CardContent>
