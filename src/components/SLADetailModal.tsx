@@ -793,53 +793,99 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                         <h3 className="font-medium mb-2">Faça login para ver comentários</h3>
                         <p className="text-sm">Você precisa estar logado para visualizar discussões</p>
                       </div>
-                    ) : comments.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-8">
-                        <MessageSquare className="h-8 w-8 mx-auto mb-3 opacity-30" />
-                        <h3 className="font-medium mb-2">Nenhum comentário ainda</h3>
-                        <p className="text-sm">Seja o primeiro a comentar neste SLA</p>
-                      </div>
                     ) : (
-                      <div className="space-y-4">
-                        {comments.map((comment) => (
-                          <div key={comment.id} className="flex gap-3 group animate-fade-in">
-                            <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
-                              <AvatarFallback className="text-xs">
-                                {comment.autor_nome.substring(0, 2).toUpperCase()}
+                      <div className="space-y-4 pb-4">
+                        {/* Comentário inicial - Descrição do SLA */}
+                        <div className="mb-6 pb-4 border-b-2 border-dashed border-border/50">
+                          <div className="flex gap-3">
+                            <Avatar className="h-8 w-8 flex-shrink-0">
+                              <AvatarFallback className="text-xs bg-blue-500 text-white">
+                                📋
                               </AvatarFallback>
                             </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-sm">{comment.autor_nome}</span>
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
+                                  <span className="font-medium text-sm">{sla.solicitante}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    Solicitante
+                                  </Badge>
+                                </div>
                                 <span className="text-xs text-muted-foreground">
-                                  {format(new Date(comment.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                                  {format(new Date(sla.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                                 </span>
                               </div>
-                              <p className="text-sm leading-relaxed break-words">{comment.comentario}</p>
                               
-                              {/* Anexos do comentário */}
-                              {comment.anexos && comment.anexos.length > 0 && (
-                                <div className="mt-2 space-y-1">
-                                  {comment.anexos.map((anexo, index) => (
-                                    <div key={index} className="flex items-center gap-2 p-2 bg-muted/30 rounded text-xs">
-                                      <FileText className="h-3 w-3 text-muted-foreground" />
-                                      <span className="flex-1">{anexo.nome}</span>
-                                      <span className="text-muted-foreground">({formatFileSize(anexo.tamanho)})</span>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 w-6 p-0"
-                                        onClick={() => downloadAttachment(anexo.url, anexo.nome)}
-                                      >
-                                        <Download className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  ))}
+                              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <FileText className="h-4 w-4 text-blue-600" />
+                                  <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                                    Descrição Inicial do SLA
+                                  </span>
                                 </div>
-                              )}
+                                <p className="text-sm leading-relaxed text-blue-800 dark:text-blue-200 whitespace-pre-wrap">
+                                  {sla.descricao}
+                                </p>
+                                {sla.observacoes && (
+                                  <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                                    <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">Observações:</p>
+                                    <p className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap">
+                                      {sla.observacoes}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        ))}
+                        </div>
+
+                        {/* Comentários da discussão */}
+                        {comments.length === 0 ? (
+                          <div className="text-center text-muted-foreground py-6">
+                            <MessageSquare className="h-6 w-6 mx-auto mb-2 opacity-30" />
+                            <p className="text-sm">Seja o primeiro a comentar neste SLA</p>
+                          </div>
+                        ) : (
+                          comments.map((comment) => (
+                            <div key={comment.id} className="flex gap-3 group animate-fade-in">
+                              <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
+                                <AvatarFallback className="text-xs">
+                                  {comment.autor_nome.substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-medium text-sm">{comment.autor_nome}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {format(new Date(comment.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                                  </span>
+                                </div>
+                                <p className="text-sm leading-relaxed break-words">{comment.comentario}</p>
+                                
+                                {/* Anexos do comentário */}
+                                {comment.anexos && comment.anexos.length > 0 && (
+                                  <div className="mt-2 space-y-1">
+                                    {comment.anexos.map((anexo, index) => (
+                                      <div key={index} className="flex items-center gap-2 p-2 bg-muted/30 rounded text-xs">
+                                        <FileText className="h-3 w-3 text-muted-foreground" />
+                                        <span className="flex-1">{anexo.nome}</span>
+                                        <span className="text-muted-foreground">({formatFileSize(anexo.tamanho)})</span>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 w-6 p-0"
+                                          onClick={() => downloadAttachment(anexo.url, anexo.nome)}
+                                        >
+                                          <Download className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
                       </div>
                     )}
                   </ScrollArea>
