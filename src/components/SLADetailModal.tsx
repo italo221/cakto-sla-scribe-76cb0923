@@ -23,7 +23,12 @@ import {
   Tag,
   Target,
   ThumbsUp,
-  MoreHorizontal
+  MoreHorizontal,
+  Play,
+  Pause,
+  Square,
+  RotateCcw,
+  History
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -76,18 +81,33 @@ interface SLADetailModalProps {
   onUpdate: () => void;
 }
 
+interface ActionLog {
+  id: string;
+  acao: string;
+  autor_email: string;
+  timestamp: string;
+  justificativa?: string;
+  setor_origem_id?: string;
+  setor_destino_id?: string;
+  dados_anteriores?: any;
+  dados_novos?: any;
+}
+
 export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADetailModalProps) {
   const [comments, setComments] = useState<Comment[]>([]);
+  const [actionLogs, setActionLogs] = useState<ActionLog[]>([]);
   const [newComment, setNewComment] = useState('');
   const [setores, setSetores] = useState<Setor[]>([]);
   const [selectedSetor, setSelectedSetor] = useState('');
   const [transferLoading, setTransferLoading] = useState(false);
   const [commentLoading, setCommentLoading] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (sla && isOpen) {
       loadComments();
+      loadActionLogs();
       loadSetores();
     }
   }, [sla, isOpen]);
@@ -106,6 +126,23 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
       setComments(data || []);
     } catch (error) {
       console.error('Erro ao carregar comentários:', error);
+    }
+  };
+
+  const loadActionLogs = async () => {
+    if (!sla) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('sla_action_logs')
+        .select('*')
+        .eq('sla_id', sla.id)
+        .order('timestamp', { ascending: false });
+
+      if (error) throw error;
+      setActionLogs(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar logs de ação:', error);
     }
   };
 
@@ -167,6 +204,47 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
     }
   };
 
+  const handleChangeStatus = async (newStatus: string) => {
+    if (!sla) return;
+
+    setStatusLoading(true);
+    try {
+      const oldStatus = sla.status;
+      
+      const { error } = await supabase
+        .from('sla_demandas')
+        .update({ status: newStatus })
+        .eq('id', sla.id);
+
+      if (error) throw error;
+
+      // Log da ação de mudança de status
+      await supabase.rpc('log_sla_action', {
+        p_sla_id: sla.id,
+        p_acao: `mudanca_status_${oldStatus}_para_${newStatus}`,
+        p_justificativa: `Status alterado de "${oldStatus}" para "${newStatus}"`,
+        p_dados_anteriores: { status: oldStatus },
+        p_dados_novos: { status: newStatus }
+      });
+
+      toast({
+        title: "Status alterado",
+        description: `SLA ${newStatus === 'fechado' ? 'fechado' : 'alterado'} com sucesso.`,
+      });
+
+      onUpdate();
+      loadActionLogs(); // Recarregar logs
+    } catch (error: any) {
+      toast({
+        title: "Erro ao alterar status",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
   const handleTransferSetor = async () => {
     if (!sla || !selectedSetor) return;
 
@@ -193,6 +271,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
       });
 
       onUpdate();
+      loadActionLogs(); // Recarregar logs após transferência
       onClose();
     } catch (error: any) {
       toast({
@@ -245,6 +324,21 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const getActionDescription = (log: ActionLog) => {
+    const descriptions: { [key: string]: string } = {
+      'criacao': '📝 SLA criado',
+      'mudanca_status_aberto_para_em_andamento': '▶️ Iniciado trabalho',
+      'mudanca_status_em_andamento_para_resolvido': '✅ Marcado como resolvido',
+      'mudanca_status_resolvido_para_fechado': '🔒 SLA fechado',
+      'mudanca_status_fechado_para_aberto': '🔓 SLA reaberto',
+      'transferencia_setor': '🔄 Transferido para outro setor',
+      'comentario_adicionado': '💬 Comentário adicionado',
+      'atribuicao_responsavel': '👤 Responsável atribuído'
+    };
+    
+    return descriptions[log.acao] || `📋 ${log.acao.replace(/_/g, ' ')}`;
+  };
+
   if (!sla) return null;
 
   return (
@@ -260,6 +354,73 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
           {/* Coluna Principal - Detalhes */}
           <div className="lg:col-span-2 space-y-4 overflow-y-auto max-h-[70vh]">
+            {/* Ações Rápidas */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {sla.status === 'aberto' && (
+                <Button
+                  onClick={() => handleChangeStatus('em_andamento')}
+                  disabled={statusLoading}
+                  className="flex items-center gap-2"
+                >
+                  <Play className="h-4 w-4" />
+                  Iniciar Trabalho
+                </Button>
+              )}
+              {sla.status === 'em_andamento' && (
+                <>
+                  <Button
+                    onClick={() => handleChangeStatus('resolvido')}
+                    disabled={statusLoading}
+                    className="flex items-center gap-2"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Marcar como Resolvido
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleChangeStatus('aberto')}
+                    disabled={statusLoading}
+                    className="flex items-center gap-2"
+                  >
+                    <Pause className="h-4 w-4" />
+                    Pausar
+                  </Button>
+                </>
+              )}
+              {sla.status === 'resolvido' && (
+                <>
+                  <Button
+                    onClick={() => handleChangeStatus('fechado')}
+                    disabled={statusLoading}
+                    className="flex items-center gap-2"
+                  >
+                    <Square className="h-4 w-4" />
+                    Fechar SLA
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleChangeStatus('em_andamento')}
+                    disabled={statusLoading}
+                    className="flex items-center gap-2"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Voltar para Andamento
+                  </Button>
+                </>
+              )}
+              {sla.status === 'fechado' && (
+                <Button
+                  variant="outline"
+                  onClick={() => handleChangeStatus('aberto')}
+                  disabled={statusLoading}
+                  className="flex items-center gap-2"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Reabrir SLA
+                </Button>
+              )}
+            </div>
+
             {/* Status e Badges */}
             <div className="flex flex-wrap items-center gap-2 mb-4">
               {getStatusBadge(sla.status)}
@@ -400,13 +561,24 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
             </Card>
           </div>
 
-          {/* Coluna de Comentários */}
+          {/* Coluna de Comentários e Logs */}
           <div className="space-y-4 overflow-hidden">
-            <Card className="h-full flex flex-col">
+            {/* Tabs para Comentários e Logs */}
+            <div className="flex border-b">
+              <button className="px-4 py-2 border-b-2 border-primary text-primary font-medium">
+                Comentários ({comments.length})
+              </button>
+              <button className="px-4 py-2 text-muted-foreground hover:text-foreground">
+                Histórico ({actionLogs.length})
+              </button>
+            </div>
+            
+            {/* Comentários */}
+            <Card className="flex-1 flex flex-col">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <MessageSquare className="h-5 w-5" />
-                  Comentários ({comments.length})
+                  Comentários
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col overflow-hidden">
@@ -468,6 +640,49 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
                                 Responder
                               </Button>
                             </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            {/* Histórico de Ações */}
+            <Card className="flex-1 flex flex-col">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <History className="h-5 w-5" />
+                  Histórico de Ações
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col overflow-hidden">
+                <ScrollArea className="flex-1">
+                  {actionLogs.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-8">
+                      <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>Nenhuma ação registrada</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {actionLogs.map((log) => (
+                        <div key={log.id} className="flex gap-3 p-3 bg-muted/20 rounded-lg border-l-4 border-primary/30">
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-sm">{getActionDescription(log)}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(log.timestamp), "dd/MM HH:mm", { locale: ptBR })}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              por {log.autor_email}
+                            </p>
+                            {log.justificativa && (
+                              <p className="text-sm text-foreground mt-1">
+                                {log.justificativa}
+                              </p>
+                            )}
                           </div>
                         </div>
                       ))}
