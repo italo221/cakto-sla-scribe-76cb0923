@@ -232,8 +232,11 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
     try {
       let comentarioSetorId;
       
+      console.log('Debug comentário - isAdmin:', isAdmin, 'sla.setor_id:', sla.setor_id, 'userSetores:', userSetores);
+      
       if (isAdmin) {
-        comentarioSetorId = sla.setor_id;
+        // Se for admin e o SLA não tem setor_id definido, usar o primeiro setor do admin
+        comentarioSetorId = sla.setor_id || (userSetores.length > 0 ? userSetores[0].setor_id : null);
       } else {
         const setorDoUsuario = userSetores.find(us => us.setor_id === sla.setor_id);
         if (setorDoUsuario) {
@@ -242,6 +245,8 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
           comentarioSetorId = userSetores[0].setor_id;
         }
       }
+      
+      console.log('Debug comentário - comentarioSetorId final:', comentarioSetorId);
       
       if (!comentarioSetorId) {
         toast({
