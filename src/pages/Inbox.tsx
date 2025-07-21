@@ -14,6 +14,7 @@ import Navigation from "@/components/Navigation";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import SupabaseStatus from "@/components/SupabaseStatus";
 import { TicketCountdown } from "@/components/TicketCountdown";
+import { useTicketCountdown } from "@/hooks/useTicketCountdown";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 
 interface Ticket {
@@ -365,9 +366,21 @@ export default function Inbox() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {filteredTickets.map((ticket) => (
-                    <Card key={ticket.id} className="p-4">
-                      <div className="flex items-start justify-between">
+                  {filteredTickets.map((ticket) => {
+                    // Hook para verificar se o ticket está vencido
+                    const TicketCard = () => {
+                      const { isExpired } = useTicketCountdown(ticket.data_criacao, ticket.nivel_criticidade);
+                      
+                      return (
+                        <Card 
+                          key={ticket.id} 
+                          className={`p-4 transition-all duration-300 ${
+                            isExpired && ticket.status !== 'resolvido' && ticket.status !== 'fechado'
+                              ? 'bg-destructive/10 border-destructive/30 shadow-lg shadow-destructive/10 animate-pulse' 
+                              : ''
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <div className="flex items-center gap-2">
@@ -434,10 +447,14 @@ export default function Inbox() {
                           >
                             Ver Detalhes
                           </Button>
+                          </div>
                         </div>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                      );
+                    };
+
+                    return <TicketCard key={ticket.id} />;
+                  })}
                 </div>
               )}
             </ScrollArea>
