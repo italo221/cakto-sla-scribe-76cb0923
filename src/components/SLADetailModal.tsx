@@ -28,7 +28,12 @@ import {
   Pause,
   Square,
   RotateCcw,
-  History
+  History,
+  Reply,
+  Heart,
+  Share,
+  Edit3,
+  Smile
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -102,6 +107,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
   const [transferLoading, setTransferLoading] = useState(false);
   const [commentLoading, setCommentLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'comments' | 'history'>('comments');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -187,7 +193,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
       if (error) throw error;
 
       toast({
-        title: "Comentário adicionado",
+        title: "Comentário publicado",
         description: "Seu comentário foi adicionado com sucesso.",
       });
 
@@ -195,7 +201,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
       loadComments();
     } catch (error: any) {
       toast({
-        title: "Erro ao adicionar comentário",
+        title: "Erro ao publicar comentário",
         description: error.message,
         variant: "destructive",
       });
@@ -564,133 +570,188 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
           {/* Coluna de Comentários e Logs */}
           <div className="space-y-4 overflow-hidden">
             {/* Tabs para Comentários e Logs */}
-            <div className="flex border-b">
-              <button className="px-4 py-2 border-b-2 border-primary text-primary font-medium">
-                Comentários ({comments.length})
+            <div className="flex border-b bg-muted/20 rounded-t-lg">
+              <button 
+                className={`px-6 py-3 font-medium transition-all ${
+                  activeTab === 'comments' 
+                    ? 'bg-background border-b-2 border-primary text-primary shadow-sm' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => setActiveTab('comments')}
+              >
+                <MessageSquare className="h-4 w-4 mr-2 inline-block" />
+                Discussão ({comments.length})
               </button>
-              <button className="px-4 py-2 text-muted-foreground hover:text-foreground">
+              <button 
+                className={`px-6 py-3 font-medium transition-all ${
+                  activeTab === 'history' 
+                    ? 'bg-background border-b-2 border-primary text-primary shadow-sm' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => setActiveTab('history')}
+              >
+                <History className="h-4 w-4 mr-2 inline-block" />
                 Histórico ({actionLogs.length})
               </button>
             </div>
             
-            {/* Comentários */}
-            <Card className="flex-1 flex flex-col">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5" />
-                  Comentários
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col overflow-hidden">
-                {/* Novo Comentário */}
-                <div className="space-y-2 mb-4">
-                  <Textarea
-                    placeholder="Adicione um comentário..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className="min-h-[80px]"
-                  />
-                  <Button 
-                    onClick={handleAddComment}
-                    disabled={!newComment.trim() || commentLoading}
-                    className="w-full"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    {commentLoading ? 'Enviando...' : 'Enviar Comentário'}
-                  </Button>
-                </div>
-
-                <Separator className="my-4" />
-
-                {/* Lista de Comentários */}
-                <ScrollArea className="flex-1">
-                  {comments.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-8">
-                      <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>Nenhum comentário ainda</p>
+            {/* Conteúdo das Tabs */}
+            {activeTab === 'comments' ? (
+              <Card className="flex-1 flex flex-col min-h-[500px]">
+                <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
+                  {/* Área de Novo Comentário */}
+                  <div className="p-4 border-b bg-muted/10">
+                    <div className="flex gap-3">
+                      <Avatar className="h-8 w-8 mt-1">
+                        <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                          EU
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 space-y-3">
+                        <Textarea
+                          placeholder="Escreva um comentário... Use @ para mencionar alguém"
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          className="min-h-[80px] resize-none border-0 bg-background shadow-sm focus:ring-2 focus:ring-primary/20"
+                        />
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="sm" className="h-8">
+                              <Smile className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-8">
+                              <Edit3 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <Button 
+                            onClick={handleAddComment}
+                            disabled={!newComment.trim() || commentLoading}
+                            size="sm"
+                            className="h-8"
+                          >
+                            {commentLoading ? (
+                              <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                            ) : (
+                              <Send className="h-4 w-4 mr-2" />
+                            )}
+                            {commentLoading ? 'Publicando...' : 'Publicar'}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {comments.map((comment) => (
-                        <div key={comment.id} className="flex gap-3 p-3 bg-muted/30 rounded-lg">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback className="text-xs">
-                              {getInitials(comment.autor_nome)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-sm">{comment.autor_nome}</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-muted-foreground">
-                                  {format(new Date(comment.created_at), "dd/MM HH:mm", { locale: ptBR })}
-                                </span>
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                  <MoreHorizontal className="h-3 w-3" />
-                                </Button>
+                  </div>
+
+                  {/* Lista de Comentários */}
+                  <ScrollArea className="flex-1 p-4">
+                    {comments.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-12">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                        <h3 className="font-medium mb-2">Nenhum comentário ainda</h3>
+                        <p className="text-sm">Seja o primeiro a comentar neste SLA</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {comments.map((comment) => (
+                          <div key={comment.id} className="group animate-fade-in">
+                            <div className="flex gap-3">
+                              <Avatar className="h-10 w-10 ring-2 ring-muted">
+                                <AvatarFallback className="text-sm font-medium">
+                                  {getInitials(comment.autor_nome)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 space-y-2">
+                                {/* Cabeçalho do comentário */}
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-sm">{comment.autor_nome}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {format(new Date(comment.created_at), "dd 'de' MMM 'às' HH:mm", { locale: ptBR })}
+                                  </span>
+                                </div>
+                                
+                                {/* Conteúdo do comentário */}
+                                <div className="bg-muted/30 rounded-lg p-3 border">
+                                  <p className="text-sm leading-relaxed">{comment.comentario}</p>
+                                </div>
+                                
+                                {/* Ações do comentário */}
+                                <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                                    <Heart className="h-3 w-3 mr-1" />
+                                    Curtir
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                                    <Reply className="h-3 w-3 mr-1" />
+                                    Responder
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                                    <Share className="h-3 w-3 mr-1" />
+                                    Compartilhar
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 ml-auto">
+                                    <MoreHorizontal className="h-3 w-3" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
-                            <p className="text-sm text-foreground">{comment.comentario}</p>
-                            <div className="flex items-center gap-2 pt-1">
-                              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
-                                <ThumbsUp className="h-3 w-3 mr-1" />
-                                Útil
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
-                                Responder
-                              </Button>
-                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
-
-            {/* Histórico de Ações */}
-            <Card className="flex-1 flex flex-col">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <History className="h-5 w-5" />
-                  Histórico de Ações
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col overflow-hidden">
-                <ScrollArea className="flex-1">
-                  {actionLogs.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-8">
-                      <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>Nenhuma ação registrada</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {actionLogs.map((log) => (
-                        <div key={log.id} className="flex gap-3 p-3 bg-muted/20 rounded-lg border-l-4 border-primary/30">
-                          <div className="flex-1 space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-sm">{getActionDescription(log)}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {format(new Date(log.timestamp), "dd/MM HH:mm", { locale: ptBR })}
-                              </span>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              por {log.autor_email}
-                            </p>
-                            {log.justificativa && (
-                              <p className="text-sm text-foreground mt-1">
-                                {log.justificativa}
-                              </p>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            ) : (
+              /* Histórico de Ações */
+              <Card className="flex-1 flex flex-col min-h-[500px]">
+                <CardContent className="flex-1 flex flex-col overflow-hidden p-4">
+                  <ScrollArea className="flex-1">
+                    {actionLogs.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-12">
+                        <History className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                        <h3 className="font-medium mb-2">Nenhuma ação registrada</h3>
+                        <p className="text-sm">O histórico de ações aparecerá aqui</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {actionLogs.map((log, index) => (
+                          <div key={log.id} className="relative animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
+                            {/* Linha de conexão */}
+                            {index < actionLogs.length - 1 && (
+                              <div className="absolute left-6 top-12 w-0.5 h-8 bg-gradient-to-b from-primary/50 to-muted" />
                             )}
+                            
+                            <div className="flex gap-4 p-4 bg-gradient-to-r from-muted/20 to-transparent rounded-lg border-l-4 border-primary/40 hover:border-primary/60 transition-colors">
+                              <div className="w-3 h-3 bg-primary rounded-full mt-1 ring-4 ring-primary/20" />
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium text-sm">{getActionDescription(log)}</span>
+                                  <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                                    {format(new Date(log.timestamp), "dd/MM HH:mm", { locale: ptBR })}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-5 w-5">
+                                    <AvatarFallback className="text-xs">
+                                      {log.autor_email.slice(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-xs text-muted-foreground">{log.autor_email}</span>
+                                </div>
+                                {log.justificativa && (
+                                  <div className="bg-muted/40 rounded p-2 border-l-2 border-primary/30">
+                                    <p className="text-sm text-foreground italic">"{log.justificativa}"</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </DialogContent>
