@@ -4,6 +4,18 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Clock, AlertTriangle, CheckCircle, Users, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 
 interface SLAMetrics {
   total: number;
@@ -175,6 +187,35 @@ export default function SLADashboard() {
     }));
   };
 
+  const getDailyData = () => {
+    const dailyCount: Record<string, number> = {};
+    
+    // Inicializar últimos 30 dias com 0
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      dailyCount[dateStr] = 0;
+    }
+    
+    // Contar SLAs por dia
+    slaData.forEach(sla => {
+      const dateStr = sla.data_criacao.split('T')[0];
+      if (dailyCount.hasOwnProperty(dateStr)) {
+        dailyCount[dateStr]++;
+      }
+    });
+    
+    return Object.entries(dailyCount).map(([date, count]) => ({
+      date: new Date(date).toLocaleDateString('pt-BR', { 
+        day: '2-digit', 
+        month: '2-digit' 
+      }),
+      fullDate: date,
+      count
+    }));
+  };
+
   const getTimeData = () => {
     const timeCount = slaData.reduce((acc, sla) => {
       acc[sla.time_responsavel] = (acc[sla.time_responsavel] || 0) + 1;
@@ -335,27 +376,96 @@ export default function SLADashboard() {
         </CardContent>
       </Card>
 
+      {/* Gráfico Temporal dos SLAs */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            SLAs Criados por Dia (Últimos 30 dias)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={getDailyData()}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 12 }}
+                  tickLine={{ stroke: 'hsl(var(--muted-foreground))' }}
+                />
+                <YAxis 
+                  tick={{ fontSize: 12 }}
+                  tickLine={{ stroke: 'hsl(var(--muted-foreground))' }}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--popover))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                  labelFormatter={(label, payload) => {
+                    if (payload && payload[0]) {
+                      return new Date(payload[0].payload.fullDate).toLocaleDateString('pt-BR', {
+                        weekday: 'long',
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      });
+                    }
+                    return label;
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={2}
+                  dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Gráficos Simples */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* SLAs por Criticidade */}
+        {/* SLAs por Criticidade - Gráfico de Pizza */}
         <Card>
           <CardHeader>
             <CardTitle>SLAs por Criticidade</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {getCriticalityData().map((item) => (
-                <div key={item.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-4 h-4 rounded"
-                      style={{ backgroundColor: item.color }}
-                    ></div>
-                    <span className="font-medium">{item.name}</span>
-                  </div>
-                  <Badge variant="secondary">{item.value}</Badge>
-                </div>
-              ))}
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={getCriticalityData()}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value, percent }) => 
+                      `${name}: ${value} (${(percent * 100).toFixed(1)}%)`
+                    }
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {getCriticalityData().map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
