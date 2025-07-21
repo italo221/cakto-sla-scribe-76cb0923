@@ -148,9 +148,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      console.log('Comentários carregados:', data);
       setComments((data || []).map(comment => {
-        console.log('Comentário processado:', comment.id, 'anexos:', comment.anexos);
         return {
           ...comment,
           anexos: comment.anexos ? (Array.isArray(comment.anexos) ? comment.anexos as Array<{nome: string; url: string; tamanho: number; tipo: string}> : []) : []
@@ -195,11 +193,8 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
 
   const uploadAttachments = async (comentarioId: string) => {
     if (!attachments || attachments.length === 0) {
-      console.log('Nenhum anexo para upload');
       return [];
     }
-
-    console.log('Iniciando upload de', attachments.length, 'anexos');
     const uploadedFiles = [];
     
     for (let i = 0; i < attachments.length; i++) {
@@ -215,8 +210,6 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
       const fileName = `${comentarioId}/${Date.now()}_${sanitizedFileName}`;
       const filePath = `${sla.id}/${fileName}`;
 
-      console.log('Fazendo upload do arquivo:', file.name, 'como:', sanitizedFileName, 'para:', filePath);
-
       const { error: uploadError } = await supabase.storage
         .from('sla-anexos')
         .upload(filePath, file);
@@ -231,8 +224,6 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
         continue;
       }
 
-      console.log('Upload bem-sucedido para:', filePath);
-
       // Para buckets privados, vamos usar apenas o caminho do arquivo
       // A URL será gerada no momento do download
       uploadedFiles.push({
@@ -243,7 +234,6 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
       });
     }
 
-    console.log('Upload finalizado. Arquivos enviados:', uploadedFiles.length);
     return uploadedFiles;
   };
 
@@ -256,8 +246,6 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
     try {
       let comentarioSetorId;
       
-      console.log('Debug comentário - isAdmin:', isAdmin, 'sla.setor_id:', sla.setor_id, 'userSetores:', userSetores);
-      
       if (isAdmin) {
         // Se for admin e o SLA não tem setor_id definido, usar o primeiro setor do admin
         comentarioSetorId = sla.setor_id || (userSetores.length > 0 ? userSetores[0].setor_id : null);
@@ -269,8 +257,6 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
           comentarioSetorId = userSetores[0].setor_id;
         }
       }
-      
-      console.log('Debug comentário - comentarioSetorId final:', comentarioSetorId);
       
       if (!comentarioSetorId) {
         toast({
@@ -302,7 +288,6 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
         anexosUpload = await uploadAttachments(commentData.id);
         
         // Atualizar o comentário com os anexos
-        console.log('Atualizando comentário com anexos:', anexosUpload);
         const { error: updateError } = await supabase
           .from('sla_comentarios_internos')
           .update({ anexos: anexosUpload })
@@ -437,7 +422,6 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
 
   const downloadAttachment = async (filePath: string, fileName: string) => {
     try {
-      console.log('Tentando baixar anexo:', { filePath, fileName });
       
       // Para buckets privados, usar URL assinada para download
       const { data, error } = await supabase.storage
@@ -458,8 +442,6 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
       link.click();
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
-      
-      console.log('Download realizado com sucesso');
     } catch (error) {
       console.error('Erro ao baixar anexo:', error);
       toast({

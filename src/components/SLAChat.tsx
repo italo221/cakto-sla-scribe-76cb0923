@@ -851,9 +851,7 @@ export default function SLAChat() {
         time_responsavel: data.time_responsavel.trim()
       });
 
-      console.log('🏷️ Tags geradas:', tags);
-
-      // Inserir na tabela sla_demandas  
+      // Inserir na tabela sla_demandas
       const { data: slaResult, error: slaError } = await supabase
         .from('sla_demandas')
         .insert({
