@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
 import SupabaseStatus from "@/components/SupabaseStatus";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
@@ -212,9 +213,11 @@ const Admin = () => {
   const [newSetorDesc, setNewSetorDesc] = useState("");
   
   const { toast } = useToast();
+  const { user, isAdmin: userIsAdmin, loading: authLoading } = useAuth();
   
-  // Temporariamente removendo useAuth
-  const isAdmin = true; // Simulando que sempre é admin para teste
+  // Status de autenticação
+  const isAuthenticated = !!user;
+  const isAdmin = userIsAdmin;
 
   // Fetch data
   const fetchData = async () => {
@@ -564,6 +567,28 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
           <div className="mb-6">
             <SupabaseStatus />
           </div>
+        )}
+        
+        {/* Indicador de status de autenticação */}
+        {!isAuthenticated && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              ⚠️ <strong>Você não está logado!</strong> 
+              <br />Por favor, faça login em <strong>/auth</strong> para acessar as funcionalidades administrativas.
+              <br />Sem autenticação, as operações de criação/edição serão bloqueadas pelo sistema de segurança.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {isAuthenticated && (
+          <Alert className="mb-6">
+            <Check className="h-4 w-4" />
+            <AlertDescription>
+              ✅ <strong>Autenticado como:</strong> {user?.email} 
+              {isAdmin ? ' (Administrador Master)' : ' (Colaborador)'}
+            </AlertDescription>
+          </Alert>
         )}
         
         <div className="mb-8">
