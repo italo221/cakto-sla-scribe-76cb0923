@@ -12,6 +12,7 @@ interface SLAMetrics {
   emAndamento: number;
   atrasados: number;
   cumprimento: number;
+  tempoMedioResolucao: Record<string, number>;
 }
 
 interface SLAData {
@@ -21,6 +22,7 @@ interface SLAData {
   nivel_criticidade: string;
   time_responsavel: string;
   data_criacao: string;
+  updated_at?: string;
 }
 
 const COLORS = {
@@ -38,7 +40,8 @@ export default function SLADashboard() {
     resolvidos: 0,
     emAndamento: 0,
     atrasados: 0,
-    cumprimento: 0
+    cumprimento: 0,
+    tempoMedioResolucao: {}
   });
   const [slaData, setSlaData] = useState<SLAData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +72,7 @@ export default function SLADashboard() {
           nivel_criticidade, 
           time_responsavel, 
           data_criacao,
+          updated_at,
           setor_id
         `)
         .gte('data_criacao', trintaDiasAtras.toISOString());
@@ -122,13 +126,33 @@ export default function SLADashboard() {
 
       const cumprimento = total > 0 ? (resolvidos / total) * 100 : 0;
 
+      // Calcular tempo médio de resolução por prioridade
+      const tempoMedioResolucao: Record<string, number> = {};
+      const slasFechados = slas.filter(sla => sla.status === 'resolvido' || sla.status === 'fechado');
+      
+      ['P0', 'P1', 'P2', 'P3'].forEach(prioridade => {
+        const slasPrioridade = slasFechados.filter(sla => sla.nivel_criticidade === prioridade);
+        if (slasPrioridade.length > 0) {
+          const tempoTotal = slasPrioridade.reduce((acc, sla) => {
+            const dataCriacao = new Date(sla.data_criacao);
+            const dataResolucao = new Date(sla.updated_at || sla.data_criacao);
+            const tempoResolucaoHoras = (dataResolucao.getTime() - dataCriacao.getTime()) / (1000 * 60 * 60);
+            return acc + tempoResolucaoHoras;
+          }, 0);
+          tempoMedioResolucao[prioridade] = tempoTotal / slasPrioridade.length;
+        } else {
+          tempoMedioResolucao[prioridade] = 0;
+        }
+      });
+
       setMetrics({
         total,
         abertos,
         resolvidos,
         emAndamento,
         atrasados,
-        cumprimento
+        cumprimento,
+        tempoMedioResolucao
       });
 
     } catch (error) {
@@ -266,6 +290,47 @@ export default function SLADashboard() {
                 style={{ width: `${metrics.cumprimento}%` }}
               ></div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tempo Médio de Resolução por Prioridade */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Tempo Médio de Resolução por Prioridade
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {['P0', 'P1', 'P2', 'P3'].map((prioridade) => {
+              const tempo = metrics.tempoMedioResolucao[prioridade] || 0;
+              const tempoFormatado = tempo > 24 
+                ? `${(tempo / 24).toFixed(1)}d`
+                : `${tempo.toFixed(1)}h`;
+              
+              const priorityLabels = {
+                'P0': 'Crítico',
+                'P1': 'Alto', 
+                'P2': 'Médio',
+                'P3': 'Baixo'
+              };
+
+              return (
+                <div key={prioridade} className="text-center p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <div 
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: COLORS[prioridade as keyof typeof COLORS] }}
+                    ></div>
+                    <span className="font-medium text-sm">{prioridade}</span>
+                  </div>
+                  <div className="text-2xl font-bold">{tempoFormatado}</div>
+                  <div className="text-xs text-muted-foreground">{priorityLabels[prioridade as keyof typeof priorityLabels]}</div>
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
