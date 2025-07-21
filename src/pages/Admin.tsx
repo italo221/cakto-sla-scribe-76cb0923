@@ -219,7 +219,7 @@ const Admin = () => {
     try {
       const [usersResponse, setoresResponse, userSetoresResponse] = await Promise.all([
         supabase.from('profiles').select('*').order('nome_completo'),
-        supabase.from('setores').select('*').eq('ativo', true).order('nome'),
+        supabase.from('setores').select('*').order('nome'),
         supabase
           .from('user_setores')
           .select(`
@@ -303,6 +303,154 @@ const Admin = () => {
       });
     }
   };
+
+// Componente para cartão de setor com edição
+const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () => void }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState(setor.nome);
+  const [editedDesc, setEditedDesc] = useState(setor.descricao || '');
+  const { toast } = useToast();
+
+  const handleSave = async () => {
+    if (!editedName.trim()) {
+      toast({
+        title: "Erro",
+        description: "Nome do setor não pode estar vazio.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('setores')
+        .update({ 
+          nome: editedName.trim(),
+          descricao: editedDesc.trim()
+        })
+        .eq('id', setor.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Setor atualizado",
+        description: "Informações do setor atualizadas com sucesso.",
+      });
+
+      setIsEditing(false);
+      onSetorUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleActive = async () => {
+    try {
+      const { error } = await supabase
+        .from('setores')
+        .update({ ativo: !setor.ativo })
+        .eq('id', setor.id);
+
+      if (error) throw error;
+
+      toast({
+        title: setor.ativo ? "Setor desativado" : "Setor ativado",
+        description: `${setor.nome} foi ${setor.ativo ? 'desativado' : 'ativado'} com sucesso.`,
+      });
+
+      onSetorUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao alterar status",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between p-4 border rounded-lg">
+      <div className="space-y-1 flex-1">
+        {isEditing ? (
+          <div className="space-y-2">
+            <Input
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              placeholder="Nome do setor"
+              className="max-w-xs"
+            />
+            <Input
+              value={editedDesc}
+              onChange={(e) => setEditedDesc(e.target.value)}
+              placeholder="Descrição"
+              className="max-w-xs"
+            />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleSave}>
+                <Save className="h-3 w-3 mr-1" />
+                Salvar
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => {
+                setIsEditing(false);
+                setEditedName(setor.nome);
+                setEditedDesc(setor.descricao || '');
+              }}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="font-medium">{setor.nome}</p>
+            <p className="text-sm text-muted-foreground">{setor.descricao}</p>
+          </>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        {setor.ativo ? (
+          <Badge variant="outline" className="text-green-600">
+            <Check className="h-3 w-3 mr-1" />
+            Ativo
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="text-red-600">
+            <X className="h-3 w-3 mr-1" />
+            Inativo
+          </Badge>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsEditing(!isEditing)}
+          disabled={isEditing}
+        >
+          <Edit className="h-3 w-3" />
+        </Button>
+        <Button
+          variant={setor.ativo ? "destructive" : "default"}
+          size="sm"
+          onClick={handleToggleActive}
+        >
+          {setor.ativo ? (
+            <>
+              <UserX className="h-3 w-3 mr-1" />
+              Desativar
+            </>
+          ) : (
+            <>
+              <Check className="h-3 w-3 mr-1" />
+              Ativar
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+};
 
   // Assign user to sector
   const handleAssignUserToSetor = async () => {
@@ -503,19 +651,10 @@ const Admin = () => {
                     </DialogContent>
                   </Dialog>
 
-                  {setores.map((setor) => (
-                    <div key={setor.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="space-y-1">
-                        <p className="font-medium">{setor.nome}</p>
-                        <p className="text-sm text-muted-foreground">{setor.descricao}</p>
-                      </div>
-                      <Badge variant="outline">
-                        <Building className="h-3 w-3 mr-1" />
-                        Ativo
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
+                   {setores.map((setor) => (
+                     <SetorCard key={setor.id} setor={setor} onSetorUpdate={fetchData} />
+                   ))}
+                 </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -570,7 +709,7 @@ const Admin = () => {
                               <SelectValue placeholder="Selecione um setor" />
                             </SelectTrigger>
                             <SelectContent>
-                              {setores.map((setor) => (
+                               {setores.filter(s => s.ativo).map((setor) => (
                                 <SelectItem key={setor.id} value={setor.id}>
                                   {setor.nome}
                                 </SelectItem>
