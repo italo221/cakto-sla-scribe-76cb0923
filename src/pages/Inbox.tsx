@@ -11,6 +11,7 @@ import { Search, Filter, Clock, AlertCircle, CheckCircle, X } from "lucide-react
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Navigation from "@/components/Navigation";
+import SLADetailModal from "@/components/SLADetailModal";
 
 interface SLA {
   id: string;
@@ -22,9 +23,18 @@ interface SLA {
   status: string;
   nivel_criticidade: string;
   pontuacao_total: number;
+  pontuacao_financeiro: number;
+  pontuacao_cliente: number;
+  pontuacao_reputacao: number;
+  pontuacao_urgencia: number;
+  pontuacao_operacional: number;
   data_criacao: string;
   observacoes?: string;
   tags?: string[];
+  setor_id?: string;
+  responsavel_interno?: string;
+  prazo_interno?: string;
+  prioridade_operacional?: string;
 }
 
 export default function Inbox() {
@@ -34,6 +44,8 @@ export default function Inbox() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [criticalityFilter, setCriticalityFilter] = useState('all');
+  const [selectedSLA, setSelectedSLA] = useState<SLA | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     loadSLAs();
@@ -131,6 +143,16 @@ export default function Inbox() {
       'P3': '7 dias úteis'
     };
     return tempos[criticality as keyof typeof tempos] || '7 dias úteis';
+  };
+
+  const handleOpenSLADetail = (sla: SLA) => {
+    setSelectedSLA(sla);
+    setModalOpen(true);
+  };
+
+  const handleCloseSLADetail = () => {
+    setSelectedSLA(null);
+    setModalOpen(false);
   };
 
   if (loading) {
@@ -302,7 +324,11 @@ export default function Inbox() {
                         </div>
                         
                         <div className="ml-4">
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleOpenSLADetail(sla)}
+                          >
                             Ver Detalhes
                           </Button>
                         </div>
@@ -316,6 +342,14 @@ export default function Inbox() {
         </Card>
         </div>
       </div>
+
+      {/* Modal de Detalhes do SLA */}
+      <SLADetailModal
+        sla={selectedSLA}
+        isOpen={modalOpen}
+        onClose={handleCloseSLADetail}
+        onUpdate={loadSLAs}
+      />
     </div>
   );
 }
