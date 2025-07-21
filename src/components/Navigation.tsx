@@ -12,14 +12,9 @@ import {
   Settings, 
   BookOpen, 
   Shield, 
-  LogOut, 
-  User, 
-  Menu,
-  ChevronDown
+  Menu
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface NavItem {
   path: string;
@@ -39,12 +34,12 @@ const navItems: NavItem[] = [
 
 export default function Navigation() {
   const location = useLocation();
-  const { user, profile, isAdmin, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const isActive = (path: string) => location.pathname === path;
   
-  const filteredNavItems = navItems.filter(item => !item.adminOnly || isAdmin);
+  // Sistema aberto - todos têm acesso a tudo
+  const filteredNavItems = navItems;
 
   const NavLink = ({ item, mobile = false }: { item: NavItem; mobile?: boolean }) => {
     const active = isActive(item.path);
@@ -70,67 +65,25 @@ export default function Navigation() {
   };
 
   const UserMenu = () => {
-    if (!user || !profile) {
-      return (
-        <Button
-          variant={isActive('/auth') ? 'default' : 'outline'}
-          size="sm"
-          asChild
-          className="hover-lift"
-        >
-          <Link to="/auth" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            <span className="hidden sm:inline">Login</span>
-          </Link>
-        </Button>
-      );
-    }
-
-    const userInitials = profile.nome_completo
-      .split(' ')
-      .map(name => name[0])
-      .join('')
-      .substring(0, 2)
-      .toUpperCase();
+    // Sistema aberto - sempre mostra usuário admin
+    const userInitials = "SA"; // Super Admin
 
     return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button 
-            variant="ghost" 
-            className="flex items-center gap-2 hover:bg-muted/50 transition-colors p-2"
-          >
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                {userInitials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="hidden md:flex flex-col items-start">
-              <span className="text-sm font-medium truncate max-w-[120px]">
-                {profile.nome_completo}
-              </span>
-              <Badge variant={isAdmin ? "default" : "secondary"} className="text-xs">
-                {isAdmin ? "Admin" : "Colaborador"}
-              </Badge>
-            </div>
-            <ChevronDown className="h-4 w-4 hidden md:block" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <div className="px-2 py-1.5">
-            <p className="text-sm font-medium">{profile.nome_completo}</p>
-            <p className="text-xs text-muted-foreground">{profile.email}</p>
-          </div>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            onClick={signOut}
-            className="text-destructive focus:text-destructive cursor-pointer"
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sair
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-2">
+        <Avatar className="h-8 w-8">
+          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+            {userInitials}
+          </AvatarFallback>
+        </Avatar>
+        <div className="hidden md:flex flex-col items-start">
+          <span className="text-sm font-medium">
+            Super Administrador
+          </span>
+          <Badge variant="default" className="text-xs">
+            Acesso Total
+          </Badge>
+        </div>
+      </div>
     );
   };
 

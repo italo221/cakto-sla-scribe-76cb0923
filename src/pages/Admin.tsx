@@ -222,11 +222,10 @@ const Admin = () => {
   const [newUserType, setNewUserType] = useState<"administrador_master" | "colaborador_setor">("colaborador_setor");
   
   const { toast } = useToast();
-  const { user, isAdmin: userIsAdmin, loading: authLoading } = useAuth();
   
-  // Status de autenticação
-  const isAuthenticated = !!user;
-  const isAdmin = userIsAdmin;
+  // Sistema aberto - sempre autenticado como admin
+  const isAuthenticated = true;
+  const isAdmin = true;
 
   // Fetch data
   const fetchData = async () => {
@@ -639,27 +638,13 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
           </div>
         )}
         
-        {/* Indicador de status de autenticação */}
-        {!isAuthenticated && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              ⚠️ <strong>Você não está logado!</strong> 
-              <br />Por favor, faça login em <strong>/auth</strong> para acessar as funcionalidades administrativas.
-              <br />Sem autenticação, as operações de criação/edição serão bloqueadas pelo sistema de segurança.
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        {isAuthenticated && (
-          <Alert className="mb-6">
-            <Check className="h-4 w-4" />
-            <AlertDescription>
-              ✅ <strong>Autenticado como:</strong> {user?.email} 
-              {isAdmin ? ' (Administrador Master)' : ' (Colaborador)'}
-            </AlertDescription>
-          </Alert>
-        )}
+        {/* Sistema aberto - acesso total */}
+        <Alert className="mb-6">
+          <Check className="h-4 w-4" />
+          <AlertDescription>
+            🌐 <strong>Sistema Aberto:</strong> Acesso total liberado para administração
+          </AlertDescription>
+        </Alert>
         
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Administração do Sistema</h1>

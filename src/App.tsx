@@ -11,7 +11,6 @@ import Integrations from "./pages/Integrations";
 import Inbox from "./pages/Inbox";
 import Documentation from "./pages/Documentation";
 import Admin from "./pages/Admin";
-import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 // Create query client outside component to prevent recreation
@@ -33,7 +32,6 @@ function App() {
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/auth" element={<Auth />} />
               <Route path="/" element={<Index />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/integrations" element={<Integrations />} />

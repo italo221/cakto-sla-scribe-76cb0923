@@ -50,133 +50,39 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [setores, setSetores] = useState<UserSetor[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const isAdmin = profile?.user_type === 'administrador_master';
-
-  const fetchProfile = async (userId: string) => {
-    try {
-      // Buscar perfil do usuário
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (profileError) {
-        console.error('Erro ao buscar perfil:', profileError);
-        return;
-      }
-
-      setProfile(profileData);
-
-      // Buscar setores do usuário
-      const { data: setoresData, error: setoresError } = await supabase
-        .from('user_setores')
-        .select(`
-          id,
-          user_id,
-          setor_id,
-          setores:setor_id (
-            id,
-            nome,
-            descricao
-          )
-        `)
-        .eq('user_id', userId);
-
-      if (setoresError) {
-        console.error('Erro ao buscar setores:', setoresError);
-        return;
-      }
-
-      // Transform data to match UserSetor interface
-      const transformedSetores = (setoresData || []).map((item: any) => ({
-        id: item.id,
-        user_id: item.user_id,
-        setor_id: item.setor_id,
-        setor: item.setores
-      }));
-
-      setSetores(transformedSetores);
-    } catch (error) {
-      console.error('Erro ao buscar dados do usuário:', error);
-    }
+  // Simulando usuário admin sempre logado
+  const mockUser = {
+    id: '00000000-0000-0000-0000-000000000000',
+    email: 'admin@sistema.com'
+  } as User;
+  
+  const mockProfile = {
+    id: '00000000-0000-0000-0000-000000000000',
+    user_id: '00000000-0000-0000-0000-000000000000',
+    email: 'admin@sistema.com',
+    nome_completo: 'Super Administrador',
+    user_type: 'administrador_master' as const,
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   };
 
+  const [user] = useState<User | null>(mockUser);
+  const [session] = useState<Session | null>(null);
+  const [profile] = useState<Profile | null>(mockProfile);
+  const [setores] = useState<UserSetor[]>([]);
+  const [loading] = useState(false);
+
+  const isAdmin = true; // Todos são admin agora
+
   const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.id);
-    }
+    // Não faz nada - sistema aberto
   };
 
   const signOut = async () => {
-    try {
-      // Limpar estados locais
-      setUser(null);
-      setSession(null);
-      setProfile(null);
-      setSetores([]);
-
-      // Limpar storage
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-          localStorage.removeItem(key);
-        }
-      });
-
-      // SignOut do Supabase
-      await supabase.auth.signOut({ scope: 'global' });
-
-      // Redirecionar para auth
-      window.location.href = '/auth';
-    } catch (error) {
-      console.error('Erro no logout:', error);
-      // Force redirect mesmo com erro
-      window.location.href = '/auth';
-    }
+    // Não faz nada - não há logout em sistema aberto
+    alert('Sistema aberto - não é necessário logout');
   };
-
-  useEffect(() => {
-    // Configurar listener de auth state
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (event === 'SIGNED_IN' && session?.user) {
-          // Defer profile fetching to prevent deadlocks
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
-        } else if (event === 'SIGNED_OUT') {
-          setProfile(null);
-          setSetores([]);
-        }
-
-        setLoading(false);
-      }
-    );
-
-    // Verificar sessão inicial
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   const value = {
     user,
