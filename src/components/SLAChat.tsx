@@ -26,7 +26,6 @@ interface UploadedFile {
 interface SLAData {
   titulo: string;
   time_responsavel: string;
-  solicitante: string;
   descricao: string;
   pontuacao: {
     financeiro: number;
@@ -103,7 +102,7 @@ const criteriaQuestions = {
   operacional: "Está travando outras áreas?"
 };
 
-type Step = 'welcome' | 'titulo' | 'time' | 'solicitante' | 'descricao' | 'criteria' | 'observacoes' | 'complete';
+type Step = 'welcome' | 'titulo' | 'time' | 'descricao' | 'criteria' | 'observacoes' | 'complete';
 
 export default function SLAChat() {
   const [step, setStep] = useState<Step>('welcome');
@@ -114,7 +113,6 @@ export default function SLAChat() {
   const [slaData, setSlaData] = useState<SLAData>({
     titulo: '',
     time_responsavel: '',
-    solicitante: '',
     descricao: '',
     pontuacao: {
       financeiro: 0,
@@ -173,12 +171,6 @@ export default function SLAChat() {
         
       // case 'time': removido porque agora usa seleção por botões
         
-      case 'solicitante':
-        setSlaData(prev => ({ ...prev, solicitante: value }));
-        setStep('descricao');
-        addMessage('assistant', '📝 **Descrição Resumida da Demanda:**\nDescreva brevemente o que está acontecendo (seja claro e direto)');
-        break;
-        
       case 'descricao':
         setSlaData(prev => ({ ...prev, descricao: value }));
         setStep('criteria');
@@ -234,8 +226,8 @@ export default function SLAChat() {
   const handleTimeSelection = (timeSelected: string) => {
     setSlaData(prev => ({ ...prev, time_responsavel: timeSelected }));
     addMessage('user', timeSelected);
-    setStep('solicitante');
-    addMessage('assistant', '🙋‍♂️ **Nome do Solicitante:**\nQuem está fazendo a solicitação? (ex: João Silva – Comercial)');
+    setStep('descricao');
+    addMessage('assistant', '📝 **Descrição Resumida da Demanda:**\nDescreva brevemente o que está acontecendo (seja claro e direto)');
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -318,23 +310,19 @@ export default function SLAChat() {
       errors.push('Time responsável é obrigatório');
     }
     
-    if (!data.solicitante || data.solicitante.trim().length === 0) {
-      errors.push('Solicitante é obrigatório');
-    }
-    
     return errors;
   };
 
   // Salvar SLA no Supabase
   const saveSLAToSupabase = async (data: SLAData, total: number, criticality: string) => {
     try {
-      // Inserir na tabela sla_demandas
+      // Inserir na tabela sla_demandas  
       const { data: slaResult, error: slaError } = await supabase
         .from('sla_demandas')
         .insert({
           titulo: data.titulo.trim(),
           time_responsavel: data.time_responsavel.trim(),
-          solicitante: data.solicitante.trim(),
+          solicitante: 'Sistema Autenticado', // Será substituído por auth quando implementada
           descricao: data.descricao.trim(),
           pontuacao_financeiro: data.pontuacao.financeiro,
           pontuacao_cliente: data.pontuacao.cliente,
@@ -364,11 +352,10 @@ export default function SLAChat() {
       const logData = {
         tipo_acao: 'criacao',
         id_demanda: slaResult.id,
-        usuario_responsavel: data.solicitante.trim(),
+        usuario_responsavel: 'Sistema Autenticado', // Será substituído por auth quando implementada
         dados_criados: {
           titulo: data.titulo.trim(),
           time_responsavel: data.time_responsavel.trim(),
-          solicitante: data.solicitante.trim(),
           descricao: data.descricao.trim(),
           pontuacao: data.pontuacao,
           pontuacao_total: total,
@@ -416,7 +403,6 @@ export default function SLAChat() {
     const finalJson = {
       titulo: slaData.titulo,
       time_responsavel: slaData.time_responsavel,
-      solicitante: slaData.solicitante,
       descricao: slaData.descricao,
       pontuacao: slaData.pontuacao,
       pontuacao_total: total,
@@ -620,7 +606,7 @@ export default function SLAChat() {
               </div>
             </ScrollArea>
 
-            {(step === 'titulo' || step === 'solicitante' || step === 'descricao' || step === 'observacoes') && (
+            {(step === 'titulo' || step === 'descricao' || step === 'observacoes') && (
               <div className="border-t p-4 space-y-4">
                 {/* Seção de upload de arquivos apenas para observações */}
                 {step === 'observacoes' && (
