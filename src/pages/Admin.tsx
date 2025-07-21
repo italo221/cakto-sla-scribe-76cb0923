@@ -26,6 +26,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
+import SupabaseStatus from "@/components/SupabaseStatus";
+import { isSupabaseConfigured } from "@/integrations/supabase/client";
 
 interface Profile {
   id: string;
@@ -558,6 +560,12 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
       <Navigation />
       
       <div className="container mx-auto py-8 px-4 max-w-6xl">
+        {!isSupabaseConfigured && (
+          <div className="mb-6">
+            <SupabaseStatus />
+          </div>
+        )}
+        
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Administração do Sistema</h1>
           <p className="text-muted-foreground">

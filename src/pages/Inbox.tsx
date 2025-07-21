@@ -12,6 +12,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Navigation from "@/components/Navigation";
 import SLADetailModal from "@/components/SLADetailModal";
+import SupabaseStatus from "@/components/SupabaseStatus";
+import { isSupabaseConfigured } from "@/integrations/supabase/client";
 
 interface SLA {
   id: string;
@@ -171,6 +173,12 @@ export default function Inbox() {
       <Navigation />
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
+          {!isSupabaseConfigured && (
+            <div className="mb-6">
+              <SupabaseStatus />
+            </div>
+          )}
+          
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Caixa de Entrada - SLAs</h1>
           <p className="text-muted-foreground">Gerencie todas as demandas e acompanhe o status dos SLAs</p>
