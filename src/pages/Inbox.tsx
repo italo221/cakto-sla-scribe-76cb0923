@@ -13,6 +13,7 @@ import { ptBR } from "date-fns/locale";
 import Navigation from "@/components/Navigation";
 import SLADetailModal from "@/components/SLADetailModal";
 import SupabaseStatus from "@/components/SupabaseStatus";
+import { SLACountdown } from "@/components/SLACountdown";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 
 interface SLA {
@@ -289,6 +290,12 @@ export default function Inbox() {
                             </div>
                             {getStatusBadge(sla.status)}
                             {getCriticalityBadge(sla.nivel_criticidade)}
+                            <SLACountdown 
+                              dataCriacao={sla.data_criacao}
+                              criticidade={sla.nivel_criticidade}
+                              status={sla.status}
+                              compact
+                            />
                             {sla.tags && sla.tags.length > 0 && (
                               <div className="flex gap-1">
                                 {sla.tags.slice(0, 3).map((tag: string, index: number) => (

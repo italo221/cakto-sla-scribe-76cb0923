@@ -40,6 +40,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { SLACountdown } from "@/components/SLACountdown";
 
 interface SLA {
   id: string;
@@ -447,6 +448,11 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
             <div className="flex flex-wrap items-center gap-2 mb-4">
               {getStatusBadge(sla.status)}
               {getCriticalityBadge(sla.nivel_criticidade)}
+              <SLACountdown 
+                dataCriacao={sla.data_criacao}
+                criticidade={sla.nivel_criticidade}
+                status={sla.status}
+              />
               {sla.tags && sla.tags.length > 0 && (
                 <div className="flex gap-1">
                   {sla.tags.map((tag: string, index: number) => (
