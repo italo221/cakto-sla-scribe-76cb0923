@@ -175,19 +175,15 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
 
     setCommentLoading(true);
     try {
-      // Para administradores, usar o setor do SLA
-      // Para colaboradores, usar um dos setores do usuário
       let comentarioSetorId;
       
       if (isAdmin) {
         comentarioSetorId = sla.setor_id;
       } else {
-        // Usuário colaborador: usar um setor que ele tem acesso
         const setorDoUsuario = userSetores.find(us => us.setor_id === sla.setor_id);
         if (setorDoUsuario) {
           comentarioSetorId = setorDoUsuario.setor_id;
         } else if (userSetores.length > 0) {
-          // Se não tem acesso ao setor do SLA, usar o primeiro setor do usuário
           comentarioSetorId = userSetores[0].setor_id;
         }
       }
@@ -241,7 +237,6 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
 
       if (error) throw error;
 
-      // Log da ação de mudança de status
       await supabase.rpc('log_sla_action', {
         p_sla_id: sla.id,
         p_acao: `mudanca_status_${oldStatus}_para_${newStatus}`,
@@ -256,7 +251,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
       });
 
       onUpdate();
-      loadActionLogs(); // Recarregar logs
+      loadActionLogs();
     } catch (error: any) {
       toast({
         title: "Erro ao alterar status",
@@ -280,7 +275,6 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
 
       if (error) throw error;
 
-      // Log da ação
       await supabase.rpc('log_sla_action', {
         p_sla_id: sla.id,
         p_acao: 'transferencia_setor',
@@ -294,7 +288,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
       });
 
       onUpdate();
-      loadActionLogs(); // Recarregar logs após transferência
+      loadActionLogs();
       onClose();
     } catch (error: any) {
       toast({
@@ -343,284 +337,142 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
     );
   };
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
-
-  const getActionDescription = (log: ActionLog) => {
-    const descriptions: { [key: string]: string } = {
-      'criacao': '📝 SLA criado',
-      'mudanca_status_aberto_para_em_andamento': '▶️ Iniciado trabalho',
-      'mudanca_status_em_andamento_para_resolvido': '✅ Marcado como resolvido',
-      'mudanca_status_resolvido_para_fechado': '🔒 SLA fechado',
-      'mudanca_status_fechado_para_aberto': '🔓 SLA reaberto',
-      'transferencia_setor': '🔄 Transferido para outro setor',
-      'comentario_adicionado': '💬 Comentário adicionado',
-      'atribuicao_responsavel': '👤 Responsável atribuído'
-    };
-    
-    return descriptions[log.acao] || `📋 ${log.acao.replace(/_/g, ' ')}`;
-  };
-
   if (!sla) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden animate-scale-in">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            {sla.ticket_number || `#${sla.id.slice(0, 8)}`} - {sla.titulo}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
-          {/* Coluna Principal - Detalhes */}
-          <div className="lg:col-span-2 space-y-4 overflow-y-auto max-h-[70vh]">
-            {/* Ações Rápidas */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              {sla.status === 'aberto' && (
-                <Button
-                  onClick={() => handleChangeStatus('em_andamento')}
-                  disabled={statusLoading}
-                  className="flex items-center gap-2"
-                >
-                  <Play className="h-4 w-4" />
-                  Iniciar Trabalho
-                </Button>
-              )}
-              {sla.status === 'em_andamento' && (
-                <>
-                  <Button
-                    onClick={() => handleChangeStatus('resolvido')}
-                    disabled={statusLoading}
-                    className="flex items-center gap-2"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                    Marcar como Resolvido
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleChangeStatus('aberto')}
-                    disabled={statusLoading}
-                    className="flex items-center gap-2"
-                  >
-                    <Pause className="h-4 w-4" />
-                    Pausar
-                  </Button>
-                </>
-              )}
-              {sla.status === 'resolvido' && (
-                <>
-                  <Button
-                    onClick={() => handleChangeStatus('fechado')}
-                    disabled={statusLoading}
-                    className="flex items-center gap-2"
-                  >
-                    <Square className="h-4 w-4" />
-                    Fechar SLA
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleChangeStatus('em_andamento')}
-                    disabled={statusLoading}
-                    className="flex items-center gap-2"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    Voltar para Andamento
-                  </Button>
-                </>
-              )}
-              {sla.status === 'fechado' && (
-                <Button
-                  variant="outline"
-                  onClick={() => handleChangeStatus('aberto')}
-                  disabled={statusLoading}
-                  className="flex items-center gap-2"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  Reabrir SLA
-                </Button>
-              )}
-            </div>
-
-            {/* Status e Badges */}
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              {getStatusBadge(sla.status)}
-              {getCriticalityBadge(sla.nivel_criticidade)}
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-4">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-xl font-bold">
+              {sla.ticket_number || `#${sla.id.slice(0, 8)}`} - {sla.titulo}
+            </DialogTitle>
+            <div className="flex items-center gap-2">
               <SLACountdown 
                 dataCriacao={sla.data_criacao}
                 criticidade={sla.nivel_criticidade}
                 status={sla.status}
               />
-              {sla.tags && sla.tags.length > 0 && (
-                <div className="flex gap-1">
-                  {sla.tags.map((tag: string, index: number) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      <Tag className="h-3 w-3 mr-1" />
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
+              {getStatusBadge(sla.status)}
+              {getCriticalityBadge(sla.nivel_criticidade)}
             </div>
+          </div>
+          
+          {/* Tags logo abaixo do título */}
+          {sla.tags && sla.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {sla.tags.map((tag: string, index: number) => (
+                <Badge key={index} variant="outline" className="text-xs">
+                  <Tag className="h-3 w-3 mr-1" />
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </DialogHeader>
 
-            {/* Informações Básicas */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Informações Básicas</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Solicitante</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <User className="h-4 w-4" />
-                      <span>{sla.solicitante}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Time Responsável</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Building className="h-4 w-4" />
-                      <span>{sla.time_responsavel}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Calendar className="h-4 w-4" />
-                      <span>{format(new Date(sla.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Responsável Interno</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <User className="h-4 w-4" />
-                      <span>{sla.responsavel_interno || 'Não atribuído'}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Descrição</label>
-                  <p className="mt-1 text-sm">{sla.descricao}</p>
-                </div>
-                
-                {sla.observacoes && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Observações</label>
-                    <p className="mt-1 text-sm">{sla.observacoes}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Pontuações */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Pontuações de Impacto
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-red-600">{sla.pontuacao_financeiro}</div>
-                    <div className="text-sm text-muted-foreground">Financeiro</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{sla.pontuacao_cliente}</div>
-                    <div className="text-sm text-muted-foreground">Cliente</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">{sla.pontuacao_reputacao}</div>
-                    <div className="text-sm text-muted-foreground">Reputação</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">{sla.pontuacao_urgencia}</div>
-                    <div className="text-sm text-muted-foreground">Urgência</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{sla.pontuacao_operacional}</div>
-                    <div className="text-sm text-muted-foreground">Operacional</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-primary">{sla.pontuacao_total}</div>
-                    <div className="text-sm text-muted-foreground">Total</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Transferir Setor */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <ArrowRightLeft className="h-5 w-5" />
-                  Transferir para Outro Setor
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2">
-                  <Select value={selectedSetor} onValueChange={setSelectedSetor}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Selecione um setor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {setores.map((setor) => (
-                        <SelectItem key={setor.id} value={setor.id}>
-                          {setor.nome} - {setor.descricao}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    onClick={handleTransferSetor}
-                    disabled={!selectedSetor || transferLoading}
-                  >
-                    {transferLoading ? 'Transferindo...' : 'Transferir'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="space-y-6 mt-6">
+          {/* Ações de Status */}
+          <div className="flex gap-2 mb-6">
+            {sla.status === 'aberto' && (
+              <Button 
+                variant="default" 
+                onClick={() => handleChangeStatus('em_andamento')}
+                className="gap-2"
+              >
+                <Play className="h-4 w-4" />
+                Iniciar
+              </Button>
+            )}
+            
+            {sla.status === 'em_andamento' && (
+              <>
+                <Button 
+                  variant="default" 
+                  onClick={() => handleChangeStatus('resolvido')}
+                  className="gap-2"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Resolver
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleChangeStatus('pausado')}
+                  className="gap-2"
+                >
+                  <Pause className="h-4 w-4" />
+                  Pausar
+                </Button>
+              </>
+            )}
+            
+            {sla.status === 'pausado' && (
+              <Button 
+                variant="default" 
+                onClick={() => handleChangeStatus('em_andamento')}
+                className="gap-2"
+              >
+                <Play className="h-4 w-4" />
+                Retomar
+              </Button>
+            )}
+            
+            {sla.status === 'resolvido' && (
+              <>
+                <Button 
+                  variant="default" 
+                  onClick={() => handleChangeStatus('fechado')}
+                  className="gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Fechar SLA
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleChangeStatus('em_andamento')}
+                  className="gap-2"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Reabrir SLA
+                </Button>
+              </>
+            )}
           </div>
 
-          {/* Coluna de Comentários e Logs */}
-          <div className="space-y-4 overflow-hidden">
-            {/* Tabs para Comentários e Logs */}
-            <div className="flex border-b bg-muted/20 rounded-t-lg">
-              <button 
-                className={`px-6 py-3 font-medium transition-all ${
-                  activeTab === 'comments' 
-                    ? 'bg-background border-b-2 border-primary text-primary shadow-sm' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-                onClick={() => setActiveTab('comments')}
-              >
-                <MessageSquare className="h-4 w-4 mr-2 inline-block" />
-                Discussão ({comments.length})
-              </button>
-              <button 
-                className={`px-6 py-3 font-medium transition-all ${
-                  activeTab === 'history' 
-                    ? 'bg-background border-b-2 border-primary text-primary shadow-sm' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-                onClick={() => setActiveTab('history')}
-              >
-                <History className="h-4 w-4 mr-2 inline-block" />
-                Histórico ({actionLogs.length})
-              </button>
-            </div>
-            
-            {/* Conteúdo das Tabs */}
-            <div className="animate-fade-in">
+          {/* Tabs de Discussão e Histórico */}
+          <div className="flex gap-4 border-b mb-6">
+            <Button
+              variant={activeTab === 'comments' ? 'default' : 'ghost'}
+              onClick={() => setActiveTab('comments')}
+              className="flex items-center gap-2 px-4 py-2 rounded-b-none"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Discussão
+              {comments.length > 0 && (
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {comments.length}
+                </Badge>
+              )}
+            </Button>
+            <Button
+              variant={activeTab === 'history' ? 'default' : 'ghost'}
+              onClick={() => setActiveTab('history')}
+              className="flex items-center gap-2 px-4 py-2 rounded-b-none"
+            >
+              <History className="h-4 w-4" />
+              Histórico
+              {actionLogs.length > 0 && (
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {actionLogs.length}
+                </Badge>
+              )}
+            </Button>
+          </div>
+
+          {/* Conteúdo das Tabs */}
+          <div className="mb-6">
             {activeTab === 'comments' ? (
-              <Card className="flex-1 flex flex-col min-h-[500px] max-h-[500px]">
+              <Card className="flex-1 flex flex-col min-h-[400px] max-h-[400px]">
                 <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
                   {/* Área de Novo Comentário */}
                   {user && (
@@ -633,18 +485,15 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
                         </Avatar>
                         <div className="flex-1 space-y-3 min-w-0">
                           <Textarea
-                            placeholder="Escreva um comentário... Use @ para mencionar alguém"
+                            placeholder="Escreva um comentário..."
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
-                            className="min-h-[80px] max-h-[120px] resize-none border-0 bg-background shadow-sm focus:ring-2 focus:ring-primary/20"
+                            className="min-h-[60px] max-h-[100px] resize-none border-0 bg-background shadow-sm focus:ring-2 focus:ring-primary/20"
                           />
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <Button variant="ghost" size="sm" className="h-8">
                                 <Smile className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-8">
-                                <Edit3 className="h-4 w-4" />
                               </Button>
                             </div>
                             <Button 
@@ -669,60 +518,34 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
                   {/* Lista de Comentários */}
                   <ScrollArea className="flex-1 p-4 overflow-y-auto">
                     {!user ? (
-                      <div className="text-center text-muted-foreground py-12">
-                        <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                      <div className="text-center text-muted-foreground py-8">
+                        <MessageSquare className="h-8 w-8 mx-auto mb-3 opacity-30" />
                         <h3 className="font-medium mb-2">Faça login para ver comentários</h3>
-                        <p className="text-sm">Você precisa estar logado para visualizar e participar das discussões</p>
+                        <p className="text-sm">Você precisa estar logado para visualizar discussões</p>
                       </div>
                     ) : comments.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-12">
-                        <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                      <div className="text-center text-muted-foreground py-8">
+                        <MessageSquare className="h-8 w-8 mx-auto mb-3 opacity-30" />
                         <h3 className="font-medium mb-2">Nenhum comentário ainda</h3>
                         <p className="text-sm">Seja o primeiro a comentar neste SLA</p>
                       </div>
                     ) : (
-                      <div className="space-y-6">
+                      <div className="space-y-4">
                         {comments.map((comment) => (
-                          <div key={comment.id} className="group animate-fade-in">
-                            <div className="flex gap-3">
-                              <Avatar className="h-10 w-10 ring-2 ring-muted">
-                                <AvatarFallback className="text-sm font-medium">
-                                  {getInitials(comment.autor_nome)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 space-y-2">
-                                {/* Cabeçalho do comentário */}
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-sm">{comment.autor_nome}</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {format(new Date(comment.created_at), "dd 'de' MMM 'às' HH:mm", { locale: ptBR })}
-                                  </span>
-                                </div>
-                                
-                                {/* Conteúdo do comentário */}
-                                <div className="bg-muted/30 rounded-lg p-3 border">
-                                  <p className="text-sm leading-relaxed">{comment.comentario}</p>
-                                </div>
-                                
-                                {/* Ações do comentário */}
-                                <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                                    <Heart className="h-3 w-3 mr-1" />
-                                    Curtir
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                                    <Reply className="h-3 w-3 mr-1" />
-                                    Responder
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                                    <Share className="h-3 w-3 mr-1" />
-                                    Compartilhar
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 ml-auto">
-                                    <MoreHorizontal className="h-3 w-3" />
-                                  </Button>
-                                </div>
+                          <div key={comment.id} className="flex gap-3 group animate-fade-in">
+                            <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
+                              <AvatarFallback className="text-xs">
+                                {comment.autor_nome.substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-sm">{comment.autor_nome}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {format(new Date(comment.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                                </span>
                               </div>
+                              <p className="text-sm leading-relaxed break-words">{comment.comentario}</p>
                             </div>
                           </div>
                         ))}
@@ -732,54 +555,35 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
                 </CardContent>
               </Card>
             ) : (
-              /* Histórico de Ações */
-              <Card className="flex-1 flex flex-col min-h-[500px] max-h-[500px]">
-                <CardContent className="flex-1 flex flex-col overflow-hidden p-4">
-                  <ScrollArea className="flex-1 overflow-y-auto">
-                    {!user ? (
-                      <div className="text-center text-muted-foreground py-12">
-                        <History className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                        <h3 className="font-medium mb-2">Faça login para ver o histórico</h3>
-                        <p className="text-sm">Você precisa estar logado para visualizar o histórico de ações</p>
-                      </div>
-                    ) : actionLogs.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-12">
-                        <History className="h-12 w-12 mx-auto mb-4 opacity-30" />
+              <Card className="flex-1 flex flex-col min-h-[400px] max-h-[400px]">
+                <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
+                  <ScrollArea className="flex-1 p-4 overflow-y-auto">
+                    {actionLogs.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-8">
+                        <History className="h-8 w-8 mx-auto mb-3 opacity-30" />
                         <h3 className="font-medium mb-2">Nenhuma ação registrada</h3>
-                        <p className="text-sm">O histórico de ações aparecerá aqui</p>
+                        <p className="text-sm">As ações realizadas neste SLA aparecerão aqui</p>
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {actionLogs.map((log, index) => (
-                          <div key={log.id} className="relative animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
-                            {/* Linha de conexão */}
-                            {index < actionLogs.length - 1 && (
-                              <div className="absolute left-6 top-12 w-0.5 h-8 bg-gradient-to-b from-primary/50 to-muted" />
-                            )}
-                            
-                            <div className="flex gap-4 p-4 bg-gradient-to-r from-muted/20 to-transparent rounded-lg border-l-4 border-primary/40 hover:border-primary/60 transition-colors">
-                              <div className="w-3 h-3 bg-primary rounded-full mt-1 ring-4 ring-primary/20" />
-                              <div className="flex-1 space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-medium text-sm">{getActionDescription(log)}</span>
-                                  <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                                    {format(new Date(log.timestamp), "dd/MM HH:mm", { locale: ptBR })}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="h-5 w-5">
-                                    <AvatarFallback className="text-xs">
-                                      {log.autor_email.slice(0, 2).toUpperCase()}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <span className="text-xs text-muted-foreground">{log.autor_email}</span>
-                                </div>
-                                {log.justificativa && (
-                                  <div className="bg-muted/40 rounded p-2 border-l-2 border-primary/30">
-                                    <p className="text-sm text-foreground italic">"{log.justificativa}"</p>
-                                  </div>
-                                )}
+                        {actionLogs.map((log) => (
+                          <div key={log.id} className="flex gap-3 pb-3 border-b border-border/30 last:border-0 animate-fade-in">
+                            <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-sm">{log.acao}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  por {log.autor_email}
+                                </span>
                               </div>
+                              <p className="text-xs text-muted-foreground mb-1">
+                                {format(new Date(log.timestamp), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                              </p>
+                              {log.justificativa && (
+                                <p className="text-sm mt-1 text-muted-foreground italic">
+                                  "{log.justificativa}"
+                                </p>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -789,10 +593,62 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
                 </CardContent>
               </Card>
             )}
-            </div>
           </div>
+
+          {/* Informações Básicas */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Informações Básicas</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Solicitante</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <User className="h-4 w-4" />
+                    <span>{sla.solicitante}</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Time Responsável</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Building className="h-4 w-4" />
+                    <span>{sla.time_responsavel}</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Calendar className="h-4 w-4" />
+                    <span>{format(new Date(sla.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Responsável Interno</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <User className="h-4 w-4" />
+                    <span>{sla.responsavel_interno || 'Não atribuído'}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Descrição</label>
+                <p className="mt-1 text-sm">{sla.descricao}</p>
+              </div>
+              
+              {sla.observacoes && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Observações</label>
+                  <p className="mt-1 text-sm">{sla.observacoes}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </DialogContent>
     </Dialog>
   );
-}
+};

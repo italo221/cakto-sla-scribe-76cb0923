@@ -181,8 +181,32 @@ export default function Inbox() {
           )}
           
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Caixa de Entrada - SLAs</h1>
-          <p className="text-muted-foreground">Gerencie todas as demandas e acompanhe o status dos SLAs</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                Caixa de Entrada - SLAs
+                <Badge variant="secondary" className="ml-3 text-lg font-mono">
+                  {filteredSlas.length}
+                </Badge>
+              </h1>
+              <p className="text-muted-foreground">Gerencie todas as demandas e acompanhe o status dos SLAs</p>
+            </div>
+            
+            {/* Indicadores de urgência */}
+            <div className="flex gap-2">
+              {filteredSlas.filter(s => s.status !== 'resolvido' && s.status !== 'fechado').length > 0 && (
+                <Badge variant="destructive" className="animate-pulse">
+                  <AlertCircle className="w-3 h-3 mr-1" />
+                  {filteredSlas.filter(s => s.status !== 'resolvido' && s.status !== 'fechado').length} ativos
+                </Badge>
+              )}
+              {filteredSlas.filter(s => s.nivel_criticidade === 'P0' && s.status !== 'resolvido' && s.status !== 'fechado').length > 0 && (
+                <Badge variant="destructive" className="animate-glow-pulse">
+                  🚨 {filteredSlas.filter(s => s.nivel_criticidade === 'P0' && s.status !== 'resolvido' && s.status !== 'fechado').length} críticos
+                </Badge>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Filtros */}
@@ -265,7 +289,23 @@ export default function Inbox() {
         {/* Lista de SLAs */}
         <Card>
           <CardHeader>
-            <CardTitle>SLAs ({filteredSlas.length})</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                SLAs 
+                <Badge variant="outline" className="font-mono">
+                  {filteredSlas.length} total
+                </Badge>
+                {filteredSlas.filter(s => s.status === 'aberto').length > 0 && (
+                  <Badge variant="destructive">
+                    <Clock className="w-3 h-3 mr-1" />
+                    {filteredSlas.filter(s => s.status === 'aberto').length} abertos
+                  </Badge>
+                )}
+              </CardTitle>
+              <div className="text-sm text-muted-foreground">
+                Atualizado em tempo real
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[600px]">
