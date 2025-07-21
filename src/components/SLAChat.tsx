@@ -2,12 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Copy, FileText, MessageCircle, Calculator } from "lucide-react";
+import { Copy, FileText, MessageCircle, Calculator } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -292,22 +290,30 @@ export default function SLAChat() {
                 {step === 'criteria' && (
                   <div className="bg-chat-assistant border rounded-lg p-4">
                     <div className="space-y-3">
-                      <RadioGroup
-                        value=""
-                        onValueChange={(value) => handleCriteriaSelection(currentCriteria, parseInt(value))}
-                      >
-                        {criteriaOptions[currentCriteria]?.map((option) => (
-                          <div key={option.value} className="flex items-start space-x-2">
-                            <RadioGroupItem value={option.value.toString()} id={option.value.toString()} />
-                            <Label 
-                              htmlFor={option.value.toString()} 
-                              className="cursor-pointer text-sm leading-relaxed"
-                            >
-                              {option.label}
-                            </Label>
+                      {criteriaOptions[currentCriteria]?.map((option) => (
+                        <Button
+                          key={option.value}
+                          variant="outline"
+                          className="w-full text-left h-auto p-4 justify-start hover:bg-accent hover:text-accent-foreground transition-colors"
+                          onClick={() => handleCriteriaSelection(currentCriteria, option.value)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                              option.value > 0 ? 'border-primary' : 'border-muted-foreground'
+                            }`}>
+                              <div className={`w-3 h-3 rounded-full ${
+                                option.value >= 7 ? 'bg-red-500' : 
+                                option.value >= 4 ? 'bg-orange-500' : 
+                                option.value >= 2 ? 'bg-yellow-500' : 
+                                option.value > 0 ? 'bg-green-500' : 'bg-gray-300'
+                              }`} />
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-sm leading-relaxed">{option.label}</div>
+                            </div>
                           </div>
-                        ))}
-                      </RadioGroup>
+                        </Button>
+                      ))}
                     </div>
                   </div>
                 )}
