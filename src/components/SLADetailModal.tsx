@@ -147,10 +147,14 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setComments((data || []).map(comment => ({
-        ...comment,
-        anexos: comment.anexos ? (Array.isArray(comment.anexos) ? comment.anexos as Array<{nome: string; url: string; tamanho: number; tipo: string}> : []) : []
-      })));
+      console.log('Comentários carregados:', data);
+      setComments((data || []).map(comment => {
+        console.log('Comentário processado:', comment.id, 'anexos:', comment.anexos);
+        return {
+          ...comment,
+          anexos: comment.anexos ? (Array.isArray(comment.anexos) ? comment.anexos as Array<{nome: string; url: string; tamanho: number; tipo: string}> : []) : []
+        };
+      }));
     } catch (error) {
       console.error('Erro ao carregar comentários:', error);
     }
@@ -299,12 +303,16 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
         anexosUpload = await uploadAttachments(commentData.id);
         
         // Atualizar o comentário com os anexos
+        console.log('Atualizando comentário com anexos:', anexosUpload);
         const { error: updateError } = await supabase
           .from('sla_comentarios_internos')
           .update({ anexos: anexosUpload })
           .eq('id', commentData.id);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('Erro ao atualizar comentário com anexos:', updateError);
+          throw updateError;
+        }
       }
 
       toast({
