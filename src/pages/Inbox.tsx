@@ -24,6 +24,7 @@ interface SLA {
   pontuacao_total: number;
   data_criacao: string;
   observacoes?: string;
+  tags?: string[];
 }
 
 export default function Inbox() {
@@ -61,14 +62,15 @@ export default function Inbox() {
   const filterSLAs = () => {
     let filtered = slas;
 
-    // Filtro por termo de busca
+    // Filtro por termo de busca (incluindo tags)
     if (searchTerm) {
       filtered = filtered.filter(sla => 
         sla.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
         sla.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
         sla.solicitante.toLowerCase().includes(searchTerm.toLowerCase()) ||
         sla.time_responsavel.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (sla.ticket_number && sla.ticket_number.toLowerCase().includes(searchTerm.toLowerCase()))
+        (sla.ticket_number && sla.ticket_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (sla.tags && sla.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
       );
     }
 
@@ -165,7 +167,7 @@ export default function Inbox() {
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por ticket, título, descrição, solicitante..."
+                  placeholder="Buscar por ticket, título, descrição, tags..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -257,6 +259,20 @@ export default function Inbox() {
                             </div>
                             {getStatusBadge(sla.status)}
                             {getCriticalityBadge(sla.nivel_criticidade)}
+                            {sla.tags && sla.tags.length > 0 && (
+                              <div className="flex gap-1">
+                                {sla.tags.slice(0, 3).map((tag: string, index: number) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    🏷️ {tag}
+                                  </Badge>
+                                ))}
+                                {sla.tags.length > 3 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{sla.tags.length - 3}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
                           </div>
                           
                           <p className="text-muted-foreground mb-3">{sla.descricao}</p>

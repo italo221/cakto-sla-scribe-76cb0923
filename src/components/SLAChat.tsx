@@ -558,7 +558,7 @@ export default function SLAChat() {
 
   const handleStartQuery = () => {
     setStep('query-mode');
-    addMessage('assistant', '🔍 **Modo Consulta de SLAs**\n\nPergunte-me sobre os SLAs do sistema! Posso responder sobre:\n\n• **Status das demandas** (abertas, resolvidas, em andamento)\n• **SLAs por criticidade** (P0, P1, P2, P3)\n• **SLAs por time** responsável\n• **Métricas e KPIs** (cumprimento, atrasos, desempenho)\n• **Estatísticas** e tempo médio de resolução\n• **Dados temporais** (hoje, esta semana, este mês)\n\n💬 **Exemplos:**\n• "Quais SLAs estão abertos hoje?"\n• "Me mostra os P0 em atraso"\n• "Como está o cumprimento dos SLAs?"\n• "Me dá um resumo da semana"\n• "Quantas demandas do time de Produto estão abertas?"');
+    addMessage('assistant', '🔍 **Modo Consulta de SLAs**\n\nPergunte-me sobre os SLAs do sistema! Posso responder sobre:\n\n• **Status das demandas** (abertas, resolvidas, em andamento)\n• **SLAs por criticidade** (P0, P1, P2, P3)\n• **SLAs por time** responsável\n• **Métricas e KPIs** (cumprimento, atrasos, desempenho)\n• **Estatísticas** e tempo médio de resolução\n• **Dados temporais** (hoje, esta semana, este mês)\n• **Gerenciar tags** - adicione tags manualmente\n\n💬 **Exemplos:**\n• "Quais SLAs estão abertos hoje?"\n• "Me mostra os P0 em atraso"\n• "Como está o cumprimento dos SLAs?"\n• "Me dá um resumo da semana"\n• "Adiciona a tag \'pix\' na demanda #43"\n• "Quantas demandas do time de Produto estão abertas?"');
   };
 
   const handleInput = async (value: string) => {
@@ -590,7 +590,12 @@ export default function SLAChat() {
         break;
 
       case 'query-mode':
-        await handleSLAQuery(value);
+        // Verificar se é comando para adicionar tag
+        if (value.toLowerCase().includes('adiciona') && value.toLowerCase().includes('tag')) {
+          await handleAddTag(value);
+        } else {
+          await handleSLAQuery(value);
+        }
         break;
     }
     
@@ -719,9 +724,125 @@ export default function SLAChat() {
     return errors;
   };
 
-  // Salvar SLA no Supabase
+  // Função para gerar tags automaticamente usando AI
+  const generateSLATags = async (slaData: {
+    titulo: string;
+    descricao: string;
+    pontuacao_total: number;
+    nivel_criticidade: string;
+    time_responsavel: string;
+  }): Promise<string[]> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-sla-tags', {
+        body: { slaData }
+      });
+
+      if (error) {
+        console.error('Erro ao gerar tags:', error);
+        return [];
+      }
+
+      return data?.tags || [];
+    } catch (error) {
+      console.error('Erro ao chamar função de tags:', error);
+      return [];
+    }
+  };
+
+  // Função para adicionar tag manualmente via chat
+  const handleAddTag = async (input: string) => {
+    try {
+      // Extrair ID da demanda e tag do comando
+      // Exemplo: "Adiciona a tag 'pix' na demanda #43"
+      const idMatch = input.match(/#(\w+)/);
+      const tagMatch = input.match(/['"]([^'"]+)['"]/);
+      
+      if (!idMatch || !tagMatch) {
+        addMessage('assistant', '❌ **Formato inválido**\n\nUse: "Adiciona a tag \'nome_da_tag\' na demanda #ID"\n\nExemplo: "Adiciona a tag \'pix\' na demanda #43"');
+        return;
+      }
+
+      const slaId = idMatch[1];
+      const newTag = tagMatch[1].toLowerCase().trim().replace(/\s+/g, '_');
+
+      // Buscar SLA atual
+      const { data: sla, error: fetchError } = await supabase
+        .from('sla_demandas')
+        .select('id, titulo, tags')
+        .eq('id', slaId)
+        .single();
+
+      if (fetchError || !sla) {
+        addMessage('assistant', `❌ **SLA #${slaId} não encontrado**\n\nVerifique o ID e tente novamente.`);
+        return;
+      }
+
+      const currentTags = sla.tags || [];
+      
+      // Validações
+      if (currentTags.includes(newTag)) {
+        addMessage('assistant', `⚠️ **Tag já existe**\n\nA tag '${newTag}' já está presente na demanda #${slaId}.`);
+        return;
+      }
+
+      if (currentTags.length >= 5) {
+        addMessage('assistant', `⚠️ **Limite atingido**\n\nA demanda #${slaId} já possui o máximo de 5 tags.\n\nTags atuais: ${currentTags.join(', ')}`);
+        return;
+      }
+
+      if (newTag.length === 0 || newTag.length > 20) {
+        addMessage('assistant', '❌ **Tag inválida**\n\nA tag deve ter entre 1 e 20 caracteres.');
+        return;
+      }
+
+      // Adicionar nova tag
+      const updatedTags = [...currentTags, newTag];
+      
+      const { error: updateError } = await supabase
+        .from('sla_demandas')
+        .update({ tags: updatedTags })
+        .eq('id', slaId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Criar log da operação
+      await supabase
+        .from('sla_logs')
+        .insert({
+          tipo_acao: 'tag_adicionada',
+          id_demanda: slaId,
+          usuario_responsavel: 'Sistema Chat',
+          dados_criados: {
+            tag_adicionada: newTag,
+            tags_atuais: updatedTags
+          },
+          origem: 'chat_lovable'
+        });
+
+      addMessage('assistant', `✅ **Tag adicionada com sucesso!**\n\n🏷️ **Tag '${newTag}' adicionada à demanda #${slaId}**\n\n📋 **Tags atuais:** ${updatedTags.join(', ')}\n\n🔗 **Título:** ${sla.titulo}`);
+
+    } catch (error) {
+      console.error('Erro ao adicionar tag:', error);
+      addMessage('assistant', '❌ **Erro ao adicionar tag**\n\nTente novamente ou contate o suporte.');
+    }
+  };
+
+  // Salvar SLA no Supabase com geração automática de tags
   const saveSLAToSupabase = async (data: SLAData, total: number, criticality: string) => {
     try {
+      // Gerar tags automaticamente usando AI
+      const tags = await generateSLATags({
+        titulo: data.titulo.trim(),
+        descricao: data.descricao.trim(),
+        pontuacao_total: total,
+        nivel_criticidade: criticality,
+        time_responsavel: data.time_responsavel.trim()
+      });
+
+      console.log('🏷️ Tags geradas:', tags);
+
       // Inserir na tabela sla_demandas  
       const { data: slaResult, error: slaError } = await supabase
         .from('sla_demandas')
@@ -739,6 +860,7 @@ export default function SLAChat() {
           nivel_criticidade: criticality,
           observacoes: data.observacoes?.trim() || null,
           status: 'aberto',
+          tags: tags, // Tags geradas automaticamente
           arquivos: uploadedFiles.length > 0 ? uploadedFiles.map(file => ({
             nome: file.name,
             tamanho: formatFileSize(file.size),
