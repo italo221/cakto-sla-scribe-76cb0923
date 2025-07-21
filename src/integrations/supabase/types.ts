@@ -65,6 +65,93 @@ export type Database = {
         }
         Relationships: []
       }
+      sla_demandas: {
+        Row: {
+          arquivos: Json | null
+          data_criacao: string
+          descricao: string
+          id: string
+          nivel_criticidade: string
+          observacoes: string | null
+          pontuacao_cliente: number
+          pontuacao_financeiro: number
+          pontuacao_operacional: number
+          pontuacao_reputacao: number
+          pontuacao_total: number
+          pontuacao_urgencia: number
+          solicitante: string
+          status: string
+          time_responsavel: string
+          titulo: string
+        }
+        Insert: {
+          arquivos?: Json | null
+          data_criacao?: string
+          descricao: string
+          id?: string
+          nivel_criticidade: string
+          observacoes?: string | null
+          pontuacao_cliente: number
+          pontuacao_financeiro: number
+          pontuacao_operacional: number
+          pontuacao_reputacao: number
+          pontuacao_total: number
+          pontuacao_urgencia: number
+          solicitante: string
+          status?: string
+          time_responsavel: string
+          titulo: string
+        }
+        Update: {
+          arquivos?: Json | null
+          data_criacao?: string
+          descricao?: string
+          id?: string
+          nivel_criticidade?: string
+          observacoes?: string | null
+          pontuacao_cliente?: number
+          pontuacao_financeiro?: number
+          pontuacao_operacional?: number
+          pontuacao_reputacao?: number
+          pontuacao_total?: number
+          pontuacao_urgencia?: number
+          solicitante?: string
+          status?: string
+          time_responsavel?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
+      sla_logs: {
+        Row: {
+          dados_criados: Json | null
+          id: string
+          id_demanda: string | null
+          origem: string
+          timestamp: string
+          tipo_acao: string
+          usuario_responsavel: string | null
+        }
+        Insert: {
+          dados_criados?: Json | null
+          id?: string
+          id_demanda?: string | null
+          origem?: string
+          timestamp?: string
+          tipo_acao: string
+          usuario_responsavel?: string | null
+        }
+        Update: {
+          dados_criados?: Json | null
+          id?: string
+          id_demanda?: string | null
+          origem?: string
+          timestamp?: string
+          tipo_acao?: string
+          usuario_responsavel?: string | null
+        }
+        Relationships: []
+      }
       user_kyc: {
         Row: {
           created_at: string

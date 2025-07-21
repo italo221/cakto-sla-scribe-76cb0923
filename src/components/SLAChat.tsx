@@ -5,8 +5,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Copy, FileText, MessageCircle, Calculator, Upload, X, File, Image } from "lucide-react";
+import { Copy, FileText, MessageCircle, Calculator, Upload, X, File, Image, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
@@ -270,9 +271,131 @@ export default function SLAChat() {
     return type.startsWith('image/');
   };
 
-  const showFinalResult = () => {
+  // Validações conforme especificação V2
+  const validateSLAData = (data: SLAData, total: number, criticality: string) => {
+    const errors: string[] = [];
+    
+    // Validar título (mínimo 5 caracteres)
+    if (!data.titulo || data.titulo.trim().length < 5) {
+      errors.push('Título deve ter no mínimo 5 caracteres');
+    }
+    
+    // Validar descrição (mínimo 10 caracteres)
+    if (!data.descricao || data.descricao.trim().length < 10) {
+      errors.push('Descrição deve ter no mínimo 10 caracteres');
+    }
+    
+    // Validar pontuações (entre 0 e 10)
+    Object.entries(data.pontuacao).forEach(([key, value]) => {
+      if (value < 0 || value > 10) {
+        errors.push(`Pontuação ${key} deve estar entre 0 e 10`);
+      }
+    });
+    
+    // Validar nível de criticidade
+    if (!['P0', 'P1', 'P2', 'P3'].includes(criticality)) {
+      errors.push('Nível de criticidade inválido');
+    }
+    
+    // Validar campos obrigatórios
+    if (!data.time_responsavel || data.time_responsavel.trim().length === 0) {
+      errors.push('Time responsável é obrigatório');
+    }
+    
+    if (!data.solicitante || data.solicitante.trim().length === 0) {
+      errors.push('Solicitante é obrigatório');
+    }
+    
+    return errors;
+  };
+
+  // Salvar SLA no Supabase
+  const saveSLAToSupabase = async (data: SLAData, total: number, criticality: string) => {
+    try {
+      // Inserir na tabela sla_demandas
+      const { data: slaResult, error: slaError } = await supabase
+        .from('sla_demandas')
+        .insert({
+          titulo: data.titulo.trim(),
+          time_responsavel: data.time_responsavel.trim(),
+          solicitante: data.solicitante.trim(),
+          descricao: data.descricao.trim(),
+          pontuacao_financeiro: data.pontuacao.financeiro,
+          pontuacao_cliente: data.pontuacao.cliente,
+          pontuacao_reputacao: data.pontuacao.reputacao,
+          pontuacao_urgencia: data.pontuacao.urgencia,
+          pontuacao_operacional: data.pontuacao.operacional,
+          pontuacao_total: total,
+          nivel_criticidade: criticality,
+          observacoes: data.observacoes?.trim() || null,
+          status: 'aberto',
+          arquivos: uploadedFiles.length > 0 ? uploadedFiles.map(file => ({
+            nome: file.name,
+            tamanho: formatFileSize(file.size),
+            tipo: file.type,
+            data_upload: new Date().toISOString()
+          })) : null
+        })
+        .select('id')
+        .single();
+
+      if (slaError) {
+        console.error('Erro ao salvar SLA:', slaError);
+        throw new Error(`Erro ao salvar SLA: ${slaError.message}`);
+      }
+
+      // Criar log da operação
+      const logData = {
+        tipo_acao: 'criacao',
+        id_demanda: slaResult.id,
+        usuario_responsavel: data.solicitante.trim(),
+        dados_criados: {
+          titulo: data.titulo.trim(),
+          time_responsavel: data.time_responsavel.trim(),
+          solicitante: data.solicitante.trim(),
+          descricao: data.descricao.trim(),
+          pontuacao: data.pontuacao,
+          pontuacao_total: total,
+          nivel_criticidade: criticality,
+          observacoes: data.observacoes?.trim() || null,
+          status: 'aberto',
+          arquivos: uploadedFiles.map(file => ({
+            nome: file.name,
+            tamanho: formatFileSize(file.size),
+            tipo: file.type,
+            data_upload: new Date().toISOString()
+          }))
+        },
+        origem: 'chat_lovable'
+      };
+
+      const { error: logError } = await supabase
+        .from('sla_logs')
+        .insert(logData);
+
+      if (logError) {
+        console.error('Erro ao criar log:', logError);
+        // Não falhar por causa do log, apenas avisar
+      }
+
+      return slaResult.id;
+    } catch (error) {
+      console.error('Erro completo:', error);
+      throw error;
+    }
+  };
+
+  const showFinalResult = async () => {
     const total = Object.values(slaData.pontuacao).reduce((sum, value) => sum + value, 0);
     const criticality = calculateCriticality(slaData.pontuacao);
+
+    // Validar dados antes de salvar
+    const validationErrors = validateSLAData(slaData, total, criticality);
+    
+    if (validationErrors.length > 0) {
+      addMessage('assistant', `⚠️ **Detectei um problema nos dados:**\n\n${validationErrors.join('\n')}\n\nVocê quer revisar ou abrir um novo SLA?`);
+      return;
+    }
 
     const finalJson = {
       titulo: slaData.titulo,
@@ -291,10 +414,24 @@ export default function SLAChat() {
       }))
     };
 
-    addMessage('assistant', `✅ **SLA Processado com Sucesso!**\n\n📊 **Pontuação Total:** ${total} pontos\n🏷️ **Nível de Criticidade:** ${criticality}\n\n🎯 O JSON final foi gerado e está pronto para envio ao sistema!`);
-    
-    // Salvar o JSON para exibição
-    (window as any).finalSlaJson = finalJson;
+    addMessage('assistant', `⏳ **Processando SLA...**\n\n📊 **Pontuação Total:** ${total} pontos\n🏷️ **Nível de Criticidade:** ${criticality}\n\n💾 Salvando no sistema...`);
+
+    try {
+      const slaId = await saveSLAToSupabase(slaData, total, criticality);
+      
+      addMessage('assistant', `✅ **SLA registrado com sucesso no sistema!**\n\n🆔 **ID:** #${slaId}\n📊 **Pontuação Total:** ${total} pontos\n🏷️ **Nível de Criticidade:** ${criticality}\n\n🔔 A equipe responsável será notificada.`);
+      
+      // Salvar o JSON para exibição
+      (window as any).finalSlaJson = { ...finalJson, id: slaId };
+      (window as any).slaId = slaId;
+      
+    } catch (error) {
+      console.error('Erro ao salvar SLA:', error);
+      addMessage('assistant', `❌ **Erro ao salvar SLA no sistema:**\n\n${error instanceof Error ? error.message : 'Erro desconhecido'}\n\nTente novamente ou contate o suporte.`);
+      
+      // Ainda salvar o JSON para exibição em caso de erro
+      (window as any).finalSlaJson = finalJson;
+    }
   };
 
   const copyJsonToClipboard = () => {
@@ -390,6 +527,21 @@ export default function SLAChat() {
 
                 {step === 'complete' && (
                   <div className="space-y-4">
+                    {(window as any).slaId && (
+                      <Card className="p-6 bg-green-50 border-green-200">
+                        <div className="flex items-center gap-3 mb-4">
+                          <CheckCircle className="h-6 w-6 text-green-600" />
+                          <h3 className="text-lg font-semibold text-green-800">
+                            SLA Registrado com Sucesso!
+                          </h3>
+                        </div>
+                        <div className="text-green-700">
+                          <p className="mb-2"><strong>ID:</strong> #{(window as any).slaId}</p>
+                          <p><strong>Status:</strong> Aberto</p>
+                        </div>
+                      </Card>
+                    )}
+                    
                     <Card className="p-6 bg-accent">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold flex items-center gap-2 text-accent-foreground">
