@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   MessageSquare, 
@@ -34,7 +35,11 @@ import {
   Heart,
   Share,
   Edit3,
-  Smile
+  Smile,
+  Paperclip,
+  Download,
+  Trash2,
+  ExternalLink
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -73,6 +78,12 @@ interface Comment {
   autor_id: string;
   setor_id: string;
   created_at: string;
+  anexos?: Array<{
+    nome: string;
+    url: string;
+    tamanho: number;
+    tipo: string;
+  }>;
 }
 
 interface Setor {
@@ -111,6 +122,9 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
   const [commentLoading, setCommentLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'comments' | 'history'>('comments');
+  const [showTransferForm, setShowTransferForm] = useState(false);
+  const [attachments, setAttachments] = useState<FileList | null>(null);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -132,7 +146,10 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setComments(data || []);
+      setComments((data || []).map(comment => ({
+        ...comment,
+        anexos: comment.anexos ? (Array.isArray(comment.anexos) ? comment.anexos as Array<{nome: string; url: string; tamanho: number; tipo: string}> : []) : []
+      })));
     } catch (error) {
       console.error('Erro ao carregar comentários:', error);
     }
@@ -170,10 +187,47 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
     }
   };
 
+  const uploadAttachments = async (comentarioId: string) => {
+    if (!attachments || attachments.length === 0) return [];
+
+    const uploadedFiles = [];
+    
+    for (let i = 0; i < attachments.length; i++) {
+      const file = attachments[i];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${comentarioId}/${Date.now()}_${file.name}`;
+      const filePath = `${sla.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('sla-anexos')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Erro ao fazer upload:', uploadError);
+        continue;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('sla-anexos')
+        .getPublicUrl(filePath);
+
+      uploadedFiles.push({
+        nome: file.name,
+        url: urlData.publicUrl,
+        tamanho: file.size,
+        tipo: file.type
+      });
+    }
+
+    return uploadedFiles;
+  };
+
   const handleAddComment = async () => {
     if (!sla || !newComment.trim() || !user) return;
 
     setCommentLoading(true);
+    setUploadingFiles(true);
+    
     try {
       let comentarioSetorId;
       
@@ -197,20 +251,42 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
         return;
       }
 
-      const { error } = await supabase.rpc('add_sla_comment', {
-        p_sla_id: sla.id,
-        p_setor_id: comentarioSetorId,
-        p_comentario: newComment.trim()
-      });
+      // Primeiro criar o comentário
+      const { data: commentData, error: commentError } = await supabase
+        .from('sla_comentarios_internos')
+        .insert({
+          sla_id: sla.id,
+          setor_id: comentarioSetorId,
+          autor_id: user.id,
+          autor_nome: user.user_metadata?.nome_completo || user.email || 'Usuário',
+          comentario: newComment.trim()
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (commentError) throw commentError;
+
+      // Depois fazer upload dos anexos se houver
+      let anexosUpload = [];
+      if (attachments && attachments.length > 0) {
+        anexosUpload = await uploadAttachments(commentData.id);
+        
+        // Atualizar o comentário com os anexos
+        const { error: updateError } = await supabase
+          .from('sla_comentarios_internos')
+          .update({ anexos: anexosUpload })
+          .eq('id', commentData.id);
+
+        if (updateError) throw updateError;
+      }
 
       toast({
         title: "Comentário publicado",
-        description: "Seu comentário foi adicionado com sucesso.",
+        description: `Comentário adicionado${anexosUpload.length > 0 ? ` com ${anexosUpload.length} anexo(s)` : ''}.`,
       });
 
       setNewComment('');
+      setAttachments(null);
       loadComments();
     } catch (error: any) {
       toast({
@@ -220,6 +296,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
       });
     } finally {
       setCommentLoading(false);
+      setUploadingFiles(false);
     }
   };
 
@@ -268,6 +345,9 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
 
     setTransferLoading(true);
     try {
+      const setorOrigem = setores.find(s => s.id === sla.setor_id);
+      const setorDestino = setores.find(s => s.id === selectedSetor);
+
       const { error } = await supabase
         .from('sla_demandas')
         .update({ setor_id: selectedSetor })
@@ -278,18 +358,20 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
       await supabase.rpc('log_sla_action', {
         p_sla_id: sla.id,
         p_acao: 'transferencia_setor',
+        p_setor_origem_id: sla.setor_id,
         p_setor_destino_id: selectedSetor,
-        p_justificativa: 'Transferência via interface de detalhes'
+        p_justificativa: `Transferido de "${setorOrigem?.nome}" para "${setorDestino?.nome}"`
       });
 
       toast({
         title: "SLA transferido",
-        description: "O SLA foi transferido para o setor selecionado.",
+        description: `Transferido para ${setorDestino?.nome} com sucesso.`,
       });
 
+      setShowTransferForm(false);
+      setSelectedSetor('');
       onUpdate();
       loadActionLogs();
-      onClose();
     } catch (error: any) {
       toast({
         title: "Erro ao transferir SLA",
@@ -298,6 +380,39 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
       });
     } finally {
       setTransferLoading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAttachments(e.target.files);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const downloadAttachment = async (url: string, fileName: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      toast({
+        title: "Erro no download",
+        description: "Não foi possível baixar o arquivo.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -372,8 +487,19 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
         </DialogHeader>
 
         <div className="space-y-6 mt-6">
-          {/* Ações de Status */}
-          <div className="flex gap-2 mb-6">
+          {/* Ações de Status e Transferência */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            {/* Botão de Transferência */}
+            {(isAdmin || userSetores.some(us => us.setor_id === sla.setor_id)) && (
+              <Button 
+                variant="outline" 
+                onClick={() => setShowTransferForm(!showTransferForm)}
+                className="gap-2"
+              >
+                <ArrowRightLeft className="h-4 w-4" />
+                Transferir Setor
+              </Button>
+            )}
             {sla.status === 'aberto' && (
               <Button 
                 variant="default" 
@@ -439,6 +565,54 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
             )}
           </div>
 
+          {/* Formulário de Transferência */}
+          {showTransferForm && (
+            <Card className="mb-6 border-dashed">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <label className="text-sm font-medium mb-2 block">Transferir para o setor:</label>
+                    <Select value={selectedSetor} onValueChange={setSelectedSetor}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um setor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {setores
+                          .filter(setor => setor.id !== sla.setor_id)
+                          .map((setor) => (
+                            <SelectItem key={setor.id} value={setor.id}>
+                              {setor.nome}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleTransferSetor}
+                      disabled={!selectedSetor || transferLoading}
+                      size="sm"
+                    >
+                      {transferLoading ? (
+                        <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                      ) : (
+                        <ArrowRightLeft className="h-4 w-4 mr-2" />
+                      )}
+                      Transferir
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => setShowTransferForm(false)}
+                      size="sm"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Tabs de Discussão e Histórico */}
           <div className="flex gap-4 border-b mb-6">
             <Button
@@ -490,24 +664,51 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
                             onChange={(e) => setNewComment(e.target.value)}
                             className="min-h-[60px] max-h-[100px] resize-none border-0 bg-background shadow-sm focus:ring-2 focus:ring-primary/20"
                           />
+                          {/* Área de anexos */}
+                          {attachments && attachments.length > 0 && (
+                            <div className="space-y-2">
+                              <label className="text-xs font-medium text-muted-foreground">Anexos selecionados:</label>
+                              <div className="flex flex-wrap gap-2">
+                                {Array.from(attachments).map((file, index) => (
+                                  <div key={index} className="flex items-center gap-1 bg-muted px-2 py-1 rounded text-xs">
+                                    <FileText className="h-3 w-3" />
+                                    <span>{file.name}</span>
+                                    <span className="text-muted-foreground">({formatFileSize(file.size)})</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
+                              <div className="relative">
+                                <Input
+                                  type="file"
+                                  multiple
+                                  onChange={handleFileChange}
+                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
+                                />
+                                <Button variant="ghost" size="sm" className="h-8">
+                                  <Paperclip className="h-4 w-4" />
+                                </Button>
+                              </div>
                               <Button variant="ghost" size="sm" className="h-8">
                                 <Smile className="h-4 w-4" />
                               </Button>
                             </div>
                             <Button 
                               onClick={handleAddComment}
-                              disabled={!newComment.trim() || commentLoading}
+                              disabled={!newComment.trim() || commentLoading || uploadingFiles}
                               size="sm"
                               className="h-8"
                             >
-                              {commentLoading ? (
+                              {(commentLoading || uploadingFiles) ? (
                                 <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
                               ) : (
                                 <Send className="h-4 w-4 mr-2" />
                               )}
-                              {commentLoading ? 'Publicando...' : 'Publicar'}
+                              {uploadingFiles ? 'Enviando...' : commentLoading ? 'Publicando...' : 'Publicar'}
                             </Button>
                           </div>
                         </div>
@@ -546,6 +747,27 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate }: SLADe
                                 </span>
                               </div>
                               <p className="text-sm leading-relaxed break-words">{comment.comentario}</p>
+                              
+                              {/* Anexos do comentário */}
+                              {comment.anexos && comment.anexos.length > 0 && (
+                                <div className="mt-2 space-y-1">
+                                  {comment.anexos.map((anexo, index) => (
+                                    <div key={index} className="flex items-center gap-2 p-2 bg-muted/30 rounded text-xs">
+                                      <FileText className="h-3 w-3 text-muted-foreground" />
+                                      <span className="flex-1">{anexo.nome}</span>
+                                      <span className="text-muted-foreground">({formatFileSize(anexo.tamanho)})</span>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0"
+                                        onClick={() => downloadAttachment(anexo.url, anexo.nome)}
+                                      >
+                                        <Download className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}

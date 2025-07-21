@@ -212,6 +212,7 @@ export type Database = {
       }
       sla_comentarios_internos: {
         Row: {
+          anexos: Json | null
           autor_id: string
           autor_nome: string
           comentario: string
@@ -221,6 +222,7 @@ export type Database = {
           sla_id: string
         }
         Insert: {
+          anexos?: Json | null
           autor_id: string
           autor_nome: string
           comentario: string
@@ -230,6 +232,7 @@ export type Database = {
           sla_id: string
         }
         Update: {
+          anexos?: Json | null
           autor_id?: string
           autor_nome?: string
           comentario?: string
