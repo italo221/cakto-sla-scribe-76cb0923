@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { MessageSquare, Inbox, Home, BarChart3, Settings } from "lucide-react";
+import { MessageSquare, Inbox, Home, BarChart3, Settings, BookOpen } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 export default function Navigation() {
@@ -58,6 +58,17 @@ export default function Navigation() {
             <Link to="/inbox" className="flex items-center gap-2">
               <Inbox className="h-4 w-4" />
               Caixa de Entrada
+            </Link>
+          </Button>
+          
+          <Button
+            variant={isActive('/documentation') ? 'default' : 'ghost'}
+            size="sm"
+            asChild
+          >
+            <Link to="/documentation" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Documentação
             </Link>
           </Button>
         </nav>
