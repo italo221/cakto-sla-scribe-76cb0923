@@ -32,7 +32,7 @@ const Documentation = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="database">Banco de Dados</TabsTrigger>
             <TabsTrigger value="sla-creation">Criar SLA</TabsTrigger>
