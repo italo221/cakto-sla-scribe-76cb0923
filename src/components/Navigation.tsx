@@ -93,13 +93,15 @@ export default function Navigation() {
         <div className="flex items-center justify-between py-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 hover-scale">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <MessageSquare className="h-6 w-6 text-primary" />
-            </div>
+            <img 
+              src="/lovable-uploads/a6bb798c-787b-43e9-861b-cdffe6d3aee2.png" 
+              alt="Manhattan Logo" 
+              className="h-10 w-auto"
+            />
             <div>
-              <h1 className="text-xl font-bold text-gradient">Sistema SLA</h1>
+              <h1 className="text-xl font-bold text-gradient">Manhattan</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">
-                Gerenciamento Inteligente
+                Sistema SLA
               </p>
             </div>
           </Link>
@@ -127,12 +129,14 @@ export default function Navigation() {
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                 <div className="flex flex-col gap-4 mt-8">
                   <div className="flex items-center gap-3 pb-4 border-b">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <MessageSquare className="h-5 w-5 text-primary" />
-                    </div>
+                    <img 
+                      src="/lovable-uploads/a6bb798c-787b-43e9-861b-cdffe6d3aee2.png" 
+                      alt="Manhattan Logo" 
+                      className="h-8 w-auto"
+                    />
                     <div>
-                      <h2 className="font-semibold">Sistema SLA</h2>
-                      <p className="text-sm text-muted-foreground">Menu de Navegação</p>
+                      <h2 className="font-semibold">Manhattan</h2>
+                      <p className="text-sm text-muted-foreground">Sistema SLA</p>
                     </div>
                   </div>
                   
