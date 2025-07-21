@@ -412,16 +412,282 @@ const Documentation = () => {
               </TabsContent>
 
               {/* Outros TabsContents condensados */}
-              <TabsContent value="database" className="space-y-6">
-                <Card>
+              <TabsContent value="database" className="space-y-6 animate-fade-in">
+                <Card className="card-elevated">
                   <CardHeader>
-                    <CardTitle>🗄️ Documentação do Banco de Dados</CardTitle>
-                    <CardDescription>
-                      Estrutura completa do banco PostgreSQL do Sistema SLA
+                    <CardTitle className="flex items-center gap-2 text-2xl">
+                      <Database className="h-6 w-6 text-purple-600" />
+                      Documentação do Banco de Dados
+                    </CardTitle>
+                    <CardDescription className="text-lg">
+                      Estrutura completa do banco PostgreSQL do Sistema SLA com Supabase
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-sm">Banco de dados PostgreSQL com Supabase, atualmente configurado sem RLS para acesso público total.</p>
+                  <CardContent className="space-y-8">
+                    
+                    {/* Tabelas Principais */}
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold flex items-center gap-2">
+                        📋 Tabelas Principais
+                      </h3>
+                      
+                      {/* Tabela SLA Demandas */}
+                      <div className="border rounded-lg p-6 bg-gradient-to-r from-blue-50 to-indigo-50">
+                        <h4 className="text-lg font-semibold text-blue-900 mb-3">sla_demandas</h4>
+                        <p className="text-sm text-blue-800 mb-4">Tabela principal que armazena todas as demandas SLA</p>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          <div className="bg-white p-4 rounded-lg shadow-sm">
+                            <h5 className="font-medium text-sm mb-3 text-blue-700">Campos Principais:</h5>
+                            <div className="space-y-2 text-xs">
+                              <div className="flex justify-between"><span className="font-mono">id</span><Badge variant="secondary">UUID (PK)</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">titulo</span><Badge variant="outline">TEXT</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">descricao</span><Badge variant="outline">TEXT</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">ticket_number</span><Badge variant="outline">TEXT</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">status</span><Badge variant="outline">TEXT</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">nivel_criticidade</span><Badge variant="destructive">P0,P1,P2,P3</Badge></div>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-white p-4 rounded-lg shadow-sm">
+                            <h5 className="font-medium text-sm mb-3 text-blue-700">Pontuações IA:</h5>
+                            <div className="space-y-2 text-xs">
+                              <div className="flex justify-between"><span className="font-mono">pontuacao_financeiro</span><Badge variant="secondary">INT</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">pontuacao_cliente</span><Badge variant="secondary">INT</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">pontuacao_reputacao</span><Badge variant="secondary">INT</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">pontuacao_urgencia</span><Badge variant="secondary">INT</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">pontuacao_operacional</span><Badge variant="secondary">INT</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">pontuacao_total</span><Badge variant="secondary">INT</Badge></div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+                          <p className="text-xs text-blue-800">
+                            <strong>📊 Algoritmo de Pontuação:</strong> Cada SLA recebe pontuações de 0-10 em 5 dimensões. 
+                            A soma determina a criticidade: P0 (40-50), P1 (30-39), P2 (20-29), P3 (0-19)
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Tabela Profiles */}
+                      <div className="border rounded-lg p-6 bg-gradient-to-r from-green-50 to-emerald-50">
+                        <h4 className="text-lg font-semibold text-green-900 mb-3">profiles</h4>
+                        <p className="text-sm text-green-800 mb-4">Perfis de usuários do sistema</p>
+                        
+                        <div className="bg-white p-4 rounded-lg shadow-sm">
+                          <div className="grid grid-cols-2 gap-4 text-xs">
+                            <div className="space-y-2">
+                              <div className="flex justify-between"><span className="font-mono">id</span><Badge variant="secondary">UUID (PK)</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">user_id</span><Badge variant="secondary">UUID (FK)</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">email</span><Badge variant="outline">TEXT</Badge></div>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between"><span className="font-mono">nome_completo</span><Badge variant="outline">TEXT</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">user_type</span><Badge variant="outline">ENUM</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">ativo</span><Badge variant="outline">BOOLEAN</Badge></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tabela Setores */}
+                      <div className="border rounded-lg p-6 bg-gradient-to-r from-purple-50 to-violet-50">
+                        <h4 className="text-lg font-semibold text-purple-900 mb-3">setores</h4>
+                        <p className="text-sm text-purple-800 mb-4">Departamentos organizacionais</p>
+                        
+                        <div className="bg-white p-4 rounded-lg shadow-sm">
+                          <div className="grid grid-cols-2 gap-4 text-xs">
+                            <div className="space-y-2">
+                              <div className="flex justify-between"><span className="font-mono">id</span><Badge variant="secondary">UUID (PK)</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">nome</span><Badge variant="outline">TEXT</Badge></div>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between"><span className="font-mono">descricao</span><Badge variant="outline">TEXT</Badge></div>
+                              <div className="flex justify-between"><span className="font-mono">ativo</span><Badge variant="outline">BOOLEAN</Badge></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tabelas de Log e Auditoria */}
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold flex items-center gap-2">
+                        📝 Sistema de Logs e Auditoria
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* SLA Action Logs */}
+                        <div className="border rounded-lg p-4 bg-orange-50">
+                          <h4 className="font-semibold text-orange-900 mb-2">sla_action_logs</h4>
+                          <p className="text-sm text-orange-800 mb-3">Log de ações realizadas nos SLAs</p>
+                          <div className="space-y-1 text-xs">
+                            <div>• <strong>acao:</strong> Tipo de ação (criado, editado, etc.)</div>
+                            <div>• <strong>autor_id/email:</strong> Quem executou</div>
+                            <div>• <strong>dados_anteriores/novos:</strong> JSONB com mudanças</div>
+                            <div>• <strong>timestamp:</strong> Quando ocorreu</div>
+                          </div>
+                        </div>
+
+                        {/* SLA Comentários */}
+                        <div className="border rounded-lg p-4 bg-teal-50">
+                          <h4 className="font-semibold text-teal-900 mb-2">sla_comentarios_internos</h4>
+                          <p className="text-sm text-teal-800 mb-3">Comentários e discussões internas</p>
+                          <div className="space-y-1 text-xs">
+                            <div>• <strong>comentario:</strong> Texto do comentário</div>
+                            <div>• <strong>autor_nome:</strong> Nome do autor</div>
+                            <div>• <strong>anexos:</strong> JSONB com arquivos</div>
+                            <div>• <strong>setor_id:</strong> Setor relacionado</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Funções SQL Importantes */}
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold flex items-center gap-2">
+                        ⚙️ Funções SQL Principais
+                      </h3>
+                      
+                      <div className="space-y-4">
+                        <div className="border rounded-lg p-4">
+                          <h4 className="font-semibold mb-2 flex items-center gap-2">
+                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                            generate_ticket_number()
+                          </h4>
+                          <p className="text-sm text-muted-foreground mb-3">Gera números únicos de ticket no formato TICKET-YYYY-NNNN</p>
+                          <div className="bg-muted/30 p-3 rounded-lg">
+                            <code className="text-xs">
+                              SELECT generate_ticket_number(); -- Retorna: TICKET-2025-0001
+                            </code>
+                          </div>
+                        </div>
+
+                        <div className="border rounded-lg p-4">
+                          <h4 className="font-semibold mb-2 flex items-center gap-2">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            log_sla_action()
+                          </h4>
+                          <p className="text-sm text-muted-foreground mb-3">Registra automaticamente todas as ações realizadas em SLAs</p>
+                          <div className="bg-muted/30 p-3 rounded-lg">
+                            <code className="text-xs">
+                              SELECT log_sla_action(sla_id, 'criado', dados_json);
+                            </code>
+                          </div>
+                        </div>
+
+                        <div className="border rounded-lg p-4">
+                          <h4 className="font-semibold mb-2 flex items-center gap-2">
+                            <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                            is_admin() / user_has_setor_access()
+                          </h4>
+                          <p className="text-sm text-muted-foreground mb-3">Funções de controle de acesso (atualmente retornam sempre true)</p>
+                          <div className="bg-muted/30 p-3 rounded-lg">
+                            <code className="text-xs">
+                              SELECT is_admin(); -- Retorna: true (sistema aberto)
+                            </code>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Consultas Úteis */}
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold flex items-center gap-2">
+                        🔍 Consultas SQL Úteis
+                      </h3>
+                      
+                      <div className="space-y-4">
+                        <div className="border rounded-lg p-4">
+                          <h4 className="font-semibold mb-2">Ver todos os SLAs com pontuação</h4>
+                          <div className="bg-black text-green-400 p-3 rounded-lg text-xs font-mono">
+                            <div className="mb-2">-- SLAs ordenados por criticidade e data</div>
+                            <div>SELECT titulo, nivel_criticidade, pontuacao_total, data_criacao</div>
+                            <div>FROM sla_demandas</div>
+                            <div>ORDER BY pontuacao_total DESC, data_criacao DESC;</div>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="mt-2"
+                            onClick={() => copyToClipboard("SELECT titulo, nivel_criticidade, pontuacao_total, data_criacao FROM sla_demandas ORDER BY pontuacao_total DESC, data_criacao DESC;")}
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            Copiar SQL
+                          </Button>
+                        </div>
+
+                        <div className="border rounded-lg p-4">
+                          <h4 className="font-semibold mb-2">Estatísticas por período</h4>
+                          <div className="bg-black text-green-400 p-3 rounded-lg text-xs font-mono">
+                            <div className="mb-2">-- Contagem de SLAs por criticidade nos últimos 30 dias</div>
+                            <div>SELECT nivel_criticidade, COUNT(*) as total</div>
+                            <div>FROM sla_demandas</div>
+                            <div>WHERE data_criacao &gt;= NOW() - INTERVAL '30 days'</div>
+                            <div>GROUP BY nivel_criticidade</div>
+                            <div>ORDER BY total DESC;</div>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="mt-2"
+                            onClick={() => copyToClipboard("SELECT nivel_criticidade, COUNT(*) as total FROM sla_demandas WHERE data_criacao >= NOW() - INTERVAL '30 days' GROUP BY nivel_criticidade ORDER BY total DESC;")}
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            Copiar SQL
+                          </Button>
+                        </div>
+
+                        <div className="border rounded-lg p-4">
+                          <h4 className="font-semibold mb-2">Log de ações por SLA</h4>
+                          <div className="bg-black text-green-400 p-3 rounded-lg text-xs font-mono">
+                            <div className="mb-2">-- Histórico completo de um SLA específico</div>
+                            <div>SELECT acao, autor_email, timestamp</div>
+                            <div>FROM sla_action_logs</div>
+                            <div>WHERE sla_id = 'UUID_DO_SLA'</div>
+                            <div>ORDER BY timestamp DESC;</div>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="mt-2"
+                            onClick={() => copyToClipboard("SELECT acao, autor_email, timestamp FROM sla_action_logs WHERE sla_id = 'UUID_DO_SLA' ORDER BY timestamp DESC;")}
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            Copiar SQL
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Configuração Atual */}
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-yellow-900 mb-2">⚠️ Configuração Atual - Sistema Aberto</h4>
+                      <div className="text-sm text-yellow-800 space-y-2">
+                        <p>• <strong>RLS (Row Level Security):</strong> Desabilitado para acesso público total</p>
+                        <p>• <strong>Autenticação:</strong> Não requerida - todos são tratados como Super Admin</p>
+                        <p>• <strong>Políticas de Segurança:</strong> Todas retornam TRUE para acesso irrestrito</p>
+                        <p>• <strong>Auditoria:</strong> Mantida ativa para tracking de mudanças</p>
+                      </div>
+                    </div>
+
+                    {/* Links Úteis */}
+                    <div className="flex flex-wrap gap-3">
+                      <Button variant="outline" size="sm" asChild>
+                        <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          Supabase Dashboard
+                        </a>
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <a href="https://supabase.com/docs/guides/database" target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          Docs PostgreSQL
+                        </a>
+                      </Button>
+                    </div>
+
                   </CardContent>
                 </Card>
               </TabsContent>
