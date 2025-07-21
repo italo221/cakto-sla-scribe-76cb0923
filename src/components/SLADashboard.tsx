@@ -295,78 +295,79 @@ export default function SLADashboard() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard SLA</h1>
-          <p className="text-muted-foreground">Acompanhe as métricas e desempenho dos SLAs</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Dashboard SLA</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Acompanhe as métricas e desempenho dos SLAs</p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
             {(['30dias', '7dias', 'hoje', 'ontem'] as DateRange[]).map((range) => (
               <Button
                 key={range}
                 variant={selectedRange === range ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSelectedRange(range)}
+                className="text-xs sm:text-sm"
               >
                 {getRangeLabel(range)}
               </Button>
             ))}
           </div>
-          <Badge variant="secondary" className="text-sm">
-            <Calendar className="w-4 h-4 mr-1" />
+          <Badge variant="secondary" className="text-xs sm:text-sm self-start sm:self-auto">
+            <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
             {getRangeLabel(selectedRange)}
           </Badge>
         </div>
       </div>
 
       {/* Métricas principais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total SLAs</p>
-                <p className="text-2xl font-bold">{metrics.total}</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total SLAs</p>
+                <p className="text-xl sm:text-2xl font-bold">{metrics.total}</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-blue-600" />
+              <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Resolvidos</p>
-                <p className="text-2xl font-bold text-green-600">{metrics.resolvidos}</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Resolvidos</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-600">{metrics.resolvidos}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
+              <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Em Aberto</p>
-                <p className="text-2xl font-bold text-orange-600">{metrics.abertos + metrics.emAndamento}</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Em Aberto</p>
+                <p className="text-xl sm:text-2xl font-bold text-orange-600">{metrics.abertos + metrics.emAndamento}</p>
               </div>
-              <Clock className="h-8 w-8 text-orange-600" />
+              <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Atrasados</p>
-                <p className="text-2xl font-bold text-red-600">{metrics.atrasados}</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Atrasados</p>
+                <p className="text-xl sm:text-2xl font-bold text-red-600">{metrics.atrasados}</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-red-600" />
+              <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
             </div>
           </CardContent>
         </Card>
@@ -382,10 +383,10 @@ export default function SLADashboard() {
         </CardHeader>
         <CardContent>
           <div className="text-center">
-            <div className="text-4xl font-bold text-green-600 mb-2">
+            <div className="text-3xl sm:text-4xl font-bold text-green-600 mb-2">
               {metrics.cumprimento.toFixed(1)}%
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               {metrics.resolvidos} de {metrics.total} SLAs resolvidos
             </p>
             <div className="w-full bg-muted rounded-full h-2 mt-4">
@@ -407,7 +408,7 @@ export default function SLADashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {['P0', 'P1', 'P2', 'P3'].map((prioridade) => {
               const tempo = metrics.tempoMedioResolucao[prioridade] || 0;
               const tempoFormatado = tempo > 24 
@@ -422,15 +423,15 @@ export default function SLADashboard() {
               };
 
               return (
-                <div key={prioridade} className="text-center p-4 bg-muted/50 rounded-lg">
+                <div key={prioridade} className="text-center p-3 sm:p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <div 
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: COLORS[prioridade as keyof typeof COLORS] }}
                     ></div>
-                    <span className="font-medium text-sm">{prioridade}</span>
+                    <span className="font-medium text-xs sm:text-sm">{prioridade}</span>
                   </div>
-                  <div className="text-2xl font-bold">{tempoFormatado}</div>
+                  <div className="text-xl sm:text-2xl font-bold">{tempoFormatado}</div>
                   <div className="text-xs text-muted-foreground">{priorityLabels[prioridade as keyof typeof priorityLabels]}</div>
                 </div>
               );
@@ -448,17 +449,18 @@ export default function SLADashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-80">
+          <div className="h-64 sm:h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={getDailyData()}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis 
                   dataKey="date" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10 }}
                   tickLine={{ stroke: 'hsl(var(--muted-foreground))' }}
+                  interval="preserveStartEnd"
                 />
                 <YAxis 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10 }}
                   tickLine={{ stroke: 'hsl(var(--muted-foreground))' }}
                 />
                 <Tooltip 
@@ -494,14 +496,14 @@ export default function SLADashboard() {
       </Card>
 
       {/* Gráficos Simples */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
         {/* SLAs por Criticidade - Gráfico de Pizza */}
         <Card>
           <CardHeader>
             <CardTitle>SLAs por Criticidade</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-80">
+            <div className="h-64 sm:h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -512,7 +514,7 @@ export default function SLADashboard() {
                     label={({ name, value, percent }) => 
                       `${name}: ${value} (${(percent * 100).toFixed(1)}%)`
                     }
-                    outerRadius={80}
+                    outerRadius={window.innerWidth < 640 ? 60 : 80}
                     fill="#8884d8"
                     dataKey="value"
                   >
@@ -542,14 +544,14 @@ export default function SLADashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {getTimeData().map((item, index) => (
                 <div key={item.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">#{index + 1}</span>
-                    <span className="font-medium">{item.name}</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">#{index + 1}</span>
+                    <span className="font-medium text-sm sm:text-base truncate">{item.name}</span>
                   </div>
-                  <Badge variant="outline">{item.value} SLAs</Badge>
+                  <Badge variant="outline" className="text-xs">{item.value} SLAs</Badge>
                 </div>
               ))}
             </div>
