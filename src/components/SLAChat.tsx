@@ -102,7 +102,7 @@ const criteriaQuestions = {
   operacional: "Está travando outras áreas?"
 };
 
-type Step = 'welcome' | 'titulo' | 'time' | 'descricao' | 'criteria' | 'observacoes' | 'complete' | 'validation-error' | 'update-mode';
+type Step = 'welcome' | 'titulo' | 'time' | 'descricao' | 'criteria' | 'observacoes' | 'complete' | 'validation-error' | 'update-mode' | 'query-mode';
 
 export default function SLAChat() {
   const [step, setStep] = useState<Step>('welcome');
@@ -135,6 +135,322 @@ export default function SLAChat() {
     setMessages(prev => [...prev, newMessage]);
   };
 
+  // Sistema de consulta de SLAs com linguagem natural
+  const handleSLAQuery = async (query: string) => {
+    try {
+      addMessage('assistant', '🔍 **Processando consulta...**');
+      
+      const result = await processSLAQuery(query);
+      addMessage('assistant', result);
+    } catch (error) {
+      console.error('Erro na consulta:', error);
+      addMessage('assistant', '❌ Não consegui acessar os dados agora. Tente novamente em alguns minutos.');
+    }
+  };
+
+  const processSLAQuery = async (query: string): Promise<string> => {
+    const queryLower = query.toLowerCase();
+    
+    // Detectar tipo de consulta
+    if (queryLower.includes('aberto') || queryLower.includes('abertas')) {
+      return await getSLAsAbertos(query);
+    } else if (queryLower.includes('p0') || queryLower.includes('p1') || queryLower.includes('p2') || queryLower.includes('p3')) {
+      return await getSLAsPorCriticidade(query);
+    } else if (queryLower.includes('time') || queryLower.includes('equipe') || timeOptions.some(t => queryLower.includes(t.toLowerCase()))) {
+      return await getSLAsPorTime(query);
+    } else if (queryLower.includes('hoje') || queryLower.includes('today')) {
+      return await getSLAsHoje();
+    } else if (queryLower.includes('semana') || queryLower.includes('week')) {
+      return await getSLAsSemana(query);
+    } else if (queryLower.includes('mês') || queryLower.includes('mes') || queryLower.includes('month')) {
+      return await getSLAsMes(query);
+    } else if (queryLower.includes('percentual') || queryLower.includes('cumprimento') || queryLower.includes('prazo')) {
+      return await getSLAsCumprimento(query);
+    } else if (queryLower.includes('quantidade') || queryLower.includes('total') || queryLower.includes('count')) {
+      return await getSLAsEstatisticas();
+    } else if (queryLower.includes('tempo médio') || queryLower.includes('tempo medio') || queryLower.includes('resolução') || queryLower.includes('resolucao')) {
+      return await getSLAsTempoMedio();
+    } else {
+      return 'Você quer ver SLAs abertos, resolvidos, atrasados ou todos? Ou precisa de estatísticas específicas?';
+    }
+  };
+
+  const getSLAsAbertos = async (query: string): Promise<string> => {
+    const { data, error } = await supabase
+      .from('sla_demandas')
+      .select('ticket_number, titulo, nivel_criticidade, time_responsavel, data_criacao, status')
+      .eq('status', 'aberto')
+      .order('data_criacao', { ascending: false })
+      .limit(5);
+
+    if (error) throw error;
+    if (!data || data.length === 0) return '📋 **Nenhum SLA aberto encontrado!**\n\n✅ Todas as demandas foram resolvidas.';
+
+    let result = `🧩 **SLAs Abertos** (${data.length} encontrados)\n\n`;
+    
+    data.forEach(sla => {
+      const dataFormatada = new Date(sla.data_criacao).toLocaleDateString('pt-BR');
+      result += `**${sla.ticket_number}** – ${sla.titulo} – ${sla.nivel_criticidade}\n`;
+      result += `📅 Aberto em ${dataFormatada} | 👥 ${sla.time_responsavel}\n\n`;
+    });
+
+    if (data.length === 5) {
+      result += '⚠️ *Mostrando apenas os 5 mais recentes. Quer ver todos?*';
+    }
+
+    return result;
+  };
+
+  const getSLAsPorCriticidade = async (query: string): Promise<string> => {
+    const queryLower = query.toLowerCase();
+    let criticidade = '';
+    
+    if (queryLower.includes('p0')) criticidade = 'P0';
+    else if (queryLower.includes('p1')) criticidade = 'P1';
+    else if (queryLower.includes('p2')) criticidade = 'P2';
+    else if (queryLower.includes('p3')) criticidade = 'P3';
+
+    if (!criticidade) return 'Especifique a criticidade: P0, P1, P2 ou P3';
+
+    const { data, error } = await supabase
+      .from('sla_demandas')
+      .select('ticket_number, titulo, nivel_criticidade, time_responsavel, data_criacao, status')
+      .eq('nivel_criticidade', criticidade)
+      .order('data_criacao', { ascending: false })
+      .limit(5);
+
+    if (error) throw error;
+    if (!data || data.length === 0) return `📋 **Nenhum SLA ${criticidade} encontrado!**`;
+
+    let result = `🚨 **SLAs ${criticidade}** (${data.length} encontrados)\n\n`;
+    
+    data.forEach(sla => {
+      const dataFormatada = new Date(sla.data_criacao).toLocaleDateString('pt-BR');
+      const statusIcon = sla.status === 'aberto' ? '🔴' : sla.status === 'em_andamento' ? '🟡' : '✅';
+      result += `**${sla.ticket_number}** – ${sla.titulo}\n`;
+      result += `📅 ${dataFormatada} | 👥 ${sla.time_responsavel} | ${statusIcon} ${sla.status}\n\n`;
+    });
+
+    return result;
+  };
+
+  const getSLAsPorTime = async (query: string): Promise<string> => {
+    const queryLower = query.toLowerCase();
+    let timeEncontrado = '';
+    
+    for (const time of timeOptions) {
+      if (queryLower.includes(time.toLowerCase())) {
+        timeEncontrado = time;
+        break;
+      }
+    }
+
+    if (!timeEncontrado) return 'Especifique o time: Produto, Compliance, Suporte, Marketing, etc.';
+
+    const { data, error } = await supabase
+      .from('sla_demandas')
+      .select('ticket_number, titulo, nivel_criticidade, time_responsavel, data_criacao, status')
+      .eq('time_responsavel', timeEncontrado)
+      .order('data_criacao', { ascending: false })
+      .limit(5);
+
+    if (error) throw error;
+    if (!data || data.length === 0) return `📋 **Nenhum SLA do time ${timeEncontrado} encontrado!**`;
+
+    let result = `👥 **SLAs do Time ${timeEncontrado}** (${data.length} encontrados)\n\n`;
+    
+    data.forEach(sla => {
+      const dataFormatada = new Date(sla.data_criacao).toLocaleDateString('pt-BR');
+      const statusIcon = sla.status === 'aberto' ? '🔴' : sla.status === 'em_andamento' ? '🟡' : '✅';
+      result += `**${sla.ticket_number}** – ${sla.titulo} – ${sla.nivel_criticidade}\n`;
+      result += `📅 ${dataFormatada} | ${statusIcon} ${sla.status}\n\n`;
+    });
+
+    return result;
+  };
+
+  const getSLAsHoje = async (): Promise<string> => {
+    const hoje = new Date().toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('sla_demandas')
+      .select('ticket_number, titulo, nivel_criticidade, time_responsavel, data_criacao, status')
+      .gte('data_criacao', hoje)
+      .order('data_criacao', { ascending: false });
+
+    if (error) throw error;
+    if (!data || data.length === 0) return '📋 **Nenhum SLA aberto hoje!**\n\n✅ Dia tranquilo até agora.';
+
+    let result = `📅 **SLAs de Hoje** (${data.length} encontrados)\n\n`;
+    
+    data.forEach(sla => {
+      const hora = new Date(sla.data_criacao).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const statusIcon = sla.status === 'aberto' ? '🔴' : sla.status === 'em_andamento' ? '🟡' : '✅';
+      result += `**${sla.ticket_number}** – ${sla.titulo} – ${sla.nivel_criticidade}\n`;
+      result += `⏰ ${hora} | 👥 ${sla.time_responsavel} | ${statusIcon} ${sla.status}\n\n`;
+    });
+
+    return result;
+  };
+
+  const getSLAsSemana = async (query: string): Promise<string> => {
+    const hoje = new Date();
+    const semanaAtras = new Date(hoje.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    const { data, error } = await supabase
+      .from('sla_demandas')
+      .select('ticket_number, titulo, nivel_criticidade, time_responsavel, data_criacao, status')
+      .gte('data_criacao', semanaAtras.toISOString())
+      .order('data_criacao', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+    if (!data || data.length === 0) return '📋 **Nenhum SLA na última semana!**';
+
+    let result = `📊 **SLAs da Última Semana** (${data.length} encontrados)\n\n`;
+    
+    data.forEach(sla => {
+      const dataFormatada = new Date(sla.data_criacao).toLocaleDateString('pt-BR');
+      const statusIcon = sla.status === 'aberto' ? '🔴' : sla.status === 'em_andamento' ? '🟡' : '✅';
+      result += `**${sla.ticket_number}** – ${sla.titulo} – ${sla.nivel_criticidade}\n`;
+      result += `📅 ${dataFormatada} | 👥 ${sla.time_responsavel} | ${statusIcon} ${sla.status}\n\n`;
+    });
+
+    return result;
+  };
+
+  const getSLAsMes = async (query: string): Promise<string> => {
+    const hoje = new Date();
+    const mesAtras = new Date(hoje.getFullYear(), hoje.getMonth() - 1, hoje.getDate());
+    
+    const { data, error } = await supabase
+      .from('sla_demandas')
+      .select('ticket_number, titulo, nivel_criticidade, time_responsavel, data_criacao, status')
+      .gte('data_criacao', mesAtras.toISOString())
+      .order('data_criacao', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+    if (!data || data.length === 0) return '📋 **Nenhum SLA no último mês!**';
+
+    let result = `📈 **SLAs do Último Mês** (${data.length} encontrados)\n\n`;
+    
+    data.forEach(sla => {
+      const dataFormatada = new Date(sla.data_criacao).toLocaleDateString('pt-BR');
+      const statusIcon = sla.status === 'aberto' ? '🔴' : sla.status === 'em_andamento' ? '🟡' : '✅';
+      result += `**${sla.ticket_number}** – ${sla.titulo} – ${sla.nivel_criticidade}\n\n`;
+    });
+
+    return result;
+  };
+
+  const getSLAsCumprimento = async (query: string): Promise<string> => {
+    const hoje = new Date();
+    const mesAtras = new Date(hoje.getFullYear(), hoje.getMonth() - 1, hoje.getDate());
+    
+    const { data, error } = await supabase
+      .from('sla_demandas')
+      .select('status, nivel_criticidade, data_criacao')
+      .gte('data_criacao', mesAtras.toISOString());
+
+    if (error) throw error;
+    if (!data || data.length === 0) return '📋 **Nenhum dado disponível para análise!**';
+
+    const total = data.length;
+    const resolvidos = data.filter(sla => sla.status === 'resolvido' || sla.status === 'fechado').length;
+    const percentual = ((resolvidos / total) * 100).toFixed(1);
+
+    let result = `📊 **Análise de Cumprimento de SLA - Último Mês**\n\n`;
+    result += `📈 **Demandas criadas:** ${total}\n`;
+    result += `✅ **Demandas resolvidas:** ${resolvidos}\n`;
+    result += `📊 **Percentual de resolução:** ${percentual}%\n\n`;
+
+    // Análise por criticidade
+    const porCriticidade = data.reduce((acc: any, sla) => {
+      if (!acc[sla.nivel_criticidade]) {
+        acc[sla.nivel_criticidade] = { total: 0, resolvidos: 0 };
+      }
+      acc[sla.nivel_criticidade].total++;
+      if (sla.status === 'resolvido' || sla.status === 'fechado') {
+        acc[sla.nivel_criticidade].resolvidos++;
+      }
+      return acc;
+    }, {});
+
+    result += `**📋 Por Criticidade:**\n`;
+    Object.entries(porCriticidade).forEach(([nivel, dados]: [string, any]) => {
+      const percentualNivel = ((dados.resolvidos / dados.total) * 100).toFixed(1);
+      result += `• ${nivel}: ${dados.resolvidos}/${dados.total} (${percentualNivel}%)\n`;
+    });
+
+    return result;
+  };
+
+  const getSLAsEstatisticas = async (): Promise<string> => {
+    const { data, error } = await supabase
+      .from('sla_demandas')
+      .select('status, nivel_criticidade, time_responsavel');
+
+    if (error) throw error;
+    if (!data || data.length === 0) return '📋 **Nenhum SLA registrado no sistema!**';
+
+    const stats = {
+      total: data.length,
+      abertos: data.filter(sla => sla.status === 'aberto').length,
+      emAndamento: data.filter(sla => sla.status === 'em_andamento').length,
+      resolvidos: data.filter(sla => sla.status === 'resolvido').length,
+      fechados: data.filter(sla => sla.status === 'fechado').length
+    };
+
+    const porCriticidade = data.reduce((acc: any, sla) => {
+      acc[sla.nivel_criticidade] = (acc[sla.nivel_criticidade] || 0) + 1;
+      return acc;
+    }, {});
+
+    const porTime = data.reduce((acc: any, sla) => {
+      acc[sla.time_responsavel] = (acc[sla.time_responsavel] || 0) + 1;
+      return acc;
+    }, {});
+
+    let result = `📊 **Estatísticas Gerais do Sistema**\n\n`;
+    result += `📈 **Total de SLAs:** ${stats.total}\n`;
+    result += `🔴 **Abertos:** ${stats.abertos}\n`;
+    result += `🟡 **Em andamento:** ${stats.emAndamento}\n`;
+    result += `✅ **Resolvidos:** ${stats.resolvidos}\n`;
+    result += `🔒 **Fechados:** ${stats.fechados}\n\n`;
+
+    result += `**🚨 Por Criticidade:**\n`;
+    Object.entries(porCriticidade).forEach(([nivel, quantidade]) => {
+      result += `• ${nivel}: ${quantidade}\n`;
+    });
+
+    result += `\n**👥 Por Time:**\n`;
+    Object.entries(porTime).slice(0, 5).forEach(([time, quantidade]) => {
+      result += `• ${time}: ${quantidade}\n`;
+    });
+
+    return result;
+  };
+
+  const getSLAsTempoMedio = async (): Promise<string> => {
+    const temposMedios = {
+      'P0': '4 horas',
+      'P1': '24 horas', 
+      'P2': '3 dias úteis',
+      'P3': '7 dias úteis'
+    };
+
+    let result = `⏱️ **Tempo Médio de Resolução por Criticidade**\n\n`;
+    
+    Object.entries(temposMedios).forEach(([nivel, tempo]) => {
+      result += `🚨 **${nivel}:** ${tempo}\n`;
+    });
+
+    result += `\n📋 *Baseado nos SLAs estabelecidos da empresa*`;
+
+    return result;
+  };
+
   const calculateCriticality = (pontuacao: SLAData['pontuacao']) => {
     const total = Object.values(pontuacao).reduce((sum, value) => sum + value, 0);
     
@@ -159,7 +475,12 @@ export default function SLAChat() {
     addMessage('assistant', 'Olá! Sou a IA da Cakto para abertura de SLAs. Vou te ajudar a organizar sua demanda e calcular a criticidade.\n\n🧾 **Título da Demanda:**\nDescreva o título da sua demanda (ex: "Liberação de produtor para lançamento")');
   };
 
-  const handleInput = (value: string) => {
+  const handleStartQuery = () => {
+    setStep('query-mode');
+    addMessage('assistant', '🔍 **Modo Consulta de SLAs**\n\nPergunte-me sobre os SLAs do sistema! Posso responder sobre:\n\n• Status das demandas (abertas, resolvidas, em andamento)\n• SLAs por criticidade (P0, P1, P2, P3)\n• SLAs por time responsável\n• Estatísticas e tempo médio de resolução\n• SLAs abertos hoje, esta semana, este mês\n\n💬 **Exemplos:**\n• "Quais SLAs estão abertos hoje?"\n• "Me mostra os P0 em atraso"\n• "Quantas demandas do time de Produto estão abertas?"\n• "Qual o percentual de SLAs resolvidos no prazo este mês?"');
+  };
+
+  const handleInput = async (value: string) => {
     addMessage('user', value);
     
     switch (step) {
@@ -185,6 +506,10 @@ export default function SLAChat() {
         }));
         setStep('complete');
         showFinalResult();
+        break;
+
+      case 'query-mode':
+        await handleSLAQuery(value);
         break;
     }
     
