@@ -5,13 +5,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Copy, FileText, MessageCircle, Calculator } from "lucide-react";
+import { Copy, FileText, MessageCircle, Calculator, Upload, X, File, Image } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
   type: 'assistant' | 'user';
   content: string;
+}
+
+interface UploadedFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
 }
 
 interface SLAData {
@@ -27,6 +35,7 @@ interface SLAData {
     operacional: number;
   };
   observacoes: string;
+  arquivos: UploadedFile[];
 }
 
 interface CriteriaOption {
@@ -87,6 +96,7 @@ export default function SLAChat() {
   const [currentCriteria, setCurrentCriteria] = useState<string>('financeiro');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [slaData, setSlaData] = useState<SLAData>({
     titulo: '',
     time_responsavel: '',
@@ -99,7 +109,8 @@ export default function SLAChat() {
       urgencia: 0,
       operacional: 0
     },
-    observacoes: ''
+    observacoes: '',
+    arquivos: []
   });
   const { toast } = useToast();
 
@@ -165,7 +176,11 @@ export default function SLAChat() {
         break;
         
       case 'observacoes':
-        setSlaData(prev => ({ ...prev, observacoes: value }));
+        setSlaData(prev => ({ 
+          ...prev, 
+          observacoes: value,
+          arquivos: uploadedFiles
+        }));
         setStep('complete');
         showFinalResult();
         break;
@@ -206,6 +221,55 @@ export default function SLAChat() {
     }
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const newFile: UploadedFile = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: e.target?.result as string
+        };
+        
+        setUploadedFiles(prev => [...prev, newFile]);
+        
+        toast({
+          title: "Arquivo enviado!",
+          description: `${file.name} foi adicionado com sucesso.`,
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Limpar o input
+    event.target.value = '';
+  };
+
+  const removeFile = (fileId: string) => {
+    setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
+    toast({
+      title: "Arquivo removido",
+      description: "O arquivo foi removido da lista.",
+    });
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const isImageFile = (type: string) => {
+    return type.startsWith('image/');
+  };
+
   const showFinalResult = () => {
     const total = Object.values(slaData.pontuacao).reduce((sum, value) => sum + value, 0);
     const criticality = calculateCriticality(slaData.pontuacao);
@@ -218,7 +282,13 @@ export default function SLAChat() {
       pontuacao: slaData.pontuacao,
       pontuacao_total: total,
       nivel_criticidade: criticality,
-      observacoes: slaData.observacoes
+      observacoes: slaData.observacoes,
+      arquivos: uploadedFiles.map(file => ({
+        nome: file.name,
+        tamanho: formatFileSize(file.size),
+        tipo: file.type,
+        data_upload: new Date().toISOString()
+      }))
     };
 
     addMessage('assistant', `✅ **SLA Processado com Sucesso!**\n\n📊 **Pontuação Total:** ${total} pontos\n🏷️ **Nível de Criticidade:** ${criticality}\n\n🎯 O JSON final foi gerado e está pronto para envio ao sistema!`);
@@ -363,13 +433,74 @@ export default function SLAChat() {
             </ScrollArea>
 
             {(step === 'titulo' || step === 'time' || step === 'solicitante' || step === 'descricao' || step === 'observacoes') && (
-              <div className="border-t p-4">
+              <div className="border-t p-4 space-y-4">
+                {/* Seção de upload de arquivos apenas para observações */}
+                {step === 'observacoes' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium">📎 Anexos (opcional)</label>
+                      <div className="relative">
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*,.pdf,.doc,.docx,.txt,.xlsx,.xls"
+                          onChange={handleFileUpload}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <Button variant="outline" size="sm">
+                          <Upload className="h-4 w-4 mr-2" />
+                          Adicionar Arquivos
+                        </Button>
+                      </div>
+                    </div>
+
+                    {uploadedFiles.length > 0 && (
+                      <div className="space-y-3 max-h-40 overflow-y-auto">
+                        {uploadedFiles.map((file) => (
+                          <div key={file.id} className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                            <div className="flex-shrink-0">
+                              {isImageFile(file.type) ? (
+                                <div className="relative">
+                                  <img 
+                                    src={file.url} 
+                                    alt={file.name}
+                                    className="w-12 h-12 object-cover rounded"
+                                  />
+                                  <Image className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-primary-foreground rounded-full p-0.5" />
+                                </div>
+                              ) : (
+                                <div className="w-12 h-12 bg-secondary rounded flex items-center justify-center">
+                                  <File className="h-6 w-6 text-secondary-foreground" />
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{file.name}</p>
+                              <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                            </div>
+                            
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFile(file.id)}
+                              className="flex-shrink-0"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   {step === 'descricao' || step === 'observacoes' ? (
                     <Textarea
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
-                      placeholder="Digite sua resposta..."
+                      placeholder={step === 'observacoes' ? "Digite suas observações..." : "Digite sua resposta..."}
                       className="flex-1"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
@@ -400,7 +531,7 @@ export default function SLAChat() {
                     onClick={() => handleInput(inputValue.trim())} 
                     disabled={!inputValue.trim()}
                   >
-                    Enviar
+                    {step === 'observacoes' ? 'Finalizar' : 'Enviar'}
                   </Button>
                 </div>
               </div>
