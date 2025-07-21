@@ -102,7 +102,7 @@ const criteriaQuestions = {
   operacional: "Está travando outras áreas?"
 };
 
-type Step = 'welcome' | 'titulo' | 'time' | 'descricao' | 'criteria' | 'observacoes' | 'complete';
+type Step = 'welcome' | 'titulo' | 'time' | 'descricao' | 'criteria' | 'observacoes' | 'complete' | 'validation-error';
 
 export default function SLAChat() {
   const [step, setStep] = useState<Step>('welcome');
@@ -397,6 +397,7 @@ export default function SLAChat() {
     
     if (validationErrors.length > 0) {
       addMessage('assistant', `⚠️ **Detectei um problema nos dados:**\n\n${validationErrors.join('\n')}\n\nVocê quer revisar ou abrir um novo SLA?`);
+      setStep('validation-error');
       return;
     }
 
@@ -421,7 +422,20 @@ export default function SLAChat() {
     try {
       const slaId = await saveSLAToSupabase(slaData, total, criticality);
       
-      addMessage('assistant', `✅ **SLA registrado com sucesso no sistema!**\n\n🆔 **ID:** #${slaId}\n📊 **Pontuação Total:** ${total} pontos\n🏷️ **Nível de Criticidade:** ${criticality}\n\n🔔 A equipe responsável será notificada.`);
+      // Calcular tempo médio de resolução baseado na criticidade
+      const getTempoMedioResolucao = (nivel: string) => {
+        switch (nivel) {
+          case 'P0': return '4 horas';
+          case 'P1': return '24 horas';
+          case 'P2': return '3 dias úteis';
+          case 'P3': return '7 dias úteis';
+          default: return '7 dias úteis';
+        }
+      };
+      
+      const tempoMedio = getTempoMedioResolucao(criticality);
+      
+      addMessage('assistant', `✅ **SLA registrado com sucesso no sistema!**\n\n🆔 **ID:** #${slaId}\n📊 **Pontuação Total:** ${total} pontos\n🏷️ **Nível de Criticidade:** ${criticality}\n⏱️ **Tempo Médio de Resolução:** ${tempoMedio}\n\n🔔 A equipe responsável será notificada.`);
       
       // Salvar o JSON para exibição
       (window as any).finalSlaJson = { ...finalJson, id: slaId };
@@ -543,6 +557,58 @@ export default function SLAChat() {
                           </div>
                         </Button>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {step === 'validation-error' && (
+                  <div className="bg-chat-assistant border rounded-lg p-4">
+                    <div className="space-y-3">
+                      <Button
+                        variant="outline"
+                        className="w-full text-left h-auto p-4 justify-start hover:bg-accent hover:text-accent-foreground transition-colors"
+                        onClick={() => {
+                          addMessage('user', 'Revisar dados');
+                          setStep('titulo');
+                          addMessage('assistant', '🔄 **Revisando dados...**\n\n🧾 **Título da Demanda:**\nDescreva o título da sua demanda (ex: "Liberação de produtor para lançamento")');
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 rounded-full bg-blue-500" />
+                          <span className="text-sm font-medium">📝 Revisar e editar dados</span>
+                        </div>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full text-left h-auto p-4 justify-start hover:bg-accent hover:text-accent-foreground transition-colors"
+                        onClick={() => {
+                          addMessage('user', 'Abrir novo SLA');
+                          // Resetar todos os dados
+                          setSlaData({
+                            titulo: '',
+                            time_responsavel: '',
+                            descricao: '',
+                            pontuacao: {
+                              financeiro: 0,
+                              cliente: 0,
+                              reputacao: 0,
+                              urgencia: 0,
+                              operacional: 0
+                            },
+                            observacoes: '',
+                            arquivos: []
+                          });
+                          setUploadedFiles([]);
+                          setMessages([]);
+                          setStep('welcome');
+                          handleStart();
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 rounded-full bg-green-500" />
+                          <span className="text-sm font-medium">🆕 Abrir novo SLA</span>
+                        </div>
+                      </Button>
                     </div>
                   </div>
                 )}
