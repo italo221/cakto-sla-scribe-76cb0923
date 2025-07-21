@@ -585,19 +585,140 @@ const Documentation = () => {
                   <Tag className="h-5 w-5" />
                   Sistema de Tags Automáticas
                 </CardTitle>
+                <CardDescription>
+                  Inteligência artificial para organização e busca inteligente de SLAs
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <p>
-                  O sistema gera automaticamente tags relevantes para cada SLA usando inteligência artificial.
-                </p>
-                
-                <div className="space-y-2">
-                  <h4 className="font-semibold">Comandos de Chat para Tags:</h4>
-                  <ul className="space-y-1 text-sm">
-                    <li>• <code>/tags</code> - Lista todas as tags disponíveis</li>
-                    <li>• <code>/tags:tecnologia</code> - Busca tags relacionadas a "tecnologia"</li>
-                    <li>• <code>/add-tag:infraestrutura</code> - Adiciona tag ao último SLA criado</li>
-                  </ul>
+              <CardContent className="space-y-6">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-900 mb-2">🤖 Como Funciona</h4>
+                  <p className="text-sm text-blue-800">
+                    A IA analisa automaticamente título, descrição e contexto de cada SLA criado, 
+                    gerando 3-7 tags relevantes que facilitam busca, organização e análise de padrões.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">🎯 Para que Serve:</h4>
+                    <ul className="space-y-2 text-sm">
+                      <li>• <strong>Busca Rápida:</strong> Encontre SLAs relacionados instantaneamente</li>
+                      <li>• <strong>Organização:</strong> Agrupa demandas similares automaticamente</li>
+                      <li>• <strong>Padrões:</strong> Detecta tendências e problemas recorrentes</li>
+                      <li>• <strong>Relatórios:</strong> Análise por categoria e tipo de problema</li>
+                      <li>• <strong>Reutilização:</strong> Reaproveite soluções de casos similares</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">🏷️ Exemplos de Tags:</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm font-medium">🖥️ Tecnologia:</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          <Badge variant="outline" className="text-xs">api-rest</Badge>
+                          <Badge variant="outline" className="text-xs">banco-dados</Badge>
+                          <Badge variant="outline" className="text-xs">servidor</Badge>
+                          <Badge variant="outline" className="text-xs">deploy</Badge>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">💰 Financeiro:</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          <Badge variant="outline" className="text-xs">pagamento</Badge>
+                          <Badge variant="outline" className="text-xs">pix</Badge>
+                          <Badge variant="outline" className="text-xs">cartao</Badge>
+                          <Badge variant="outline" className="text-xs">faturamento</Badge>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">👥 Suporte:</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          <Badge variant="outline" className="text-xs">usuario-bloqueado</Badge>
+                          <Badge variant="outline" className="text-xs">senha</Badge>
+                          <Badge variant="outline" className="text-xs">acesso</Badge>
+                          <Badge variant="outline" className="text-xs">treinamento</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold">💬 Comandos de Chat para Tags:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <code className="bg-muted px-2 py-1 rounded text-sm">/tags</code>
+                      <p className="text-sm text-muted-foreground">Lista todas as tags disponíveis no sistema</p>
+                    </div>
+                    <div className="space-y-2">
+                      <code className="bg-muted px-2 py-1 rounded text-sm">/tags:palavra</code>
+                      <p className="text-sm text-muted-foreground">Busca tags relacionadas a uma palavra específica</p>
+                    </div>
+                    <div className="space-y-2">
+                      <code className="bg-muted px-2 py-1 rounded text-sm">/add-tag:nome</code>
+                      <p className="text-sm text-muted-foreground">Adiciona tag manual ao último SLA criado</p>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold">🔍 Como Usar na Busca:</h4>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-muted rounded">
+                      <p className="text-sm font-medium mb-1">Na Caixa de Entrada (/inbox):</p>
+                      <ul className="text-sm space-y-1">
+                        <li>• Digite qualquer tag no campo de busca</li>
+                        <li>• Exemplo: <code className="bg-background px-1 rounded">pagamento</code> → mostra todos SLAs de pagamento</li>
+                        <li>• Combine com filtros de status e criticidade</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold">📊 Exemplo Prático de Uso:</h4>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm font-medium">📝 SLA Criado:</p>
+                        <p className="text-sm italic">"Sistema de vendas fora do ar - erro 500 no checkout"</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">🏷️ Tags Geradas Automaticamente:</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          <Badge variant="secondary" className="text-xs">sistema-vendas</Badge>
+                          <Badge variant="secondary" className="text-xs">erro-500</Badge>
+                          <Badge variant="secondary" className="text-xs">checkout</Badge>
+                          <Badge variant="secondary" className="text-xs">indisponibilidade</Badge>
+                          <Badge variant="secondary" className="text-xs">ecommerce</Badge>
+                          <Badge variant="secondary" className="text-xs">infraestrutura</Badge>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">🎯 Como Usar:</p>
+                        <ul className="text-sm space-y-1">
+                          <li>• Busque por <code className="bg-background px-1 rounded">erro-500</code> para ver outros casos similares</li>
+                          <li>• Use <code className="bg-background px-1 rounded">infraestrutura</code> para relatórios do setor</li>
+                          <li>• Reaproveite soluções de SLAs com tag <code className="bg-background px-1 rounded">checkout</code></li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <h4 className="font-semibold text-green-900 mb-2">💡 Dica Pro</h4>
+                  <p className="text-sm text-green-800">
+                    O sistema fica mais inteligente com o uso! Quanto mais SLAs você criar, 
+                    mais precisas ficam as tags automáticas para padrões específicos da sua empresa.
+                  </p>
                 </div>
               </CardContent>
             </Card>
