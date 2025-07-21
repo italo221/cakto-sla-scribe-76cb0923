@@ -899,6 +899,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                                 {/* Anexos do comentário */}
                                 {comment.anexos && comment.anexos.length > 0 && (
                                   <div className="mt-2 space-y-1">
+                                    <div className="text-xs text-muted-foreground mb-1">📎 Anexos ({comment.anexos.length}):</div>
                                     {comment.anexos.map((anexo, index) => (
                                       <div key={index} className="flex items-center gap-2 p-2 bg-muted/30 rounded text-xs">
                                         <FileText className="h-3 w-3 text-muted-foreground" />
