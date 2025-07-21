@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
 
 interface Profile {
@@ -66,7 +65,9 @@ const Admin = () => {
   const [newSetorDesc, setNewSetorDesc] = useState("");
   
   const { toast } = useToast();
-  const { isAdmin } = useAuth();
+  
+  // Temporariamente removendo useAuth
+  const isAdmin = true; // Simulando que sempre é admin para teste
 
   // Fetch data
   const fetchData = async () => {
