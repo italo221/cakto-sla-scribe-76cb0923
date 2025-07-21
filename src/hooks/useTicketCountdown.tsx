@@ -1,26 +1,26 @@
 import { useState, useEffect } from 'react';
 
-interface SLATimeConfig {
+interface TicketTimeConfig {
   'P0': number; // 4 horas
   'P1': number; // 24 horas  
   'P2': number; // 3 dias úteis
   'P3': number; // 7 dias úteis
 }
 
-const SLA_TIME_LIMITS: SLATimeConfig = {
+const TICKET_TIME_LIMITS: TicketTimeConfig = {
   'P0': 4 * 60 * 60 * 1000, // 4 horas em ms
   'P1': 24 * 60 * 60 * 1000, // 24 horas em ms
   'P2': 3 * 24 * 60 * 60 * 1000, // 3 dias em ms
   'P3': 7 * 24 * 60 * 60 * 1000, // 7 dias em ms
 };
 
-export const useSLACountdown = (dataCriacao: string, criticidade: string) => {
+export const useTicketCountdown = (dataCriacao: string, criticidade: string) => {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [isExpired, setIsExpired] = useState<boolean>(false);
 
   useEffect(() => {
     const startTime = new Date(dataCriacao).getTime();
-    const timeLimit = SLA_TIME_LIMITS[criticidade as keyof SLATimeConfig] || SLA_TIME_LIMITS['P3'];
+    const timeLimit = TICKET_TIME_LIMITS[criticidade as keyof TicketTimeConfig] || TICKET_TIME_LIMITS['P3'];
     const deadline = startTime + timeLimit;
 
     const updateCountdown = () => {
@@ -64,7 +64,7 @@ export const useSLACountdown = (dataCriacao: string, criticidade: string) => {
   const getUrgencyLevel = () => {
     if (isExpired) return 'expired';
     
-    const totalTime = SLA_TIME_LIMITS[criticidade as keyof SLATimeConfig] || SLA_TIME_LIMITS['P3'];
+    const totalTime = TICKET_TIME_LIMITS[criticidade as keyof TicketTimeConfig] || TICKET_TIME_LIMITS['P3'];
     const percentageRemaining = (timeRemaining / totalTime) * 100;
     
     if (percentageRemaining <= 10) return 'critical';

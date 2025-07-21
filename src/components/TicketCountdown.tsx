@@ -1,19 +1,19 @@
-import { useSLACountdown } from '@/hooks/useSLACountdown';
+import { useTicketCountdown } from '@/hooks/useTicketCountdown';
 import { Clock, AlertTriangle, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-interface SLACountdownProps {
+interface TicketCountdownProps {
   dataCriacao: string;
   criticidade: string;
   status: string;
   compact?: boolean;
 }
 
-export const SLACountdown = ({ dataCriacao, criticidade, status, compact = false }: SLACountdownProps) => {
-  const { formattedTime, isExpired, urgencyLevel } = useSLACountdown(dataCriacao, criticidade);
+export const TicketCountdown = ({ dataCriacao, criticidade, status, compact = false }: TicketCountdownProps) => {
+  const { formattedTime, isExpired, urgencyLevel } = useTicketCountdown(dataCriacao, criticidade);
 
-  // Não mostrar cronômetro para SLAs já resolvidos
+  // Não mostrar cronômetro para tickets já resolvidos
   if (status === 'resolvido' || status === 'fechado') {
     return null;
   }

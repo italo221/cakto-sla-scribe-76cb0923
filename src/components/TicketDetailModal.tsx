@@ -45,7 +45,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { SLACountdown } from "@/components/SLACountdown";
+import { TicketCountdown } from "@/components/TicketCountdown";
 
 interface SLA {
   id: string;
@@ -499,7 +499,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
               {sla.ticket_number || `#${sla.id.slice(0, 8)}`} - {sla.titulo}
             </DialogTitle>
             <div className="flex items-center gap-2">
-              <SLACountdown 
+              <TicketCountdown 
                 dataCriacao={sla.data_criacao}
                 criticidade={sla.nivel_criticidade}
                 status={sla.status}

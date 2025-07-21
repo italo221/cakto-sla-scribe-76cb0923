@@ -24,7 +24,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { path: "/", label: "Criar SLA", icon: Home },
+  { path: "/", label: "Criar Ticket", icon: Home },
   { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { path: "/inbox", label: "Caixa de Entrada", icon: Inbox },
   { path: "/integrations", label: "Integrações", icon: Settings },
@@ -96,7 +96,7 @@ export default function Navigation() {
             <div>
               <h1 className="text-xl font-bold text-gradient">Manhattan</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">
-                Sistema SLA
+                Sistema Tickets
               </p>
             </div>
           </Link>
@@ -126,7 +126,7 @@ export default function Navigation() {
                   <div className="flex items-center gap-3 pb-4 border-b">
                     <div>
                       <h2 className="font-semibold">Manhattan</h2>
-                      <p className="text-sm text-muted-foreground">Sistema SLA</p>
+                      <p className="text-sm text-muted-foreground">Sistema Tickets</p>
                     </div>
                   </div>
                   

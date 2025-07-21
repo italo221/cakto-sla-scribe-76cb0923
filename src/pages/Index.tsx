@@ -1,4 +1,4 @@
-import SLAChat from "@/components/SLAChat";
+import TicketChat from "@/components/TicketChat";
 import Navigation from "@/components/Navigation";
 import SupabaseStatus from "@/components/SupabaseStatus";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
@@ -21,13 +21,13 @@ const Index = () => {
         <div className="text-center space-y-4 animate-fade-in-up">
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
             <Zap className="h-4 w-4" />
-            Criar Nova Demanda SLA
+            Criar Novo Ticket
           </div>
           <h1 className="text-4xl lg:text-5xl font-bold text-gradient">
-            Sistema Inteligente de SLA
+            Sistema Inteligente de Tickets
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Utilize nosso assistente de IA para criar demandas SLA de forma rápida e precisa, 
+            Utilize nosso assistente de IA para criar tickets de forma rápida e precisa, 
             com classificação automática de criticidade.
           </p>
         </div>
@@ -71,7 +71,7 @@ const Index = () => {
             </CardHeader>
             <CardContent className="text-center">
               <p className="text-sm text-muted-foreground">
-                Acompanhe performance e cumprimento de SLAs em tempo real
+                Acompanhe performance e cumprimento de tickets em tempo real
               </p>
             </CardContent>
           </Card>
@@ -79,7 +79,7 @@ const Index = () => {
 
         {/* Main Chat Component */}
         <div className="animate-fade-in-up">
-          <SLAChat />
+          <TicketChat />
         </div>
       </div>
     </div>

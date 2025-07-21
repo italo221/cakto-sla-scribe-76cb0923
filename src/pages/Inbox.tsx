@@ -11,9 +11,9 @@ import { Search, Filter, Clock, AlertCircle, CheckCircle, X } from "lucide-react
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Navigation from "@/components/Navigation";
-import SLADetailModal from "@/components/SLADetailModal";
+import TicketDetailModal from "@/components/TicketDetailModal";
 import SupabaseStatus from "@/components/SupabaseStatus";
-import { SLACountdown } from "@/components/SLACountdown";
+import { TicketCountdown } from "@/components/TicketCountdown";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 
 interface SLA {
@@ -375,7 +375,7 @@ export default function Inbox() {
                             </div>
                             {getStatusBadge(sla.status)}
                             {getCriticalityBadge(sla.nivel_criticidade)}
-                            <SLACountdown 
+                            <TicketCountdown 
                               dataCriacao={sla.data_criacao}
                               criticidade={sla.nivel_criticidade}
                               status={sla.status}
@@ -444,7 +444,7 @@ export default function Inbox() {
       </div>
 
       {/* Modal de Detalhes do SLA */}
-      <SLADetailModal
+      <TicketDetailModal
         sla={selectedSLA}
         isOpen={modalOpen}
         onClose={handleCloseSLADetail}
