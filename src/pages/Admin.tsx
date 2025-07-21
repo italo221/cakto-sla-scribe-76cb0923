@@ -19,7 +19,9 @@ import {
   Check,
   X,
   AlertCircle,
-  Plus
+  Plus,
+  UserX,
+  Save
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +51,149 @@ interface UserSetor {
   setor: Setor;
   profile: Pick<Profile, 'nome_completo' | 'email'>;
 }
+
+// Componente para cartão de usuário com edição
+const UserCard = ({ user, onUserUpdate }: { user: Profile; onUserUpdate: () => void }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState(user.nome_completo);
+  const { toast } = useToast();
+
+  const handleSave = async () => {
+    if (!editedName.trim()) {
+      toast({
+        title: "Erro",
+        description: "Nome não pode estar vazio.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ nome_completo: editedName.trim() })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Perfil atualizado",
+        description: "Nome atualizado com sucesso.",
+      });
+
+      setIsEditing(false);
+      onUserUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleActive = async () => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ ativo: !user.ativo })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: user.ativo ? "Usuário desativado" : "Usuário ativado",
+        description: `${user.nome_completo} foi ${user.ativo ? 'desativado' : 'ativado'} com sucesso.`,
+      });
+
+      onUserUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao alterar status",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between p-4 border rounded-lg">
+      <div className="space-y-1 flex-1">
+        {isEditing ? (
+          <div className="flex items-center gap-2">
+            <Input
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              className="max-w-xs"
+            />
+            <Button size="sm" onClick={handleSave}>
+              <Save className="h-3 w-3 mr-1" />
+              Salvar
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => {
+              setIsEditing(false);
+              setEditedName(user.nome_completo);
+            }}>
+              Cancelar
+            </Button>
+          </div>
+        ) : (
+          <p className="font-medium">{user.nome_completo}</p>
+        )}
+        <p className="text-sm text-muted-foreground">{user.email}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        {user.user_type === 'administrador_master' ? (
+          <Badge variant="destructive">
+            <Shield className="h-3 w-3 mr-1" />
+            Admin Master
+          </Badge>
+        ) : (
+          <Badge variant="secondary">
+            <Users className="h-3 w-3 mr-1" />
+            Colaborador
+          </Badge>
+        )}
+        {user.ativo ? (
+          <Badge variant="outline" className="text-green-600">
+            <Check className="h-3 w-3 mr-1" />
+            Ativo
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="text-red-600">
+            <X className="h-3 w-3 mr-1" />
+            Inativo
+          </Badge>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsEditing(!isEditing)}
+          disabled={isEditing}
+        >
+          <Edit className="h-3 w-3" />
+        </Button>
+        <Button
+          variant={user.ativo ? "destructive" : "default"}
+          size="sm"
+          onClick={handleToggleActive}
+        >
+          {user.ativo ? (
+            <>
+              <UserX className="h-3 w-3 mr-1" />
+              Desativar
+            </>
+          ) : (
+            <>
+              <Check className="h-3 w-3 mr-1" />
+              Ativar
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 const Admin = () => {
   const [users, setUsers] = useState<Profile[]>([]);
@@ -291,40 +436,11 @@ const Admin = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {users.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="space-y-1">
-                        <p className="font-medium">{user.nome_completo}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {user.user_type === 'administrador_master' ? (
-                          <Badge variant="destructive">
-                            <Shield className="h-3 w-3 mr-1" />
-                            Admin Master
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">
-                            <Users className="h-3 w-3 mr-1" />
-                            Colaborador
-                          </Badge>
-                        )}
-                        {user.ativo ? (
-                          <Badge variant="outline" className="text-green-600">
-                            <Check className="h-3 w-3 mr-1" />
-                            Ativo
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-red-600">
-                            <X className="h-3 w-3 mr-1" />
-                            Inativo
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                 <div className="space-y-4">
+                   {users.map((user) => (
+                     <UserCard key={user.id} user={user} onUserUpdate={fetchData} />
+                   ))}
+                 </div>
               </CardContent>
             </Card>
           </TabsContent>
