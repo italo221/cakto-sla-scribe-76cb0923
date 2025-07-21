@@ -807,24 +807,39 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                                    <Smile className="h-4 w-4" />
                                  </Button>
                                  {showEmojiPicker && (
-                                   <div className="absolute bottom-full left-0 mb-2 p-2 bg-background border rounded-lg shadow-lg z-50">
-                                     <div className="grid grid-cols-6 gap-1">
-                                       {['😀', '😊', '👍', '👎', '❤️', '🎉', '😢', '😮', '😡', '🤔', '💡', '🔥', '✅', '❌', '⚠️', '📝', '🚀', '💯'].map((emoji) => (
-                                         <Button
-                                           key={emoji}
-                                           variant="ghost"
-                                           size="sm"
-                                           className="h-8 w-8 p-0 text-lg hover:bg-muted"
-                                           onClick={() => {
-                                             setNewComment(prev => prev + emoji);
-                                             setShowEmojiPicker(false);
-                                           }}
-                                         >
-                                           {emoji}
-                                         </Button>
-                                       ))}
+                                   <>
+                                     {/* Overlay para fechar quando clicar fora */}
+                                     <div 
+                                       className="fixed inset-0 z-40" 
+                                       onClick={() => setShowEmojiPicker(false)}
+                                     />
+                                     <div className="absolute bottom-full left-0 mb-2 p-3 bg-background border rounded-lg shadow-lg z-50 w-64">
+                                       <div className="text-xs text-muted-foreground mb-2 font-medium">Escolha um emoji:</div>
+                                       <div className="grid grid-cols-8 gap-1">
+                                         {[
+                                           '😀', '😊', '😂', '🥰', '😎', '🤔', '😮', '😢',
+                                           '😡', '🤯', '🥳', '😴', '🤤', '🤒', '🤕', '😵',
+                                           '👍', '👎', '👌', '✌️', '🤞', '👏', '🙌', '🤝',
+                                           '❤️', '💙', '💚', '💛', '🧡', '💜', '🖤', '💯',
+                                           '🔥', '⚡', '💡', '🎉', '🎊', '✨', '⭐', '🌟',
+                                           '✅', '❌', '⚠️', '🚀', '📝', '📋', '💻', '🔧'
+                                         ].map((emoji) => (
+                                           <Button
+                                             key={emoji}
+                                             variant="ghost"
+                                             size="sm"
+                                             className="h-8 w-8 p-0 text-base hover:bg-muted hover:scale-110 transition-all duration-200"
+                                             onClick={() => {
+                                               setNewComment(prev => prev + emoji + ' ');
+                                               setShowEmojiPicker(false);
+                                             }}
+                                           >
+                                             {emoji}
+                                           </Button>
+                                         ))}
+                                       </div>
                                      </div>
-                                   </div>
+                                   </>
                                  )}
                                </div>
                             </div>
