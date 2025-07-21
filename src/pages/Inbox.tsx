@@ -62,11 +62,49 @@ export default function Inbox() {
     try {
       const { data, error } = await supabase
         .from('sla_demandas')
-        .select('*')
-        .order('data_criacao', { ascending: false });
+        .select('*');
 
       if (error) throw error;
-      setSlas(data || []);
+      
+      // Aplicar ordenação inteligente
+      const sortedData = (data || []).sort((a, b) => {
+        // 1. Prioridade por status - SLAs ativos primeiro
+        const statusPriority = {
+          'aberto': 4,
+          'em_andamento': 3, 
+          'pausado': 2,
+          'resolvido': 1,
+          'fechado': 0
+        };
+        
+        const statusDiff = (statusPriority[b.status] || 0) - (statusPriority[a.status] || 0);
+        if (statusDiff !== 0) return statusDiff;
+        
+        // 2. Se mesmo status, priorizar por criticidade (P0 > P1 > P2 > P3)
+        const criticalityPriority = {
+          'P0': 4,
+          'P1': 3,
+          'P2': 2, 
+          'P3': 1
+        };
+        
+        const criticalityDiff = (criticalityPriority[b.nivel_criticidade] || 0) - (criticalityPriority[a.nivel_criticidade] || 0);
+        if (criticalityDiff !== 0) return criticalityDiff;
+        
+        // 3. Se mesma criticidade, priorizar por pontuação total
+        const scoreDiff = (b.pontuacao_total || 0) - (a.pontuacao_total || 0);
+        if (scoreDiff !== 0) return scoreDiff;
+        
+        // 4. Por último, para SLAs ativos, mais antigos primeiro (urgência)
+        if ((statusPriority[a.status] || 0) >= 2 && (statusPriority[b.status] || 0) >= 2) {
+          return new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime();
+        }
+        
+        // 5. Para SLAs resolvidos/fechados, mais recentes primeiro
+        return new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime();
+      });
+      
+      setSlas(sortedData);
     } catch (error) {
       console.error('Erro ao carregar SLAs:', error);
     } finally {
@@ -99,6 +137,7 @@ export default function Inbox() {
       filtered = filtered.filter(sla => sla.nivel_criticidade === criticalityFilter);
     }
 
+    // Manter a mesma ordenação inteligente aplicada no loadSLAs
     setFilteredSlas(filtered);
   };
 
@@ -286,12 +325,12 @@ export default function Inbox() {
           </Card>
         </div>
 
-        {/* Lista de SLAs */}
+        {/* Lista de SLAs - Ordenada por Prioridade */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                SLAs 
+                SLAs - Ordenação Inteligente
                 <Badge variant="outline" className="font-mono">
                   {filteredSlas.length} total
                 </Badge>
@@ -303,7 +342,7 @@ export default function Inbox() {
                 )}
               </CardTitle>
               <div className="text-sm text-muted-foreground">
-                Atualizado em tempo real
+                🎯 Críticos primeiro • 📊 Por pontuação • ⏰ Urgência temporal
               </div>
             </div>
           </CardHeader>

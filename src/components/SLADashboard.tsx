@@ -71,13 +71,39 @@ export default function SLADashboard() {
           data_criacao,
           setor_id
         `)
-        .gte('data_criacao', trintaDiasAtras.toISOString())
-        .order('data_criacao', { ascending: false });
+        .gte('data_criacao', trintaDiasAtras.toISOString());
 
       if (error) throw error;
 
       const slas = data || [];
-      setSlaData(slas);
+      
+      // Aplicar ordenação inteligente similar ao Inbox
+      const sortedSlas = slas.sort((a, b) => {
+        const statusPriority = {
+          'aberto': 4,
+          'em_andamento': 3, 
+          'pausado': 2,
+          'resolvido': 1,
+          'fechado': 0
+        };
+        
+        const statusDiff = (statusPriority[b.status] || 0) - (statusPriority[a.status] || 0);
+        if (statusDiff !== 0) return statusDiff;
+        
+        const criticalityPriority = {
+          'P0': 4,
+          'P1': 3,
+          'P2': 2, 
+          'P3': 1
+        };
+        
+        const criticalityDiff = (criticalityPriority[b.nivel_criticidade] || 0) - (criticalityPriority[a.nivel_criticidade] || 0);
+        if (criticalityDiff !== 0) return criticalityDiff;
+        
+        return new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime();
+      });
+      
+      setSlaData(sortedSlas);
 
       // Calcular métricas
       const total = slas.length;
