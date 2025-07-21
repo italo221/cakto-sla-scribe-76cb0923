@@ -8,60 +8,99 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    /* Base colors - Enhanced palette */
     --background: 240 10% 98%;
     --foreground: 240 10% 10%;
 
+    /* Cards and surfaces */
     --card: 0 0% 100%;
     --card-foreground: 240 10% 10%;
+    --card-hover: 240 8% 97%;
 
+    /* Popovers and overlays */
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 10%;
 
+    /* Primary brand colors */
     --primary: 261 83% 58%;
     --primary-foreground: 0 0% 100%;
+    --primary-hover: 261 83% 52%;
+    --primary-light: 261 83% 95%;
 
+    /* Secondary colors */
     --secondary: 240 5% 96%;
     --secondary-foreground: 240 6% 10%;
+    --secondary-hover: 240 5% 91%;
 
+    /* Muted colors */
     --muted: 240 5% 96%;
     --muted-foreground: 240 4% 46%;
+    --muted-hover: 240 5% 91%;
 
+    /* Accent colors */
     --accent: 261 83% 98%;
     --accent-foreground: 261 83% 58%;
+    --accent-hover: 261 83% 95%;
 
+    /* Status colors */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
+    --destructive-hover: 0 84% 55%;
+    
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 76% 95%;
+    
+    --warning: 45 93% 47%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 45 93% 95%;
+    
+    --info: 221 83% 53%;
+    --info-foreground: 0 0% 100%;
+    --info-light: 221 83% 95%;
 
+    /* Interactive elements */
     --border: 240 6% 90%;
     --input: 240 6% 90%;
     --ring: 261 83% 58%;
 
+    /* Chat specific */
     --chat-background: 240 10% 99%;
     --chat-user: 261 83% 58%;
     --chat-user-foreground: 0 0% 100%;
     --chat-assistant: 0 0% 100%;
     --chat-assistant-foreground: 240 10% 10%;
 
+    /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(261 83% 58%), hsl(261 83% 68%));
     --gradient-background: linear-gradient(180deg, hsl(240 10% 99%), hsl(240 10% 96%));
+    --gradient-surface: linear-gradient(135deg, hsl(0 0% 100%), hsl(240 8% 98%));
 
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
+    --shadow-elevated: 0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
+
+    /* Border radius */
     --radius: 0.5rem;
+    --radius-sm: 0.25rem;
+    --radius-lg: 0.75rem;
 
+    /* Sidebar */
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Animation timing */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
@@ -70,28 +109,48 @@ All colors MUST be HSL.
 
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
+    --card-hover: 222.2 84% 6%;
 
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 261 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 261 83% 52%;
+    --primary-light: 261 83% 15%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
+    --secondary-hover: 217.2 32.6% 22%;
 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
+    --muted-hover: 217.2 32.6% 22%;
 
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
+    --accent-hover: 217.2 32.6% 22%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
+    --destructive-hover: 0 62.8% 35%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+    --success-light: 142 76% 15%;
+
+    --warning: 45 93% 47%;
+    --warning-foreground: 222.2 84% 4.9%;
+    --warning-light: 45 93% 15%;
+
+    --info: 221 83% 53%;
+    --info-foreground: 210 40% 98%;
+    --info-light: 221 83% 15%;
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -109,6 +168,143 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Improve readability */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Focus styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Selection styles */
+  ::selection {
+    @apply bg-primary/20 text-primary-foreground;
+  }
+}
+
+@layer components {
+  /* Enhanced card styles */
+  .card-elevated {
+    @apply bg-gradient-to-b from-card to-card/95 shadow-lg hover:shadow-xl transition-shadow duration-300;
+  }
+
+  .card-interactive {
+    @apply hover:bg-card-hover transition-colors duration-200 cursor-pointer;
+  }
+
+  /* Button enhancements */
+  .btn-gradient {
+    @apply bg-gradient-to-r from-primary to-primary-hover text-primary-foreground;
+  }
+
+  /* Status indicators */
+  .status-dot {
+    @apply w-2 h-2 rounded-full inline-block mr-2;
+  }
+
+  .status-success {
+    @apply bg-success;
+  }
+
+  .status-warning {
+    @apply bg-warning;
+  }
+
+  .status-error {
+    @apply bg-destructive;
+  }
+
+  .status-info {
+    @apply bg-info;
+  }
+
+  /* Loading states */
+  .skeleton {
+    @apply bg-muted animate-pulse;
+  }
+
+  /* Micro-interactions */
+  .hover-lift {
+    @apply transform hover:-translate-y-1 transition-transform duration-200;
+  }
+
+  .hover-scale {
+    @apply transform hover:scale-105 transition-transform duration-200;
+  }
+
+  .hover-glow {
+    @apply hover:shadow-lg hover:shadow-primary/25 transition-shadow duration-300;
+  }
+
+  /* Text utilities */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent;
+  }
+
+  /* Form improvements */
+  .form-section {
+    @apply space-y-4 p-6 bg-card rounded-lg border;
+  }
+
+  .form-group {
+    @apply space-y-2;
+  }
+
+  /* Navigation enhancements */
+  .nav-item {
+    @apply relative flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200;
+  }
+
+  .nav-item-active {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  .nav-item-inactive {
+    @apply text-muted-foreground hover:text-foreground hover:bg-muted;
+  }
+
+  /* Responsive utilities */
+  .container-responsive {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Accessibility improvements */
+  .sr-only {
+    @apply absolute w-px h-px p-0 -m-px overflow-hidden clip-[rect(0,0,0,0)] whitespace-nowrap border-0;
+  }
+
+  /* Enhanced scrollbars */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground));
   }
 }
