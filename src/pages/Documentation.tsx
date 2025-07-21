@@ -32,13 +32,14 @@ const Documentation = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="database">Banco de Dados</TabsTrigger>
             <TabsTrigger value="sla-creation">Criar SLA</TabsTrigger>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="inbox">Caixa de Entrada</TabsTrigger>
             <TabsTrigger value="integrations">Integrações</TabsTrigger>
+            <TabsTrigger value="permissions">Permissões</TabsTrigger>
             <TabsTrigger value="api">API & Webhook</TabsTrigger>
           </TabsList>
 
@@ -746,16 +747,20 @@ const Documentation = () => {
                       <li>• <strong>Em Progresso:</strong> Sendo trabalhados</li>
                       <li>• <strong>Vencidos:</strong> Que passaram do prazo</li>
                       <li>• <strong>Taxa de Conformidade:</strong> % de SLAs cumpridos no prazo</li>
+                      <li>• <strong>Tempo Médio de Resolução:</strong> Por prioridade (P0-P3)</li>
+                      <li>• <strong>Distribuição por Criticidade:</strong> Análise de padrões</li>
                     </ul>
                   </div>
                   
                   <div className="space-y-3">
-                    <h4 className="font-semibold">Gráficos Disponíveis:</h4>
+                    <h4 className="font-semibold">Visualizações Disponíveis:</h4>
                     <ul className="space-y-2 text-sm">
-                      <li>• <strong>Por Criticidade:</strong> Distribuição por níveis</li>
-                      <li>• <strong>Por Equipe:</strong> Performance das equipes</li>
-                      <li>• <strong>Histórico Temporal:</strong> Evolução ao longo do tempo</li>
+                      <li>• <strong>Por Criticidade:</strong> Distribuição por níveis P0-P3</li>
+                      <li>• <strong>Por Equipe:</strong> Performance das equipes/setores</li>
+                      <li>• <strong>Tempo de Resolução:</strong> Métricas por prioridade com indicadores visuais</li>
                       <li>• <strong>Taxa de Resolução:</strong> Indicadores de eficiência</li>
+                      <li>• <strong>SLAs Atrasados:</strong> Monitoramento de cumprimento de prazos</li>
+                      <li>• <strong>Tendências:</strong> Evolução das métricas ao longo do tempo</li>
                     </ul>
                   </div>
                 </div>
@@ -820,11 +825,199 @@ const Documentation = () => {
                 <Separator />
 
                 <div className="space-y-3">
-                  <h4 className="font-semibold">Busca por Tags:</h4>
+                  <h4 className="font-semibold">💬 Sistema de Comentários:</h4>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Cada SLA possui um sistema de discussão interna onde:
+                    </p>
+                    <ul className="text-sm space-y-1">
+                      <li>• A descrição do SLA aparece como comentário inicial</li>
+                      <li>• Admins podem comentar em qualquer SLA</li>
+                      <li>• Colaboradores comentam apenas em SLAs do seu setor</li>
+                      <li>• Suporte a anexos de arquivos</li>
+                      <li>• Histórico completo de interações</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <h4 className="font-semibold">📎 Sistema de Anexos:</h4>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Upload seguro de arquivos com:
+                    </p>
+                    <ul className="text-sm space-y-1">
+                      <li>• Armazenamento no Supabase Storage</li>
+                      <li>• Controle de acesso por setor</li>
+                      <li>• Metadados preservados (nome, tamanho, tipo)</li>
+                      <li>• Download direto dos arquivos</li>
+                      <li>• Organização por SLA e comentário</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <h4 className="font-semibold">⚡ Atualizações em Tempo Real:</h4>
                   <p className="text-sm text-muted-foreground">
-                    Digite palavras-chave no campo de busca para encontrar SLAs relacionados. 
-                    O sistema busca tanto nas tags automáticas quanto no conteúdo dos SLAs.
+                    O sistema atualiza automaticamente quando novos SLAs são criados ou modificados, 
+                    garantindo que todos os usuários vejam as informações mais recentes.
                   </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="permissions" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Sistema de Permissões e Usuários
+                </CardTitle>
+                <CardDescription>
+                  Gestão de acesso, roles e permissões no sistema SLA
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-900 mb-2">🔐 Segurança</h4>
+                  <p className="text-sm text-blue-800">
+                    O sistema utiliza Row Level Security (RLS) do PostgreSQL para garantir que cada usuário 
+                    veja apenas os dados aos quais tem permissão de acesso.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">👤 Tipos de Usuário:</h4>
+                    <div className="space-y-3">
+                      <div className="p-3 border rounded-lg">
+                        <h5 className="font-medium text-red-700 mb-1">🟥 Administrador Master</h5>
+                        <ul className="text-sm space-y-1">
+                          <li>• Acesso completo a todos os SLAs</li>
+                          <li>• Pode comentar em qualquer SLA</li>
+                          <li>• Visualiza todos os setores</li>
+                          <li>• Pode transferir SLAs entre setores</li>
+                          <li>• Acesso a todos os logs de ação</li>
+                          <li>• Pode gerenciar usuários e setores</li>
+                        </ul>
+                      </div>
+                      
+                      <div className="p-3 border rounded-lg">
+                        <h5 className="font-medium text-blue-700 mb-1">🟦 Colaborador de Setor</h5>
+                        <ul className="text-sm space-y-1">
+                          <li>• Acesso apenas aos SLAs do seu setor</li>
+                          <li>• Pode comentar nos SLAs do seu setor</li>
+                          <li>• Visualiza apenas seu(s) setor(es)</li>
+                          <li>• Pode atualizar status dos SLAs</li>
+                          <li>• Vê logs relacionados ao seu setor</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">🏢 Sistema de Setores:</h4>
+                    <div className="space-y-3">
+                      <div className="p-3 bg-muted rounded-lg">
+                        <h5 className="font-medium mb-2">Estrutura:</h5>
+                        <ul className="text-sm space-y-1">
+                          <li>• Cada usuário pertence a um ou mais setores</li>
+                          <li>• SLAs são associados a setores específicos</li>
+                          <li>• Transferências entre setores são rastreadas</li>
+                          <li>• Comentários são vinculados ao setor do autor</li>
+                        </ul>
+                      </div>
+
+                      <div className="p-3 bg-muted rounded-lg">
+                        <h5 className="font-medium mb-2">Funcionalidades por Setor:</h5>
+                        <ul className="text-sm space-y-1">
+                          <li>• Dashboard filtrado por setor</li>
+                          <li>• Métricas específicas do setor</li>
+                          <li>• Histórico de ações do setor</li>
+                          <li>• Relatórios segmentados</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold">🔄 Fluxo de Permissões:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center space-y-2">
+                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                        <Users className="h-6 w-6 text-green-600" />
+                      </div>
+                      <h5 className="font-semibold">1. Autenticação</h5>
+                      <p className="text-sm text-muted-foreground">
+                        Login via email/senha
+                      </p>
+                    </div>
+                    
+                    <div className="text-center space-y-2">
+                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                        <Settings className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <h5 className="font-semibold">2. Verificação</h5>
+                      <p className="text-sm text-muted-foreground">
+                        RLS verifica tipo de usuário e setores
+                      </p>
+                    </div>
+                    
+                    <div className="text-center space-y-2">
+                      <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
+                        <MessageSquare className="h-6 w-6 text-purple-600" />
+                      </div>
+                      <h5 className="font-semibold">3. Filtros</h5>
+                      <p className="text-sm text-muted-foreground">
+                        Dados filtrados automaticamente
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold">📊 Políticas RLS Implementadas:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <h5 className="font-medium">SLA Demandas:</h5>
+                      <ul className="text-sm space-y-1">
+                        <li>• <strong>Admin:</strong> Vê todos os SLAs</li>
+                        <li>• <strong>Colaborador:</strong> Apenas SLAs do seu setor</li>
+                        <li>• <strong>Inserção:</strong> Usuários autenticados</li>
+                        <li>• <strong>Atualização:</strong> Admin ou setor responsável</li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-3">
+                      <h5 className="font-medium">Comentários:</h5>
+                      <ul className="text-sm space-y-1">
+                        <li>• <strong>Visualização:</strong> Admin ou setor do SLA</li>
+                        <li>• <strong>Inserção:</strong> Admin ou membro do setor</li>
+                        <li>• <strong>Sem edição:</strong> Comentários são imutáveis</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <h4 className="font-semibold text-green-900 mb-2">✅ Boas Práticas de Segurança</h4>
+                  <ul className="text-sm text-green-800 space-y-1">
+                    <li>• Nunca confie apenas na interface - RLS protege no banco</li>
+                    <li>• Logs de ação rastreiam todas as operações</li>
+                    <li>• Senhas são hash+salt pelo Supabase Auth</li>
+                    <li>• Tokens JWT com expiração automática</li>
+                    <li>• API protegida por autenticação obrigatória</li>
+                  </ul>
                 </div>
               </CardContent>
             </Card>
@@ -879,6 +1072,97 @@ const Documentation = () => {
                     <li>• <strong>Tag Adicionada:</strong> Quando novas tags são associadas</li>
                     <li>• <strong>SLA Atualizado:</strong> Qualquer modificação no SLA</li>
                   </ul>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Endpoints da API REST</CardTitle>
+                <CardDescription>
+                  Documentação dos endpoints disponíveis para integração
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <h4 className="font-semibold">🔍 Listar SLAs</h4>
+                  <div className="bg-muted p-4 rounded-lg">
+                    <div className="space-y-2">
+                      <p className="font-mono text-sm">GET /rest/v1/sla_demandas</p>
+                      <p className="text-sm text-muted-foreground">
+                        Retorna lista de SLAs filtrada automaticamente por RLS
+                      </p>
+                      <p className="text-xs">
+                        <strong>Headers:</strong> Authorization: Bearer {`{token}`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold">📝 Criar SLA</h4>
+                  <div className="bg-muted p-4 rounded-lg">
+                    <div className="space-y-2">
+                      <p className="font-mono text-sm">POST /rest/v1/sla_demandas</p>
+                      <p className="text-sm text-muted-foreground">
+                        Cria novo SLA com geração automática de ticket
+                      </p>
+                      <div className="text-xs space-y-1">
+                        <p><strong>Content-Type:</strong> application/json</p>
+                        <p><strong>Campos obrigatórios:</strong> titulo, descricao, time_responsavel, solicitante, pontuacao_*</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold">🔄 Atualizar Status</h4>
+                  <div className="bg-muted p-4 rounded-lg">
+                    <div className="space-y-2">
+                      <p className="font-mono text-sm">PATCH /rest/v1/sla_demandas?id=eq.{`{uuid}`}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Atualiza status do SLA (gera log automático)
+                      </p>
+                      <div className="text-xs space-y-1">
+                        <p><strong>Valores aceitos:</strong> aberto, em_andamento, resolvido, fechado</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold">💬 Adicionar Comentário</h4>
+                  <div className="bg-muted p-4 rounded-lg">
+                    <div className="space-y-2">
+                      <p className="font-mono text-sm">POST /rest/v1/sla_comentarios_internos</p>
+                      <p className="text-sm text-muted-foreground">
+                        Adiciona comentário ao SLA (respeitando permissões de setor)
+                      </p>
+                      <div className="text-xs space-y-1">
+                        <p><strong>Campos obrigatórios:</strong> sla_id, setor_id, comentario</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <h4 className="font-semibold">📊 Rate Limits e Limites</h4>
+                  <ul className="space-y-2 text-sm">
+                    <li>• <strong>Requisições por minuto:</strong> 100 para usuários autenticados</li>
+                    <li>• <strong>Tamanho máximo de payload:</strong> 1MB</li>
+                    <li>• <strong>Timeout de resposta:</strong> 30 segundos</li>
+                    <li>• <strong>Autenticação obrigatória:</strong> Todos os endpoints requerem JWT válido</li>
+                  </ul>
+                </div>
+
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <h4 className="font-semibold text-yellow-900 mb-2">⚠️ Importante</h4>
+                  <p className="text-sm text-yellow-800">
+                    Todos os endpoints respeitam as políticas RLS. Usuários só podem acessar 
+                    dados dos setores aos quais pertencem, exceto administradores que têm acesso completo.
+                  </p>
                 </div>
               </CardContent>
             </Card>
