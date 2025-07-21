@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { MessageSquare, Inbox, Home } from "lucide-react";
+import { MessageSquare, Inbox, Home, BarChart3 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 export default function Navigation() {
@@ -25,6 +25,17 @@ export default function Navigation() {
             <Link to="/" className="flex items-center gap-2">
               <Home className="h-4 w-4" />
               Criar SLA
+            </Link>
+          </Button>
+          
+          <Button
+            variant={isActive('/dashboard') ? 'default' : 'ghost'}
+            size="sm"
+            asChild
+          >
+            <Link to="/dashboard" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Dashboard
             </Link>
           </Button>
           

@@ -151,8 +151,15 @@ export default function SLAChat() {
   const processSLAQuery = async (query: string): Promise<string> => {
     const queryLower = query.toLowerCase();
     
+    // Detectar comandos de métricas e desempenho (V5)
+    if (queryLower.includes('cumprimento') || queryLower.includes('desempenho') || 
+        queryLower.includes('resumo') || queryLower.includes('métricas') || 
+        queryLower.includes('metricas') || queryLower.includes('kpi') ||
+        queryLower.includes('atraso') || queryLower.includes('atrasados')) {
+      return await getSLAsMetricas(query);
+    }
     // Detectar tipo de consulta
-    if (queryLower.includes('aberto') || queryLower.includes('abertas')) {
+    else if (queryLower.includes('aberto') || queryLower.includes('abertas')) {
       return await getSLAsAbertos(query);
     } else if (queryLower.includes('p0') || queryLower.includes('p1') || queryLower.includes('p2') || queryLower.includes('p3')) {
       return await getSLAsPorCriticidade(query);
@@ -164,7 +171,7 @@ export default function SLAChat() {
       return await getSLAsSemana(query);
     } else if (queryLower.includes('mês') || queryLower.includes('mes') || queryLower.includes('month')) {
       return await getSLAsMes(query);
-    } else if (queryLower.includes('percentual') || queryLower.includes('cumprimento') || queryLower.includes('prazo')) {
+    } else if (queryLower.includes('percentual') || queryLower.includes('prazo')) {
       return await getSLAsCumprimento(query);
     } else if (queryLower.includes('quantidade') || queryLower.includes('total') || queryLower.includes('count')) {
       return await getSLAsEstatisticas();
@@ -432,6 +439,80 @@ export default function SLAChat() {
     return result;
   };
 
+  const getSLAsMetricas = async (query: string): Promise<string> => {
+    try {
+      // Consultar dados dos últimos 7 dias
+      const seteDiasAtras = new Date();
+      seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
+      
+      const { data: slasSemana, error } = await supabase
+        .from('sla_demandas')
+        .select('status, nivel_criticidade, data_criacao, time_responsavel')
+        .gte('data_criacao', seteDiasAtras.toISOString());
+
+      if (error) throw error;
+
+      // Consultar dados de hoje para atrasos
+      const hoje = new Date().toISOString().split('T')[0];
+      const { data: slasHoje } = await supabase
+        .from('sla_demandas')
+        .select('status, nivel_criticidade')
+        .gte('data_criacao', hoje);
+
+      // Calcular métricas
+      const totalSemana = slasSemana?.length || 0;
+      const abertos = slasSemana?.filter(sla => sla.status === 'aberto').length || 0;
+      const resolvidos = slasSemana?.filter(sla => sla.status === 'resolvido' || sla.status === 'fechado').length || 0;
+      const emAndamento = slasSemana?.filter(sla => sla.status === 'em_andamento').length || 0;
+      
+      // Calcular atrasos (P0 e P1 que estão abertos há mais de 1 dia)
+      const ontemData = new Date();
+      ontemData.setDate(ontemData.getDate() - 1);
+      const atrasados = slasSemana?.filter(sla => 
+        (sla.nivel_criticidade === 'P0' || sla.nivel_criticidade === 'P1') && 
+        sla.status === 'aberto' && 
+        new Date(sla.data_criacao) < ontemData
+      ).length || 0;
+
+      const cumprimento = totalSemana > 0 ? ((resolvidos / totalSemana) * 100).toFixed(1) : '0';
+
+      // Análise por área (top 3)
+      const porArea = slasSemana?.reduce((acc: any, sla) => {
+        acc[sla.time_responsavel] = (acc[sla.time_responsavel] || 0) + 1;
+        return acc;
+      }, {}) || {};
+      
+      const topAreas = Object.entries(porArea)
+        .sort(([,a], [,b]) => (b as number) - (a as number))
+        .slice(0, 3);
+
+      let result = `📈 **Painel de SLA disponível no sistema!**\n\n`;
+      result += `🔗 **Acesse:** https://sistema.cakto.com/slas/kpis\n\n`;
+      result += `📊 **Resumo atual (últimos 7 dias):**\n`;
+      result += `• ${totalSemana} SLAs criados\n`;
+      result += `• ${resolvidos} resolvidos\n`;
+      result += `• ${abertos + emAndamento} ainda em aberto (${atrasados} atrasados)\n`;
+      result += `• **Cumprimento de SLA:** ${cumprimento}%\n\n`;
+
+      if (topAreas.length > 0) {
+        result += `👥 **Top áreas (esta semana):**\n`;
+        topAreas.forEach(([area, qty]) => {
+          result += `• ${area}: ${qty} SLAs\n`;
+        });
+        result += `\n`;
+      }
+
+      result += `🔍 **Quer ver por área ou por criticidade? Posso filtrar aqui.**\n`;
+      result += `📈 **Para gráficos detalhados, acesse o painel completo.**`;
+
+      return result;
+      
+    } catch (error) {
+      console.error('Erro ao buscar métricas:', error);
+      return '❌ Erro ao acessar dados de métricas. Tente novamente.';
+    }
+  };
+
   const getSLAsTempoMedio = async (): Promise<string> => {
     const temposMedios = {
       'P0': '4 horas',
@@ -477,7 +558,7 @@ export default function SLAChat() {
 
   const handleStartQuery = () => {
     setStep('query-mode');
-    addMessage('assistant', '🔍 **Modo Consulta de SLAs**\n\nPergunte-me sobre os SLAs do sistema! Posso responder sobre:\n\n• Status das demandas (abertas, resolvidas, em andamento)\n• SLAs por criticidade (P0, P1, P2, P3)\n• SLAs por time responsável\n• Estatísticas e tempo médio de resolução\n• SLAs abertos hoje, esta semana, este mês\n\n💬 **Exemplos:**\n• "Quais SLAs estão abertos hoje?"\n• "Me mostra os P0 em atraso"\n• "Quantas demandas do time de Produto estão abertas?"\n• "Qual o percentual de SLAs resolvidos no prazo este mês?"');
+    addMessage('assistant', '🔍 **Modo Consulta de SLAs**\n\nPergunte-me sobre os SLAs do sistema! Posso responder sobre:\n\n• **Status das demandas** (abertas, resolvidas, em andamento)\n• **SLAs por criticidade** (P0, P1, P2, P3)\n• **SLAs por time** responsável\n• **Métricas e KPIs** (cumprimento, atrasos, desempenho)\n• **Estatísticas** e tempo médio de resolução\n• **Dados temporais** (hoje, esta semana, este mês)\n\n💬 **Exemplos:**\n• "Quais SLAs estão abertos hoje?"\n• "Me mostra os P0 em atraso"\n• "Como está o cumprimento dos SLAs?"\n• "Me dá um resumo da semana"\n• "Quantas demandas do time de Produto estão abertas?"');
   };
 
   const handleInput = async (value: string) => {
@@ -1048,9 +1129,16 @@ export default function SLAChat() {
                         </p>
                       </div>
                     </div>
-                    <Button onClick={handleStart} size="lg" className="px-8">
-                      Iniciar Nova Demanda de SLA
-                    </Button>
+                    <div className="space-y-3">
+                      <Button onClick={handleStart} size="lg" className="w-full px-8">
+                        <FileText className="mr-2 h-4 w-4" />
+                        Iniciar Nova Demanda de SLA
+                      </Button>
+                      <Button onClick={handleStartQuery} variant="outline" size="lg" className="w-full px-8">
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Consultar SLAs & Métricas
+                      </Button>
+                    </div>
                   </div>
                 )}
 
