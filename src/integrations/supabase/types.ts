@@ -125,6 +125,129 @@ export type Database = {
         }
         Relationships: []
       }
+      sla_action_logs: {
+        Row: {
+          acao: string
+          autor_email: string
+          autor_id: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          id: string
+          justificativa: string | null
+          setor_destino_id: string | null
+          setor_origem_id: string | null
+          sla_id: string
+          timestamp: string
+        }
+        Insert: {
+          acao: string
+          autor_email: string
+          autor_id: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          justificativa?: string | null
+          setor_destino_id?: string | null
+          setor_origem_id?: string | null
+          sla_id: string
+          timestamp?: string
+        }
+        Update: {
+          acao?: string
+          autor_email?: string
+          autor_id?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          justificativa?: string | null
+          setor_destino_id?: string | null
+          setor_origem_id?: string | null
+          sla_id?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sla_action_logs_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "sla_action_logs_setor_destino_id_fkey"
+            columns: ["setor_destino_id"]
+            isOneToOne: false
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sla_action_logs_setor_origem_id_fkey"
+            columns: ["setor_origem_id"]
+            isOneToOne: false
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sla_action_logs_sla_id_fkey"
+            columns: ["sla_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sla_comentarios_internos: {
+        Row: {
+          autor_id: string
+          autor_nome: string
+          comentario: string
+          created_at: string
+          id: string
+          setor_id: string
+          sla_id: string
+        }
+        Insert: {
+          autor_id: string
+          autor_nome: string
+          comentario: string
+          created_at?: string
+          id?: string
+          setor_id: string
+          sla_id: string
+        }
+        Update: {
+          autor_id?: string
+          autor_nome?: string
+          comentario?: string
+          created_at?: string
+          id?: string
+          setor_id?: string
+          sla_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sla_comentarios_internos_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "sla_comentarios_internos_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sla_comentarios_internos_sla_id_fkey"
+            columns: ["sla_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sla_demandas: {
         Row: {
           arquivos: Json | null
@@ -406,6 +529,14 @@ export type Database = {
           total_profit_30_days: number
           profit_count_30_days: number
         }[]
+      }
+      is_admin: {
+        Args: { user_uuid?: string }
+        Returns: boolean
+      }
+      user_has_setor_access: {
+        Args: { setor_uuid: string; user_uuid?: string }
+        Returns: boolean
       }
     }
     Enums: {
