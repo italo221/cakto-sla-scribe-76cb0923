@@ -1,10 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { MessageSquare, Inbox, Home, BarChart3, Settings, BookOpen, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MessageSquare, Inbox, Home, BarChart3, Settings, BookOpen, Shield, LogOut, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Navigation() {
   const location = useLocation();
+  const { user, profile, isAdmin, signOut } = useAuth();
   
   const isActive = (path: string) => location.pathname === path;
 
@@ -83,16 +86,41 @@ export default function Navigation() {
             </Link>
           </Button>
 
-          {/* Login Button */}
-          <Button
-            variant={isActive('/auth') ? 'default' : 'outline'}
-            size="sm"
-            asChild
-          >
-            <Link to="/auth" className="flex items-center gap-2">
-              Login
-            </Link>
-          </Button>
+          {/* User Status Section */}
+          {user && profile ? (
+            <div className="flex items-center gap-3 ml-4 pl-4 border-l">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">{profile.nome_completo}</span>
+                  <Badge variant={isAdmin ? "default" : "secondary"} className="text-xs">
+                    {isAdmin ? "Admin Master" : "Colaborador"}
+                  </Badge>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={signOut}
+                className="flex items-center gap-2 text-destructive hover:text-destructive"
+              >
+                <LogOut className="h-4 w-4" />
+                Sair
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant={isActive('/auth') ? 'default' : 'outline'}
+              size="sm"
+              asChild
+              className="ml-4"
+            >
+              <Link to="/auth" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Login
+              </Link>
+            </Button>
+          )}
         </nav>
       </div>
     </Card>
