@@ -513,6 +513,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_sla_comment: {
+        Args: { p_sla_id: string; p_setor_id: string; p_comentario: string }
+        Returns: string
+      }
       generate_ticket_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -533,6 +537,18 @@ export type Database = {
       is_admin: {
         Args: { user_uuid?: string }
         Returns: boolean
+      }
+      log_sla_action: {
+        Args: {
+          p_sla_id: string
+          p_acao: string
+          p_setor_origem_id?: string
+          p_setor_destino_id?: string
+          p_justificativa?: string
+          p_dados_anteriores?: Json
+          p_dados_novos?: Json
+        }
+        Returns: string
       }
       user_has_setor_access: {
         Args: { setor_uuid: string; user_uuid?: string }
