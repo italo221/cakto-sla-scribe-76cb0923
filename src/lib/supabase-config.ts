@@ -14,12 +14,10 @@ export function getSupabaseConfig(): SupabaseConfig {
   const integratedKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucXNnamJsd3VmZmdwa3NmeXloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NTE4MzUsImV4cCI6MjA2ODAyNzgzNX0.zQEBVwXDClAfZDvefRBKCRKF_ux-GEfzd1QV5iOaxyE";
 
   // Verificar se há configurações customizadas (para projetos clonados)
-  const customUrl = process.env.SUPABASE_URL || 
-                   (window as any).__SUPABASE_URL__ || 
+  const customUrl = (window as any).__SUPABASE_URL__ || 
                    localStorage.getItem('supabase_url');
                    
-  const customKey = process.env.SUPABASE_ANON_KEY || 
-                   (window as any).__SUPABASE_ANON_KEY__ || 
+  const customKey = (window as any).__SUPABASE_ANON_KEY__ || 
                    localStorage.getItem('supabase_anon_key');
 
   // Se há configurações customizadas, usar elas
