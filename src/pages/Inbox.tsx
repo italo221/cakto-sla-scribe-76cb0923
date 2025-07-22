@@ -42,31 +42,60 @@ interface Ticket {
   prioridade_operacional?: string;
 }
 
+interface Setor {
+  id: string;
+  nome: string;
+}
+
 export default function Inbox() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
+  const [setores, setSetores] = useState<Setor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [criticalityFilter, setCriticalityFilter] = useState('all');
+  const [setorFilter, setSetorFilter] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     loadTickets();
+    loadSetores();
   }, []);
 
   useEffect(() => {
     if (tickets.length > 0) {
       filterTickets();
     }
-  }, [tickets, searchTerm, statusFilter, criticalityFilter]);
+  }, [tickets, searchTerm, statusFilter, criticalityFilter, setorFilter]);
+
+  const loadSetores = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('setores')
+        .select('id, nome')
+        .eq('ativo', true)
+        .order('nome');
+
+      if (error) throw error;
+      setSetores(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar setores:', error);
+    }
+  };
 
   const loadTickets = async () => {
     try {
       const { data, error } = await supabase
         .from('sla_demandas')
-        .select('*');
+        .select(`
+          *,
+          setores (
+            id,
+            nome
+          )
+        `);
 
       if (error) throw error;
       
@@ -139,6 +168,11 @@ export default function Inbox() {
     // Filtro por criticidade
     if (criticalityFilter !== 'all') {
       filtered = filtered.filter(ticket => ticket.nivel_criticidade === criticalityFilter);
+    }
+
+    // Filtro por setor
+    if (setorFilter !== 'all') {
+      filtered = filtered.filter(ticket => ticket.setor_id === setorFilter);
     }
 
     // Manter a mesma ordenação inteligente aplicada no loadTickets
@@ -267,7 +301,7 @@ export default function Inbox() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -301,6 +335,20 @@ export default function Inbox() {
                   <SelectItem value="P1">P1 - Alto</SelectItem>
                   <SelectItem value="P2">P2 - Médio</SelectItem>
                   <SelectItem value="P3">P3 - Baixo</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={setorFilter} onValueChange={setSetorFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por setor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os setores</SelectItem>
+                  {setores.map((setor) => (
+                    <SelectItem key={setor.id} value={setor.id}>
+                      {setor.nome}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
