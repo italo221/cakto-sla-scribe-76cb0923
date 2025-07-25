@@ -370,13 +370,14 @@ export default function ModernSLADashboard() {
   };
 
   const getTeamColor = (index: number) => {
+    // Usando tons de verde como padrão (cores secundárias customizáveis)
     const colors = [
-      'hsl(142 76% 36%)', // green
-      'hsl(221 83% 53%)', // blue
-      'hsl(262 83% 58%)', // purple
-      'hsl(25 95% 53%)', // orange
-      'hsl(346 87% 43%)', // pink
-      'hsl(173 80% 40%)' // teal
+      'hsl(142 76% 36%)', // green primary
+      'hsl(142 76% 46%)', // green lighter
+      'hsl(142 76% 26%)', // green darker
+      'hsl(158 76% 36%)', // green-teal
+      'hsl(128 76% 36%)', // green-lime
+      'hsl(156 76% 36%)'  // green-emerald
     ];
     return colors[index % colors.length];
   };
