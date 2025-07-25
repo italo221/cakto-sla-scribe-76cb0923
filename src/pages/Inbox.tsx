@@ -568,6 +568,93 @@ export default function Inbox() {
           </div>
         </div>
 
+        {/* Tickets Críticos Atrasados - Seção Fixa */}
+        {tickets.filter(ticket => {
+          if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
+          
+          const timeConfig = {
+            'P0': 4 * 60 * 60 * 1000,
+            'P1': 24 * 60 * 60 * 1000,
+            'P2': 3 * 24 * 60 * 60 * 1000,
+            'P3': 7 * 24 * 60 * 60 * 1000,
+          };
+          
+          const startTime = new Date(ticket.data_criacao).getTime();
+          const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+          const deadline = startTime + timeLimit;
+          
+          return Date.now() > deadline && (ticket.nivel_criticidade === 'P0' || ticket.nivel_criticidade === 'P1');
+        }).length > 0 && (
+          <Card className="mb-6 border-destructive/50 bg-destructive/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="h-5 w-5 animate-pulse" />
+                Tickets Críticos Atrasados
+                <Badge variant="destructive" className="animate-glow-pulse flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  {tickets.filter(ticket => {
+                    if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
+                    
+                    const timeConfig = {
+                      'P0': 4 * 60 * 60 * 1000,
+                      'P1': 24 * 60 * 60 * 1000,
+                      'P2': 3 * 24 * 60 * 60 * 1000,
+                      'P3': 7 * 24 * 60 * 60 * 1000,
+                    };
+                    
+                    const startTime = new Date(ticket.data_criacao).getTime();
+                    const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+                    const deadline = startTime + timeLimit;
+                    
+                    return Date.now() > deadline && (ticket.nivel_criticidade === 'P0' || ticket.nivel_criticidade === 'P1');
+                  }).length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {tickets
+                  .filter(ticket => {
+                    if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
+                    
+                    const timeConfig = {
+                      'P0': 4 * 60 * 60 * 1000,
+                      'P1': 24 * 60 * 60 * 1000,
+                      'P2': 3 * 24 * 60 * 60 * 1000,
+                      'P3': 7 * 24 * 60 * 60 * 1000,
+                    };
+                    
+                    const startTime = new Date(ticket.data_criacao).getTime();
+                    const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+                    const deadline = startTime + timeLimit;
+                    
+                    return Date.now() > deadline && (ticket.nivel_criticidade === 'P0' || ticket.nivel_criticidade === 'P1');
+                  })
+                  .slice(0, 3)
+                  .map(ticket => (
+                    <div 
+                      key={ticket.id}
+                      className="flex items-center justify-between p-3 bg-background rounded-lg border border-destructive/20 cursor-pointer hover:bg-destructive/5 transition-colors"
+                      onClick={() => handleOpenTicketDetail(ticket)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                        <Badge variant="secondary" className="font-mono text-xs">
+                          {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
+                        </Badge>
+                        <span className="font-medium">{ticket.titulo}</span>
+                        {getCriticalityBadge(ticket.nivel_criticidade)}
+                      </div>
+                      <div className="text-sm text-destructive font-medium">
+                        {getTimeStatus(ticket.data_criacao, ticket.nivel_criticidade, ticket.status)?.text}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Filtros Inteligentes */}
         <Card className="mb-6">
           <CardHeader>
@@ -768,93 +855,6 @@ export default function Inbox() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Tickets Críticos Atrasados - Seção Fixa */}
-        {tickets.filter(ticket => {
-          if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
-          
-          const timeConfig = {
-            'P0': 4 * 60 * 60 * 1000,
-            'P1': 24 * 60 * 60 * 1000,
-            'P2': 3 * 24 * 60 * 60 * 1000,
-            'P3': 7 * 24 * 60 * 60 * 1000,
-          };
-          
-          const startTime = new Date(ticket.data_criacao).getTime();
-          const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
-          const deadline = startTime + timeLimit;
-          
-          return Date.now() > deadline && (ticket.nivel_criticidade === 'P0' || ticket.nivel_criticidade === 'P1');
-        }).length > 0 && (
-          <Card className="mb-6 border-destructive/50 bg-destructive/5">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-destructive">
-                <AlertCircle className="h-5 w-5 animate-pulse" />
-                Tickets Críticos Atrasados
-                <Badge variant="destructive" className="animate-glow-pulse flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" />
-                  {tickets.filter(ticket => {
-                    if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
-                    
-                    const timeConfig = {
-                      'P0': 4 * 60 * 60 * 1000,
-                      'P1': 24 * 60 * 60 * 1000,
-                      'P2': 3 * 24 * 60 * 60 * 1000,
-                      'P3': 7 * 24 * 60 * 60 * 1000,
-                    };
-                    
-                    const startTime = new Date(ticket.data_criacao).getTime();
-                    const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
-                    const deadline = startTime + timeLimit;
-                    
-                    return Date.now() > deadline && (ticket.nivel_criticidade === 'P0' || ticket.nivel_criticidade === 'P1');
-                  }).length}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {tickets
-                  .filter(ticket => {
-                    if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
-                    
-                    const timeConfig = {
-                      'P0': 4 * 60 * 60 * 1000,
-                      'P1': 24 * 60 * 60 * 1000,
-                      'P2': 3 * 24 * 60 * 60 * 1000,
-                      'P3': 7 * 24 * 60 * 60 * 1000,
-                    };
-                    
-                    const startTime = new Date(ticket.data_criacao).getTime();
-                    const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
-                    const deadline = startTime + timeLimit;
-                    
-                    return Date.now() > deadline && (ticket.nivel_criticidade === 'P0' || ticket.nivel_criticidade === 'P1');
-                  })
-                  .slice(0, 3)
-                  .map(ticket => (
-                    <div 
-                      key={ticket.id}
-                      className="flex items-center justify-between p-3 bg-background rounded-lg border border-destructive/20 cursor-pointer hover:bg-destructive/5 transition-colors"
-                      onClick={() => handleOpenTicketDetail(ticket)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
-                        <Badge variant="secondary" className="font-mono text-xs">
-                          {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
-                        </Badge>
-                        <span className="font-medium">{ticket.titulo}</span>
-                        {getCriticalityBadge(ticket.nivel_criticidade)}
-                      </div>
-                      <div className="text-sm text-destructive font-medium">
-                        {getTimeStatus(ticket.data_criacao, ticket.nivel_criticidade, ticket.status)?.text}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Cards de Estatísticas Atualizados */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
