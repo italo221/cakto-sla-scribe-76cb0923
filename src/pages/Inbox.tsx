@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Filter, Clock, AlertCircle, CheckCircle, X, Grid3X3, List, Star, User, MoreVertical, Play, Pause, CheckCircle2, XCircle, Eye, Columns3, AlertTriangle } from "lucide-react";
+import { Search, Filter, Clock, AlertCircle, CheckCircle, X, Grid3X3, List, Star, User, MoreVertical, Play, Pause, CheckCircle2, XCircle, Eye, Columns3, AlertTriangle, Flag, Building, Target, Users, Activity, Inbox as InboxIcon } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Navigation from "@/components/Navigation";
@@ -449,8 +449,9 @@ export default function Inbox() {
                 </Badge>
               )}
               {filteredTickets.filter(s => s.nivel_criticidade === 'P0' && s.status !== 'resolvido' && s.status !== 'fechado').length > 0 && (
-                <Badge variant="destructive" className="animate-glow-pulse">
-                  🚨 {filteredTickets.filter(s => s.nivel_criticidade === 'P0' && s.status !== 'resolvido' && s.status !== 'fechado').length} críticos
+                <Badge variant="destructive" className="animate-glow-pulse flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  {filteredTickets.filter(s => s.nivel_criticidade === 'P0' && s.status !== 'resolvido' && s.status !== 'fechado').length} críticos
                 </Badge>
               )}
             </div>
@@ -551,10 +552,30 @@ export default function Inbox() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os status</SelectItem>
-                  <SelectItem value="aberto">🔴 Aberto</SelectItem>
-                  <SelectItem value="em_andamento">🟡 Em Andamento</SelectItem>
-                  <SelectItem value="resolvido">🟢 Resolvido</SelectItem>
-                  <SelectItem value="fechado">⚫ Fechado</SelectItem>
+                  <SelectItem value="aberto">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-3 h-3 text-red-500" />
+                      Aberto
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="em_andamento">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-3 h-3 text-yellow-500" />
+                      Em Andamento
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="resolvido">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-3 h-3 text-green-500" />
+                      Resolvido
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="fechado">
+                    <div className="flex items-center gap-2">
+                      <XCircle className="w-3 h-3 text-gray-500" />
+                      Fechado
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -564,10 +585,30 @@ export default function Inbox() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as criticidades</SelectItem>
-                  <SelectItem value="P0">🚨 P0 - Crítico</SelectItem>
-                  <SelectItem value="P1">🔥 P1 - Alto</SelectItem>
-                  <SelectItem value="P2">⚠️ P2 - Médio</SelectItem>
-                  <SelectItem value="P3">ℹ️ P3 - Baixo</SelectItem>
+                  <SelectItem value="P0">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-3 h-3 text-red-500" />
+                      P0 - Crítico
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="P1">
+                    <div className="flex items-center gap-2">
+                      <Flag className="w-3 h-3 text-orange-500" />
+                      P1 - Alto
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="P2">
+                    <div className="flex items-center gap-2">
+                      <Flag className="w-3 h-3 text-yellow-500" />
+                      P2 - Médio
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="P3">
+                    <div className="flex items-center gap-2">
+                      <Flag className="w-3 h-3 text-blue-500" />
+                      P3 - Baixo
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -579,7 +620,10 @@ export default function Inbox() {
                   <SelectItem value="all">Todos os setores</SelectItem>
                   {setores.map((setor) => (
                     <SelectItem key={setor.id} value={setor.id}>
-                      🏢 {setor.nome}
+                      <div className="flex items-center gap-2">
+                        <Building className="w-3 h-3 text-muted-foreground" />
+                        {setor.nome}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -590,27 +634,29 @@ export default function Inbox() {
             <div className="flex flex-wrap gap-2">
               <Badge
                 variant="outline"
-                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1"
                 onClick={() => {
                   setStatusFilter('aberto');
                   setCriticalityFilter('P0');
                 }}
               >
-                🚨 Críticos Abertos
+                <AlertTriangle className="w-3 h-3 text-red-500" />
+                Críticos Abertos
               </Badge>
               <Badge
                 variant="outline"
-                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1"
                 onClick={() => {
                   setStatusFilter('em_andamento');
                   setCriticalityFilter('all');
                 }}
               >
-                🏃 Em Andamento
+                <Activity className="w-3 h-3 text-yellow-500" />
+                Em Andamento
               </Badge>
               <Badge
                 variant="outline"
-                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1"
                 onClick={() => {
                   const expired = getExpiredTickets();
                   if (expired.length > 0) {
@@ -618,7 +664,8 @@ export default function Inbox() {
                   }
                 }}
               >
-                ⏰ Atrasados
+                <Clock className="w-3 h-3 text-orange-500" />
+                Atrasados
               </Badge>
               <Button
                 variant="ghost"
@@ -629,9 +676,10 @@ export default function Inbox() {
                   setCriticalityFilter('all');
                   setSetorFilter('all');
                 }}
-                className="h-6 px-2 text-xs"
+                className="h-6 px-2 text-xs flex items-center gap-1"
               >
-                ✕ Limpar
+                <X className="w-3 h-3" />
+                Limpar
               </Button>
             </div>
           </CardContent>
@@ -643,8 +691,9 @@ export default function Inbox() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-destructive">
                 <AlertCircle className="h-5 w-5 animate-pulse" />
-                🚨 Tickets Críticos Atrasados
-                <Badge variant="destructive" className="animate-glow-pulse">
+                Tickets Críticos Atrasados
+                <Badge variant="destructive" className="animate-glow-pulse flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
                   {getExpiredTickets().filter(t => t.nivel_criticidade === 'P0' || t.nivel_criticidade === 'P1').length}
                 </Badge>
               </CardTitle>
@@ -741,7 +790,8 @@ export default function Inbox() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  📋 Caixa de Entrada
+                  <InboxIcon className="w-5 h-5" />
+                  Caixa de Entrada
                   <Badge variant="outline" className="font-mono">
                     {filteredTickets.length} tickets
                   </Badge>
@@ -752,8 +802,19 @@ export default function Inbox() {
                     </Badge>
                   )}
                 </CardTitle>
-                <div className="text-sm text-muted-foreground">
-                  🎯 Críticos primeiro • 📊 Inteligência • ⏰ Tempo real
+                <div className="text-sm text-muted-foreground flex items-center gap-4">
+                  <div className="flex items-center gap-1">
+                    <Target className="w-3 h-3" />
+                    Críticos primeiro
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Activity className="w-3 h-3" />
+                    Inteligência
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Tempo real
+                  </div>
                 </div>
               </div>
             </CardHeader>
@@ -834,8 +895,12 @@ export default function Inbox() {
                             {/* Status de tempo */}
                             {timeStatus && (
                               <div className="text-center">
-                                <Badge variant={timeStatus.isOverdue ? "destructive" : "secondary"} className="text-xs">
-                                  {timeStatus.isOverdue ? "⏰ " : "⏳ "}
+                                <Badge variant={timeStatus.isOverdue ? "destructive" : "secondary"} className="text-xs flex items-center gap-1">
+                                  {timeStatus.isOverdue ? (
+                                    <AlertTriangle className="w-3 h-3" />
+                                  ) : (
+                                    <Clock className="w-3 h-3" />
+                                  )}
                                   {timeStatus.text}
                                 </Badge>
                               </div>
@@ -892,7 +957,7 @@ export default function Inbox() {
                                 <>
                                   <div className="flex items-center gap-3">
                                     <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                                      <span className="text-sm font-bold text-green-600">🎯</span>
+                                      <Target className="w-4 h-4 text-green-600" />
                                     </div>
                                     <div className="min-w-0">
                                       <p className="text-xs text-muted-foreground font-medium">Pontuação</p>
