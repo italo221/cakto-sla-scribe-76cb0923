@@ -109,100 +109,94 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
       {...attributes}
       {...(userCanEdit ? listeners : {})}
       className={cn(
-        "mb-3 cursor-pointer transition-all duration-300 group",
-        "border-l-4 rounded-lg shadow-sm hover:shadow-md",
-        // Bordas laterais por criticidade
-        ticket.nivel_criticidade === 'P0' && "border-l-destructive bg-destructive/5",
-        ticket.nivel_criticidade === 'P1' && "border-l-orange-500 bg-orange-50",
-        ticket.nivel_criticidade === 'P2' && "border-l-yellow-500 bg-yellow-50",
-        ticket.nivel_criticidade === 'P3' && "border-l-blue-500 bg-blue-50",
+        "mb-2 cursor-pointer transition-all duration-200 group bg-white",
+        "border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm",
+        // Destaque sutil para criticidade
+        ticket.nivel_criticidade === 'P0' && "border-l-4 border-l-red-500",
+        ticket.nivel_criticidade === 'P1' && "border-l-4 border-l-orange-500",
+        ticket.nivel_criticidade === 'P2' && "border-l-4 border-l-yellow-500",
+        ticket.nivel_criticidade === 'P3' && "border-l-4 border-l-blue-500",
         // Estados de drag
-        isDragging && "opacity-60 scale-95 rotate-1 shadow-lg",
-        isSortableDragging && "shadow-xl scale-105 z-10",
-        // Destaque sutil para tickets expirados
-        expired && "ring-1 ring-destructive/20 bg-destructive/10",
-        !userCanEdit && "cursor-default opacity-90"
+        isDragging && "opacity-70 rotate-2 scale-95",
+        isSortableDragging && "shadow-lg z-50",
+        // Destaque para expirados
+        expired && "bg-red-50 border-red-200",
+        !userCanEdit && "cursor-default"
       )}
       onClick={() => onOpenDetail(ticket)}
     >
-      <CardContent className="p-4 space-y-3">
-        {/* Cabeçalho com ticket number e criticidade */}
-        <div className="flex items-start justify-between gap-2">
-          <Badge variant="secondary" className="font-mono text-xs flex-shrink-0">
+      <CardContent className="p-3 space-y-2">
+        {/* Header compacto */}
+        <div className="flex items-center justify-between">
+          <Badge variant="secondary" className="text-xs font-mono bg-gray-100 text-gray-600 border-0">
             {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
           </Badge>
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1">
             {expired && (
-              <AlertTriangle className="h-3 w-3 text-destructive animate-pulse" />
+              <AlertTriangle className="h-3 w-3 text-red-500" />
             )}
-            <Badge className={getCriticalityColor(ticket.nivel_criticidade)}>
+            <span className={cn(
+              "text-xs px-1.5 py-0.5 rounded text-white font-medium",
+              ticket.nivel_criticidade === 'P0' && "bg-red-500",
+              ticket.nivel_criticidade === 'P1' && "bg-orange-500", 
+              ticket.nivel_criticidade === 'P2' && "bg-yellow-500",
+              ticket.nivel_criticidade === 'P3' && "bg-blue-500"
+            )}>
               {ticket.nivel_criticidade}
-            </Badge>
+            </span>
           </div>
         </div>
 
-        {/* Título com quebra automática */}
-        <h4 className="font-semibold text-sm leading-tight break-words hyphens-auto group-hover:text-primary transition-colors">
+        {/* Título clean */}
+        <h4 className="text-sm font-medium text-gray-900 leading-tight line-clamp-2 group-hover:text-gray-700">
           {ticket.titulo}
         </h4>
 
-        {/* Tags (máximo 2 no Kanban) */}
+        {/* Tags minimalistas */}
         {ticket.tags && ticket.tags.length > 0 && (
           <div className="flex gap-1 flex-wrap">
             {ticket.tags.slice(0, 2).map((tag: string, index: number) => (
-              <Badge key={index} variant="outline" className="text-xs px-2 py-0.5 bg-background/50 border-primary/20">
-                <span className="mr-1">
-                  {tag.toLowerCase().includes('urgente') ? '🔥' : 
-                   tag.toLowerCase().includes('vip') ? '⭐' : '🏷️'}
-                </span>
-                <span className="truncate max-w-16">{tag}</span>
-              </Badge>
+              <span key={index} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                {tag}
+              </span>
             ))}
             {ticket.tags.length > 2 && (
-              <Badge variant="outline" className="text-xs px-2 py-0.5 bg-muted/50">
+              <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded">
                 +{ticket.tags.length - 2}
-              </Badge>
+              </span>
             )}
           </div>
         )}
 
-        {/* Informações de usuários */}
-        <div className="space-y-2 text-xs">
-          {/* Solicitante */}
+        {/* Info compacta */}
+        <div className="space-y-1.5 text-xs text-gray-500">
           <div className="flex items-center gap-2">
-            <Avatar className="h-5 w-5 flex-shrink-0">
-              <AvatarFallback className="text-xs bg-primary/10 text-primary">
+            <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-medium text-gray-600">
                 {ticket.solicitante.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="text-muted-foreground text-xs">Solicitante</p>
-              <p className="font-medium text-xs truncate" title={ticket.solicitante}>
-                {ticket.solicitante}
-              </p>
+              </span>
             </div>
+            <span className="truncate" title={ticket.solicitante}>
+              {ticket.solicitante}
+            </span>
           </div>
-
-          {/* Time Responsável */}
+          
           <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="text-muted-foreground text-xs">Responsável</p>
-              <p className="font-medium text-xs truncate" title={ticket.time_responsavel}>
-                {ticket.time_responsavel}
-              </p>
-            </div>
+            <User className="h-3 w-3 text-gray-400" />
+            <span className="truncate" title={ticket.time_responsavel}>
+              {ticket.time_responsavel}
+            </span>
           </div>
         </div>
 
-        {/* Rodapé com data e pontuação */}
-        <div className="flex items-center justify-between pt-2 border-t border-border/50">
-          <div className="text-xs text-muted-foreground">
+        {/* Footer minimalista */}
+        <div className="flex items-center justify-between pt-1 border-t border-gray-100">
+          <span className="text-xs text-gray-400">
             {format(new Date(ticket.data_criacao), "dd/MM", { locale: ptBR })}
-          </div>
-          <Badge variant="outline" className="text-xs font-mono bg-primary/5 border-primary/20">
+          </span>
+          <span className="text-xs text-gray-500 font-medium">
             {ticket.pontuacao_total}pts
-          </Badge>
+          </span>
         </div>
       </CardContent>
     </Card>
@@ -214,25 +208,24 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit
   const [isDragOver, setIsDragOver] = useState(false);
 
   return (
-    <div className="flex-1 min-w-80 max-w-sm">
-      <Card className={cn(
-        "h-full transition-all duration-300",
-        isDragOver && "ring-2 ring-primary/50 bg-primary/5 shadow-lg"
+    <div className="flex-1 min-w-72 max-w-sm">
+      <div className={cn(
+        "bg-gray-50 rounded-lg border border-gray-200 h-full transition-all duration-200",
+        isDragOver && "bg-blue-50 border-blue-200"
       )}>
-        <CardHeader className={cn(
-          "pb-4 rounded-t-lg text-center",
-          color,
-          "shadow-sm"
-        )}>
-          <CardTitle className="flex items-center justify-center gap-2 text-white font-semibold">
-            <span className="truncate">{title}</span>
-            <Badge variant="secondary" className="bg-white/20 text-white border-white/30 font-mono">
+        {/* Header da coluna */}
+        <div className="p-3 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h3 className="font-medium text-sm text-gray-700">{title}</h3>
+            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full font-medium">
               {tickets.length}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent 
-          className="p-4 h-[calc(100vh-280px)] overflow-y-auto scrollbar-thin"
+            </span>
+          </div>
+        </div>
+        
+        {/* Conteúdo da coluna */}
+        <div 
+          className="p-3 h-[calc(100vh-280px)] overflow-y-auto"
           onDragOver={(e) => {
             e.preventDefault();
             setIsDragOver(true);
@@ -251,14 +244,13 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit
             ))}
           </SortableContext>
           {tickets.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <div className="text-4xl mb-3 opacity-50">📭</div>
-              <p className="text-sm font-medium">Nenhum ticket</p>
-              <p className="text-xs text-muted-foreground/70">nesta coluna</p>
+            <div className="text-center py-8 text-gray-400">
+              <div className="text-2xl mb-2">📋</div>
+              <p className="text-sm">Nenhum ticket</p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
@@ -280,28 +272,28 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
 
   const columns = [
     {
-      title: '🔴 Abertos',
+      title: 'Aberto',
       status: 'aberto',
       tickets: ticketsByStatus.aberto,
-      color: 'bg-gradient-to-r from-destructive to-destructive/90'
+      color: 'bg-red-500'
     },
     {
-      title: '🟡 Em Andamento',
+      title: 'Em Andamento',
       status: 'em_andamento',
       tickets: ticketsByStatus.em_andamento,
-      color: 'bg-gradient-to-r from-warning to-warning/90'
+      color: 'bg-yellow-500'
     },
     {
-      title: '🟢 Resolvidos',
+      title: 'Resolvido',
       status: 'resolvido',
       tickets: ticketsByStatus.resolvido,
-      color: 'bg-gradient-to-r from-success to-success/90'
+      color: 'bg-green-500'
     },
     {
-      title: '⚫ Fechados',
+      title: 'Fechado',
       status: 'fechado',
       tickets: ticketsByStatus.fechado,
-      color: 'bg-gradient-to-r from-muted-foreground to-muted-foreground/90'
+      color: 'bg-gray-500'
     }
   ];
 
@@ -360,7 +352,7 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-6 overflow-x-auto pb-6 px-2">
+      <div className="flex gap-4 overflow-x-auto pb-4">
         {columns.map((column) => (
           <SortableContext
             key={column.status}
@@ -369,7 +361,7 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
           >
             <div
               id={column.status}
-              className="flex-1 min-w-80 max-w-sm"
+              className="flex-1 min-w-72 max-w-sm"
             >
               <KanbanColumn
                 title={column.title}
@@ -386,7 +378,7 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
 
       <DragOverlay>
         {draggedTicket ? (
-          <div className="transform rotate-3 scale-105">
+          <div className="rotate-3 scale-105 opacity-90">
             <KanbanCard
               ticket={draggedTicket}
               isDragging

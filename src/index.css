@@ -314,36 +314,32 @@ All colors MUST be HSL.
     background-color: hsl(var(--muted-foreground));
   }
 
-  /* Custom animations for ticket system - SUTIS */
+  /* Animações minimalistas para ticket system */
   .animate-glow-pulse {
-    animation: glow-pulse-subtle 3s ease-in-out infinite;
+    animation: glow-minimal 3s ease-in-out infinite;
   }
   
   .animate-glow-subtle {
-    animation: glow-very-subtle 4s ease-in-out infinite;
+    animation: subtle-highlight 4s ease-in-out infinite;
   }
   
-  /* Animação mais sutil para badges importantes */
-  @keyframes glow-pulse-subtle {
+  /* Animação muito sutil para badges importantes */
+  @keyframes glow-minimal {
     0%, 100% {
       opacity: 1;
-      box-shadow: 0 0 2px hsl(var(--destructive) / 0.3);
     }
     50% {
-      opacity: 0.9;
-      box-shadow: 0 0 8px hsl(var(--destructive) / 0.5);
+      opacity: 0.8;
     }
   }
   
-  /* Animação MUITO sutil para tickets vencidos */
-  @keyframes glow-very-subtle {
+  /* Animação praticamente imperceptível para tickets vencidos */
+  @keyframes subtle-highlight {
     0%, 100% {
-      transform: scale(1);
-      box-shadow: 0 0 0 rgba(239, 68, 68, 0);
+      background-color: rgba(239, 68, 68, 0.05);
     }
     50% {
-      transform: scale(1.002);
-      box-shadow: 0 0 5px rgba(239, 68, 68, 0.05);
+      background-color: rgba(239, 68, 68, 0.08);
     }
   }
 
@@ -388,14 +384,27 @@ All colors MUST be HSL.
     hyphens: auto;
   }
 
-  /* Hover states para cards */
+  /* Hover states minimalistas */
   .card-hover-lift {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .card-hover-lift:hover {
-    transform: translateY(-2px) scale(1.01);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Design system moderno */
+  .modern-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .modern-card:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
   }
 
   /* Efeito glassmorphism sutil para elementos flutuantes */

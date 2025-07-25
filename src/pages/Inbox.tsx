@@ -766,7 +766,7 @@ export default function Inbox() {
                     <p className="text-muted-foreground">Tente ajustar os filtros ou criar um novo ticket.</p>
                   </div>
                 ) : (
-                  <div className={cn("space-y-4", viewMode === 'compact' && "space-y-3")}>
+                  <div className="space-y-3">
                     {filteredTickets.map((ticket) => {
                       const timeStatus = getTimeStatus(ticket.data_criacao, ticket.nivel_criticidade, ticket.status);
                       const isExpired = timeStatus?.isOverdue;
@@ -775,119 +775,113 @@ export default function Inbox() {
                         <Card 
                           key={ticket.id} 
                           className={cn(
-                            "group transition-all duration-300 hover:shadow-lg cursor-pointer",
-                            "border-l-4 rounded-xl overflow-hidden",
-                            // Bordas laterais por criticidade (mais grossas)
-                            ticket.nivel_criticidade === 'P0' && "border-l-destructive border-l-8 bg-destructive/5",
-                            ticket.nivel_criticidade === 'P1' && "border-l-orange-500 border-l-6 bg-orange-50",
-                            ticket.nivel_criticidade === 'P2' && "border-l-yellow-500 border-l-4 bg-yellow-50", 
-                            ticket.nivel_criticidade === 'P3' && "border-l-blue-500 border-l-4 bg-blue-50",
-                            // Destaque SUTIL para vencidos (sem animações agressivas)
-                            isExpired && "ring-2 ring-destructive/20 bg-destructive/10",
-                            "hover:scale-[1.02] hover:shadow-xl"
+                            "group transition-all duration-200 hover:shadow-md cursor-pointer bg-white",
+                            "border border-gray-200 rounded-lg hover:border-gray-300",
+                            // Destaque para criticidade
+                            ticket.nivel_criticidade === 'P0' && "border-l-4 border-l-red-500",
+                            ticket.nivel_criticidade === 'P1' && "border-l-4 border-l-orange-500",
+                            ticket.nivel_criticidade === 'P2' && "border-l-4 border-l-yellow-500", 
+                            ticket.nivel_criticidade === 'P3' && "border-l-4 border-l-blue-500",
+                            // Destaque sutil para vencidos
+                            isExpired && "bg-red-50 border-red-200"
                           )}
                           onClick={() => handleOpenTicketDetail(ticket)}
                         >
                           <CardContent className={cn(
-                            "p-6 space-y-4",
-                            viewMode === 'compact' && "p-4 space-y-3"
+                            "p-4 space-y-3",
+                            viewMode === 'compact' && "p-3 space-y-2"
                           )}>
-                            {/* Cabeçalho */}
-                            <div className="flex items-start justify-between gap-4">
+                            {/* Header clean */}
+                            <div className="flex items-start justify-between">
                               <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <Badge variant="secondary" className="font-mono text-xs flex-shrink-0 bg-primary/10 text-primary border-primary/20">
+                                <Badge variant="secondary" className="text-xs font-mono bg-gray-100 text-gray-600 border-0 flex-shrink-0">
                                   {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
                                 </Badge>
                                 <h3 className={cn(
-                                  "font-bold group-hover:text-primary transition-colors break-words flex-1",
-                                  viewMode === 'compact' ? "text-base" : "text-lg",
-                                  "leading-tight"
+                                  "font-semibold text-gray-900 truncate group-hover:text-gray-700",
+                                  viewMode === 'compact' ? "text-base" : "text-lg"
                                 )}>
                                   {ticket.titulo}
                                 </h3>
-                                {/* Ícone de alerta discreto para tickets expirados */}
                                 {isExpired && (
-                                  <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 animate-pulse" />
+                                  <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
+                              <div className="flex items-center gap-2 flex-shrink-0">
                                 {getStatusBadge(ticket.status)}
-                                {getCriticalityBadge(ticket.nivel_criticidade)}
+                                <span className={cn(
+                                  "text-xs px-2 py-1 rounded text-white font-medium",
+                                  ticket.nivel_criticidade === 'P0' && "bg-red-500",
+                                  ticket.nivel_criticidade === 'P1' && "bg-orange-500", 
+                                  ticket.nivel_criticidade === 'P2' && "bg-yellow-500",
+                                  ticket.nivel_criticidade === 'P3' && "bg-blue-500"
+                                )}>
+                                  {ticket.nivel_criticidade}
+                                </span>
                               </div>
                             </div>
 
-                            {/* Tempo até vencer/vencido - destaque especial */}
+                            {/* Tempo até vencer (se houver) */}
                             {timeStatus && (
-                              <div className="flex justify-center">
-                                <Badge 
-                                  variant={timeStatus.isOverdue ? "destructive" : "outline"}
-                                  className={cn(
-                                    "text-sm font-semibold px-4 py-1",
-                                    timeStatus.isOverdue && "animate-pulse shadow-lg"
-                                  )}
-                                >
-                                  {timeStatus.isOverdue ? "⏰ ATRASADO" : "⏳"} {timeStatus.text}
-                                </Badge>
+                              <div className="text-center">
+                                <span className={cn(
+                                  "text-xs px-3 py-1 rounded-full font-medium",
+                                  timeStatus.isOverdue ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"
+                                )}>
+                                  {timeStatus.isOverdue ? "⏰ Atrasado" : "⏳"} {timeStatus.text}
+                                </span>
                               </div>
                             )}
 
-                            {/* Tags destacadas */}
+                            {/* Tags clean */}
                             {ticket.tags && ticket.tags.length > 0 && (
-                              <div className="flex gap-2 flex-wrap">
-                                {ticket.tags.slice(0, viewMode === 'compact' ? 3 : 6).map((tag: string, index: number) => (
-                                  <Badge key={index} variant="outline" className={cn(
-                                    "text-xs px-3 py-1 bg-background/80 border-primary/30 rounded-full",
-                                    "hover:bg-primary/10 transition-colors"
-                                  )}>
-                                    <span className="mr-1">
-                                      {tag.toLowerCase().includes('urgente') ? '🔥' : 
-                                       tag.toLowerCase().includes('vip') ? '⭐' : 
-                                       tag.toLowerCase().includes('crítico') ? '🚨' : '🏷️'}
-                                    </span>
-                                    <span className="font-medium">{tag}</span>
-                                  </Badge>
+                              <div className="flex gap-1 flex-wrap">
+                                {ticket.tags.slice(0, viewMode === 'compact' ? 2 : 4).map((tag: string, index: number) => (
+                                  <span key={index} className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                                    {tag}
+                                  </span>
                                 ))}
-                                {ticket.tags.length > (viewMode === 'compact' ? 3 : 6) && (
-                                  <Badge variant="outline" className="text-xs px-3 py-1 bg-muted/50 rounded-full">
-                                    +{ticket.tags.length - (viewMode === 'compact' ? 3 : 6)} mais
-                                  </Badge>
+                                {ticket.tags.length > (viewMode === 'compact' ? 2 : 4) && (
+                                  <span className="text-xs px-2 py-1 bg-gray-100 text-gray-500 rounded">
+                                    +{ticket.tags.length - (viewMode === 'compact' ? 2 : 4)}
+                                  </span>
                                 )}
                               </div>
                             )}
                             
-                            {/* Descrição (apenas no modo detalhado) */}
+                            {/* Descrição (modo detalhado) */}
                             {viewMode === 'detailed' && (
-                              <p className="text-muted-foreground text-sm leading-relaxed break-words">
+                              <p className="text-sm text-gray-600 leading-relaxed">
                                 {ticket.descricao}
                               </p>
                             )}
                             
-                            {/* Informações contextuais - Grid melhorado */}
+                            {/* Info grid clean */}
                             <div className={cn(
-                              "grid gap-6 text-sm",
+                              "grid gap-4 text-sm",
                               viewMode === 'compact' ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-4"
                             )}>
                               <div className="flex items-center gap-3">
-                                <Avatar className="h-8 w-8 flex-shrink-0 ring-2 ring-primary/20">
-                                  <AvatarFallback className="text-sm bg-primary/10 text-primary font-semibold">
+                                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-sm font-medium text-gray-600">
                                     {ticket.solicitante.charAt(0).toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
+                                  </span>
+                                </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">Solicitante</p>
-                                  <p className="font-semibold text-foreground truncate" title={ticket.solicitante}>
+                                  <p className="text-xs text-gray-500 font-medium">Solicitante</p>
+                                  <p className="font-medium text-gray-900 truncate" title={ticket.solicitante}>
                                     {ticket.solicitante}
                                   </p>
                                 </div>
                               </div>
                               
                               <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                                   <User className="h-4 w-4 text-blue-600" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">Responsável</p>
-                                  <p className="font-semibold text-foreground truncate" title={ticket.time_responsavel}>
+                                  <p className="text-xs text-gray-500 font-medium">Responsável</p>
+                                  <p className="font-medium text-gray-900 truncate" title={ticket.time_responsavel}>
                                     {ticket.time_responsavel}
                                   </p>
                                 </div>
@@ -896,94 +890,74 @@ export default function Inbox() {
                               {viewMode === 'detailed' && (
                                 <>
                                   <div className="flex items-center gap-3">
-                                    <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
                                       <span className="text-sm font-bold text-green-600">🎯</span>
                                     </div>
                                     <div>
-                                      <p className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">Pontuação</p>
-                                      <p className="font-bold text-primary text-lg">{ticket.pontuacao_total} pts</p>
+                                      <p className="text-xs text-gray-500 font-medium">Pontuação</p>
+                                      <p className="font-bold text-green-600">{ticket.pontuacao_total} pts</p>
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-3">
-                                    <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
                                       <Clock className="h-4 w-4 text-purple-600" />
                                     </div>
                                     <div>
-                                      <p className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">SLA</p>
-                                      <p className="font-medium text-muted-foreground">{getTempoMedioResolucao(ticket.nivel_criticidade)}</p>
+                                      <p className="text-xs text-gray-500 font-medium">SLA</p>
+                                      <p className="text-sm text-gray-600">{getTempoMedioResolucao(ticket.nivel_criticidade)}</p>
                                     </div>
                                   </div>
                                 </>
                               )}
                             </div>
                             
-                            {/* Rodapé com data e ações rápidas */}
-                            <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                              <div className="text-sm text-muted-foreground bg-muted/30 px-3 py-1 rounded-full">
-                                📅 {format(new Date(ticket.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                              </div>
+                            {/* Footer */}
+                            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                              <span className="text-xs text-gray-500">
+                                {format(new Date(ticket.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                              </span>
                               
-                              {/* Ações rápidas (apenas no modo detalhado e para usuários com permissão) */}
+                              {/* Ações rápidas (se permitido) */}
                               {viewMode === 'detailed' && (userRole === 'super_admin' || userRole === 'operador') && (
-                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                   {ticket.status === 'aberto' && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="h-8 px-3 text-xs bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                                    <button
+                                      className="text-xs px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         updateTicketStatus(ticket.id, 'em_andamento');
                                       }}
                                     >
-                                      <Play className="h-3 w-3 mr-1" />
-                                      Iniciar
-                                    </Button>
+                                      ▶️ Iniciar
+                                    </button>
                                   )}
                                   
                                   {ticket.status === 'em_andamento' && (
                                     <>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="h-8 px-3 text-xs bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+                                      <button
+                                        className="text-xs px-3 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           updateTicketStatus(ticket.id, 'pausado');
                                         }}
                                       >
-                                        <Pause className="h-3 w-3 mr-1" />
-                                        Pausar
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="h-8 px-3 text-xs bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                                        ⏸️ Pausar
+                                      </button>
+                                      <button
+                                        className="text-xs px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           updateTicketStatus(ticket.id, 'resolvido');
                                         }}
                                       >
-                                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                                        Resolver
-                                      </Button>
+                                        ✅ Resolver
+                                      </button>
                                     </>
                                   )}
                                 </div>
                               )}
                             </div>
                           </CardContent>
-                          
-                          {/* Botão de detalhes - sempre visível */}
-                          <div className="absolute top-4 right-4">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              className="opacity-0 group-hover:opacity-100 transition-all duration-300 bg-background/80 backdrop-blur-sm shadow-sm hover:shadow-md"
-                            >
-                              👁️ Ver Detalhes
-                            </Button>
-                          </div>
                         </Card>
                       );
                     })}
