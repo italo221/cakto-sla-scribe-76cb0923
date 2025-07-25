@@ -252,6 +252,14 @@ export default function Inbox() {
             borderColor: 'border-slate-300',
             icon: Circle
           },
+          'pausado': {
+            displayStatus: 'Pausado',
+            color: 'bg-orange-400',
+            bgColor: 'bg-orange-50',
+            textColor: 'text-orange-700',
+            borderColor: 'border-orange-300',
+            icon: AlertCircle
+          },
           'em_andamento': {
             displayStatus: 'Em Andamento',
             color: 'bg-blue-500',
@@ -315,6 +323,16 @@ export default function Inbox() {
     if (statusFilter !== 'all') {
       console.log(`🔍 Aplicando filtro de status: "${statusFilter}"`);
       console.log('📊 Status únicos encontrados:', [...new Set(filtered.map(t => `"${t.status}"`))]);
+      
+      // Verificar ticket específico mencionado pelo usuário
+      const ticket2025013 = filtered.find(t => t.ticket_number?.includes('2025-0013'));
+      if (ticket2025013) {
+        console.log('🎯 Ticket TICKET-2025-0013 encontrado:', {
+          ticket_number: ticket2025013.ticket_number,
+          status: ticket2025013.status,
+          titulo: ticket2025013.titulo
+        });
+      }
       
       // Fazer comparação mais robusta de status
       filtered = filtered.filter(ticket => {
@@ -901,14 +919,14 @@ export default function Inbox() {
           <Card 
             className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
             onClick={() => {
-              console.log('🔵 Card Aberto clicado');
-              console.log('🔵 Aplicando filtro para: aberto');
-              applyQuickFilter('status', 'aberto');
+              console.log('🟡 Card Pausado clicado');
+              console.log('🟡 Aplicando filtro para: pausado');
+              applyQuickFilter('status', 'pausado');
             }}
           >
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-gray-600">{ticketFilters.aberto.length}</div>
-              <p className="text-sm text-muted-foreground">Abertos</p>
+              <div className="text-2xl font-bold text-orange-600">{ticketFilters.pausado?.length || 0}</div>
+              <p className="text-sm text-muted-foreground">Pausados</p>
             </CardContent>
           </Card>
           <Card 
