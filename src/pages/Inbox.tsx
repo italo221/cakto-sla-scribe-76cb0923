@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Search, Filter, Clock, AlertCircle, CheckCircle, X } from "lucide-react";
-import { format } from "date-fns";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Search, Filter, Clock, AlertCircle, CheckCircle, X, Grid3X3, List, Star, User, MoreVertical, Play, Pause, CheckCircle2, XCircle } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Navigation from "@/components/Navigation";
 import TicketDetailModal from "@/components/TicketDetailModal";
@@ -16,6 +17,7 @@ import SupabaseStatus from "@/components/SupabaseStatus";
 import { TicketCountdown } from "@/components/TicketCountdown";
 import { useTicketCountdown } from "@/hooks/useTicketCountdown";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface Ticket {
   id: string;
@@ -58,6 +60,9 @@ export default function Inbox() {
   const [setorFilter, setSetorFilter] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('detailed');
+  const [favoriteFilters, setFavoriteFilters] = useState<string[]>([]);
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
     loadTickets();
@@ -241,6 +246,127 @@ export default function Inbox() {
     setModalOpen(false);
   };
 
+  // Função para aplicar filtros clicando nos cards de estatísticas
+  const applyQuickFilter = useCallback((type: string, value: string) => {
+    switch (type) {
+      case 'status':
+        setStatusFilter(value);
+        break;
+      case 'criticality':
+        setCriticalityFilter(value);
+        break;
+      case 'setor':
+        setSetorFilter(value);
+        break;
+    }
+  }, []);
+
+  // Gerar sugestões de busca baseadas nos tickets
+  const generateSearchSuggestions = useCallback((term: string) => {
+    if (!term || term.length < 2) {
+      setSearchSuggestions([]);
+      return;
+    }
+
+    const suggestions = new Set<string>();
+    
+    tickets.forEach(ticket => {
+      // Sugerir títulos
+      if (ticket.titulo.toLowerCase().includes(term.toLowerCase())) {
+        suggestions.add(ticket.titulo);
+      }
+      
+      // Sugerir tags
+      ticket.tags?.forEach(tag => {
+        if (tag.toLowerCase().includes(term.toLowerCase())) {
+          suggestions.add(tag);
+        }
+      });
+      
+      // Sugerir times responsáveis
+      if (ticket.time_responsavel.toLowerCase().includes(term.toLowerCase())) {
+        suggestions.add(ticket.time_responsavel);
+      }
+    });
+
+    setSearchSuggestions(Array.from(suggestions).slice(0, 5));
+  }, [tickets]);
+
+  // Atualizar sugestões quando o termo de busca muda
+  useEffect(() => {
+    generateSearchSuggestions(searchTerm);
+  }, [searchTerm, generateSearchSuggestions]);
+
+  // Função para mudar status do ticket rapidamente
+  const updateTicketStatus = useCallback(async (ticketId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('sla_demandas')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', ticketId);
+
+      if (error) throw error;
+
+      // Recarregar tickets para atualizar dashboard
+      await loadTickets();
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error);
+    }
+  }, []);
+
+  // Verificar tickets vencidos
+  const getExpiredTickets = useCallback(() => {
+    return tickets.filter(ticket => {
+      if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
+      
+      const timeConfig = {
+        'P0': 4 * 60 * 60 * 1000, // 4 horas
+        'P1': 24 * 60 * 60 * 1000, // 24 horas
+        'P2': 3 * 24 * 60 * 60 * 1000, // 3 dias
+        'P3': 7 * 24 * 60 * 60 * 1000, // 7 dias
+      };
+      
+      const startTime = new Date(ticket.data_criacao).getTime();
+      const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+      const deadline = startTime + timeLimit;
+      
+      return Date.now() > deadline;
+    });
+  }, [tickets]);
+
+  // Calcular tempo até vencer ou tempo vencido
+  const getTimeStatus = useCallback((dataCriacao: string, criticidade: string, status: string) => {
+    if (status === 'resolvido' || status === 'fechado') return null;
+    
+    const timeConfig = {
+      'P0': 4 * 60 * 60 * 1000,
+      'P1': 24 * 60 * 60 * 1000,
+      'P2': 3 * 24 * 60 * 60 * 1000,
+      'P3': 7 * 24 * 60 * 60 * 1000,
+    };
+    
+    const startTime = new Date(dataCriacao).getTime();
+    const timeLimit = timeConfig[criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+    const deadline = startTime + timeLimit;
+    const now = Date.now();
+    
+    if (now > deadline) {
+      const overdue = now - deadline;
+      return {
+        isOverdue: true,
+        text: `atrasado há ${formatDistanceToNow(new Date(deadline), { locale: ptBR })}`,
+        className: 'text-destructive font-medium'
+      };
+    } else {
+      const remaining = deadline - now;
+      return {
+        isOverdue: false,
+        text: `vence em ${formatDistanceToNow(new Date(deadline), { locale: ptBR })}`,
+        className: remaining < 60 * 60 * 1000 ? 'text-orange-600 font-medium' : 'text-muted-foreground'
+      };
+    }
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -292,16 +418,38 @@ export default function Inbox() {
           </div>
         </div>
 
-        {/* Filtros */}
+        {/* Filtros Inteligentes */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter size={20} />
-              Filtros
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Filter size={20} />
+                Filtros Inteligentes
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={viewMode === 'compact' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('compact')}
+                  className="flex items-center gap-1"
+                >
+                  <List size={16} />
+                  Compacto
+                </Button>
+                <Button
+                  variant={viewMode === 'detailed' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('detailed')}
+                  className="flex items-center gap-1"
+                >
+                  <Grid3X3 size={16} />
+                  Detalhado
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -310,6 +458,25 @@ export default function Inbox() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
+                {/* Sugestões de busca */}
+                {searchSuggestions.length > 0 && (
+                  <Card className="absolute top-full left-0 right-0 z-10 mt-1 max-h-40 overflow-y-auto">
+                    <CardContent className="p-2">
+                      {searchSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          className="p-2 hover:bg-muted rounded cursor-pointer text-sm"
+                          onClick={() => {
+                            setSearchTerm(suggestion);
+                            setSearchSuggestions([]);
+                          }}
+                        >
+                          {suggestion}
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
               </div>
               
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -318,10 +485,10 @@ export default function Inbox() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os status</SelectItem>
-                  <SelectItem value="aberto">Aberto</SelectItem>
-                  <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                  <SelectItem value="resolvido">Resolvido</SelectItem>
-                  <SelectItem value="fechado">Fechado</SelectItem>
+                  <SelectItem value="aberto">🔴 Aberto</SelectItem>
+                  <SelectItem value="em_andamento">🟡 Em Andamento</SelectItem>
+                  <SelectItem value="resolvido">🟢 Resolvido</SelectItem>
+                  <SelectItem value="fechado">⚫ Fechado</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -331,10 +498,10 @@ export default function Inbox() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as criticidades</SelectItem>
-                  <SelectItem value="P0">P0 - Crítico</SelectItem>
-                  <SelectItem value="P1">P1 - Alto</SelectItem>
-                  <SelectItem value="P2">P2 - Médio</SelectItem>
-                  <SelectItem value="P3">P3 - Baixo</SelectItem>
+                  <SelectItem value="P0">🚨 P0 - Crítico</SelectItem>
+                  <SelectItem value="P1">🔥 P1 - Alto</SelectItem>
+                  <SelectItem value="P2">⚠️ P2 - Médio</SelectItem>
+                  <SelectItem value="P3">ℹ️ P3 - Baixo</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -346,61 +513,172 @@ export default function Inbox() {
                   <SelectItem value="all">Todos os setores</SelectItem>
                   {setores.map((setor) => (
                     <SelectItem key={setor.id} value={setor.id}>
-                      {setor.nome}
+                      🏢 {setor.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Filtros Rápidos */}
+            <div className="flex flex-wrap gap-2">
+              <Badge
+                variant="outline"
+                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                onClick={() => {
+                  setStatusFilter('aberto');
+                  setCriticalityFilter('P0');
+                }}
+              >
+                🚨 Críticos Abertos
+              </Badge>
+              <Badge
+                variant="outline"
+                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                onClick={() => {
+                  setStatusFilter('em_andamento');
+                  setCriticalityFilter('all');
+                }}
+              >
+                🏃 Em Andamento
+              </Badge>
+              <Badge
+                variant="outline"
+                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                onClick={() => {
+                  const expired = getExpiredTickets();
+                  if (expired.length > 0) {
+                    setSearchTerm(expired[0].ticket_number || '');
+                  }
+                }}
+              >
+                ⏰ Atrasados
+              </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm('');
+                  setStatusFilter('all');
+                  setCriticalityFilter('all');
+                  setSetorFilter('all');
+                }}
+                className="h-6 px-2 text-xs"
+              >
+                ✕ Limpar
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
+        {/* Tickets Críticos Atrasados - Seção Fixa */}
+        {getExpiredTickets().filter(t => t.nivel_criticidade === 'P0' || t.nivel_criticidade === 'P1').length > 0 && (
+          <Card className="mb-6 border-destructive/50 bg-destructive/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="h-5 w-5 animate-pulse" />
+                🚨 Tickets Críticos Atrasados
+                <Badge variant="destructive" className="animate-glow-pulse">
+                  {getExpiredTickets().filter(t => t.nivel_criticidade === 'P0' || t.nivel_criticidade === 'P1').length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {getExpiredTickets()
+                  .filter(t => t.nivel_criticidade === 'P0' || t.nivel_criticidade === 'P1')
+                  .slice(0, 3)
+                  .map(ticket => (
+                    <div 
+                      key={ticket.id}
+                      className="flex items-center justify-between p-3 bg-background rounded-lg border border-destructive/20 cursor-pointer hover:bg-destructive/5 transition-colors"
+                      onClick={() => handleOpenTicketDetail(ticket)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                        <Badge variant="secondary" className="font-mono text-xs">
+                          {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
+                        </Badge>
+                        <span className="font-medium">{ticket.titulo}</span>
+                        {getCriticalityBadge(ticket.nivel_criticidade)}
+                      </div>
+                      <div className="text-sm text-destructive font-medium">
+                        {getTimeStatus(ticket.data_criacao, ticket.nivel_criticidade, ticket.status)?.text}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Estatísticas - Clicáveis */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+            onClick={() => applyQuickFilter('status', 'aberto')}
+          >
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-red-600">{tickets.filter(s => s.status === 'aberto').length}</div>
+              <div className="text-2xl font-bold text-destructive">{tickets.filter(s => s.status === 'aberto').length}</div>
               <p className="text-sm text-muted-foreground">Abertos</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+            onClick={() => applyQuickFilter('status', 'em_andamento')}
+          >
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-yellow-600">{tickets.filter(s => s.status === 'em_andamento').length}</div>
+              <div className="text-2xl font-bold text-warning">{tickets.filter(s => s.status === 'em_andamento').length}</div>
               <p className="text-sm text-muted-foreground">Em Andamento</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+            onClick={() => applyQuickFilter('status', 'resolvido')}
+          >
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-green-600">{tickets.filter(s => s.status === 'resolvido').length}</div>
+              <div className="text-2xl font-bold text-success">{tickets.filter(s => s.status === 'resolvido').length}</div>
               <p className="text-sm text-muted-foreground">Resolvidos</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+            onClick={() => applyQuickFilter('status', 'fechado')}
+          >
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-gray-600">{tickets.filter(s => s.status === 'fechado').length}</div>
+              <div className="text-2xl font-bold text-muted-foreground">{tickets.filter(s => s.status === 'fechado').length}</div>
               <p className="text-sm text-muted-foreground">Fechados</p>
+            </CardContent>
+          </Card>
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+            onClick={() => applyQuickFilter('status', 'all')}
+          >
+            <CardContent className="p-6">
+              <div className="text-2xl font-bold text-primary">{getExpiredTickets().length}</div>
+              <p className="text-sm text-muted-foreground">Atrasados</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Lista de SLAs - Ordenada por Prioridade */}
+        {/* Lista de Tickets Melhorada */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                Tickets - Ordenação Inteligente
+                📋 Caixa de Entrada
                 <Badge variant="outline" className="font-mono">
-                  {filteredTickets.length} total
+                  {filteredTickets.length} tickets
                 </Badge>
                 {filteredTickets.filter(s => s.status === 'aberto').length > 0 && (
-                  <Badge variant="destructive">
+                  <Badge variant="destructive" className="animate-glow-pulse">
                     <Clock className="w-3 h-3 mr-1" />
                     {filteredTickets.filter(s => s.status === 'aberto').length} abertos
                   </Badge>
                 )}
               </CardTitle>
               <div className="text-sm text-muted-foreground">
-                🎯 Críticos primeiro • 📊 Por pontuação • ⏰ Urgência temporal
+                🎯 Críticos primeiro • 📊 Inteligência • ⏰ Tempo real
               </div>
             </div>
           </CardHeader>
@@ -413,95 +691,194 @@ export default function Inbox() {
                   <p className="text-muted-foreground">Tente ajustar os filtros ou criar um novo ticket.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className={cn("space-y-3", viewMode === 'compact' && "space-y-2")}>
                   {filteredTickets.map((ticket) => {
-                    // Hook para verificar se o ticket está vencido
-                    const TicketCard = () => {
-                      const { isExpired } = useTicketCountdown(ticket.data_criacao, ticket.nivel_criticidade);
-                      
-                      return (
-                        <Card 
-                          key={ticket.id} 
-                          className={`p-4 transition-all duration-300 ${
-                            isExpired && ticket.status !== 'resolvido' && ticket.status !== 'fechado'
-                              ? 'bg-destructive/10 border-destructive/30 shadow-lg shadow-destructive/10 animate-pulse' 
-                              : ''
-                          }`}
-                        >
-                          <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="font-mono text-xs">
-                                {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
-                              </Badge>
-                              <h3 className="font-semibold text-lg">{ticket.titulo}</h3>
+                    const timeStatus = getTimeStatus(ticket.data_criacao, ticket.nivel_criticidade, ticket.status);
+                    const isExpired = timeStatus?.isOverdue;
+                    
+                    return (
+                      <Card 
+                        key={ticket.id} 
+                        className={cn(
+                          "group transition-all duration-300 hover:shadow-md hover:scale-[1.01] cursor-pointer border-l-4",
+                          // Borda lateral baseada na criticidade
+                          ticket.nivel_criticidade === 'P0' && "border-l-destructive",
+                          ticket.nivel_criticidade === 'P1' && "border-l-orange-500",
+                          ticket.nivel_criticidade === 'P2' && "border-l-yellow-500", 
+                          ticket.nivel_criticidade === 'P3' && "border-l-blue-500",
+                          // Efeito suave para vencidos
+                          isExpired && "bg-destructive/5 border-destructive/30 animate-glow-subtle",
+                          viewMode === 'compact' && "p-3"
+                        )}
+                        onClick={() => handleOpenTicketDetail(ticket)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            {/* Cabeçalho */}
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="font-mono text-xs">
+                                  {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
+                                </Badge>
+                                <h3 className={cn(
+                                  "font-semibold group-hover:text-primary transition-colors",
+                                  viewMode === 'compact' ? "text-base" : "text-lg"
+                                )}>
+                                  {ticket.titulo}
+                                </h3>
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {getStatusBadge(ticket.status)}
+                                {getCriticalityBadge(ticket.nivel_criticidade)}
+                                
+                                {/* Tempo até vencer/vencido */}
+                                {timeStatus && (
+                                  <Badge 
+                                    variant={timeStatus.isOverdue ? "destructive" : "outline"}
+                                    className={cn(
+                                      "text-xs font-medium",
+                                      timeStatus.isOverdue && "animate-pulse"
+                                    )}
+                                  >
+                                    {timeStatus.isOverdue ? "⏰" : "⏳"} {timeStatus.text}
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
-                            {getStatusBadge(ticket.status)}
-                            {getCriticalityBadge(ticket.nivel_criticidade)}
-                            <TicketCountdown 
-                              dataCriacao={ticket.data_criacao}
-                              criticidade={ticket.nivel_criticidade}
-                              status={ticket.status}
-                              compact
-                            />
+
+                            {/* Tags destacadas */}
                             {ticket.tags && ticket.tags.length > 0 && (
-                              <div className="flex gap-1">
-                                {ticket.tags.slice(0, 3).map((tag: string, index: number) => (
-                                  <Badge key={index} variant="outline" className="text-xs">
-                                    🏷️ {tag}
+                              <div className="flex gap-1 mb-2">
+                                {ticket.tags.slice(0, viewMode === 'compact' ? 2 : 4).map((tag: string, index: number) => (
+                                  <Badge key={index} variant="outline" className="text-xs bg-primary/10">
+                                    {tag.toLowerCase().includes('urgente') ? '🔥' : 
+                                     tag.toLowerCase().includes('vip') ? '⭐' : '🏷️'} {tag}
                                   </Badge>
                                 ))}
-                                {ticket.tags.length > 3 && (
+                                {ticket.tags.length > (viewMode === 'compact' ? 2 : 4) && (
                                   <Badge variant="outline" className="text-xs">
-                                    +{ticket.tags.length - 3}
+                                    +{ticket.tags.length - (viewMode === 'compact' ? 2 : 4)}
                                   </Badge>
                                 )}
                               </div>
                             )}
+                            
+                            {/* Descrição (apenas no modo detalhado) */}
+                            {viewMode === 'detailed' && (
+                              <p className="text-muted-foreground mb-3 text-sm line-clamp-2">
+                                {ticket.descricao}
+                              </p>
+                            )}
+                            
+                            {/* Informações contextuais */}
+                            <div className={cn(
+                              "grid gap-4 text-sm",
+                              viewMode === 'compact' ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4"
+                            )}>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-6 w-6">
+                                  <AvatarFallback className="text-xs">
+                                    {ticket.solicitante.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <span className="font-medium text-xs text-muted-foreground">Solicitante:</span>
+                                  <p className="font-medium">{ticket.solicitante}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4 text-muted-foreground" />
+                                <div>
+                                  <span className="font-medium text-xs text-muted-foreground">Responsável:</span>
+                                  <p className="font-medium">{ticket.time_responsavel}</p>
+                                </div>
+                              </div>
+
+                              {viewMode === 'detailed' && (
+                                <>
+                                  <div>
+                                    <span className="font-medium text-xs text-muted-foreground">Pontuação:</span>
+                                    <p className="font-bold text-primary">{ticket.pontuacao_total} pts</p>
+                                  </div>
+                                  <div>
+                                    <span className="font-medium text-xs text-muted-foreground">SLA:</span>
+                                    <p className="text-muted-foreground">{getTempoMedioResolucao(ticket.nivel_criticidade)}</p>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                            
+                            {/* Rodapé com data e ações rápidas */}
+                            <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
+                              <div className="text-xs text-muted-foreground">
+                                {format(new Date(ticket.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                              </div>
+                              
+                              {/* Ações rápidas (apenas no modo detalhado) */}
+                              {viewMode === 'detailed' && (
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  {ticket.status === 'aberto' && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 px-2 text-xs"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateTicketStatus(ticket.id, 'em_andamento');
+                                      }}
+                                    >
+                                      <Play className="h-3 w-3 mr-1" />
+                                      Iniciar
+                                    </Button>
+                                  )}
+                                  
+                                  {ticket.status === 'em_andamento' && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 px-2 text-xs"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          updateTicketStatus(ticket.id, 'pausado');
+                                        }}
+                                      >
+                                        <Pause className="h-3 w-3 mr-1" />
+                                        Pausar
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 px-2 text-xs text-success border-success/50 hover:bg-success/10"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          updateTicketStatus(ticket.id, 'resolvido');
+                                        }}
+                                      >
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                        Resolver
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                           
-                          <p className="text-muted-foreground mb-3">{ticket.descricao}</p>
-                          
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                            <div>
-                              <span className="font-medium">Solicitante:</span>
-                              <p className="text-muted-foreground">{ticket.solicitante}</p>
-                            </div>
-                            <div>
-                              <span className="font-medium">Time Responsável:</span>
-                              <p className="text-muted-foreground">{ticket.time_responsavel}</p>
-                            </div>
-                            <div>
-                              <span className="font-medium">Pontuação:</span>
-                              <p className="text-muted-foreground">{ticket.pontuacao_total} pontos</p>
-                            </div>
-                            <div>
-                              <span className="font-medium">Tempo Médio:</span>
-                              <p className="text-muted-foreground">{getTempoMedioResolucao(ticket.nivel_criticidade)}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="mt-3 text-xs text-muted-foreground">
-                            Criado em {format(new Date(ticket.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                          </div>
-                        </div>
-                        
-                        <div className="ml-4">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleOpenTicketDetail(ticket)}
-                          >
-                            Ver Detalhes
-                          </Button>
+                          {/* Botão de detalhes */}
+                          <div className="ml-4 flex flex-col gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              Ver Detalhes
+                            </Button>
                           </div>
                         </div>
                       </Card>
-                      );
-                    };
-
-                    return <TicketCard key={ticket.id} />;
+                    );
                   })}
                 </div>
               )}
