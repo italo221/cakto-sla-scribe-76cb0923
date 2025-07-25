@@ -192,6 +192,7 @@ export default function Inbox() {
   const getStatusLabel = (status: string): string => {
     const labels = {
       'aberto': 'Aberto',
+      'pausado': 'Pausado',
       'em_andamento': 'Em Andamento',
       'resolvido': 'Resolvido',
       'fechado': 'Fechado'
@@ -1220,13 +1221,42 @@ export default function Inbox() {
                                         size="sm"
                                         variant="outline"
                                         className="text-xs h-7"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateTicketStatus(ticket.id, 'pausado');
+                                      }}
+                                    >
+                                      <Pause className="h-3 w-3 mr-1" />
+                                      Pausar
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="default"
+                                        className="text-xs h-7"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          updateTicketStatus(ticket.id, 'aberto');
+                                          updateTicketStatus(ticket.id, 'resolvido');
                                         }}
                                       >
-                                        <Pause className="h-3 w-3 mr-1" />
-                                        Parar
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                        Resolver
+                                      </Button>
+                                    </>
+                                  )}
+                                  
+                                  {ticket.status === 'pausado' && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-xs h-7"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          updateTicketStatus(ticket.id, 'em_andamento');
+                                        }}
+                                      >
+                                        <Play className="h-3 w-3 mr-1" />
+                                        Retomar
                                       </Button>
                                       <Button
                                         size="sm"

@@ -232,6 +232,8 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit
     switch (status) {
       case 'aberto':
         return <Circle className="h-4 w-4 text-slate-500" />;
+      case 'pausado':
+        return <AlertTriangle className="h-4 w-4 text-orange-500" />;
       case 'em_andamento':
         return <Activity className="h-4 w-4 text-yellow-600" />;
       case 'resolvido':
@@ -247,6 +249,8 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit
     switch (status) {
       case 'aberto':
         return 'border-slate-300 bg-slate-50';
+      case 'pausado':
+        return 'border-orange-300 bg-orange-50';
       case 'em_andamento':
         return 'border-yellow-300 bg-yellow-50';
       case 'resolvido':
@@ -316,6 +320,7 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
   // Organizar tickets por status
   const ticketsByStatus = {
     aberto: tickets.filter(t => t.status === 'aberto'),
+    pausado: tickets.filter(t => t.status === 'pausado'),
     em_andamento: tickets.filter(t => t.status === 'em_andamento'),
     resolvido: tickets.filter(t => t.status === 'resolvido'),
     fechado: tickets.filter(t => t.status === 'fechado'),
@@ -329,6 +334,14 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
       color: 'bg-slate-400',
       icon: Circle,
       description: 'Tickets recém-criados'
+    },
+    {
+      title: 'Pausado',
+      status: 'pausado',
+      tickets: ticketsByStatus.pausado,
+      color: 'bg-orange-400',
+      icon: AlertTriangle,
+      description: 'Tickets pausados'
     },
     {
       title: 'Em Andamento',
@@ -383,7 +396,7 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
     const newStatus = over.id as TicketStatusType;
 
     // Verificar se é uma mudança válida de status
-    if (!['aberto', 'em_andamento', 'resolvido', 'fechado'].includes(newStatus)) {
+    if (!['aberto', 'pausado', 'em_andamento', 'resolvido', 'fechado'].includes(newStatus)) {
       console.log('🚫 Status inválido:', newStatus);
       return;
     }
@@ -427,6 +440,7 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
 
       const statusLabels = {
         'aberto': 'Aberto',
+        'pausado': 'Pausado',
         'em_andamento': 'Em Andamento',
         'resolvido': 'Resolvido',
         'fechado': 'Fechado'
