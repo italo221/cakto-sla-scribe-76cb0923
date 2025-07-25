@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -54,7 +54,6 @@ interface Setor {
 
 export default function Inbox() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
   const [setores, setSetores] = useState<Setor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -84,19 +83,7 @@ export default function Inbox() {
     localStorage.setItem('inbox-display-mode', displayMode);
   }, [displayMode]);
 
-  useEffect(() => {
-    console.log('🔍 Executando filtros com:', { 
-      ticketsCount: tickets.length, 
-      searchTerm, 
-      statusFilter, 
-      criticalityFilter, 
-      setorFilter,
-      showOnlyExpired 
-    });
-    if (tickets.length > 0) {
-      filterTickets();
-    }
-  }, [tickets, searchTerm, statusFilter, criticalityFilter, setorFilter, showOnlyExpired]);
+  // Filters are now handled by useMemo in filteredTicketsWithStatus
 
   const loadSetores = async () => {
     try {
@@ -199,14 +186,111 @@ export default function Inbox() {
     }
   };
 
-  const filterTickets = () => {
-    console.log('🎯 Iniciando filtragem de tickets...');
-    let filtered = tickets;
-    console.log('📊 Total de tickets inicial:', filtered.length);
+  // Old filterTickets function removed - now handled by useMemo in filteredTicketsWithStatus
+
+  // Usar a lógica centralizada de filtros - sem map() para evitar re-renders
+  const ticketFilters = useTicketFilters(tickets);
+
+  // Calcular status info para todos os tickets no nível do componente
+  const ticketsWithStatus = useMemo(() => {
+    return tickets.map(ticket => ({
+      ...ticket,
+      statusInfo: (() => {
+        // Replicar a lógica do useTicketStatus aqui para evitar hooks em loops
+        const userCanEdit = userRole === 'super_admin' || userRole === 'operador';
+        
+        // Calcular se está atrasado
+        const isExpired = (() => {
+          if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
+          
+          const timeConfig = {
+            'P0': 4 * 60 * 60 * 1000, // 4 horas
+            'P1': 24 * 60 * 60 * 1000, // 24 horas
+            'P2': 3 * 24 * 60 * 60 * 1000, // 3 dias
+            'P3': 7 * 24 * 60 * 60 * 1000, // 7 dias
+          };
+          
+          const startTime = new Date(ticket.data_criacao).getTime();
+          const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+          const deadline = startTime + timeLimit;
+          
+          return Date.now() > deadline;
+        })();
+
+        // Se está atrasado, sobrescrever as cores para vermelho
+        if (isExpired) {
+          return {
+            status: ticket.status,
+            isExpired: true,
+            displayStatus: `${getStatusLabel(ticket.status)} (Atrasado)`,
+            color: 'bg-red-500',
+            bgColor: 'bg-red-50',
+            textColor: 'text-red-800',
+            borderColor: 'border-red-200',
+            icon: AlertTriangle,
+            canEdit: userCanEdit
+          };
+        }
+
+        // Status normal
+        const statusConfig = {
+          'aberto': {
+            displayStatus: 'Aberto',
+            color: 'bg-gray-500',
+            bgColor: 'bg-gray-50',
+            textColor: 'text-gray-800',
+            borderColor: 'border-gray-200',
+            icon: AlertCircle
+          },
+          'em_andamento': {
+            displayStatus: 'Em Andamento',
+            color: 'bg-blue-500',
+            bgColor: 'bg-blue-50',
+            textColor: 'text-blue-800',
+            borderColor: 'border-blue-200',
+            icon: Activity
+          },
+          'resolvido': {
+            displayStatus: 'Resolvido',
+            color: 'bg-green-500',
+            bgColor: 'bg-green-50',
+            textColor: 'text-green-800',
+            borderColor: 'border-green-200',
+            icon: CheckCircle
+          },
+          'fechado': {
+            displayStatus: 'Fechado',
+            color: 'bg-gray-500',
+            bgColor: 'bg-gray-100',
+            textColor: 'text-gray-600',
+            borderColor: 'border-gray-300',
+            icon: X
+          }
+        };
+
+        const config = statusConfig[ticket.status as keyof typeof statusConfig] || statusConfig.aberto;
+
+        return {
+          status: ticket.status,
+          isExpired: false,
+          displayStatus: config.displayStatus,
+          color: config.color,
+          bgColor: config.bgColor,
+          textColor: config.textColor,
+          borderColor: config.borderColor,
+          icon: config.icon,
+          canEdit: userCanEdit
+        };
+      })()
+    }));
+  }, [tickets, userRole]);
+
+  // Aplicar filtros aos tickets com status info
+  const filteredTicketsWithStatus = useMemo(() => {
+    let filtered = ticketsWithStatus;
 
     // Filtro por termo de busca (incluindo tags)
     if (searchTerm) {
-      console.log('🔍 Aplicando filtro de busca:', searchTerm);
       filtered = filtered.filter(ticket => 
         ticket.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ticket.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -215,80 +299,52 @@ export default function Inbox() {
         (ticket.ticket_number && ticket.ticket_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (ticket.tags && ticket.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
       );
-      console.log('🔍 Após busca:', filtered.length);
     }
 
     // Filtro por status
     if (statusFilter !== 'all') {
-      console.log('📋 Aplicando filtro de status:', statusFilter);
       filtered = filtered.filter(ticket => ticket.status === statusFilter);
-      console.log('📋 Após filtro status:', filtered.length);
     }
 
     // Filtro por criticidade
     if (criticalityFilter !== 'all') {
-      console.log('🚨 Aplicando filtro de criticidade:', criticalityFilter);
       filtered = filtered.filter(ticket => ticket.nivel_criticidade === criticalityFilter);
-      console.log('🚨 Após filtro criticidade:', filtered.length);
     }
 
     // Filtro por setor
     if (setorFilter !== 'all') {
-      console.log('🏢 Aplicando filtro de setor:', setorFilter);
       filtered = filtered.filter(ticket => ticket.setor_id === setorFilter);
-      console.log('🏢 Após filtro setor:', filtered.length);
     }
 
     // Filtro específico para tickets atrasados
     if (showOnlyExpired) {
-      console.log('⏰ Aplicando filtro de tickets atrasados');
-      filtered = filtered.filter(ticket => {
-        if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
-        
-        const timeConfig = {
-          'P0': 4 * 60 * 60 * 1000, // 4 horas
-          'P1': 24 * 60 * 60 * 1000, // 24 horas
-          'P2': 3 * 24 * 60 * 60 * 1000, // 3 dias
-          'P3': 7 * 24 * 60 * 60 * 1000, // 7 dias
-        };
-        
-        const startTime = new Date(ticket.data_criacao).getTime();
-        const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
-        const deadline = startTime + timeLimit;
-        
-        return Date.now() > deadline;
-      });
-      console.log('⏰ Após filtro atrasados:', filtered.length);
+      filtered = filtered.filter(ticket => ticket.statusInfo.isExpired);
     }
 
-    console.log('✅ Filtragem final:', filtered.length, 'tickets');
-    // Manter a mesma ordenação inteligente aplicada no loadTickets
-    setFilteredTickets(filtered);
+    return filtered;
+  }, [ticketsWithStatus, searchTerm, statusFilter, criticalityFilter, setorFilter, showOnlyExpired]);
+
+  // Função helper para obter o label do status
+  const getStatusLabel = (status: string): string => {
+    const labels = {
+      'aberto': 'Aberto',
+      'em_andamento': 'Em Andamento',
+      'resolvido': 'Resolvido',
+      'fechado': 'Fechado'
+    };
+    return labels[status as keyof typeof labels] || 'Desconhecido';
   };
 
-  // Usar a lógica centralizada de filtros - sem map() para evitar re-renders
-  const ticketFilters = useTicketFilters(tickets);
-
-  // Função centralizada para obter badge de status
-  const getStatusBadge = (ticket: Ticket) => {
-    const statusInfo = useTicketStatus({ 
-      ticket: { 
-        id: ticket.id, 
-        status: ticket.status, 
-        nivel_criticidade: ticket.nivel_criticidade, 
-        data_criacao: ticket.data_criacao 
-      }, 
-      userRole 
-    });
-    
-    const Icon = statusInfo.icon;
+  // Função para obter badge de status (agora sem hooks)
+  const getStatusBadge = (ticketWithStatus: any) => {
+    const Icon = ticketWithStatus.statusInfo.icon;
 
     return (
-      <Badge className={`${statusInfo.bgColor} ${statusInfo.textColor} ${statusInfo.borderColor} flex items-center gap-1 border font-medium`}>
+      <Badge className={`${ticketWithStatus.statusInfo.bgColor} ${ticketWithStatus.statusInfo.textColor} ${ticketWithStatus.statusInfo.borderColor} flex items-center gap-1 border font-medium`}>
         <Icon size={12} />
-        {statusInfo.displayStatus}
+        {ticketWithStatus.statusInfo.displayStatus}
         {/* Spinner especial para "Em Andamento" */}
-        {ticket.status === 'em_andamento' && !statusInfo.isExpired && (
+        {ticketWithStatus.status === 'em_andamento' && !ticketWithStatus.statusInfo.isExpired && (
           <Clock className="ml-1 h-3 w-3 animate-pulse text-blue-600" />
         )}
       </Badge>
@@ -486,7 +542,7 @@ export default function Inbox() {
               <h1 className="text-3xl font-bold text-foreground mb-2">
                 Caixa de Entrada - Tickets
                 <Badge variant="secondary" className="ml-3 text-lg font-mono">
-                  {filteredTickets.length}
+                  {filteredTicketsWithStatus.length}
                 </Badge>
               </h1>
               <p className="text-muted-foreground">Gerencie todas as demandas e acompanhe o status dos tickets</p>
@@ -494,16 +550,16 @@ export default function Inbox() {
             
             {/* Indicadores de urgência */}
             <div className="flex gap-2">
-              {filteredTickets.filter(s => s.status !== 'resolvido' && s.status !== 'fechado').length > 0 && (
+              {filteredTicketsWithStatus.filter(s => s.status !== 'resolvido' && s.status !== 'fechado').length > 0 && (
                 <Badge variant="destructive" className="animate-pulse">
                   <AlertCircle className="w-3 h-3 mr-1" />
-                  {filteredTickets.filter(s => s.status !== 'resolvido' && s.status !== 'fechado').length} ativos
+                  {filteredTicketsWithStatus.filter(s => s.status !== 'resolvido' && s.status !== 'fechado').length} ativos
                 </Badge>
               )}
-              {filteredTickets.filter(s => s.nivel_criticidade === 'P0' && s.status !== 'resolvido' && s.status !== 'fechado').length > 0 && (
+              {filteredTicketsWithStatus.filter(s => s.nivel_criticidade === 'P0' && s.status !== 'resolvido' && s.status !== 'fechado').length > 0 && (
                 <Badge variant="destructive" className="animate-glow-pulse flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
-                  {filteredTickets.filter(s => s.nivel_criticidade === 'P0' && s.status !== 'resolvido' && s.status !== 'fechado').length} críticos
+                  {filteredTicketsWithStatus.filter(s => s.nivel_criticidade === 'P0' && s.status !== 'resolvido' && s.status !== 'fechado').length} críticos
                 </Badge>
               )}
             </div>
@@ -863,7 +919,7 @@ export default function Inbox() {
         {/* Renderização condicional: Lista ou Kanban */}
         {displayMode === 'kanban' ? (
           <TicketKanban
-            tickets={filteredTickets}
+            tickets={filteredTicketsWithStatus}
             onOpenDetail={handleOpenTicketDetail}
             onTicketUpdate={loadTickets}
             userRole={userRole}
@@ -877,12 +933,12 @@ export default function Inbox() {
                   <InboxIcon className="w-5 h-5" />
                   Caixa de Entrada
                   <Badge variant="outline" className="font-mono">
-                    {filteredTickets.length} tickets
+                    {filteredTicketsWithStatus.length} tickets
                   </Badge>
-                  {filteredTickets.filter(s => s.status === 'aberto').length > 0 && (
+                  {filteredTicketsWithStatus.filter(s => s.status === 'aberto').length > 0 && (
                     <Badge variant="destructive">
                       <Clock className="w-3 h-3 mr-1" />
-                      {filteredTickets.filter(s => s.status === 'aberto').length} abertos
+                      {filteredTicketsWithStatus.filter(s => s.status === 'aberto').length} abertos
                     </Badge>
                   )}
                 </CardTitle>
@@ -904,7 +960,7 @@ export default function Inbox() {
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[600px]">
-                {filteredTickets.length === 0 ? (
+                {filteredTicketsWithStatus.length === 0 ? (
                   <div className="text-center py-8">
                     <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-medium text-foreground mb-2">Nenhum ticket encontrado</h3>
@@ -912,7 +968,7 @@ export default function Inbox() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {filteredTickets.map((ticket) => {
+                    {filteredTicketsWithStatus.map((ticket) => {
                       const timeStatus = getTimeStatus(ticket.data_criacao, ticket.nivel_criticidade, ticket.status);
                       const isExpired = timeStatus?.isOverdue;
                       
