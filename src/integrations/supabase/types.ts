@@ -72,7 +72,7 @@ export type Database = {
           email: string
           id: string
           nome_completo: string
-          role: Database["public"]["Enums"]["user_role"] | null
+          role: Database["public"]["Enums"]["user_role"]
           updated_at: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
@@ -83,7 +83,7 @@ export type Database = {
           email: string
           id?: string
           nome_completo: string
-          role?: Database["public"]["Enums"]["user_role"] | null
+          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           user_id: string
           user_type?: Database["public"]["Enums"]["user_type"]
@@ -94,7 +94,7 @@ export type Database = {
           email?: string
           id?: string
           nome_completo?: string
-          role?: Database["public"]["Enums"]["user_role"] | null
+          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           user_id?: string
           user_type?: Database["public"]["Enums"]["user_type"]

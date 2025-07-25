@@ -96,7 +96,7 @@ const Auth = () => {
           emailRedirectTo: redirectUrl,
           data: {
             nome_completo: signUpData.nomeCompleto,
-            user_type: 'viewer' // Novo usuário sempre começa como viewer
+            // Não incluir user_type - será definido como default no trigger
           }
         }
       });
