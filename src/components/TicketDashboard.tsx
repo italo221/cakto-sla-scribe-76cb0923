@@ -544,7 +544,7 @@ export default function SLADashboard() {
   };
 
   // SLAs críticos em destaque
-  const getCriticalSLAs = useMemo((): CriticalSLA[] => {
+  const getCriticalSLAs = (): CriticalSLA[] => {
     const agora = new Date();
     return slaData
       .filter(sla => {
@@ -572,7 +572,7 @@ export default function SLADashboard() {
         };
       })
       .sort((a, b) => b.diasAtrasado - a.diasAtrasado);
-  }, [slaData]);
+  };
 
   // Insights automáticos
   const getAutomatedInsights = useMemo(() => {
