@@ -246,7 +246,7 @@ export default function Customization() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
               <Palette className="h-8 w-8" />
-              🎨 Personalização do Sistema
+              Personalização do Sistema
             </h1>
             <p className="text-muted-foreground">
               Customize as cores e o visual do seu SaaS. As mudanças são aplicadas em tempo real.
