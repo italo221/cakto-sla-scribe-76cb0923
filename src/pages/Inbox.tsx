@@ -20,6 +20,7 @@ import { isSupabaseConfigured } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import TicketKanban from "@/components/TicketKanban";
 import { useAuth } from "@/hooks/useAuth";
+import { useTicketStatus, useTicketFilters, validateStatusChange, type TicketStatusType } from "@/hooks/useTicketStatus";
 
 interface Ticket {
   id: string;
@@ -265,24 +266,35 @@ export default function Inbox() {
     setFilteredTickets(filtered);
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'aberto': { color: 'bg-red-100 text-red-800 border-red-200', icon: AlertCircle, label: 'Aberto' },
-      'em_andamento': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Activity, label: 'Em Andamento' },
-      'resolvido': { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle, label: 'Resolvido' },
-      'fechado': { color: 'bg-gray-100 text-gray-800 border-gray-200', icon: X, label: 'Fechado' }
-    };
+  // Usar a lógica centralizada de filtros
+  const ticketFilters = useTicketFilters(tickets.map(t => ({
+    id: t.id,
+    status: t.status,
+    nivel_criticidade: t.nivel_criticidade,
+    data_criacao: t.data_criacao
+  })));
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.aberto;
-    const Icon = config.icon;
+  // Função centralizada para obter badge de status
+  const getStatusBadge = (ticket: Ticket) => {
+    const statusInfo = useTicketStatus({ 
+      ticket: { 
+        id: ticket.id, 
+        status: ticket.status, 
+        nivel_criticidade: ticket.nivel_criticidade, 
+        data_criacao: ticket.data_criacao 
+      }, 
+      userRole 
+    });
+    
+    const Icon = statusInfo.icon;
 
     return (
-      <Badge className={`${config.color} flex items-center gap-1 border font-medium`}>
+      <Badge className={`${statusInfo.bgColor} ${statusInfo.textColor} ${statusInfo.borderColor} flex items-center gap-1 border font-medium`}>
         <Icon size={12} />
-        {config.label}
+        {statusInfo.displayStatus}
         {/* Spinner especial para "Em Andamento" */}
-        {status === 'em_andamento' && (
-          <Clock className="ml-1 h-3 w-3 animate-pulse text-yellow-600" />
+        {ticket.status === 'em_andamento' && !statusInfo.isExpired && (
+          <Clock className="ml-1 h-3 w-3 animate-pulse text-blue-600" />
         )}
       </Badge>
     );
@@ -382,42 +394,41 @@ export default function Inbox() {
     generateSearchSuggestions(searchTerm);
   }, [searchTerm, generateSearchSuggestions]);
 
-  // Função para mudar status do ticket rapidamente
-  const updateTicketStatus = useCallback(async (ticketId: string, newStatus: string) => {
+  // Função para mudar status do ticket com validação
+  const updateTicketStatus = useCallback(async (ticketId: string, newStatus: TicketStatusType) => {
+    const ticket = tickets.find(t => t.id === ticketId);
+    if (!ticket) return;
+
+    const validation = validateStatusChange(
+      ticket.status as TicketStatusType, 
+      newStatus, 
+      userRole
+    );
+
+    if (!validation.valid) {
+      console.error('Mudança de status inválida:', validation.reason);
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('sla_demandas')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .update({ 
+          status: newStatus, 
+          updated_at: new Date().toISOString() 
+        })
         .eq('id', ticketId);
 
       if (error) throw error;
 
+      console.log(`✅ Status atualizado: ${ticket.titulo} → ${newStatus}`);
+      
       // Recarregar tickets para atualizar dashboard
       await loadTickets();
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
     }
-  }, []);
-
-  // Verificar tickets vencidos
-  const getExpiredTickets = useCallback(() => {
-    return tickets.filter(ticket => {
-      if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
-      
-      const timeConfig = {
-        'P0': 4 * 60 * 60 * 1000, // 4 horas
-        'P1': 24 * 60 * 60 * 1000, // 24 horas
-        'P2': 3 * 24 * 60 * 60 * 1000, // 3 dias
-        'P3': 7 * 24 * 60 * 60 * 1000, // 7 dias
-      };
-      
-      const startTime = new Date(ticket.data_criacao).getTime();
-      const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
-      const deadline = startTime + timeLimit;
-      
-      return Date.now() > deadline;
-    });
-  }, [tickets]);
+  }, [tickets, userRole]);
 
   // Calcular tempo até vencer ou tempo vencido
   const getTimeStatus = useCallback((dataCriacao: string, criticidade: string, status: string) => {
@@ -602,7 +613,7 @@ export default function Inbox() {
                 <SelectContent>
                   <SelectItem value="all">Todos os status</SelectItem>
                   <SelectItem value="aberto">📋 Aberto</SelectItem>
-                  <SelectItem value="em_andamento">⏳ Em Andamento</SelectItem>
+                  <SelectItem value="em_andamento">🔵 Em Andamento</SelectItem>
                   <SelectItem value="resolvido">✅ Resolvido</SelectItem>
                   <SelectItem value="fechado">⚫ Fechado</SelectItem>
                 </SelectContent>
@@ -657,7 +668,7 @@ export default function Inbox() {
               </Badge>
               <Badge
                 variant="outline"
-                className="cursor-pointer hover:bg-yellow-100 hover:text-yellow-800 hover:border-yellow-300 transition-colors flex items-center gap-1"
+                className="cursor-pointer hover:bg-blue-100 hover:text-blue-800 hover:border-blue-300 transition-colors flex items-center gap-1"
                 onClick={() => {
                   setStatusFilter('em_andamento');
                   setCriticalityFilter('all');
@@ -665,13 +676,13 @@ export default function Inbox() {
                   setShowOnlyExpired(false);
                 }}
               >
-                <Activity className="w-3 h-3 text-yellow-600" />
+                <Activity className="w-3 h-3 text-blue-600" />
                 Em Andamento
-                <Clock className="w-3 h-3 animate-pulse text-yellow-500" />
+                <Clock className="w-3 h-3 animate-pulse text-blue-500" />
               </Badge>
               <Badge
                 variant="outline"
-                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1"
+                className="cursor-pointer hover:bg-red-100 hover:text-red-800 hover:border-red-300 transition-colors flex items-center gap-1"
                 onClick={() => {
                   console.log('🔍 Clicou em Atrasados - aplicando filtro específico');
                   // Limpar outros filtros e aplicar filtro específico para atrasados
@@ -682,8 +693,9 @@ export default function Inbox() {
                   setShowOnlyExpired(true);
                 }}
               >
-                <Clock className="w-3 h-3 text-orange-500" />
+                <AlertTriangle className="w-3 h-3 text-red-600" />
                 Atrasados
+                <Clock className="w-3 h-3 animate-pulse text-red-500" />
               </Badge>
               <Button
                 variant="ghost"
@@ -705,7 +717,22 @@ export default function Inbox() {
         </Card>
 
         {/* Tickets Críticos Atrasados - Seção Fixa */}
-        {getExpiredTickets().filter(t => t.nivel_criticidade === 'P0' || t.nivel_criticidade === 'P1').length > 0 && (
+        {tickets.filter(ticket => {
+          if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
+          
+          const timeConfig = {
+            'P0': 4 * 60 * 60 * 1000,
+            'P1': 24 * 60 * 60 * 1000,
+            'P2': 3 * 24 * 60 * 60 * 1000,
+            'P3': 7 * 24 * 60 * 60 * 1000,
+          };
+          
+          const startTime = new Date(ticket.data_criacao).getTime();
+          const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+          const deadline = startTime + timeLimit;
+          
+          return Date.now() > deadline && (ticket.nivel_criticidade === 'P0' || ticket.nivel_criticidade === 'P1');
+        }).length > 0 && (
           <Card className="mb-6 border-destructive/50 bg-destructive/5">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-destructive">
@@ -713,14 +740,44 @@ export default function Inbox() {
                 Tickets Críticos Atrasados
                 <Badge variant="destructive" className="animate-glow-pulse flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
-                  {getExpiredTickets().filter(t => t.nivel_criticidade === 'P0' || t.nivel_criticidade === 'P1').length}
+                  {tickets.filter(ticket => {
+                    if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
+                    
+                    const timeConfig = {
+                      'P0': 4 * 60 * 60 * 1000,
+                      'P1': 24 * 60 * 60 * 1000,
+                      'P2': 3 * 24 * 60 * 60 * 1000,
+                      'P3': 7 * 24 * 60 * 60 * 1000,
+                    };
+                    
+                    const startTime = new Date(ticket.data_criacao).getTime();
+                    const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+                    const deadline = startTime + timeLimit;
+                    
+                    return Date.now() > deadline && (ticket.nivel_criticidade === 'P0' || ticket.nivel_criticidade === 'P1');
+                  }).length}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {getExpiredTickets()
-                  .filter(t => t.nivel_criticidade === 'P0' || t.nivel_criticidade === 'P1')
+                {tickets
+                  .filter(ticket => {
+                    if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
+                    
+                    const timeConfig = {
+                      'P0': 4 * 60 * 60 * 1000,
+                      'P1': 24 * 60 * 60 * 1000,
+                      'P2': 3 * 24 * 60 * 60 * 1000,
+                      'P3': 7 * 24 * 60 * 60 * 1000,
+                    };
+                    
+                    const startTime = new Date(ticket.data_criacao).getTime();
+                    const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+                    const deadline = startTime + timeLimit;
+                    
+                    return Date.now() > deadline && (ticket.nivel_criticidade === 'P0' || ticket.nivel_criticidade === 'P1');
+                  })
                   .slice(0, 3)
                   .map(ticket => (
                     <div 
@@ -746,14 +803,14 @@ export default function Inbox() {
           </Card>
         )}
 
-        {/* Estatísticas - Clicáveis */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        {/* Cards de Estatísticas Atualizados */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card 
             className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
             onClick={() => applyQuickFilter('status', 'aberto')}
           >
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-destructive">{tickets.filter(s => s.status === 'aberto').length}</div>
+              <div className="text-2xl font-bold text-gray-600">{ticketFilters.aberto.length}</div>
               <p className="text-sm text-muted-foreground">Abertos</p>
             </CardContent>
           </Card>
@@ -762,7 +819,7 @@ export default function Inbox() {
             onClick={() => applyQuickFilter('status', 'em_andamento')}
           >
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-warning">{tickets.filter(s => s.status === 'em_andamento').length}</div>
+              <div className="text-2xl font-bold text-blue-600">{ticketFilters.em_andamento.length}</div>
               <p className="text-sm text-muted-foreground">Em Andamento</p>
             </CardContent>
           </Card>
@@ -771,17 +828,8 @@ export default function Inbox() {
             onClick={() => applyQuickFilter('status', 'resolvido')}
           >
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-success">{tickets.filter(s => s.status === 'resolvido').length}</div>
+              <div className="text-2xl font-bold text-green-600">{ticketFilters.resolvido.length}</div>
               <p className="text-sm text-muted-foreground">Resolvidos</p>
-            </CardContent>
-          </Card>
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-            onClick={() => applyQuickFilter('status', 'fechado')}
-          >
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold text-muted-foreground">{tickets.filter(s => s.status === 'fechado').length}</div>
-              <p className="text-sm text-muted-foreground">Fechados</p>
             </CardContent>
           </Card>
           <Card 
@@ -796,7 +844,22 @@ export default function Inbox() {
             }}
           >
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-primary">{getExpiredTickets().length}</div>
+              <div className="text-2xl font-bold text-red-600">{tickets.filter(ticket => {
+                if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
+                
+                const timeConfig = {
+                  'P0': 4 * 60 * 60 * 1000,
+                  'P1': 24 * 60 * 60 * 1000,
+                  'P2': 3 * 24 * 60 * 60 * 1000,
+                  'P3': 7 * 24 * 60 * 60 * 1000,
+                };
+                
+                const startTime = new Date(ticket.data_criacao).getTime();
+                const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+                const deadline = startTime + timeLimit;
+                
+                return Date.now() > deadline;
+              }).length}</div>
               <p className="text-sm text-muted-foreground">Atrasados</p>
             </CardContent>
           </Card>
@@ -905,7 +968,7 @@ export default function Inbox() {
                               </div>
                               
                               <div className="flex items-start gap-2 shrink-0">
-                                {getStatusBadge(ticket.status)}
+                                {getStatusBadge(ticket)}
                                 <Badge className={cn(
                                   "text-xs font-medium",
                                   ticket.nivel_criticidade === 'P0' && "bg-destructive text-destructive-foreground",
@@ -1035,11 +1098,11 @@ export default function Inbox() {
                                         className="text-xs h-7"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          updateTicketStatus(ticket.id, 'pausado');
+                                          updateTicketStatus(ticket.id, 'aberto');
                                         }}
                                       >
                                         <Pause className="h-3 w-3 mr-1" />
-                                        Pausar
+                                        Parar
                                       </Button>
                                       <Button
                                         size="sm"

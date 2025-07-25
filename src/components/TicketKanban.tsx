@@ -12,6 +12,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useTicketStatus, validateStatusChange, type TicketStatusType } from "@/hooks/useTicketStatus";
 
 interface Ticket {
   id: string;
@@ -100,7 +101,16 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
     return colors[criticality as keyof typeof colors] || colors.P3;
   };
 
-  const expired = isExpired();
+  // Usar lógica centralizada de status
+  const statusInfo = useTicketStatus({ 
+    ticket: { 
+      id: ticket.id, 
+      status: ticket.status, 
+      nivel_criticidade: ticket.nivel_criticidade, 
+      data_criacao: ticket.data_criacao 
+    }, 
+    userRole: userCanEdit ? 'super_admin' : 'viewer' 
+  });
 
   return (
     <Card
@@ -111,6 +121,9 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
       className={cn(
         "mb-2 cursor-pointer transition-all duration-300 group bg-white animate-fade-in",
         "border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md",
+        // Usar cores do statusInfo
+        statusInfo.bgColor,
+        statusInfo.borderColor,
         // Destaque sutil para criticidade
         ticket.nivel_criticidade === 'P0' && "border-l-4 border-l-red-500",
         ticket.nivel_criticidade === 'P1' && "border-l-4 border-l-orange-500",
@@ -119,10 +132,6 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
         // Estados de drag - animações suaves
         isDragging && "opacity-80 rotate-1 scale-105 shadow-2xl z-50",
         isSortableDragging && "shadow-xl scale-105 rotate-1",
-        // Destaque para expirados
-        expired && "bg-red-50 border-red-200",
-        // Status "Em Andamento" com destaque especial
-        ticket.status === 'em_andamento' && "bg-yellow-50 border-yellow-200 border-l-4 border-l-yellow-500",
         !userCanEdit && "cursor-default"
       )}
       onClick={() => onOpenDetail(ticket)}
@@ -134,18 +143,12 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
             {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
           </Badge>
           <div className="flex items-center gap-1">
-            {/* Indicador especial para "Em Andamento" */}
-            {ticket.status === 'em_andamento' && (
-              <div className="flex items-center gap-1">
-                <Loader2 className="h-3 w-3 text-yellow-600 animate-spin" />
-                <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 text-xs px-1.5 py-0.5">
-                  Em Andamento
-                </Badge>
-              </div>
-            )}
-            {expired && (
-              <AlertTriangle className="h-3 w-3 text-red-500" />
-            )}
+            {/* Badge de status com lógica centralizada */}
+            <Badge className={`${statusInfo.bgColor} ${statusInfo.textColor} ${statusInfo.borderColor} flex items-center gap-1 text-xs px-2 py-1`}>
+              <statusInfo.icon size={10} />
+              {statusInfo.displayStatus}
+            </Badge>
+            {/* Criticidade */}
             <span className={cn(
               "text-xs px-1.5 py-0.5 rounded text-white font-medium",
               ticket.nivel_criticidade === 'P0' && "bg-red-500",
@@ -372,7 +375,7 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
     }
 
     const ticketId = active.id as string;
-    const newStatus = over.id as string;
+    const newStatus = over.id as TicketStatusType;
 
     // Verificar se é uma mudança válida de status
     if (!['aberto', 'em_andamento', 'resolvido', 'fechado'].includes(newStatus)) {
@@ -381,8 +384,25 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
     }
 
     const ticket = tickets.find(t => t.id === ticketId);
-    if (!ticket || ticket.status === newStatus) {
-      console.log('🚫 Ticket não encontrado ou status igual');
+    if (!ticket) {
+      console.log('🚫 Ticket não encontrado');
+      return;
+    }
+
+    // Validar mudança de status
+    const validation = validateStatusChange(
+      ticket.status as TicketStatusType, 
+      newStatus, 
+      userCanEdit ? 'super_admin' : 'viewer'
+    );
+
+    if (!validation.valid) {
+      console.log('🚫 Mudança inválida:', validation.reason);
+      return;
+    }
+
+    if (ticket.status === newStatus) {
+      console.log('🚫 Status igual');
       return;
     }
 
