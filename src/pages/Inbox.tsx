@@ -83,6 +83,13 @@ export default function Inbox() {
   }, [displayMode]);
 
   useEffect(() => {
+    console.log('🔍 Executando filtros com:', { 
+      ticketsCount: tickets.length, 
+      searchTerm, 
+      statusFilter, 
+      criticalityFilter, 
+      setorFilter 
+    });
     if (tickets.length > 0) {
       filterTickets();
     }
@@ -190,10 +197,13 @@ export default function Inbox() {
   };
 
   const filterTickets = () => {
+    console.log('🎯 Iniciando filtragem de tickets...');
     let filtered = tickets;
+    console.log('📊 Total de tickets inicial:', filtered.length);
 
     // Filtro por termo de busca (incluindo tags)
     if (searchTerm) {
+      console.log('🔍 Aplicando filtro de busca:', searchTerm);
       filtered = filtered.filter(ticket => 
         ticket.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ticket.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -202,23 +212,31 @@ export default function Inbox() {
         (ticket.ticket_number && ticket.ticket_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (ticket.tags && ticket.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
       );
+      console.log('🔍 Após busca:', filtered.length);
     }
 
     // Filtro por status
     if (statusFilter !== 'all') {
+      console.log('📋 Aplicando filtro de status:', statusFilter);
       filtered = filtered.filter(ticket => ticket.status === statusFilter);
+      console.log('📋 Após filtro status:', filtered.length);
     }
 
     // Filtro por criticidade
     if (criticalityFilter !== 'all') {
+      console.log('🚨 Aplicando filtro de criticidade:', criticalityFilter);
       filtered = filtered.filter(ticket => ticket.nivel_criticidade === criticalityFilter);
+      console.log('🚨 Após filtro criticidade:', filtered.length);
     }
 
     // Filtro por setor
     if (setorFilter !== 'all') {
+      console.log('🏢 Aplicando filtro de setor:', setorFilter);
       filtered = filtered.filter(ticket => ticket.setor_id === setorFilter);
+      console.log('🏢 Após filtro setor:', filtered.length);
     }
 
+    console.log('✅ Filtragem final:', filtered.length, 'tickets');
     // Manter a mesma ordenação inteligente aplicada no loadTickets
     setFilteredTickets(filtered);
   };
@@ -546,7 +564,10 @@ export default function Inbox() {
                 )}
               </div>
               
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={(value) => {
+                console.log('📋 Mudança no filtro de status:', value);
+                setStatusFilter(value);
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filtrar por status" />
                 </SelectTrigger>
@@ -559,7 +580,10 @@ export default function Inbox() {
                 </SelectContent>
               </Select>
 
-              <Select value={criticalityFilter} onValueChange={setCriticalityFilter}>
+              <Select value={criticalityFilter} onValueChange={(value) => {
+                console.log('🚨 Mudança no filtro de criticidade:', value);
+                setCriticalityFilter(value);
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filtrar por criticidade" />
                 </SelectTrigger>
@@ -572,7 +596,10 @@ export default function Inbox() {
                 </SelectContent>
               </Select>
 
-              <Select value={setorFilter} onValueChange={setSetorFilter}>
+              <Select value={setorFilter} onValueChange={(value) => {
+                console.log('🏢 Mudança no filtro de setor:', value);
+                setSetorFilter(value);
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filtrar por setor" />
                 </SelectTrigger>
@@ -615,9 +642,14 @@ export default function Inbox() {
                 variant="outline"
                 className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1"
                 onClick={() => {
+                  console.log('🔍 Clicou em Atrasados - aplicando filtro por status');
+                  // Aplicar filtro para mostrar apenas tickets atrasados
                   const expired = getExpiredTickets();
                   if (expired.length > 0) {
-                    setSearchTerm(expired[0].ticket_number || '');
+                    // Limpar busca e aplicar filtros para mostrar atrasados
+                    setSearchTerm('');
+                    setStatusFilter('aberto'); // Mostrar abertos que estão atrasados
+                    setCriticalityFilter('all');
                   }
                 }}
               >
