@@ -1084,7 +1084,7 @@ export default function SLADashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {getAutomatedInsights.map((insight, index) => (
+            {getAutomatedInsights().map((insight, index) => (
               <div 
                 key={index}
                 className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border hover:shadow-md transition-all"
