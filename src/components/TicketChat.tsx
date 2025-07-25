@@ -142,7 +142,7 @@ export default function TicketChat() {
   // Sistema de consulta de SLAs com linguagem natural
   const handleSLAQuery = async (query: string) => {
     try {
-      addMessage('assistant', '🔍 **Processando consulta...**');
+      addMessage('assistant', '🔍 Processando consulta...');
       
       const result = await processSLAQuery(query);
       addMessage('assistant', result);
@@ -200,16 +200,16 @@ export default function TicketChat() {
     if (error) throw error;
     if (!data || data.length === 0) {
       const resultMsg = isAdmin 
-        ? '📋 **Nenhum SLA aberto encontrado!**\n\n✅ Todas as demandas foram resolvidas.'
-        : '📋 **Nenhum SLA aberto nos seus setores!**\n\n✅ Seus setores não têm demandas abertas no momento.';
+        ? '📋 Nenhum SLA aberto encontrado!\n\n✅ Todas as demandas foram resolvidas.'
+        : '📋 Nenhum SLA aberto nos seus setores!\n\n✅ Seus setores não têm demandas abertas no momento.';
       return resultMsg;
     }
 
-    let result = `🧩 **SLAs Abertos** (${data.length} encontrados)\n\n`;
+    let result = `🧩 SLAs Abertos (${data.length} encontrados)\n\n`;
     
     data.forEach(sla => {
       const dataFormatada = new Date(sla.data_criacao).toLocaleDateString('pt-BR');
-      result += `**${sla.ticket_number}** – ${sla.titulo} – ${sla.nivel_criticidade}\n`;
+      result += `${sla.ticket_number} – ${sla.titulo} – ${sla.nivel_criticidade}\n`;
       result += `📅 Aberto em ${dataFormatada} | 👥 ${sla.time_responsavel}\n\n`;
     });
 
@@ -239,14 +239,14 @@ export default function TicketChat() {
       .limit(5);
 
     if (error) throw error;
-    if (!data || data.length === 0) return `📋 **Nenhum SLA ${criticidade} encontrado!**`;
+    if (!data || data.length === 0) return `📋 Nenhum SLA ${criticidade} encontrado!`;
 
-    let result = `🚨 **SLAs ${criticidade}** (${data.length} encontrados)\n\n`;
+    let result = `🚨 SLAs ${criticidade} (${data.length} encontrados)\n\n`;
     
     data.forEach(sla => {
       const dataFormatada = new Date(sla.data_criacao).toLocaleDateString('pt-BR');
       const statusIcon = sla.status === 'aberto' ? '🔴' : sla.status === 'em_andamento' ? '🟡' : '✅';
-      result += `**${sla.ticket_number}** – ${sla.titulo}\n`;
+      result += `${sla.ticket_number} – ${sla.titulo}\n`;
       result += `📅 ${dataFormatada} | 👥 ${sla.time_responsavel} | ${statusIcon} ${sla.status}\n\n`;
     });
 
@@ -274,14 +274,14 @@ export default function TicketChat() {
       .limit(5);
 
     if (error) throw error;
-    if (!data || data.length === 0) return `📋 **Nenhum SLA do time ${timeEncontrado} encontrado!**`;
+    if (!data || data.length === 0) return `📋 Nenhum SLA do time ${timeEncontrado} encontrado!`;
 
-    let result = `👥 **SLAs do Time ${timeEncontrado}** (${data.length} encontrados)\n\n`;
+    let result = `👥 SLAs do Time ${timeEncontrado} (${data.length} encontrados)\n\n`;
     
     data.forEach(sla => {
       const dataFormatada = new Date(sla.data_criacao).toLocaleDateString('pt-BR');
       const statusIcon = sla.status === 'aberto' ? '🔴' : sla.status === 'em_andamento' ? '🟡' : '✅';
-      result += `**${sla.ticket_number}** – ${sla.titulo} – ${sla.nivel_criticidade}\n`;
+      result += `${sla.ticket_number} – ${sla.titulo} – ${sla.nivel_criticidade}\n`;
       result += `📅 ${dataFormatada} | ${statusIcon} ${sla.status}\n\n`;
     });
 
@@ -298,14 +298,14 @@ export default function TicketChat() {
       .order('data_criacao', { ascending: false });
 
     if (error) throw error;
-    if (!data || data.length === 0) return '📋 **Nenhum SLA aberto hoje!**\n\n✅ Dia tranquilo até agora.';
+    if (!data || data.length === 0) return '📋 Nenhum SLA aberto hoje!\n\n✅ Dia tranquilo até agora.';
 
-    let result = `📅 **SLAs de Hoje** (${data.length} encontrados)\n\n`;
+    let result = `📅 SLAs de Hoje (${data.length} encontrados)\n\n`;
     
     data.forEach(sla => {
       const hora = new Date(sla.data_criacao).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       const statusIcon = sla.status === 'aberto' ? '🔴' : sla.status === 'em_andamento' ? '🟡' : '✅';
-      result += `**${sla.ticket_number}** – ${sla.titulo} – ${sla.nivel_criticidade}\n`;
+      result += `${sla.ticket_number} – ${sla.titulo} – ${sla.nivel_criticidade}\n`;
       result += `⏰ ${hora} | 👥 ${sla.time_responsavel} | ${statusIcon} ${sla.status}\n\n`;
     });
 
@@ -324,14 +324,14 @@ export default function TicketChat() {
       .limit(10);
 
     if (error) throw error;
-    if (!data || data.length === 0) return '📋 **Nenhum SLA na última semana!**';
+    if (!data || data.length === 0) return '📋 Nenhum SLA na última semana!';
 
-    let result = `📊 **SLAs da Última Semana** (${data.length} encontrados)\n\n`;
+    let result = `📊 SLAs da Última Semana (${data.length} encontrados)\n\n`;
     
     data.forEach(sla => {
       const dataFormatada = new Date(sla.data_criacao).toLocaleDateString('pt-BR');
       const statusIcon = sla.status === 'aberto' ? '🔴' : sla.status === 'em_andamento' ? '🟡' : '✅';
-      result += `**${sla.ticket_number}** – ${sla.titulo} – ${sla.nivel_criticidade}\n`;
+      result += `${sla.ticket_number} – ${sla.titulo} – ${sla.nivel_criticidade}\n`;
       result += `📅 ${dataFormatada} | 👥 ${sla.time_responsavel} | ${statusIcon} ${sla.status}\n\n`;
     });
 
@@ -350,14 +350,14 @@ export default function TicketChat() {
       .limit(10);
 
     if (error) throw error;
-    if (!data || data.length === 0) return '📋 **Nenhum SLA no último mês!**';
+    if (!data || data.length === 0) return '📋 Nenhum SLA no último mês!';
 
-    let result = `📈 **SLAs do Último Mês** (${data.length} encontrados)\n\n`;
+    let result = `📈 SLAs do Último Mês (${data.length} encontrados)\n\n`;
     
     data.forEach(sla => {
       const dataFormatada = new Date(sla.data_criacao).toLocaleDateString('pt-BR');
       const statusIcon = sla.status === 'aberto' ? '🔴' : sla.status === 'em_andamento' ? '🟡' : '✅';
-      result += `**${sla.ticket_number}** – ${sla.titulo} – ${sla.nivel_criticidade}\n\n`;
+      result += `${sla.ticket_number} – ${sla.titulo} – ${sla.nivel_criticidade}\n\n`;
     });
 
     return result;
@@ -373,16 +373,16 @@ export default function TicketChat() {
       .gte('data_criacao', mesAtras.toISOString());
 
     if (error) throw error;
-    if (!data || data.length === 0) return '📋 **Nenhum dado disponível para análise!**';
+    if (!data || data.length === 0) return '📋 Nenhum dado disponível para análise!';
 
     const total = data.length;
     const resolvidos = data.filter(sla => sla.status === 'resolvido' || sla.status === 'fechado').length;
     const percentual = ((resolvidos / total) * 100).toFixed(1);
 
-    let result = `📊 **Análise de Cumprimento de SLA - Último Mês**\n\n`;
-    result += `📈 **Demandas criadas:** ${total}\n`;
-    result += `✅ **Demandas resolvidas:** ${resolvidos}\n`;
-    result += `📊 **Percentual de resolução:** ${percentual}%\n\n`;
+    let result = `📊 Análise de Cumprimento de SLA - Último Mês\n\n`;
+    result += `📈 Demandas criadas: ${total}\n`;
+    result += `✅ Demandas resolvidas: ${resolvidos}\n`;
+    result += `📊 Percentual de resolução: ${percentual}%\n\n`;
 
     // Análise por criticidade
     const porCriticidade = data.reduce((acc: any, sla) => {
@@ -396,7 +396,7 @@ export default function TicketChat() {
       return acc;
     }, {});
 
-    result += `**📋 Por Criticidade:**\n`;
+    result += `📋 Por Criticidade:\n`;
     Object.entries(porCriticidade).forEach(([nivel, dados]: [string, any]) => {
       const percentualNivel = ((dados.resolvidos / dados.total) * 100).toFixed(1);
       result += `• ${nivel}: ${dados.resolvidos}/${dados.total} (${percentualNivel}%)\n`;
@@ -411,7 +411,7 @@ export default function TicketChat() {
       .select('status, nivel_criticidade, time_responsavel');
 
     if (error) throw error;
-    if (!data || data.length === 0) return '📋 **Nenhum SLA registrado no sistema!**';
+    if (!data || data.length === 0) return '📋 Nenhum SLA registrado no sistema!';
 
     const stats = {
       total: data.length,
@@ -431,19 +431,19 @@ export default function TicketChat() {
       return acc;
     }, {});
 
-    let result = `📊 **Estatísticas Gerais do Sistema**\n\n`;
-    result += `📈 **Total de SLAs:** ${stats.total}\n`;
-    result += `🔴 **Abertos:** ${stats.abertos}\n`;
-    result += `🟡 **Em andamento:** ${stats.emAndamento}\n`;
-    result += `✅ **Resolvidos:** ${stats.resolvidos}\n`;
-    result += `🔒 **Fechados:** ${stats.fechados}\n\n`;
+    let result = `📊 Estatísticas Gerais do Sistema\n\n`;
+    result += `📈 Total de SLAs: ${stats.total}\n`;
+    result += `🔴 Abertos: ${stats.abertos}\n`;
+    result += `🟡 Em andamento: ${stats.emAndamento}\n`;
+    result += `✅ Resolvidos: ${stats.resolvidos}\n`;
+    result += `🔒 Fechados: ${stats.fechados}\n\n`;
 
-    result += `**🚨 Por Criticidade:**\n`;
+    result += `🚨 Por Criticidade:\n`;
     Object.entries(porCriticidade).forEach(([nivel, quantidade]) => {
       result += `• ${nivel}: ${quantidade}\n`;
     });
 
-    result += `\n**👥 Por Time:**\n`;
+    result += `\n👥 Por Time:\n`;
     Object.entries(porTime).slice(0, 5).forEach(([time, quantidade]) => {
       result += `• ${time}: ${quantidade}\n`;
     });
@@ -498,24 +498,24 @@ export default function TicketChat() {
         .sort(([,a], [,b]) => (b as number) - (a as number))
         .slice(0, 3);
 
-      let result = `📈 **Painel de SLA disponível no sistema!**\n\n`;
-      result += `🔗 **Acesse:** https://sistema.cakto.com/slas/kpis\n\n`;
-      result += `📊 **Resumo atual (últimos 7 dias):**\n`;
+      let result = `📈 Painel de SLA disponível no sistema!\n\n`;
+      result += `🔗 Acesse: https://sistema.cakto.com/slas/kpis\n\n`;
+      result += `📊 Resumo atual (últimos 7 dias):\n`;
       result += `• ${totalSemana} SLAs criados\n`;
       result += `• ${resolvidos} resolvidos\n`;
       result += `• ${abertos + emAndamento} ainda em aberto (${atrasados} atrasados)\n`;
-      result += `• **Cumprimento de SLA:** ${cumprimento}%\n\n`;
+      result += `• Cumprimento de SLA: ${cumprimento}%\n\n`;
 
       if (topAreas.length > 0) {
-        result += `👥 **Top áreas (esta semana):**\n`;
+        result += `👥 Top áreas (esta semana):\n`;
         topAreas.forEach(([area, qty]) => {
           result += `• ${area}: ${qty} SLAs\n`;
         });
         result += `\n`;
       }
 
-      result += `🔍 **Quer ver por área ou por criticidade? Posso filtrar aqui.**\n`;
-      result += `📈 **Para gráficos detalhados, acesse o painel completo.**`;
+      result += `🔍 Quer ver por área ou por criticidade? Posso filtrar aqui.\n`;
+      result += `📈 Para gráficos detalhados, acesse o painel completo.`;
 
       return result;
       
@@ -533,10 +533,10 @@ export default function TicketChat() {
       'P3': '7 dias úteis'
     };
 
-    let result = `⏱️ **Tempo Médio de Resolução por Criticidade**\n\n`;
+    let result = `⏱️ Tempo Médio de Resolução por Criticidade\n\n`;
     
     Object.entries(temposMedios).forEach(([nivel, tempo]) => {
-      result += `🚨 **${nivel}:** ${tempo}\n`;
+      result += `🚨 ${nivel}: ${tempo}\n`;
     });
 
     result += `\n📋 *Baseado nos SLAs estabelecidos da empresa*`;
@@ -565,12 +565,12 @@ export default function TicketChat() {
 
   const handleStart = () => {
     setStep('titulo');
-    addMessage('assistant', 'Olá! Sou a IA da Cakto para abertura de SLAs. Vou te ajudar a organizar sua demanda e calcular a criticidade.\n\n🧾 **Título da Demanda:**\nDescreva o título da sua demanda (ex: "Liberação de produtor para lançamento")');
+    addMessage('assistant', 'Olá! Sou a IA da Cakto para abertura de SLAs. Vou te ajudar a organizar sua demanda e calcular a criticidade.\n\n🧾 Título da Demanda:\nDescreva o título da sua demanda (ex: "Liberação de produtor para lançamento")');
   };
 
   const handleStartQuery = () => {
     setStep('query-mode');
-    addMessage('assistant', '🔍 **Modo Consulta de SLAs**\n\nPergunte-me sobre os SLAs do sistema! Posso responder sobre:\n\n• **Status das demandas** (abertas, resolvidas, em andamento)\n• **SLAs por criticidade** (P0, P1, P2, P3)\n• **SLAs por time** responsável\n• **Métricas e KPIs** (cumprimento, atrasos, desempenho)\n• **Estatísticas** e tempo médio de resolução\n• **Dados temporais** (hoje, esta semana, este mês)\n• **Gerenciar tags** - adicione tags manualmente\n\n💬 **Exemplos:**\n• "Quais SLAs estão abertos hoje?"\n• "Me mostra os P0 em atraso"\n• "Como está o cumprimento dos SLAs?"\n• "Me dá um resumo da semana"\n• "Adiciona a tag \'pix\' na demanda #43"\n• "Quantas demandas do time de Produto estão abertas?"');
+    addMessage('assistant', '🔍 Modo Consulta de SLAs\n\nPergunte-me sobre os SLAs do sistema! Posso responder sobre:\n\n• Status das demandas (abertas, resolvidas, em andamento)\n• SLAs por criticidade (P0, P1, P2, P3)\n• SLAs por time responsável\n• Métricas e KPIs (cumprimento, atrasos, desempenho)\n• Estatísticas e tempo médio de resolução\n• Dados temporais (hoje, esta semana, este mês)\n• Gerenciar tags - adicione tags manualmente\n\n💬 Exemplos:\n• "Quais SLAs estão abertos hoje?"\n• "Me mostra os P0 em atraso"\n• "Como está o cumprimento dos SLAs?"\n• "Me dá um resumo da semana"\n• "Adiciona a tag \'pix\' na demanda #43"\n• "Quantas demandas do time de Produto estão abertas?"');
   };
 
   const handleInput = async (value: string) => {
@@ -580,7 +580,7 @@ export default function TicketChat() {
       case 'titulo':
         setTicketData(prev => ({ ...prev, titulo: value }));
         setStep('tipo');
-        addMessage('assistant', '🏷️ **Tipo do Ticket:**\nSelecione o tipo desta demanda:');
+        addMessage('assistant', '🏷️ Tipo do Ticket:\nSelecione o tipo desta demanda:');
         break;
         
       // case 'time': removido porque agora usa seleção por botões
@@ -641,7 +641,7 @@ export default function TicketChat() {
       setCurrentCriteria(nextCriteria);
       showCriteriaQuestion(nextCriteria);
     } else {
-      addMessage('assistant', '📝 **Observações (opcional):**\nHá links úteis, prints ou contextos extras que gostaria de adicionar? (Se não houver, digite "não" ou "nenhuma")');
+      addMessage('assistant', '📝 Observações (opcional):\nHá links úteis, prints ou contextos extras que gostaria de adicionar? (Se não houver, digite "não" ou "nenhuma")');
       setStep('observacoes');
     }
   };
@@ -650,14 +650,14 @@ export default function TicketChat() {
     setTicketData(prev => ({ ...prev, time_responsavel: timeSelected }));
     addMessage('user', timeSelected);
     setStep('descricao');
-    addMessage('assistant', '📝 **Descrição Resumida da Demanda:**\nDescreva brevemente o que está acontecendo (seja claro e direto)');
+    addMessage('assistant', '📝 Descrição Resumida da Demanda:\nDescreva brevemente o que está acontecendo (seja claro e direto)');
   };
 
   const handleTipoSelection = (tipoSelected: string) => {
     setTicketData(prev => ({ ...prev, tipo_ticket: tipoSelected }));
     addMessage('user', tipoSelected === 'bug' ? 'Bug' : 'Sugestão de Melhoria');
     setStep('time');
-    addMessage('assistant', '👥 **Time Responsável:**\nQual time será responsável? (ex: Produto, Compliance, Suporte, Marketing...)');
+    addMessage('assistant', '👥 Time Responsável:\nQual time será responsável? (ex: Produto, Compliance, Suporte, Marketing...)');
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -777,7 +777,7 @@ export default function TicketChat() {
       const tagMatch = input.match(/['"]([^'"]+)['"]/);
       
       if (!idMatch || !tagMatch) {
-        addMessage('assistant', '❌ **Formato inválido**\n\nUse: "Adiciona a tag \'nome_da_tag\' na demanda #ID"\n\nExemplo: "Adiciona a tag \'pix\' na demanda #43"');
+        addMessage('assistant', '❌ Formato inválido\n\nUse: "Adiciona a tag \'nome_da_tag\' na demanda #ID"\n\nExemplo: "Adiciona a tag \'pix\' na demanda #43"');
         return;
       }
 
@@ -792,7 +792,7 @@ export default function TicketChat() {
         .single();
 
       if (fetchError || !sla) {
-        addMessage('assistant', `❌ **SLA #${slaId} não encontrado**\n\nVerifique o ID e tente novamente.`);
+        addMessage('assistant', `❌ SLA #${slaId} não encontrado\n\nVerifique o ID e tente novamente.`);
         return;
       }
 
@@ -800,17 +800,17 @@ export default function TicketChat() {
       
       // Validações
       if (currentTags.includes(newTag)) {
-        addMessage('assistant', `⚠️ **Tag já existe**\n\nA tag '${newTag}' já está presente na demanda #${slaId}.`);
+        addMessage('assistant', `⚠️ Tag já existe\n\nA tag '${newTag}' já está presente na demanda #${slaId}.`);
         return;
       }
 
       if (currentTags.length >= 5) {
-        addMessage('assistant', `⚠️ **Limite atingido**\n\nA demanda #${slaId} já possui o máximo de 5 tags.\n\nTags atuais: ${currentTags.join(', ')}`);
+        addMessage('assistant', `⚠️ Limite atingido\n\nA demanda #${slaId} já possui o máximo de 5 tags.\n\nTags atuais: ${currentTags.join(', ')}`);
         return;
       }
 
       if (newTag.length === 0 || newTag.length > 20) {
-        addMessage('assistant', '❌ **Tag inválida**\n\nA tag deve ter entre 1 e 20 caracteres.');
+        addMessage('assistant', '❌ Tag inválida\n\nA tag deve ter entre 1 e 20 caracteres.');
         return;
       }
 
@@ -840,11 +840,11 @@ export default function TicketChat() {
           origem: 'chat_lovable'
         });
 
-      addMessage('assistant', `✅ **Tag adicionada com sucesso!**\n\n🏷️ **Tag '${newTag}' adicionada à demanda #${slaId}**\n\n📋 **Tags atuais:** ${updatedTags.join(', ')}\n\n🔗 **Título:** ${sla.titulo}`);
+      addMessage('assistant', `✅ Tag adicionada com sucesso!\n\n🏷️ Tag '${newTag}' adicionada à demanda #${slaId}\n\n📋 Tags atuais: ${updatedTags.join(', ')}\n\n🔗 Título: ${sla.titulo}`);
 
     } catch (error) {
       console.error('Erro ao adicionar tag:', error);
-      addMessage('assistant', '❌ **Erro ao adicionar tag**\n\nTente novamente ou contate o suporte.');
+      addMessage('assistant', '❌ Erro ao adicionar tag\n\nTente novamente ou contate o suporte.');
     }
   };
 
@@ -942,7 +942,7 @@ export default function TicketChat() {
     const validationErrors = validateTicketData(ticketData, total, criticality);
     
     if (validationErrors.length > 0) {
-      addMessage('assistant', `⚠️ **Detectei um problema nos dados:**\n\n${validationErrors.join('\n')}\n\nVocê quer revisar ou abrir um novo SLA?`);
+      addMessage('assistant', `⚠️ Detectei um problema nos dados:\n\n${validationErrors.join('\n')}\n\nVocê quer revisar ou abrir um novo SLA?`);
       setStep('validation-error');
       return;
     }
@@ -964,7 +964,7 @@ export default function TicketChat() {
       }))
     };
 
-    addMessage('assistant', `⏳ **Processando SLA...**\n\n📊 **Pontuação Total:** ${total} pontos\n🏷️ **Nível de Criticidade:** ${criticality}\n\n💾 Salvando no sistema...`);
+    addMessage('assistant', `⏳ Processando SLA...\n\n📊 Pontuação Total: ${total} pontos\n🏷️ Nível de Criticidade: ${criticality}\n\n💾 Salvando no sistema...`);
 
     try {
       const slaResult = await saveTicketToSupabase(ticketData, total, criticality);
@@ -982,7 +982,7 @@ export default function TicketChat() {
       
       const tempoMedio = getTempoMedioResolucao(criticality);
       
-      addMessage('assistant', `✅ **SLA registrado com sucesso no sistema!**\n\n🎫 **Ticket:** ${slaResult.ticket_number || `#${slaResult.id.slice(0, 8)}`}\n🆔 **ID:** #${slaResult.id}\n📊 **Pontuação Total:** ${total} pontos\n🏷️ **Nível de Criticidade:** ${criticality}\n⏱️ **Tempo Médio de Resolução:** ${tempoMedio}\n\n🔔 A equipe responsável será notificada.`);
+      addMessage('assistant', `✅ SLA registrado com sucesso no sistema!\n\n🎫 Ticket: ${slaResult.ticket_number || `#${slaResult.id.slice(0, 8)}`}\n🆔 ID: #${slaResult.id}\n📊 Pontuação Total: ${total} pontos\n🏷️ Nível de Criticidade: ${criticality}\n⏱️ Tempo Médio de Resolução: ${tempoMedio}\n\n🔔 A equipe responsável será notificada.`);
       
       // Salvar o JSON para exibição
       (window as any).finalSlaJson = { ...finalJson, id: slaResult.id, ticket_number: slaResult.ticket_number };
@@ -990,7 +990,7 @@ export default function TicketChat() {
       
     } catch (error) {
       console.error('Erro ao salvar SLA:', error);
-      addMessage('assistant', `❌ **Erro ao salvar SLA no sistema:**\n\n${error instanceof Error ? error.message : 'Erro desconhecido'}\n\nTente novamente ou contate o suporte.`);
+      addMessage('assistant', `❌ Erro ao salvar SLA no sistema:\n\n${error instanceof Error ? error.message : 'Erro desconhecido'}\n\nTente novamente ou contate o suporte.`);
       
       // Ainda salvar o JSON para exibição em caso de erro
       (window as any).finalSlaJson = finalJson;
@@ -1143,11 +1143,11 @@ export default function TicketChat() {
         .map(([campo, valorNovo]) => `${campo}: de "${slaAtual[campo]}" para "${valorNovo}"`)
         .join('\n');
 
-      addMessage('assistant', `🔁 **Demanda #${id} atualizada com sucesso.**\n\n${alteracoesTexto}\n\nLog gerado para auditoria ✅`);
+      addMessage('assistant', `🔁 Demanda #${id} atualizada com sucesso.\n\n${alteracoesTexto}\n\nLog gerado para auditoria ✅`);
 
     } catch (error) {
       console.error('Erro ao atualizar SLA:', error);
-      addMessage('assistant', `❌ **Erro ao atualizar SLA:**\n\n${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      addMessage('assistant', `❌ Erro ao atualizar SLA:\n\n${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
   };
 
@@ -1157,7 +1157,7 @@ export default function TicketChat() {
     // Extrair ID da demanda
     const idMatch = comandoLower.match(/#(\w+)/);
     if (!idMatch) {
-      addMessage('assistant', '⚠️ **ID da demanda não encontrado.**\n\nPor favor, inclua o ID da demanda (ex: #28)');
+      addMessage('assistant', '⚠️ ID da demanda não encontrado.\n\nPor favor, inclua o ID da demanda (ex: #28)');
       return;
     }
     
@@ -1199,7 +1199,7 @@ export default function TicketChat() {
     }
 
     if (Object.keys(alteracoes).length === 0) {
-      addMessage('assistant', '⚠️ **Não consegui interpretar o que você quer alterar.**\n\nExemplos de comandos:\n- "Atualiza o status da #28 para resolvido"\n- "Muda a urgência da #13 para P1"\n- "Troca o time da #20 para Suporte"');
+      addMessage('assistant', '⚠️ Não consegui interpretar o que você quer alterar.\n\nExemplos de comandos:\n- "Atualiza o status da #28 para resolvido"\n- "Muda a urgência da #13 para P1"\n- "Troca o time da #20 para Suporte"');
       return;
     }
 
@@ -1416,7 +1416,7 @@ export default function TicketChat() {
                         onClick={() => {
                           addMessage('user', 'Revisar dados');
                           setStep('titulo');
-                          addMessage('assistant', '🔄 **Revisando dados...**\n\n🧾 **Título da Demanda:**\nDescreva o título da sua demanda (ex: "Liberação de produtor para lançamento")');
+                          addMessage('assistant', '🔄 Revisando dados...\n\n🧾 Título da Demanda:\nDescreva o título da sua demanda (ex: "Liberação de produtor para lançamento")');
                         }}
                       >
                         <div className="flex items-center gap-3">
