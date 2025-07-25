@@ -575,8 +575,9 @@ export default function SLADashboard() {
   };
 
   // Insights automáticos
-  const getAutomatedInsights = useMemo(() => {
+  const getAutomatedInsights = () => {
     const insights: string[] = [];
+    const criticosAtrasados = getCriticalSLAs().length;
     
     // Insight de cumprimento
     if (metrics.cumprimento >= 95) {
@@ -588,7 +589,6 @@ export default function SLADashboard() {
     }
     
     // Insight de SLAs críticos
-    const criticosAtrasados = getCriticalSLAs.length;
     if (criticosAtrasados === 0) {
       insights.push(`✅ Nenhum SLA crítico (P0/P1) em atraso.`);
     } else {
@@ -605,14 +605,8 @@ export default function SLADashboard() {
       }
     }
     
-    // Insight por time (top performer)
-    const timeData = getTimeData();
-    if (timeData.length > 0) {
-      insights.push(`🏆 ${timeData[0].name} é o time com mais SLAs (${timeData[0].value}).`);
-    }
-    
     return insights;
-  }, [metrics, getCriticalSLAs, slaData]);
+  };
 
   // ... Resto das funções de dados (getCriticalityData, getStatusData, etc.)
   const getCriticalityData = () => {
@@ -1038,7 +1032,7 @@ export default function SLADashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {getCriticalSLAs.slice(0, 4).map(sla => (
+              {getCriticalSLAs().slice(0, 4).map(sla => (
                 <div 
                   key={sla.id}
                   className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-red-200 dark:border-red-800 hover:shadow-md transition-all cursor-pointer hover-scale"
