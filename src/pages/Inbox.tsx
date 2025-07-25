@@ -788,8 +788,8 @@ export default function Inbox() {
                           onClick={() => handleOpenTicketDetail(ticket)}
                         >
                           <CardContent className={cn(
-                            "p-6 space-y-4",
-                            viewMode === 'compact' && "p-4 space-y-3"
+                            "p-4 space-y-3",
+                            viewMode === 'compact' && "p-3 space-y-2"
                           )}>
                             {/* Header principal */}
                             <div className="flex items-start justify-between gap-4">
