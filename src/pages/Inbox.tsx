@@ -188,8 +188,18 @@ export default function Inbox() {
 
   // Old filterTickets function removed - now handled by useMemo in filteredTicketsWithStatus
 
-  // Usar a lógica centralizada de filtros - sem map() para evitar re-renders
-  const ticketFilters = useTicketFilters(tickets);
+  // Função helper para obter o label do status
+  const getStatusLabel = (status: string): string => {
+    const labels = {
+      'aberto': 'Aberto',
+      'em_andamento': 'Em Andamento',
+      'resolvido': 'Resolvido',
+      'fechado': 'Fechado'
+    };
+    return labels[status as keyof typeof labels] || 'Desconhecido';
+  };
+
+  // Calcular status info para todos os tickets no nível do componente
 
   // Calcular status info para todos os tickets no nível do componente
   const ticketsWithStatus = useMemo(() => {
@@ -324,16 +334,8 @@ export default function Inbox() {
     return filtered;
   }, [ticketsWithStatus, searchTerm, statusFilter, criticalityFilter, setorFilter, showOnlyExpired]);
 
-  // Função helper para obter o label do status
-  const getStatusLabel = (status: string): string => {
-    const labels = {
-      'aberto': 'Aberto',
-      'em_andamento': 'Em Andamento',
-      'resolvido': 'Resolvido',
-      'fechado': 'Fechado'
-    };
-    return labels[status as keyof typeof labels] || 'Desconhecido';
-  };
+  // Usar a lógica centralizada de filtros - sem map() para evitar re-renders
+  const ticketFilters = useTicketFilters(tickets);
 
   // Função para obter badge de status (agora sem hooks)
   const getStatusBadge = (ticketWithStatus: any) => {
