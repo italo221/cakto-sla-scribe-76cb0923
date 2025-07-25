@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { useSystemColors } from "@/hooks/useSystemColors";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -27,6 +28,9 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  // Carregar cores do sistema na inicialização
+  useSystemColors();
+  
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
