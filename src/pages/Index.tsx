@@ -29,7 +29,7 @@ const Index = () => {
             <Zap className="h-4 w-4" />
             Criar Novo Ticket
           </div>
-          <h1 className="text-4xl lg:text-5xl font-bold text-gradient">
+          <h1 className="text-4xl lg:text-5xl font-bold text-gradient leading-tight py-2">
             Sistema Inteligente de Tickets
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
