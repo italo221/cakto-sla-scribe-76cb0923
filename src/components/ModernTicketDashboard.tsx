@@ -33,7 +33,9 @@ import {
   CheckCircle,
   Info,
   Monitor,
-  X
+  X,
+  Download,
+  FileText
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -53,6 +55,9 @@ import {
   Tooltip
 } from "recharts";
 import { cn } from "@/lib/utils";
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 type DateRange = '7dias' | '30dias' | 'mes_anterior' | 'personalizado';
 type ViewType = 'global' | 'time' | 'comparativo';
@@ -831,6 +836,184 @@ export default function ModernSLADashboard() {
     return insights;
   };
 
+  // Função para exportar para Excel
+  const exportToExcel = () => {
+    try {
+      // Preparar dados do resumo
+      const summaryData = [
+        ['Métrica', 'Valor'],
+        ['Total de SLAs', metrics.total],
+        ['Resolvidos', metrics.resolvidos],
+        ['Em Aberto', metrics.abertos + metrics.emAndamento],
+        ['Atrasados', metrics.atrasados],
+        ['Taxa de Cumprimento (%)', metrics.cumprimento.toFixed(1)],
+        ['', ''],
+        ['Período', getRangeLabel()],
+        ['Filtros', getFilteredTimeName()],
+        ['Data de Geração', format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })]
+      ];
+
+      // Preparar dados detalhados dos SLAs
+      const detailedData = [
+        ['ID', 'Título', 'Status', 'Prioridade', 'Time Responsável', 'Data Criação', 'Setor']
+      ];
+      
+      slaData.forEach(sla => {
+        const setor = setores.find(s => s.id === sla.setor_id);
+        detailedData.push([
+          sla.id,
+          sla.titulo,
+          sla.status,
+          sla.nivel_criticidade,
+          sla.time_responsavel,
+          format(new Date(sla.data_criacao), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
+          setor?.nome || 'N/A'
+        ]);
+      });
+
+      // Preparar dados dos times
+      const teamData = [['Time', 'Quantidade de SLAs']];
+      getTeamData().forEach(team => {
+        teamData.push([team.team, team.count.toString()]);
+      });
+
+      // Criar workbook
+      const wb = XLSX.utils.book_new();
+      
+      // Adicionar planilhas
+      const wsResumo = XLSX.utils.aoa_to_sheet(summaryData);
+      const wsDetalhado = XLSX.utils.aoa_to_sheet(detailedData);
+      const wsTeams = XLSX.utils.aoa_to_sheet(teamData);
+      
+      XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo');
+      XLSX.utils.book_append_sheet(wb, wsDetalhado, 'SLAs Detalhados');
+      XLSX.utils.book_append_sheet(wb, wsTeams, 'Times');
+
+      // Salvar arquivo
+      const fileName = `dashboard-sla-${format(new Date(), 'yyyy-MM-dd-HHmm')}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      toast({
+        title: "Exportação concluída",
+        description: "Dashboard exportado para Excel com sucesso!",
+      });
+    } catch (error) {
+      console.error('Erro ao exportar para Excel:', error);
+      toast({
+        title: "Erro na exportação",
+        description: "Não foi possível exportar para Excel.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Função para exportar para PDF
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Título
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Dashboard SLA - Relatório', 20, 20);
+      
+      // Informações do relatório
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 20, 30);
+      doc.text(`Período: ${getRangeLabel()}`, 20, 35);
+      doc.text(`Filtros: ${getFilteredTimeName()}`, 20, 40);
+      
+      // Métricas principais
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Métricas Principais', 20, 55);
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      
+      const metricsData = [
+        ['Métrica', 'Valor'],
+        ['Total de SLAs', metrics.total.toString()],
+        ['Resolvidos', metrics.resolvidos.toString()],
+        ['Em Aberto', (metrics.abertos + metrics.emAndamento).toString()],
+        ['Atrasados', metrics.atrasados.toString()],
+        ['Taxa de Cumprimento', `${metrics.cumprimento.toFixed(1)}%`]
+      ];
+
+      (doc as any).autoTable({
+        startY: 60,
+        head: [metricsData[0]],
+        body: metricsData.slice(1),
+        margin: { left: 20, right: 20 },
+        styles: { fontSize: 9 }
+      });
+
+      // Times responsáveis
+      let currentY = (doc as any).lastAutoTable.finalY + 20;
+      
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Times Responsáveis', 20, currentY);
+      
+      const teamData = [['Time', 'Quantidade']];
+      getTeamData().forEach(team => {
+        teamData.push([team.team, team.count.toString()]);
+      });
+
+      (doc as any).autoTable({
+        startY: currentY + 5,
+        head: [teamData[0]],
+        body: teamData.slice(1),
+        margin: { left: 20, right: 20 },
+        styles: { fontSize: 9 }
+      });
+
+      // SLAs detalhados (limitado para não quebrar o PDF)
+      currentY = (doc as any).lastAutoTable.finalY + 20;
+      
+      if (currentY < 250) {
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('SLAs Recentes (Últimos 10)', 20, currentY);
+        
+        const slaDetails = [['Título', 'Status', 'Prioridade', 'Time']];
+        slaData.slice(0, 10).forEach(sla => {
+          slaDetails.push([
+            sla.titulo.length > 30 ? sla.titulo.substring(0, 30) + '...' : sla.titulo,
+            sla.status,
+            sla.nivel_criticidade,
+            sla.time_responsavel.length > 15 ? sla.time_responsavel.substring(0, 15) + '...' : sla.time_responsavel
+          ]);
+        });
+
+        (doc as any).autoTable({
+          startY: currentY + 5,
+          head: [slaDetails[0]],
+          body: slaDetails.slice(1),
+          margin: { left: 20, right: 20 },
+          styles: { fontSize: 8 }
+        });
+      }
+
+      // Salvar
+      const fileName = `dashboard-sla-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`;
+      doc.save(fileName);
+
+      toast({
+        title: "Exportação concluída",
+        description: "Dashboard exportado para PDF com sucesso!",
+      });
+    } catch (error) {
+      console.error('Erro ao exportar para PDF:', error);
+      toast({
+        title: "Erro na exportação",
+        description: "Não foi possível exportar para PDF.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       <div className="max-w-7xl mx-auto p-8 space-y-8">
@@ -845,14 +1028,32 @@ export default function ModernSLADashboard() {
                 Monitoramento em tempo real dos acordos de nível de serviço
               </p>
             </div>
-            <Button 
-              onClick={toggleTVMode}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Monitor className="w-4 h-4" />
-              Modo TV
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button 
+                onClick={exportToExcel}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Excel
+              </Button>
+              <Button 
+                onClick={exportToPDF}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                PDF
+              </Button>
+              <Button 
+                onClick={toggleTVMode}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Monitor className="w-4 h-4" />
+                Modo TV
+              </Button>
+            </div>
           </div>
           <div className="h-px bg-gradient-to-r from-primary/20 via-primary/40 to-transparent" />
         </div>
