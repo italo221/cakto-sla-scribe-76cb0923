@@ -440,6 +440,13 @@ export default function ModernSLADashboard() {
     }
   };
 
+  // Função para obter tickets críticos (P0) para o modo TV
+  const getCriticalTickets = () => {
+    return slaData
+      .filter(sla => sla.nivel_criticidade === 'P0' && (sla.status === 'aberto' || sla.status === 'em_andamento'))
+      .slice(0, 6); // Máximo 6 tickets críticos na tela
+  };
+
   // Limpar timers ao desmontar componente
   useEffect(() => {
     return () => {
@@ -1012,6 +1019,159 @@ export default function ModernSLADashboard() {
       });
     }
   };
+
+  // Modo TV - Layout otimizado
+  if (isTVMode) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6">
+        {/* Botão de saída sempre visível */}
+        <Button 
+          onClick={toggleTVMode}
+          variant="outline"
+          size="lg"
+          className="fixed top-4 right-4 z-50 bg-background/90 backdrop-blur-sm border-2 hover:bg-background"
+        >
+          <X className="w-5 h-5 mr-2" />
+          Sair do Modo TV
+        </Button>
+
+        <div className="space-y-8">
+          {/* Header compacto */}
+          <div className="text-center space-y-2">
+            <h1 className="text-5xl font-bold text-foreground tracking-tight">
+              Dashboard SLA
+            </h1>
+            <p className="text-xl text-muted-foreground">
+              Monitoramento em Tempo Real
+            </p>
+          </div>
+
+          {/* KPIs principais em destaque */}
+          <div className="grid grid-cols-4 gap-6">
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/50">
+              <CardContent className="p-8 text-center">
+                <BarChart3 className="w-12 h-12 mx-auto mb-4 text-blue-600 dark:text-blue-400" />
+                <div className="text-4xl font-bold text-blue-700 dark:text-blue-300 mb-2">{metrics.total}</div>
+                <div className="text-lg font-medium text-blue-600 dark:text-blue-400">Total SLAs</div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/50 dark:to-green-900/50">
+              <CardContent className="p-8 text-center">
+                <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-green-600 dark:text-green-400" />
+                <div className="text-4xl font-bold text-green-700 dark:text-green-300 mb-2">{metrics.resolvidos}</div>
+                <div className="text-lg font-medium text-green-600 dark:text-green-400">Resolvidos</div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950/50 dark:to-yellow-900/50">
+              <CardContent className="p-8 text-center">
+                <Clock className="w-12 h-12 mx-auto mb-4 text-yellow-600 dark:text-yellow-400" />
+                <div className="text-4xl font-bold text-yellow-700 dark:text-yellow-300 mb-2">{metrics.abertos + metrics.emAndamento}</div>
+                <div className="text-lg font-medium text-yellow-600 dark:text-yellow-400">Em Aberto</div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/50 dark:to-red-900/50">
+              <CardContent className="p-8 text-center">
+                <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-600 dark:text-red-400" />
+                <div className="text-4xl font-bold text-red-700 dark:text-red-300 mb-2">{metrics.atrasados}</div>
+                <div className="text-lg font-medium text-red-600 dark:text-red-400">Atrasados</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Cumprimento SLA em destaque */}
+          <Card className="border-0 shadow-lg">
+            <CardContent className="p-8">
+              <div className="text-center space-y-4">
+                <Target className="w-16 h-16 mx-auto text-primary" />
+                <h2 className="text-3xl font-bold text-foreground">Cumprimento de SLA</h2>
+                <div className="text-6xl font-bold" style={{ color: metrics.cumprimento >= 95 ? 'hsl(142 76% 36%)' : metrics.cumprimento >= 80 ? 'hsl(48 96% 53%)' : 'hsl(0 84% 60%)' }}>
+                  {metrics.cumprimento.toFixed(1)}%
+                </div>
+                <div className="w-full bg-muted rounded-full h-6 overflow-hidden">
+                  <div 
+                    className="h-full rounded-full transition-all duration-1000 ease-out"
+                    style={{ 
+                      width: `${Math.min(metrics.cumprimento, 100)}%`,
+                      background: `linear-gradient(90deg, ${metrics.cumprimento >= 95 ? 'hsl(142 76% 36%)' : metrics.cumprimento >= 80 ? 'hsl(48 96% 53%)' : 'hsl(0 84% 60%)'}, ${metrics.cumprimento >= 95 ? 'hsl(142 76% 36%)' : metrics.cumprimento >= 80 ? 'hsl(48 96% 53%)' : 'hsl(0 84% 60%)'}90)`
+                    }}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tickets críticos com pulsar suave (apenas no modo TV) */}
+          {getCriticalTickets().length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-3xl font-bold text-foreground text-center">Tickets Críticos (P0)</h2>
+              <div className="grid grid-cols-3 gap-6">
+                {getCriticalTickets().map((ticket) => (
+                  <Card 
+                    key={ticket.id} 
+                    className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/50 dark:to-red-900/50 animate-pulse-gentle"
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 bg-red-200 dark:bg-red-800 rounded-lg">
+                          <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-lg text-red-800 dark:text-red-200 mb-2 truncate">
+                            {ticket.titulo}
+                          </h3>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Users className="w-4 h-4 text-red-600 dark:text-red-400" />
+                              <span className="text-sm font-medium text-red-700 dark:text-red-300">
+                                {ticket.time_responsavel}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-red-600 dark:text-red-400" />
+                              <span className="text-sm text-red-600 dark:text-red-400">
+                                Criado em {format(new Date(ticket.data_criacao), 'dd/MM/yyyy', { locale: ptBR })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Times responsáveis simplificado */}
+          <div className="space-y-4">
+            <h2 className="text-3xl font-bold text-foreground text-center">Times Responsáveis</h2>
+            <div className="grid grid-cols-6 gap-4">
+              {getTeamData().slice(0, 6).map((team, index) => {
+                const Icon = getTeamIcon(team.team);
+                return (
+                  <Card key={team.team} className="border-0 shadow-lg">
+                    <CardContent className="p-6 text-center">
+                      <div 
+                        className="p-4 rounded-xl mx-auto mb-4 w-fit"
+                        style={{ backgroundColor: getTeamColor(index) + '20' }}
+                      >
+                        <Icon className="w-8 h-8" style={{ color: getTeamColor(index) }} />
+                      </div>
+                      <div className="text-2xl font-bold text-foreground mb-1">{team.count}</div>
+                      <div className="text-sm font-medium text-muted-foreground truncate">{team.team}</div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">

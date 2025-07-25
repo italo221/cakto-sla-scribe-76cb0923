@@ -322,6 +322,11 @@ All colors MUST be HSL.
   .animate-glow-subtle {
     animation: subtle-highlight 4s ease-in-out infinite;
   }
+
+  /* Animação suave para tickets críticos no Modo TV */
+  .animate-pulse-gentle {
+    animation: pulse-gentle 2s ease-in-out infinite;
+  }
   
   /* Animação muito sutil para badges importantes */
   @keyframes glow-minimal {
@@ -340,6 +345,18 @@ All colors MUST be HSL.
     }
     50% {
       background-color: rgba(239, 68, 68, 0.08);
+    }
+  }
+
+  /* Animação suave de respiração para tickets críticos no Modo TV */
+  @keyframes pulse-gentle {
+    0%, 100% { 
+      opacity: 0.9;
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 1;
+      transform: scale(1.02);
     }
   }
 
