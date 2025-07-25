@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Filter, Clock, AlertCircle, CheckCircle, X, Grid3X3, List, Star, User, MoreVertical, Play, Pause, CheckCircle2, XCircle } from "lucide-react";
+import { Search, Filter, Clock, AlertCircle, CheckCircle, X, Grid3X3, List, Star, User, MoreVertical, Play, Pause, CheckCircle2, XCircle, Eye, Columns3 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Navigation from "@/components/Navigation";
@@ -18,6 +18,8 @@ import { TicketCountdown } from "@/components/TicketCountdown";
 import { useTicketCountdown } from "@/hooks/useTicketCountdown";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import TicketKanban from "@/components/TicketKanban";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Ticket {
   id: string;
@@ -61,13 +63,24 @@ export default function Inbox() {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('detailed');
+  const [displayMode, setDisplayMode] = useState<'list' | 'kanban'>(() => {
+    return (localStorage.getItem('inbox-display-mode') as 'list' | 'kanban') || 'list';
+  });
   const [favoriteFilters, setFavoriteFilters] = useState<string[]>([]);
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  
+  const { user } = useAuth();
+  const [userRole, setUserRole] = useState<string>('viewer');
 
   useEffect(() => {
     loadTickets();
     loadSetores();
+    loadUserRole();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('inbox-display-mode', displayMode);
+  }, [displayMode]);
 
   useEffect(() => {
     if (tickets.length > 0) {
@@ -87,6 +100,32 @@ export default function Inbox() {
       setSetores(data || []);
     } catch (error) {
       console.error('Erro ao carregar setores:', error);
+    }
+  };
+
+  const loadUserRole = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role, user_type')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) throw error;
+      
+      // Converter role/user_type para o formato esperado
+      if (data.role === 'super_admin' || data.user_type === 'administrador_master') {
+        setUserRole('super_admin');
+      } else if (data.role === 'operador') {
+        setUserRole('operador');
+      } else {
+        setUserRole('viewer');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar role do usuário:', error);
+      setUserRole('viewer');
     }
   };
 
@@ -427,24 +466,51 @@ export default function Inbox() {
                 Filtros Inteligentes
               </CardTitle>
               <div className="flex items-center gap-2">
+                {/* Botão de alternância entre Lista e Kanban */}
                 <Button
-                  variant={viewMode === 'compact' ? 'default' : 'outline'}
+                  variant={displayMode === 'list' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setViewMode('compact')}
+                  onClick={() => setDisplayMode('list')}
                   className="flex items-center gap-1"
                 >
                   <List size={16} />
-                  Compacto
+                  Lista
                 </Button>
                 <Button
-                  variant={viewMode === 'detailed' ? 'default' : 'outline'}
+                  variant={displayMode === 'kanban' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setViewMode('detailed')}
+                  onClick={() => setDisplayMode('kanban')}
                   className="flex items-center gap-1"
                 >
-                  <Grid3X3 size={16} />
-                  Detalhado
+                  <Columns3 size={16} />
+                  Kanban
                 </Button>
+                
+                <Separator orientation="vertical" className="h-8" />
+                
+                {/* Botões de modo de visualização (apenas para lista) */}
+                {displayMode === 'list' && (
+                  <>
+                    <Button
+                      variant={viewMode === 'compact' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setViewMode('compact')}
+                      className="flex items-center gap-1"
+                    >
+                      <Grid3X3 size={16} />
+                      Compacto
+                    </Button>
+                    <Button
+                      variant={viewMode === 'detailed' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setViewMode('detailed')}
+                      className="flex items-center gap-1"
+                    >
+                      <Eye size={16} />
+                      Detalhado
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </CardHeader>
@@ -661,230 +727,245 @@ export default function Inbox() {
           </Card>
         </div>
 
-        {/* Lista de Tickets Melhorada */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                📋 Caixa de Entrada
-                <Badge variant="outline" className="font-mono">
-                  {filteredTickets.length} tickets
-                </Badge>
-                {filteredTickets.filter(s => s.status === 'aberto').length > 0 && (
-                  <Badge variant="destructive" className="animate-glow-pulse">
-                    <Clock className="w-3 h-3 mr-1" />
-                    {filteredTickets.filter(s => s.status === 'aberto').length} abertos
+        {/* Renderização condicional: Lista ou Kanban */}
+        {displayMode === 'kanban' ? (
+          <TicketKanban
+            tickets={filteredTickets}
+            onOpenDetail={handleOpenTicketDetail}
+            onTicketUpdate={loadTickets}
+            userRole={userRole}
+          />
+        ) : (
+          /* Lista de Tickets Melhorada */
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  📋 Caixa de Entrada
+                  <Badge variant="outline" className="font-mono">
+                    {filteredTickets.length} tickets
                   </Badge>
-                )}
-              </CardTitle>
-              <div className="text-sm text-muted-foreground">
-                🎯 Críticos primeiro • 📊 Inteligência • ⏰ Tempo real
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[600px]">
-              {filteredTickets.length === 0 ? (
-                <div className="text-center py-8">
-                  <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium text-foreground mb-2">Nenhum ticket encontrado</h3>
-                  <p className="text-muted-foreground">Tente ajustar os filtros ou criar um novo ticket.</p>
+                  {filteredTickets.filter(s => s.status === 'aberto').length > 0 && (
+                    <Badge variant="destructive">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {filteredTickets.filter(s => s.status === 'aberto').length} abertos
+                    </Badge>
+                  )}
+                </CardTitle>
+                <div className="text-sm text-muted-foreground">
+                  🎯 Críticos primeiro • 📊 Inteligência • ⏰ Tempo real
                 </div>
-              ) : (
-                <div className={cn("space-y-3", viewMode === 'compact' && "space-y-2")}>
-                  {filteredTickets.map((ticket) => {
-                    const timeStatus = getTimeStatus(ticket.data_criacao, ticket.nivel_criticidade, ticket.status);
-                    const isExpired = timeStatus?.isOverdue;
-                    
-                    return (
-                      <Card 
-                        key={ticket.id} 
-                        className={cn(
-                          "group transition-all duration-300 hover:shadow-md hover:scale-[1.01] cursor-pointer border-l-4",
-                          // Borda lateral baseada na criticidade
-                          ticket.nivel_criticidade === 'P0' && "border-l-destructive",
-                          ticket.nivel_criticidade === 'P1' && "border-l-orange-500",
-                          ticket.nivel_criticidade === 'P2' && "border-l-yellow-500", 
-                          ticket.nivel_criticidade === 'P3' && "border-l-blue-500",
-                          // Efeito suave para vencidos
-                          isExpired && "bg-destructive/5 border-destructive/30 animate-glow-subtle",
-                          viewMode === 'compact' && "p-3"
-                        )}
-                        onClick={() => handleOpenTicketDetail(ticket)}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            {/* Cabeçalho */}
-                            <div className="flex items-center gap-3 mb-2">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="secondary" className="font-mono text-xs">
-                                  {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
-                                </Badge>
-                                <h3 className={cn(
-                                  "font-semibold group-hover:text-primary transition-colors",
-                                  viewMode === 'compact' ? "text-base" : "text-lg"
-                                )}>
-                                  {ticket.titulo}
-                                </h3>
-                              </div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                {getStatusBadge(ticket.status)}
-                                {getCriticalityBadge(ticket.nivel_criticidade)}
-                                
-                                {/* Tempo até vencer/vencido */}
-                                {timeStatus && (
-                                  <Badge 
-                                    variant={timeStatus.isOverdue ? "destructive" : "outline"}
-                                    className={cn(
-                                      "text-xs font-medium",
-                                      timeStatus.isOverdue && "animate-pulse"
-                                    )}
-                                  >
-                                    {timeStatus.isOverdue ? "⏰" : "⏳"} {timeStatus.text}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[600px]">
+                {filteredTickets.length === 0 ? (
+                  <div className="text-center py-8">
+                    <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">Nenhum ticket encontrado</h3>
+                    <p className="text-muted-foreground">Tente ajustar os filtros ou criar um novo ticket.</p>
+                  </div>
+                ) : (
+                  <div className={cn("space-y-3", viewMode === 'compact' && "space-y-2")}>
+                    {filteredTickets.map((ticket) => {
+                      const timeStatus = getTimeStatus(ticket.data_criacao, ticket.nivel_criticidade, ticket.status);
+                      const isExpired = timeStatus?.isOverdue;
+                      
+                      return (
+                        <Card 
+                          key={ticket.id} 
+                          className={cn(
+                            "group transition-all duration-300 hover:shadow-md hover:scale-[1.01] cursor-pointer border-l-4",
+                            // Borda lateral baseada na criticidade
+                            ticket.nivel_criticidade === 'P0' && "border-l-destructive border-l-8",
+                            ticket.nivel_criticidade === 'P1' && "border-l-orange-500 border-l-6",
+                            ticket.nivel_criticidade === 'P2' && "border-l-yellow-500 border-l-4", 
+                            ticket.nivel_criticidade === 'P3' && "border-l-blue-500 border-l-4",
+                            // Destaque SUTIL para vencidos (sem animações agressivas)
+                            isExpired && "bg-destructive/5 border-r-2 border-r-destructive/50",
+                            viewMode === 'compact' && "p-3"
+                          )}
+                          onClick={() => handleOpenTicketDetail(ticket)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              {/* Cabeçalho */}
+                              <div className="flex items-center gap-3 mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="secondary" className="font-mono text-xs">
+                                    {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
                                   </Badge>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Tags destacadas */}
-                            {ticket.tags && ticket.tags.length > 0 && (
-                              <div className="flex gap-1 mb-2">
-                                {ticket.tags.slice(0, viewMode === 'compact' ? 2 : 4).map((tag: string, index: number) => (
-                                  <Badge key={index} variant="outline" className="text-xs bg-primary/10">
-                                    {tag.toLowerCase().includes('urgente') ? '🔥' : 
-                                     tag.toLowerCase().includes('vip') ? '⭐' : '🏷️'} {tag}
-                                  </Badge>
-                                ))}
-                                {ticket.tags.length > (viewMode === 'compact' ? 2 : 4) && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{ticket.tags.length - (viewMode === 'compact' ? 2 : 4)}
-                                  </Badge>
-                                )}
-                              </div>
-                            )}
-                            
-                            {/* Descrição (apenas no modo detalhado) */}
-                            {viewMode === 'detailed' && (
-                              <p className="text-muted-foreground mb-3 text-sm line-clamp-2">
-                                {ticket.descricao}
-                              </p>
-                            )}
-                            
-                            {/* Informações contextuais */}
-                            <div className={cn(
-                              "grid gap-4 text-sm",
-                              viewMode === 'compact' ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4"
-                            )}>
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-6 w-6">
-                                  <AvatarFallback className="text-xs">
-                                    {ticket.solicitante.charAt(0).toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <span className="font-medium text-xs text-muted-foreground">Solicitante:</span>
-                                  <p className="font-medium">{ticket.solicitante}</p>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center gap-2">
-                                <User className="h-4 w-4 text-muted-foreground" />
-                                <div>
-                                  <span className="font-medium text-xs text-muted-foreground">Responsável:</span>
-                                  <p className="font-medium">{ticket.time_responsavel}</p>
-                                </div>
-                              </div>
-
-                              {viewMode === 'detailed' && (
-                                <>
-                                  <div>
-                                    <span className="font-medium text-xs text-muted-foreground">Pontuação:</span>
-                                    <p className="font-bold text-primary">{ticket.pontuacao_total} pts</p>
-                                  </div>
-                                  <div>
-                                    <span className="font-medium text-xs text-muted-foreground">SLA:</span>
-                                    <p className="text-muted-foreground">{getTempoMedioResolucao(ticket.nivel_criticidade)}</p>
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                            
-                            {/* Rodapé com data e ações rápidas */}
-                            <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
-                              <div className="text-xs text-muted-foreground">
-                                {format(new Date(ticket.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                              </div>
-                              
-                              {/* Ações rápidas (apenas no modo detalhado) */}
-                              {viewMode === 'detailed' && (
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  {ticket.status === 'aberto' && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="h-7 px-2 text-xs"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        updateTicketStatus(ticket.id, 'em_andamento');
-                                      }}
-                                    >
-                                      <Play className="h-3 w-3 mr-1" />
-                                      Iniciar
-                                    </Button>
+                                  <h3 className={cn(
+                                    "font-semibold group-hover:text-primary transition-colors",
+                                    viewMode === 'compact' ? "text-base" : "text-lg"
+                                  )}>
+                                    {ticket.titulo}
+                                  </h3>
+                                  {/* Ícone de alerta discreto para tickets expirados */}
+                                  {isExpired && (
+                                    <AlertCircle className="h-4 w-4 text-destructive opacity-70" />
                                   )}
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {getStatusBadge(ticket.status)}
+                                  {getCriticalityBadge(ticket.nivel_criticidade)}
                                   
-                                  {ticket.status === 'em_andamento' && (
-                                    <>
+                                  {/* Tempo até vencer/vencido */}
+                                  {timeStatus && (
+                                    <Badge 
+                                      variant={timeStatus.isOverdue ? "destructive" : "outline"}
+                                      className={cn(
+                                        "text-xs font-medium",
+                                        // Removido: animate-pulse - mantido apenas para casos extremos
+                                        timeStatus.isOverdue && ticket.nivel_criticidade === 'P0' && "animate-pulse"
+                                      )}
+                                    >
+                                      {timeStatus.isOverdue ? "⏰" : "⏳"} {timeStatus.text}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Tags destacadas */}
+                              {ticket.tags && ticket.tags.length > 0 && (
+                                <div className="flex gap-1 mb-2">
+                                  {ticket.tags.slice(0, viewMode === 'compact' ? 2 : 4).map((tag: string, index: number) => (
+                                    <Badge key={index} variant="outline" className="text-xs bg-primary/10">
+                                      {tag.toLowerCase().includes('urgente') ? '🔥' : 
+                                       tag.toLowerCase().includes('vip') ? '⭐' : '🏷️'} {tag}
+                                    </Badge>
+                                  ))}
+                                  {ticket.tags.length > (viewMode === 'compact' ? 2 : 4) && (
+                                    <Badge variant="outline" className="text-xs">
+                                      +{ticket.tags.length - (viewMode === 'compact' ? 2 : 4)}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {/* Descrição (apenas no modo detalhado) */}
+                              {viewMode === 'detailed' && (
+                                <p className="text-muted-foreground mb-3 text-sm line-clamp-2">
+                                  {ticket.descricao}
+                                </p>
+                              )}
+                              
+                              {/* Informações contextuais */}
+                              <div className={cn(
+                                "grid gap-4 text-sm",
+                                viewMode === 'compact' ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4"
+                              )}>
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarFallback className="text-xs">
+                                      {ticket.solicitante.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <span className="font-medium text-xs text-muted-foreground">Solicitante:</span>
+                                    <p className="font-medium">{ticket.solicitante}</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-2">
+                                  <User className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <span className="font-medium text-xs text-muted-foreground">Responsável:</span>
+                                    <p className="font-medium">{ticket.time_responsavel}</p>
+                                  </div>
+                                </div>
+
+                                {viewMode === 'detailed' && (
+                                  <>
+                                    <div>
+                                      <span className="font-medium text-xs text-muted-foreground">Pontuação:</span>
+                                      <p className="font-bold text-primary">{ticket.pontuacao_total} pts</p>
+                                    </div>
+                                    <div>
+                                      <span className="font-medium text-xs text-muted-foreground">SLA:</span>
+                                      <p className="text-muted-foreground">{getTempoMedioResolucao(ticket.nivel_criticidade)}</p>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                              
+                              {/* Rodapé com data e ações rápidas */}
+                              <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
+                                <div className="text-xs text-muted-foreground">
+                                  {format(new Date(ticket.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                                </div>
+                                
+                                {/* Ações rápidas (apenas no modo detalhado e para usuários com permissão) */}
+                                {viewMode === 'detailed' && (userRole === 'super_admin' || userRole === 'operador') && (
+                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {ticket.status === 'aberto' && (
                                       <Button
                                         size="sm"
                                         variant="outline"
                                         className="h-7 px-2 text-xs"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          updateTicketStatus(ticket.id, 'pausado');
+                                          updateTicketStatus(ticket.id, 'em_andamento');
                                         }}
                                       >
-                                        <Pause className="h-3 w-3 mr-1" />
-                                        Pausar
+                                        <Play className="h-3 w-3 mr-1" />
+                                        Iniciar
                                       </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="h-7 px-2 text-xs text-success border-success/50 hover:bg-success/10"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          updateTicketStatus(ticket.id, 'resolvido');
-                                        }}
-                                      >
-                                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                                        Resolver
-                                      </Button>
-                                    </>
-                                  )}
-                                </div>
-                              )}
+                                    )}
+                                    
+                                    {ticket.status === 'em_andamento' && (
+                                      <>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="h-7 px-2 text-xs"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            updateTicketStatus(ticket.id, 'pausado');
+                                          }}
+                                        >
+                                          <Pause className="h-3 w-3 mr-1" />
+                                          Pausar
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="h-7 px-2 text-xs text-success border-success/50 hover:bg-success/10"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            updateTicketStatus(ticket.id, 'resolvido');
+                                          }}
+                                        >
+                                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                                          Resolver
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Botão de detalhes */}
+                            <div className="ml-4 flex flex-col gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                Ver Detalhes
+                              </Button>
                             </div>
                           </div>
-                          
-                          {/* Botão de detalhes */}
-                          <div className="ml-4 flex flex-col gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              Ver Detalhes
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
-            </ScrollArea>
-          </CardContent>
-        </Card>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        )}
         </div>
       </div>
 
