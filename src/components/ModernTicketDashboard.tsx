@@ -31,7 +31,9 @@ import {
   Lightbulb,
   AlertCircle,
   CheckCircle,
-  Info
+  Info,
+  Monitor,
+  X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -344,6 +346,12 @@ export default function ModernSLADashboard() {
   const [viewType, setViewType] = useState<ViewType>('global');
   const [selectedTime, setSelectedTime] = useState<string>('all');
   const [compareSelectedTimes, setCompareSelectedTimes] = useState<string[]>([]);
+  
+  // Modo TV
+  const [isTVMode, setIsTVMode] = useState(false);
+  const [tvCurrentView, setTvCurrentView] = useState<'overview' | 'teams'>('overview');
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [viewRotationInterval, setViewRotationInterval] = useState<NodeJS.Timeout | null>(null);
 
   // Ícones para diferentes times
   const getTeamIcon = (teamName: string) => {
@@ -370,6 +378,71 @@ export default function ModernSLADashboard() {
   useEffect(() => {
     if (user) {
       fetchSetores();
+      fetchSLAMetrics();
+    }
+  }, [user]);
+
+  // Efeito para controlar auto-refresh e rotação no modo TV
+  useEffect(() => {
+    if (isTVMode) {
+      // Auto-refresh a cada 30 segundos
+      const refreshTimer = setInterval(() => {
+        if (user && setores.length > 0) {
+          fetchSLAMetrics();
+        }
+      }, 30000);
+      setAutoRefreshInterval(refreshTimer);
+
+      // Rotação entre views a cada 15 segundos
+      const rotationTimer = setInterval(() => {
+        setTvCurrentView(prev => prev === 'overview' ? 'teams' : 'overview');
+      }, 15000);
+      setViewRotationInterval(rotationTimer);
+
+      return () => {
+        if (refreshTimer) clearInterval(refreshTimer);
+        if (rotationTimer) clearInterval(rotationTimer);
+      };
+    } else {
+      // Limpar timers quando sair do modo TV
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        setAutoRefreshInterval(null);
+      }
+      if (viewRotationInterval) {
+        clearInterval(viewRotationInterval);
+        setViewRotationInterval(null);
+      }
+    }
+  }, [isTVMode, user, setores]);
+
+  // Função para entrar/sair do modo TV
+  const toggleTVMode = () => {
+    if (!isTVMode) {
+      // Entrar em fullscreen
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen();
+      }
+      setIsTVMode(true);
+    } else {
+      // Sair do fullscreen
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+      setIsTVMode(false);
+    }
+  };
+
+  // Limpar timers ao desmontar componente
+  useEffect(() => {
+    return () => {
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+      if (viewRotationInterval) clearInterval(viewRotationInterval);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (user && setores.length > 0) {
       fetchSLAMetrics();
     }
   }, [user, selectedRange, customDateFrom, customDateTo, statusFilter, priorityFilter, viewType, selectedTime, compareSelectedTimes]);
@@ -772,6 +845,14 @@ export default function ModernSLADashboard() {
                 Monitoramento em tempo real dos acordos de nível de serviço
               </p>
             </div>
+            <Button 
+              onClick={toggleTVMode}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Monitor className="w-4 h-4" />
+              Modo TV
+            </Button>
           </div>
           <div className="h-px bg-gradient-to-r from-primary/20 via-primary/40 to-transparent" />
         </div>
