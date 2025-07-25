@@ -72,6 +72,7 @@ export type Database = {
           email: string
           id: string
           nome_completo: string
+          role: Database["public"]["Enums"]["user_role"] | null
           updated_at: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
@@ -82,6 +83,7 @@ export type Database = {
           email: string
           id?: string
           nome_completo: string
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string
           user_id: string
           user_type?: Database["public"]["Enums"]["user_type"]
@@ -92,6 +94,7 @@ export type Database = {
           email?: string
           id?: string
           nome_completo?: string
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string
           user_id?: string
           user_type?: Database["public"]["Enums"]["user_type"]
@@ -559,6 +562,10 @@ export type Database = {
         Args: { p_sla_id: string; p_setor_id: string; p_comentario: string }
         Returns: string
       }
+      can_edit: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       generate_ticket_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -576,8 +583,16 @@ export type Database = {
           profit_count_30_days: number
         }[]
       }
+      has_role: {
+        Args: { _role: Database["public"]["Enums"]["user_role"] }
+        Returns: boolean
+      }
       is_admin: {
         Args: { user_uuid?: string }
+        Returns: boolean
+      }
+      is_super_admin: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       log_sla_action: {
@@ -599,6 +614,7 @@ export type Database = {
     }
     Enums: {
       prioridade_operacional: "alta" | "media" | "baixa"
+      user_role: "super_admin" | "operador" | "viewer"
       user_type: "administrador_master" | "colaborador_setor"
     }
     CompositeTypes: {
@@ -728,6 +744,7 @@ export const Constants = {
   public: {
     Enums: {
       prioridade_operacional: ["alta", "media", "baixa"],
+      user_role: ["super_admin", "operador", "viewer"],
       user_type: ["administrador_master", "colaborador_setor"],
     },
   },
