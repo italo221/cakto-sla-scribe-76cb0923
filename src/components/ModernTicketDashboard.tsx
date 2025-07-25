@@ -57,8 +57,8 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import { autoTable } from 'jspdf-autotable';
 
 type DateRange = '7dias' | '30dias' | 'mes_anterior' | 'personalizado';
 type ViewType = 'global' | 'time' | 'comparativo';
@@ -930,9 +930,6 @@ export default function ModernSLADashboard() {
       doc.setFont('helvetica', 'bold');
       doc.text('Métricas Principais', 20, 55);
       
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      
       const metricsData = [
         ['Métrica', 'Valor'],
         ['Total de SLAs', metrics.total.toString()],
@@ -942,7 +939,7 @@ export default function ModernSLADashboard() {
         ['Taxa de Cumprimento', `${metrics.cumprimento.toFixed(1)}%`]
       ];
 
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: 60,
         head: [metricsData[0]],
         body: metricsData.slice(1),
@@ -962,7 +959,7 @@ export default function ModernSLADashboard() {
         teamData.push([team.team, team.count.toString()]);
       });
 
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: currentY + 5,
         head: [teamData[0]],
         body: teamData.slice(1),
@@ -988,7 +985,7 @@ export default function ModernSLADashboard() {
           ]);
         });
 
-        (doc as any).autoTable({
+        autoTable(doc, {
           startY: currentY + 5,
           head: [slaDetails[0]],
           body: slaDetails.slice(1),
