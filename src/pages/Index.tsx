@@ -1,11 +1,17 @@
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import TicketChat from "@/components/TicketChat";
 import Navigation from "@/components/Navigation";
 import SupabaseStatus from "@/components/SupabaseStatus";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare, Zap, Shield, BarChart3 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MessageSquare, Zap, Shield, BarChart3, LogIn } from "lucide-react";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <Navigation />
@@ -30,6 +36,31 @@ const Index = () => {
             Utilize nosso assistente de IA para criar tickets de forma rápida e precisa, 
             com classificação automática de criticidade.
           </p>
+
+          {/* Botão de Login/Dashboard */}
+          {!user ? (
+            <div className="pt-4">
+              <Button 
+                onClick={() => navigate('/auth')}
+                size="lg"
+                className="gap-2"
+              >
+                <LogIn className="h-4 w-4" />
+                Fazer Login
+              </Button>
+            </div>
+          ) : (
+            <div className="pt-4">
+              <Button 
+                onClick={() => navigate('/dashboard')}
+                size="lg"
+                className="gap-2"
+              >
+                <BarChart3 className="h-4 w-4" />
+                Ir para Dashboard
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Features Grid */}

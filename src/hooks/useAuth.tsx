@@ -8,6 +8,7 @@ interface Profile {
   email: string;
   nome_completo: string;
   user_type: 'administrador_master' | 'colaborador_setor';
+  role: 'super_admin' | 'operador' | 'viewer';
   ativo: boolean;
   created_at: string;
   updated_at: string;
@@ -31,6 +32,8 @@ interface AuthContextType {
   setores: UserSetor[];
   loading: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
+  canEdit: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -50,39 +53,104 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  // Simulando usuário admin sempre logado
-  const mockUser = {
-    id: '00000000-0000-0000-0000-000000000000',
-    email: 'admin@sistema.com'
-  } as User;
-  
-  const mockProfile = {
-    id: '00000000-0000-0000-0000-000000000000',
-    user_id: '00000000-0000-0000-0000-000000000000',
-    email: 'admin@sistema.com',
-    nome_completo: 'Super Administrador',
-    user_type: 'administrador_master' as const,
-    ativo: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [setores, setSetores] = useState<UserSetor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (profileError) {
+        console.error('Erro ao buscar perfil:', profileError);
+        return;
+      }
+
+      setProfile(profileData);
+
+      // Buscar setores do usuário
+      const { data: setoresData, error: setoresError } = await supabase
+        .from('user_setores')
+        .select(`
+          id,
+          user_id,
+          setor_id,
+          setor:setores(id, nome, descricao)
+        `)
+        .eq('user_id', userId);
+
+      if (setoresError) {
+        console.error('Erro ao buscar setores:', setoresError);
+        return;
+      }
+
+      setSetores(setoresData || []);
+    } catch (error) {
+      console.error('Erro ao buscar dados do usuário:', error);
+    }
   };
 
-  const [user] = useState<User | null>(mockUser);
-  const [session] = useState<Session | null>(null);
-  const [profile] = useState<Profile | null>(mockProfile);
-  const [setores] = useState<UserSetor[]>([]);
-  const [loading] = useState(false);
+  useEffect(() => {
+    // Configurar listener de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Aguardar um pouco e então buscar perfil
+          setTimeout(() => {
+            fetchProfile(session.user.id);
+          }, 100);
+        } else {
+          setProfile(null);
+          setSetores([]);
+        }
+        setLoading(false);
+      }
+    );
 
-  const isAdmin = true; // Todos são admin agora
+    // Verificar sessão atual
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const refreshProfile = async () => {
-    // Não faz nada - sistema aberto
+    if (user) {
+      await fetchProfile(user.id);
+    }
   };
 
   const signOut = async () => {
-    // Não faz nada - não há logout em sistema aberto
-    alert('Sistema aberto - não é necessário logout');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Erro no logout:', error);
+      }
+    } catch (error) {
+      console.error('Erro inesperado no logout:', error);
+    }
   };
+
+  // Verificações de role
+  const isSuperAdmin = profile?.role === 'super_admin' || profile?.user_type === 'administrador_master';
+  const canEdit = isSuperAdmin || profile?.role === 'operador';
+  const isAdmin = isSuperAdmin; // Compatibilidade com código existente
 
   const value = {
     user,
@@ -91,6 +159,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setores,
     loading,
     isAdmin,
+    isSuperAdmin,
+    canEdit,
     signOut,
     refreshProfile,
   };

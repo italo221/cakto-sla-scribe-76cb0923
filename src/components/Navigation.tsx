@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { 
   MessageSquare, 
   Inbox, 
@@ -12,9 +13,12 @@ import {
   Settings, 
   BookOpen, 
   Shield, 
-  Menu
+  Menu,
+  LogOut,
+  User
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 interface NavItem {
   path: string;
@@ -34,12 +38,19 @@ const navItems: NavItem[] = [
 
 export default function Navigation() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, profile, isSuperAdmin, signOut } = useAuth();
   
   const isActive = (path: string) => location.pathname === path;
   
-  // Sistema aberto - todos têm acesso a tudo
-  const filteredNavItems = navItems;
+  // Filtrar itens de navegação baseado no role do usuário
+  const filteredNavItems = navItems.filter(item => {
+    if (item.adminOnly && !isSuperAdmin) {
+      return false;
+    }
+    return true;
+  });
 
   const NavLink = ({ item, mobile = false }: { item: NavItem; mobile?: boolean }) => {
     const active = isActive(item.path);
@@ -65,25 +76,66 @@ export default function Navigation() {
   };
 
   const UserMenu = () => {
-    // Sistema aberto - sempre mostra usuário admin
-    const userInitials = "SA"; // Super Admin
+    if (!user) {
+      return (
+        <Button onClick={() => navigate('/auth')} variant="outline" size="sm">
+          Fazer Login
+        </Button>
+      );
+    }
+
+    const userInitials = profile?.nome_completo
+      ? profile.nome_completo.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+      : user.email?.substring(0, 2).toUpperCase();
+
+    const getRoleBadge = () => {
+      if (profile?.role === 'super_admin' || profile?.user_type === 'administrador_master') {
+        return { label: 'Super Admin', variant: 'default' as const };
+      }
+      if (profile?.role === 'operador') {
+        return { label: 'Operador', variant: 'secondary' as const };
+      }
+      return { label: 'Viewer', variant: 'outline' as const };
+    };
+
+    const roleBadge = getRoleBadge();
+
+    const handleSignOut = async () => {
+      await signOut();
+      navigate('/');
+    };
 
     return (
-      <div className="flex items-center gap-2">
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-            {userInitials}
-          </AvatarFallback>
-        </Avatar>
-        <div className="hidden md:flex flex-col items-start">
-          <span className="text-sm font-medium">
-            Super Administrador
-          </span>
-          <Badge variant="default" className="text-xs">
-            Acesso Total
-          </Badge>
-        </div>
-      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="flex items-center gap-2 p-2">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                {userInitials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="hidden md:flex flex-col items-start">
+              <span className="text-sm font-medium">
+                {profile?.nome_completo || user.email}
+              </span>
+              <Badge variant={roleBadge.variant} className="text-xs">
+                {roleBadge.label}
+              </Badge>
+            </div>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem onClick={() => navigate('/admin')} disabled={!isSuperAdmin}>
+            <User className="mr-2 h-4 w-4" />
+            Gerenciar Usuários
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleSignOut}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Sair
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   };
 
