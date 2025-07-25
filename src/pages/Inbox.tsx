@@ -552,30 +552,10 @@ export default function Inbox() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os status</SelectItem>
-                  <SelectItem value="aberto">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="w-3 h-3 text-red-500" />
-                      Aberto
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="em_andamento">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-3 h-3 text-yellow-500" />
-                      Em Andamento
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="resolvido">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-3 h-3 text-green-500" />
-                      Resolvido
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="fechado">
-                    <div className="flex items-center gap-2">
-                      <XCircle className="w-3 h-3 text-gray-500" />
-                      Fechado
-                    </div>
-                  </SelectItem>
+                  <SelectItem value="aberto">🔴 Aberto</SelectItem>
+                  <SelectItem value="em_andamento">🟡 Em Andamento</SelectItem>
+                  <SelectItem value="resolvido">🟢 Resolvido</SelectItem>
+                  <SelectItem value="fechado">⚫ Fechado</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -585,30 +565,10 @@ export default function Inbox() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as criticidades</SelectItem>
-                  <SelectItem value="P0">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="w-3 h-3 text-red-500" />
-                      P0 - Crítico
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="P1">
-                    <div className="flex items-center gap-2">
-                      <Flag className="w-3 h-3 text-orange-500" />
-                      P1 - Alto
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="P2">
-                    <div className="flex items-center gap-2">
-                      <Flag className="w-3 h-3 text-yellow-500" />
-                      P2 - Médio
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="P3">
-                    <div className="flex items-center gap-2">
-                      <Flag className="w-3 h-3 text-blue-500" />
-                      P3 - Baixo
-                    </div>
-                  </SelectItem>
+                  <SelectItem value="P0">🚨 P0 - Crítico</SelectItem>
+                  <SelectItem value="P1">🔥 P1 - Alto</SelectItem>
+                  <SelectItem value="P2">⚠️ P2 - Médio</SelectItem>
+                  <SelectItem value="P3">ℹ️ P3 - Baixo</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -620,10 +580,7 @@ export default function Inbox() {
                   <SelectItem value="all">Todos os setores</SelectItem>
                   {setores.map((setor) => (
                     <SelectItem key={setor.id} value={setor.id}>
-                      <div className="flex items-center gap-2">
-                        <Building className="w-3 h-3 text-muted-foreground" />
-                        {setor.nome}
-                      </div>
+                      🏢 {setor.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>
