@@ -12,6 +12,7 @@ import Integrations from "./pages/Integrations";
 import Inbox from "./pages/Inbox";
 import Documentation from "./pages/Documentation";
 import Admin from "./pages/Admin";
+import Customization from "./pages/Customization";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -59,6 +60,11 @@ function App() {
               <Route path="/admin" element={
                 <ProtectedRoute requireSuperAdmin>
                   <Admin />
+                </ProtectedRoute>
+              } />
+              <Route path="/customization" element={
+                <ProtectedRoute requireSuperAdmin>
+                  <Customization />
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />

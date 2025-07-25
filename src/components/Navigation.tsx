@@ -15,7 +15,8 @@ import {
   Shield, 
   Menu,
   LogOut,
-  User
+  User,
+  Palette
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +33,7 @@ const navItems: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { path: "/inbox", label: "Caixa de Entrada", icon: Inbox },
   { path: "/integrations", label: "Integrações", icon: Settings },
+  { path: "/customization", label: "🎨 Personalização", icon: Palette, adminOnly: true },
   { path: "/admin", label: "Admin", icon: Shield, adminOnly: true },
   { path: "/documentation", label: "Documentação", icon: BookOpen }
 ];

@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      color_history: {
+        Row: {
+          color_hex: string
+          color_hsl: string
+          color_name: string | null
+          id: string
+          used_at: string
+          used_by: string | null
+        }
+        Insert: {
+          color_hex: string
+          color_hsl: string
+          color_name?: string | null
+          id?: string
+          used_at?: string
+          used_by?: string | null
+        }
+        Update: {
+          color_hex?: string
+          color_hsl?: string
+          color_name?: string | null
+          id?: string
+          used_at?: string
+          used_by?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           criado_em: string | null
@@ -414,6 +441,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_settings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       user_kyc: {
         Row: {
