@@ -302,7 +302,10 @@ const ModernTeamCard = ({
             <p className="font-medium text-sm text-foreground truncate">{teamName}</p>
             <p className="text-xs text-muted-foreground">Time responsável</p>
           </div>
-          <Badge variant="secondary" className="shrink-0">
+          <Badge 
+            variant="outline" 
+            className="shrink-0 bg-emerald-50 text-emerald-700 border-emerald-200"
+          >
             {count}
           </Badge>
         </div>
