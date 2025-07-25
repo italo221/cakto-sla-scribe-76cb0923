@@ -334,8 +334,8 @@ export default function Inbox() {
     return filtered;
   }, [ticketsWithStatus, searchTerm, statusFilter, criticalityFilter, setorFilter, showOnlyExpired]);
 
-  // Usar a lógica centralizada de filtros - sem map() para evitar re-renders
-  const ticketFilters = useTicketFilters(tickets);
+  // Usar a lógica centralizada de filtros baseada nos ticketsWithStatus
+  const ticketFilters = useTicketFilters(ticketsWithStatus);
 
   // Função para obter badge de status (agora sem hooks)
   const getStatusBadge = (ticketWithStatus: any) => {
@@ -419,15 +419,25 @@ export default function Inbox() {
 
   // Função para aplicar filtros clicando nos cards de estatísticas
   const applyQuickFilter = useCallback((type: string, value: string) => {
+    console.log(`🎯 Filtro aplicado: ${type} = ${value}`);
+    
+    // Sempre limpar todos os filtros primeiro para evitar conflitos
+    setSearchTerm('');
+    setCriticalityFilter('all');
+    setSetorFilter('all');
+    setShowOnlyExpired(false);
+    
     switch (type) {
       case 'status':
         setStatusFilter(value);
         break;
       case 'criticality':
         setCriticalityFilter(value);
+        setStatusFilter('all'); // Limpar filtro de status quando filtrar por criticidade
         break;
       case 'setor':
         setSetorFilter(value);
+        setStatusFilter('all'); // Limpar filtro de status quando filtrar por setor
         break;
     }
   }, []);
