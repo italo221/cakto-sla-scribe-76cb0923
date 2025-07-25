@@ -60,6 +60,7 @@ export default function Inbox() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [criticalityFilter, setCriticalityFilter] = useState('all');
   const [setorFilter, setSetorFilter] = useState('all');
+  const [showOnlyExpired, setShowOnlyExpired] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('detailed');
@@ -88,12 +89,13 @@ export default function Inbox() {
       searchTerm, 
       statusFilter, 
       criticalityFilter, 
-      setorFilter 
+      setorFilter,
+      showOnlyExpired 
     });
     if (tickets.length > 0) {
       filterTickets();
     }
-  }, [tickets, searchTerm, statusFilter, criticalityFilter, setorFilter]);
+  }, [tickets, searchTerm, statusFilter, criticalityFilter, setorFilter, showOnlyExpired]);
 
   const loadSetores = async () => {
     try {
@@ -234,6 +236,28 @@ export default function Inbox() {
       console.log('🏢 Aplicando filtro de setor:', setorFilter);
       filtered = filtered.filter(ticket => ticket.setor_id === setorFilter);
       console.log('🏢 Após filtro setor:', filtered.length);
+    }
+
+    // Filtro específico para tickets atrasados
+    if (showOnlyExpired) {
+      console.log('⏰ Aplicando filtro de tickets atrasados');
+      filtered = filtered.filter(ticket => {
+        if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
+        
+        const timeConfig = {
+          'P0': 4 * 60 * 60 * 1000, // 4 horas
+          'P1': 24 * 60 * 60 * 1000, // 24 horas
+          'P2': 3 * 24 * 60 * 60 * 1000, // 3 dias
+          'P3': 7 * 24 * 60 * 60 * 1000, // 7 dias
+        };
+        
+        const startTime = new Date(ticket.data_criacao).getTime();
+        const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+        const deadline = startTime + timeLimit;
+        
+        return Date.now() > deadline;
+      });
+      console.log('⏰ Após filtro atrasados:', filtered.length);
     }
 
     console.log('✅ Filtragem final:', filtered.length, 'tickets');
@@ -573,9 +597,9 @@ export default function Inbox() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os status</SelectItem>
-                  <SelectItem value="aberto">🔴 Aberto</SelectItem>
-                  <SelectItem value="em_andamento">🟡 Em Andamento</SelectItem>
-                  <SelectItem value="resolvido">🟢 Resolvido</SelectItem>
+                  <SelectItem value="aberto">📋 Aberto</SelectItem>
+                  <SelectItem value="em_andamento">⏳ Em Andamento</SelectItem>
+                  <SelectItem value="resolvido">✅ Resolvido</SelectItem>
                   <SelectItem value="fechado">⚫ Fechado</SelectItem>
                 </SelectContent>
               </Select>
@@ -642,15 +666,13 @@ export default function Inbox() {
                 variant="outline"
                 className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1"
                 onClick={() => {
-                  console.log('🔍 Clicou em Atrasados - aplicando filtro por status');
-                  // Aplicar filtro para mostrar apenas tickets atrasados
-                  const expired = getExpiredTickets();
-                  if (expired.length > 0) {
-                    // Limpar busca e aplicar filtros para mostrar atrasados
-                    setSearchTerm('');
-                    setStatusFilter('aberto'); // Mostrar abertos que estão atrasados
-                    setCriticalityFilter('all');
-                  }
+                  console.log('🔍 Clicou em Atrasados - aplicando filtro específico');
+                  // Limpar outros filtros e aplicar filtro específico para atrasados
+                  setSearchTerm('');
+                  setStatusFilter('all');
+                  setCriticalityFilter('all');
+                  setSetorFilter('all');
+                  setShowOnlyExpired(true);
                 }}
               >
                 <Clock className="w-3 h-3 text-orange-500" />
@@ -664,6 +686,7 @@ export default function Inbox() {
                   setStatusFilter('all');
                   setCriticalityFilter('all');
                   setSetorFilter('all');
+                  setShowOnlyExpired(false);
                 }}
                 className="h-6 px-2 text-xs flex items-center gap-1"
               >
@@ -756,7 +779,14 @@ export default function Inbox() {
           </Card>
           <Card 
             className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-            onClick={() => applyQuickFilter('status', 'all')}
+            onClick={() => {
+              // Filtrar apenas tickets atrasados
+              setSearchTerm('');
+              setStatusFilter('all');
+              setCriticalityFilter('all');
+              setSetorFilter('all');
+              setShowOnlyExpired(true);
+            }}
           >
             <CardContent className="p-6">
               <div className="text-2xl font-bold text-primary">{getExpiredTickets().length}</div>
