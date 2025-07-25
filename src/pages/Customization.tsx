@@ -200,6 +200,8 @@ export default function Customization() {
           setting_key: 'primary_color',
           setting_value: previewColor as any,
           updated_by: user.id
+        }, {
+          onConflict: 'setting_key'
         });
 
       if (primaryError) throw primaryError;
@@ -211,6 +213,8 @@ export default function Customization() {
           setting_key: 'secondary_color',
           setting_value: previewSecondaryColor as any,
           updated_by: user.id
+        }, {
+          onConflict: 'setting_key'
         });
 
       if (secondaryError) throw secondaryError;
