@@ -6,7 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AlertTriangle, Clock, CheckCircle, X, User, Activity, Loader2 } from "lucide-react";
+import { AlertTriangle, Clock, CheckCircle, X, User, Activity, Loader2, Circle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -231,7 +231,7 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit
   const getColumnIcon = (status: string) => {
     switch (status) {
       case 'aberto':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
+        return <Circle className="h-4 w-4 text-slate-500" />;
       case 'em_andamento':
         return <Activity className="h-4 w-4 text-yellow-600" />;
       case 'resolvido':
@@ -246,7 +246,7 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit
   const getColumnColor = (status: string) => {
     switch (status) {
       case 'aberto':
-        return 'border-red-300 bg-red-50';
+        return 'border-slate-300 bg-slate-50';
       case 'em_andamento':
         return 'border-yellow-300 bg-yellow-50';
       case 'resolvido':
@@ -326,9 +326,9 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
       title: 'Aberto',
       status: 'aberto',
       tickets: ticketsByStatus.aberto,
-      color: 'bg-red-500',
-      icon: AlertTriangle,
-      description: 'Tickets aguardando início'
+      color: 'bg-slate-400',
+      icon: Circle,
+      description: 'Tickets recém-criados'
     },
     {
       title: 'Em Andamento',

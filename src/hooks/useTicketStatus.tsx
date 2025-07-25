@@ -187,8 +187,16 @@ export const validateStatusChange = (
   }
 
   // Regras de negócio específicas
-  if (fromStatus === 'fechado' && toStatus !== 'fechado') {
-    return { valid: false, reason: 'Tickets fechados não podem ser reabertos' };
+  
+  // Ticket não pode voltar para "Aberto" uma vez que sai desse status
+  // EXCETO se estava "Fechado" (status final)
+  if (toStatus === 'aberto' && fromStatus !== 'fechado') {
+    return { valid: false, reason: 'Tickets não podem voltar para "Aberto" após iniciar o atendimento' };
+  }
+  
+  // Tickets fechados só podem ser reabertos (voltar para aberto)
+  if (fromStatus === 'fechado' && toStatus !== 'aberto') {
+    return { valid: false, reason: 'Tickets fechados só podem ser reabertos' };
   }
 
   return { valid: true };

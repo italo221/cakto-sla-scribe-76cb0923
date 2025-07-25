@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Filter, Clock, AlertCircle, CheckCircle, X, Grid3X3, List, Star, User, MoreVertical, Play, Pause, CheckCircle2, XCircle, Eye, Columns3, AlertTriangle, Flag, Building, Target, Users, Activity, Inbox as InboxIcon } from "lucide-react";
+import { Search, Filter, Clock, AlertCircle, CheckCircle, X, Grid3X3, List, Star, User, MoreVertical, Play, Pause, CheckCircle2, XCircle, Eye, Columns3, AlertTriangle, Flag, Building, Target, Users, Activity, Inbox as InboxIcon, Circle } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Navigation from "@/components/Navigation";
@@ -246,11 +246,11 @@ export default function Inbox() {
         const statusConfig = {
           'aberto': {
             displayStatus: 'Aberto',
-            color: 'bg-gray-500',
-            bgColor: 'bg-gray-50',
-            textColor: 'text-gray-800',
-            borderColor: 'border-gray-200',
-            icon: AlertCircle
+            color: 'bg-slate-400',
+            bgColor: 'bg-slate-50',
+            textColor: 'text-slate-700',
+            borderColor: 'border-slate-300',
+            icon: Circle
           },
           'em_andamento': {
             displayStatus: 'Em Andamento',
@@ -340,9 +340,30 @@ export default function Inbox() {
   // Função para obter badge de status (agora sem hooks)
   const getStatusBadge = (ticketWithStatus: any) => {
     const Icon = ticketWithStatus.statusInfo.icon;
+    const isAberto = ticketWithStatus.status === 'aberto';
+    const isExpired = ticketWithStatus.statusInfo.isExpired;
 
+    // Se for ticket "Em Aberto" e estiver atrasado, mostrar ambos os badges
+    if (isAberto && isExpired) {
+      return (
+        <div className="flex items-center gap-1">
+          <Badge className={`${ticketWithStatus.statusInfo.bgColor} ${ticketWithStatus.statusInfo.textColor} ${ticketWithStatus.statusInfo.borderColor} flex items-center gap-1 border font-medium border-l-4 border-l-slate-400`}>
+            <Icon size={12} />
+            Aberto
+          </Badge>
+          <Badge className="bg-red-50 text-red-800 border-red-200 flex items-center gap-1 border font-medium">
+            <AlertTriangle size={12} />
+            Atrasado
+          </Badge>
+        </div>
+      );
+    }
+
+    // Badge normal com borda lateral especial para tickets "Em Aberto"
+    const borderClass = isAberto ? 'border-l-4 border-l-slate-400' : '';
+    
     return (
-      <Badge className={`${ticketWithStatus.statusInfo.bgColor} ${ticketWithStatus.statusInfo.textColor} ${ticketWithStatus.statusInfo.borderColor} flex items-center gap-1 border font-medium`}>
+      <Badge className={`${ticketWithStatus.statusInfo.bgColor} ${ticketWithStatus.statusInfo.textColor} ${ticketWithStatus.statusInfo.borderColor} flex items-center gap-1 border font-medium ${borderClass}`}>
         <Icon size={12} />
         {ticketWithStatus.statusInfo.displayStatus}
         {/* Spinner especial para "Em Andamento" */}
