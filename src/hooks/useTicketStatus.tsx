@@ -155,10 +155,10 @@ export const useTicketFilters = (tickets: any[]) => {
 
     return {
       all: tickets,
-      aberto: tickets.filter(t => t.status === 'aberto'),
-      em_andamento: tickets.filter(t => t.status === 'em_andamento'),
-      resolvido: tickets.filter(t => t.status === 'resolvido'),
-      fechado: tickets.filter(t => t.status === 'fechado'),
+      aberto: tickets.filter(t => t.status?.toString()?.trim()?.toLowerCase() === 'aberto'),
+      em_andamento: tickets.filter(t => t.status?.toString()?.trim()?.toLowerCase() === 'em_andamento'),
+      resolvido: tickets.filter(t => t.status?.toString()?.trim()?.toLowerCase() === 'resolvido'),
+      fechado: tickets.filter(t => t.status?.toString()?.trim()?.toLowerCase() === 'fechado'),
       atrasado: expired,
       // Filtros compostos
       abertoAtrasado: expired.filter(t => t.status === 'aberto'),

@@ -313,7 +313,16 @@ export default function Inbox() {
 
     // Filtro por status
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(ticket => ticket.status === statusFilter);
+      console.log(`🔍 Aplicando filtro de status: "${statusFilter}"`);
+      console.log('📊 Status únicos encontrados:', [...new Set(filtered.map(t => `"${t.status}"`))]);
+      
+      // Fazer comparação mais robusta de status
+      filtered = filtered.filter(ticket => {
+        const ticketStatus = ticket.status?.toString()?.trim()?.toLowerCase();
+        const filterStatus = statusFilter?.toString()?.trim()?.toLowerCase();
+        return ticketStatus === filterStatus;
+      });
+      console.log('📊 Tickets depois do filtro:', filtered.length);
     }
 
     // Filtro por criticidade
@@ -888,10 +897,14 @@ export default function Inbox() {
         </Card>
 
         {/* Cards de Estatísticas Atualizados */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           <Card 
             className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-            onClick={() => applyQuickFilter('status', 'aberto')}
+            onClick={() => {
+              console.log('🔵 Card Aberto clicado');
+              console.log('🔵 Aplicando filtro para: aberto');
+              applyQuickFilter('status', 'aberto');
+            }}
           >
             <CardContent className="p-6">
               <div className="text-2xl font-bold text-gray-600">{ticketFilters.aberto.length}</div>
@@ -914,6 +927,15 @@ export default function Inbox() {
             <CardContent className="p-6">
               <div className="text-2xl font-bold text-green-600">{ticketFilters.resolvido.length}</div>
               <p className="text-sm text-muted-foreground">Resolvidos</p>
+            </CardContent>
+          </Card>
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+            onClick={() => applyQuickFilter('status', 'fechado')}
+          >
+            <CardContent className="p-6">
+              <div className="text-2xl font-bold text-gray-500">{ticketFilters.fechado.length}</div>
+              <p className="text-sm text-muted-foreground">Fechados</p>
             </CardContent>
           </Card>
           <Card 
