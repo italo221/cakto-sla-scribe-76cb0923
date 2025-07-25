@@ -775,113 +775,114 @@ export default function Inbox() {
                         <Card 
                           key={ticket.id} 
                           className={cn(
-                            "group transition-all duration-200 hover:shadow-md cursor-pointer bg-white",
-                            "border border-gray-200 rounded-lg hover:border-gray-300",
-                            // Destaque para criticidade
-                            ticket.nivel_criticidade === 'P0' && "border-l-4 border-l-red-500",
-                            ticket.nivel_criticidade === 'P1' && "border-l-4 border-l-orange-500",
-                            ticket.nivel_criticidade === 'P2' && "border-l-4 border-l-yellow-500", 
+                            "group transition-all duration-200 hover:shadow-lg cursor-pointer",
+                            "border border-border rounded-lg hover:shadow-xl",
+                            // Destaque para criticidade - bordas laterais
+                            ticket.nivel_criticidade === 'P0' && "border-l-4 border-l-destructive bg-red-50/50",
+                            ticket.nivel_criticidade === 'P1' && "border-l-4 border-l-orange-500 bg-orange-50/50",
+                            ticket.nivel_criticidade === 'P2' && "border-l-4 border-l-yellow-500 bg-yellow-50/50", 
                             ticket.nivel_criticidade === 'P3' && "border-l-4 border-l-blue-500",
                             // Destaque sutil para vencidos
-                            isExpired && "bg-red-50 border-red-200"
+                            isExpired && "bg-red-50 border-red-300 shadow-red-100"
                           )}
                           onClick={() => handleOpenTicketDetail(ticket)}
                         >
                           <CardContent className={cn(
-                            "p-4 space-y-3",
-                            viewMode === 'compact' && "p-3 space-y-2"
+                            "p-6 space-y-4",
+                            viewMode === 'compact' && "p-4 space-y-3"
                           )}>
-                            {/* Header clean */}
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <Badge variant="secondary" className="text-xs font-mono bg-gray-100 text-gray-600 border-0 flex-shrink-0">
-                                  {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
-                                </Badge>
+                            {/* Header principal */}
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <Badge variant="secondary" className="text-xs font-mono shrink-0">
+                                    {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
+                                  </Badge>
+                                  {isExpired && (
+                                    <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+                                  )}
+                                </div>
                                 <h3 className={cn(
-                                  "font-semibold text-gray-900 truncate group-hover:text-gray-700",
-                                  viewMode === 'compact' ? "text-base" : "text-lg"
+                                  "font-semibold leading-tight text-foreground mb-1",
+                                  viewMode === 'compact' ? "text-base line-clamp-2" : "text-lg line-clamp-2"
                                 )}>
                                   {ticket.titulo}
                                 </h3>
-                                {isExpired && (
-                                  <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                
+                                {/* Descrição (apenas modo detalhado) */}
+                                {viewMode === 'detailed' && (
+                                  <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                                    {ticket.descricao}
+                                  </p>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
+                              
+                              <div className="flex items-start gap-2 shrink-0">
                                 {getStatusBadge(ticket.status)}
-                                <span className={cn(
-                                  "text-xs px-2 py-1 rounded text-white font-medium",
-                                  ticket.nivel_criticidade === 'P0' && "bg-red-500",
-                                  ticket.nivel_criticidade === 'P1' && "bg-orange-500", 
-                                  ticket.nivel_criticidade === 'P2' && "bg-yellow-500",
-                                  ticket.nivel_criticidade === 'P3' && "bg-blue-500"
+                                <Badge className={cn(
+                                  "text-xs font-medium",
+                                  ticket.nivel_criticidade === 'P0' && "bg-destructive text-destructive-foreground",
+                                  ticket.nivel_criticidade === 'P1' && "bg-orange-500 text-white", 
+                                  ticket.nivel_criticidade === 'P2' && "bg-yellow-500 text-white",
+                                  ticket.nivel_criticidade === 'P3' && "bg-blue-500 text-white"
                                 )}>
                                   {ticket.nivel_criticidade}
-                                </span>
+                                </Badge>
                               </div>
                             </div>
 
-                            {/* Tempo até vencer (se houver) */}
+                            {/* Status de tempo */}
                             {timeStatus && (
                               <div className="text-center">
-                                <span className={cn(
-                                  "text-xs px-3 py-1 rounded-full font-medium",
-                                  timeStatus.isOverdue ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"
-                                )}>
-                                  {timeStatus.isOverdue ? "⏰ Atrasado" : "⏳"} {timeStatus.text}
-                                </span>
+                                <Badge variant={timeStatus.isOverdue ? "destructive" : "secondary"} className="text-xs">
+                                  {timeStatus.isOverdue ? "⏰ " : "⏳ "}
+                                  {timeStatus.text}
+                                </Badge>
                               </div>
                             )}
 
-                            {/* Tags clean */}
+                            {/* Tags */}
                             {ticket.tags && ticket.tags.length > 0 && (
-                              <div className="flex gap-1 flex-wrap">
-                                {ticket.tags.slice(0, viewMode === 'compact' ? 2 : 4).map((tag: string, index: number) => (
-                                  <span key={index} className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                              <div className="flex flex-wrap gap-1">
+                                {ticket.tags.slice(0, viewMode === 'compact' ? 3 : 5).map((tag: string, index: number) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
                                     {tag}
-                                  </span>
+                                  </Badge>
                                 ))}
-                                {ticket.tags.length > (viewMode === 'compact' ? 2 : 4) && (
-                                  <span className="text-xs px-2 py-1 bg-gray-100 text-gray-500 rounded">
-                                    +{ticket.tags.length - (viewMode === 'compact' ? 2 : 4)}
-                                  </span>
+                                {ticket.tags.length > (viewMode === 'compact' ? 3 : 5) && (
+                                  <Badge variant="outline" className="text-xs text-muted-foreground">
+                                    +{ticket.tags.length - (viewMode === 'compact' ? 3 : 5)}
+                                  </Badge>
                                 )}
                               </div>
                             )}
                             
-                            {/* Descrição (modo detalhado) */}
-                            {viewMode === 'detailed' && (
-                              <p className="text-sm text-gray-600 leading-relaxed">
-                                {ticket.descricao}
-                              </p>
-                            )}
-                            
-                            {/* Info grid clean */}
+                            {/* Grid de informações */}
                             <div className={cn(
                               "grid gap-4 text-sm",
-                              viewMode === 'compact' ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-4"
+                              viewMode === 'compact' ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
                             )}>
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-sm font-medium text-gray-600">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarFallback className="text-xs">
                                     {ticket.solicitante.charAt(0).toUpperCase()}
-                                  </span>
-                                </div>
+                                  </AvatarFallback>
+                                </Avatar>
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-xs text-gray-500 font-medium">Solicitante</p>
-                                  <p className="font-medium text-gray-900 truncate" title={ticket.solicitante}>
+                                  <p className="text-xs text-muted-foreground font-medium">Solicitante</p>
+                                  <p className="font-medium text-foreground truncate" title={ticket.solicitante}>
                                     {ticket.solicitante}
                                   </p>
                                 </div>
                               </div>
                               
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                  <User className="h-4 w-4 text-blue-600" />
+                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                  <User className="h-4 w-4 text-primary" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-xs text-gray-500 font-medium">Responsável</p>
-                                  <p className="font-medium text-gray-900 truncate" title={ticket.time_responsavel}>
+                                  <p className="text-xs text-muted-foreground font-medium">Time Responsável</p>
+                                  <p className="font-medium text-foreground truncate" title={ticket.time_responsavel}>
                                     {ticket.time_responsavel}
                                   </p>
                                 </div>
@@ -890,21 +891,21 @@ export default function Inbox() {
                               {viewMode === 'detailed' && (
                                 <>
                                   <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                    <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
                                       <span className="text-sm font-bold text-green-600">🎯</span>
                                     </div>
-                                    <div>
-                                      <p className="text-xs text-gray-500 font-medium">Pontuação</p>
+                                    <div className="min-w-0">
+                                      <p className="text-xs text-muted-foreground font-medium">Pontuação</p>
                                       <p className="font-bold text-green-600">{ticket.pontuacao_total} pts</p>
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                                    <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
                                       <Clock className="h-4 w-4 text-purple-600" />
                                     </div>
-                                    <div>
-                                      <p className="text-xs text-gray-500 font-medium">SLA</p>
-                                      <p className="text-sm text-gray-600">{getTempoMedioResolucao(ticket.nivel_criticidade)}</p>
+                                    <div className="min-w-0">
+                                      <p className="text-xs text-muted-foreground font-medium">SLA</p>
+                                      <p className="text-sm text-muted-foreground truncate">{getTempoMedioResolucao(ticket.nivel_criticidade)}</p>
                                     </div>
                                   </div>
                                 </>
@@ -912,8 +913,8 @@ export default function Inbox() {
                             </div>
                             
                             {/* Footer */}
-                            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                              <span className="text-xs text-gray-500">
+                            <div className="flex items-center justify-between pt-4 border-t border-border">
+                              <span className="text-xs text-muted-foreground">
                                 {format(new Date(ticket.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                               </span>
                               
@@ -921,37 +922,46 @@ export default function Inbox() {
                               {viewMode === 'detailed' && (userRole === 'super_admin' || userRole === 'operador') && (
                                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                   {ticket.status === 'aberto' && (
-                                    <button
-                                      className="text-xs px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                                    <Button
+                                      size="sm"
+                                      variant="outline" 
+                                      className="text-xs h-7"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         updateTicketStatus(ticket.id, 'em_andamento');
                                       }}
                                     >
-                                      ▶️ Iniciar
-                                    </button>
+                                      <Play className="h-3 w-3 mr-1" />
+                                      Iniciar
+                                    </Button>
                                   )}
                                   
                                   {ticket.status === 'em_andamento' && (
                                     <>
-                                      <button
-                                        className="text-xs px-3 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200"
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-xs h-7"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           updateTicketStatus(ticket.id, 'pausado');
                                         }}
                                       >
-                                        ⏸️ Pausar
-                                      </button>
-                                      <button
-                                        className="text-xs px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                                        <Pause className="h-3 w-3 mr-1" />
+                                        Pausar
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="default"
+                                        className="text-xs h-7"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           updateTicketStatus(ticket.id, 'resolvido');
                                         }}
                                       >
-                                        ✅ Resolver
-                                      </button>
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                        Resolver
+                                      </Button>
                                     </>
                                   )}
                                 </div>
