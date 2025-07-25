@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Palette, Save, RotateCcw, Clock, AlertTriangle } from "lucide-react";
+import { Palette, Save, RotateCcw, Clock, AlertTriangle, Sparkles } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { cn } from "@/lib/utils";
 
@@ -17,11 +17,13 @@ interface ColorData {
   name: string;
 }
 
-interface ColorHistoryItem {
+interface ColorCombination {
   id: string;
-  color_hsl: string;
-  color_hex: string;
-  color_name: string;
+  primary_color_hsl: string;
+  primary_color_hex: string;
+  secondary_color_hsl: string;
+  secondary_color_hex: string;
+  combination_name: string;
   used_at: string;
 }
 
@@ -33,8 +35,14 @@ export default function Customization() {
     hex: "#16a34a", 
     name: "Verde Padrão"
   });
+  const [currentSecondaryColor, setCurrentSecondaryColor] = useState<ColorData>({
+    hsl: "262 83% 58%",
+    hex: "#8b5cf6",
+    name: "Roxo Padrão"
+  });
   const [previewColor, setPreviewColor] = useState<ColorData>(currentColor);
-  const [colorHistory, setColorHistory] = useState<ColorHistoryItem[]>([]);
+  const [previewSecondaryColor, setPreviewSecondaryColor] = useState<ColorData>(currentSecondaryColor);
+  const [colorCombinations, setColorCombinations] = useState<ColorCombination[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -42,12 +50,15 @@ export default function Customization() {
   useEffect(() => {
     loadUserRole();
     loadCurrentSettings();
-    loadColorHistory();
+    loadColorCombinations();
   }, [user]);
 
   useEffect(() => {
-    setHasChanges(previewColor.hex !== currentColor.hex);
-  }, [previewColor, currentColor]);
+    setHasChanges(
+      previewColor.hex !== currentColor.hex || 
+      previewSecondaryColor.hex !== currentSecondaryColor.hex
+    );
+  }, [previewColor, currentColor, previewSecondaryColor, currentSecondaryColor]);
 
   const loadUserRole = async () => {
     if (!user) return;
@@ -73,20 +84,36 @@ export default function Customization() {
 
   const loadCurrentSettings = async () => {
     try {
-      const { data, error } = await supabase
+      // Carregar cor primária
+      const { data: primaryData, error: primaryError } = await supabase
         .from('system_settings')
         .select('setting_value')
         .eq('setting_key', 'primary_color')
         .single();
 
-      if (error) throw error;
+      if (primaryError) throw primaryError;
       
-      if (data) {
-        const colorData = data.setting_value as unknown as ColorData;
+      if (primaryData) {
+        const colorData = primaryData.setting_value as unknown as ColorData;
         setCurrentColor(colorData);
         setPreviewColor(colorData);
-        // Aplicar cor atual no preview
-        applyPreviewColor(colorData.hsl);
+        applyPreviewColors(colorData.hsl, previewSecondaryColor.hsl);
+      }
+
+      // Carregar cor secundária
+      const { data: secondaryData, error: secondaryError } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('setting_key', 'secondary_color')
+        .single();
+
+      if (secondaryError) throw secondaryError;
+      
+      if (secondaryData) {
+        const colorData = secondaryData.setting_value as unknown as ColorData;
+        setCurrentSecondaryColor(colorData);
+        setPreviewSecondaryColor(colorData);
+        applyPreviewColors(previewColor.hsl, colorData.hsl);
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
@@ -95,18 +122,18 @@ export default function Customization() {
     }
   };
 
-  const loadColorHistory = async () => {
+  const loadColorCombinations = async () => {
     try {
       const { data, error } = await supabase
-        .from('color_history')
+        .from('color_combinations')
         .select('*')
         .order('used_at', { ascending: false })
         .limit(5);
 
       if (error) throw error;
-      setColorHistory(data || []);
+      setColorCombinations(data || []);
     } catch (error) {
-      console.error('Erro ao carregar histórico:', error);
+      console.error('Erro ao carregar combinações:', error);
     }
   };
 
@@ -134,28 +161,40 @@ export default function Customization() {
     return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
   };
 
-  const applyPreviewColor = (hslColor: string) => {
-    document.documentElement.style.setProperty('--primary', hslColor);
+  const applyPreviewColors = (primaryHsl: string, secondaryHsl: string) => {
+    document.documentElement.style.setProperty('--primary', primaryHsl);
+    document.documentElement.style.setProperty('--secondary', secondaryHsl);
   };
 
-  const handleColorChange = (hex: string) => {
+  const handlePrimaryColorChange = (hex: string) => {
     const hsl = hexToHsl(hex);
     const newColor = {
       hsl,
       hex,
-      name: `Cor Personalizada`
+      name: 'Cor Primária Personalizada'
     };
     setPreviewColor(newColor);
-    applyPreviewColor(hsl);
+    applyPreviewColors(hsl, previewSecondaryColor.hsl);
   };
 
-  const saveColor = async () => {
+  const handleSecondaryColorChange = (hex: string) => {
+    const hsl = hexToHsl(hex);
+    const newColor = {
+      hsl,
+      hex,
+      name: 'Cor Secundária Personalizada'
+    };
+    setPreviewSecondaryColor(newColor);
+    applyPreviewColors(previewColor.hsl, hsl);
+  };
+
+  const saveColors = async () => {
     if (!user || userRole !== 'super_admin') return;
     
     setSaving(true);
     try {
-      // Salvar configuração principal
-      const { error: settingsError } = await supabase
+      // Salvar cor primária
+      const { error: primaryError } = await supabase
         .from('system_settings')
         .upsert({
           setting_key: 'primary_color',
@@ -163,30 +202,44 @@ export default function Customization() {
           updated_by: user.id
         });
 
-      if (settingsError) throw settingsError;
+      if (primaryError) throw primaryError;
 
-      // Adicionar ao histórico
-      const { error: historyError } = await supabase
-        .from('color_history')
+      // Salvar cor secundária
+      const { error: secondaryError } = await supabase
+        .from('system_settings')
+        .upsert({
+          setting_key: 'secondary_color',
+          setting_value: previewSecondaryColor as any,
+          updated_by: user.id
+        });
+
+      if (secondaryError) throw secondaryError;
+
+      // Adicionar combinação ao histórico
+      const { error: combinationError } = await supabase
+        .from('color_combinations')
         .insert({
-          color_hsl: previewColor.hsl,
-          color_hex: previewColor.hex,
-          color_name: previewColor.name,
+          primary_color_hsl: previewColor.hsl,
+          primary_color_hex: previewColor.hex,
+          secondary_color_hsl: previewSecondaryColor.hsl,
+          secondary_color_hex: previewSecondaryColor.hex,
+          combination_name: `${previewColor.name} + ${previewSecondaryColor.name}`,
           used_by: user.id
         });
 
-      if (historyError) throw historyError;
+      if (combinationError) throw combinationError;
 
       setCurrentColor(previewColor);
+      setCurrentSecondaryColor(previewSecondaryColor);
       setHasChanges(false);
-      await loadColorHistory();
+      await loadColorCombinations();
       
-      toast.success("✅ Cor salva com sucesso!", {
-        description: "A nova cor primária foi aplicada ao sistema."
+      toast.success("✅ Cores salvas com sucesso!", {
+        description: "As novas cores foram aplicadas ao sistema."
       });
     } catch (error) {
-      console.error('Erro ao salvar cor:', error);
-      toast.error("Erro ao salvar cor", {
+      console.error('Erro ao salvar cores:', error);
+      toast.error("Erro ao salvar cores", {
         description: "Tente novamente."
       });
     } finally {
@@ -194,20 +247,27 @@ export default function Customization() {
     }
   };
 
-  const revertColor = () => {
+  const revertColors = () => {
     setPreviewColor(currentColor);
-    applyPreviewColor(currentColor.hsl);
+    setPreviewSecondaryColor(currentSecondaryColor);
+    applyPreviewColors(currentColor.hsl, currentSecondaryColor.hsl);
     setHasChanges(false);
   };
 
-  const selectHistoryColor = (historyItem: ColorHistoryItem) => {
-    const colorData = {
-      hsl: historyItem.color_hsl,
-      hex: historyItem.color_hex,
-      name: historyItem.color_name
+  const selectCombination = (combination: ColorCombination) => {
+    const primaryData = {
+      hsl: combination.primary_color_hsl,
+      hex: combination.primary_color_hex,
+      name: 'Cor Primária do Histórico'
     };
-    setPreviewColor(colorData);
-    applyPreviewColor(colorData.hsl);
+    const secondaryData = {
+      hsl: combination.secondary_color_hsl,
+      hex: combination.secondary_color_hex,
+      name: 'Cor Secundária do Histórico'
+    };
+    setPreviewColor(primaryData);
+    setPreviewSecondaryColor(secondaryData);
+    applyPreviewColors(primaryData.hsl, secondaryData.hsl);
   };
 
   if (loading) {
@@ -249,13 +309,14 @@ export default function Customization() {
               Personalização do Sistema
             </h1>
             <p className="text-muted-foreground">
-              Customize as cores e o visual do seu SaaS. As mudanças são aplicadas em tempo real.
+              Customize as cores primária e secundária do seu SaaS. As mudanças são aplicadas em tempo real.
             </p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Painel de Configuração */}
             <div className="space-y-6">
+              {/* Cor Primária */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -265,19 +326,19 @@ export default function Customization() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="color-picker">Selecionar Cor</Label>
+                    <Label htmlFor="primary-color-picker">Selecionar Cor Primária</Label>
                     <div className="flex items-center gap-4">
                       <Input
-                        id="color-picker"
+                        id="primary-color-picker"
                         type="color"
                         value={previewColor.hex}
-                        onChange={(e) => handleColorChange(e.target.value)}
+                        onChange={(e) => handlePrimaryColorChange(e.target.value)}
                         className="w-20 h-12 p-1 border rounded cursor-pointer"
                       />
                       <div className="flex-1">
                         <Input
                           value={previewColor.hex}
-                          onChange={(e) => handleColorChange(e.target.value)}
+                          onChange={(e) => handlePrimaryColorChange(e.target.value)}
                           placeholder="#16a34a"
                           className="font-mono"
                         />
@@ -287,10 +348,50 @@ export default function Customization() {
                       </div>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
 
-                  <div className="flex gap-3 pt-4">
+              {/* Cor Secundária */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5" />
+                    Cor Secundária (Gradients)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="secondary-color-picker">Selecionar Cor Secundária</Label>
+                    <div className="flex items-center gap-4">
+                      <Input
+                        id="secondary-color-picker"
+                        type="color"
+                        value={previewSecondaryColor.hex}
+                        onChange={(e) => handleSecondaryColorChange(e.target.value)}
+                        className="w-20 h-12 p-1 border rounded cursor-pointer"
+                      />
+                      <div className="flex-1">
+                        <Input
+                          value={previewSecondaryColor.hex}
+                          onChange={(e) => handleSecondaryColorChange(e.target.value)}
+                          placeholder="#8b5cf6"
+                          className="font-mono"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          HSL: {previewSecondaryColor.hsl}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Controles */}
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex gap-3">
                     <Button 
-                      onClick={saveColor}
+                      onClick={saveColors}
                       disabled={!hasChanges || saving}
                       className="flex-1"
                     >
@@ -299,7 +400,7 @@ export default function Customization() {
                     </Button>
                     <Button 
                       variant="outline"
-                      onClick={revertColor}
+                      onClick={revertColors}
                       disabled={!hasChanges}
                     >
                       <RotateCcw className="h-4 w-4 mr-2" />
@@ -308,44 +409,52 @@ export default function Customization() {
                   </div>
 
                   {hasChanges && (
-                    <div className="text-center text-sm text-muted-foreground">
+                    <div className="text-center text-sm text-muted-foreground mt-4">
                       ⚠️ Você tem alterações não salvas
                     </div>
                   )}
                 </CardContent>
               </Card>
 
-              {/* Histórico de Cores */}
+              {/* Combinações Recentes */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Clock className="h-5 w-5" />
-                    Cores Recentes
+                    Combinações Recentes
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {colorHistory.length === 0 ? (
+                    {colorCombinations.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-4">
-                        Nenhuma cor salva ainda
+                        Nenhuma combinação salva ainda
                       </p>
                     ) : (
-                      colorHistory.map((item) => (
+                      colorCombinations.map((combination) => (
                         <div
-                          key={item.id}
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer transition-colors"
-                          onClick={() => selectHistoryColor(item)}
+                          key={combination.id}
+                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors border"
+                          onClick={() => selectCombination(combination)}
                         >
-                          <div 
-                            className="w-8 h-8 rounded border"
-                            style={{ backgroundColor: item.color_hex }}
-                          />
+                          <div className="flex gap-1">
+                            <div 
+                              className="w-6 h-6 rounded border"
+                              style={{ backgroundColor: combination.primary_color_hex }}
+                            />
+                            <div 
+                              className="w-6 h-6 rounded border"
+                              style={{ backgroundColor: combination.secondary_color_hex }}
+                            />
+                          </div>
                           <div className="flex-1">
-                            <p className="text-sm font-medium">{item.color_name}</p>
-                            <p className="text-xs text-muted-foreground">{item.color_hex}</p>
+                            <p className="text-sm font-medium">{combination.combination_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {combination.primary_color_hex} + {combination.secondary_color_hex}
+                            </p>
                           </div>
                           <Badge variant="outline" className="text-xs">
-                            {new Date(item.used_at).toLocaleDateString('pt-BR')}
+                            {new Date(combination.used_at).toLocaleDateString('pt-BR')}
                           </Badge>
                         </div>
                       ))
@@ -362,10 +471,16 @@ export default function Customization() {
                   <CardTitle>👁️ Preview em Tempo Real</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div>
-                      <Label className="text-sm font-medium">Botões Primários</Label>
+                      <Label className="text-sm font-medium">Botões com Gradiente</Label>
                       <div className="flex gap-2 mt-2">
+                        <Button 
+                          size="sm" 
+                          className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
+                        >
+                          Botão Gradiente
+                        </Button>
                         <Button size="sm">Botão Principal</Button>
                         <Button size="sm" variant="outline">Outline</Button>
                       </div>
@@ -373,31 +488,58 @@ export default function Customization() {
 
                     <div>
                       <Label className="text-sm font-medium">Badges e Tags</Label>
-                      <div className="flex gap-2 mt-2">
-                        <Badge>Ativo</Badge>
-                        <Badge variant="secondary">Secundário</Badge>
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        <Badge className="bg-primary">Primária</Badge>
+                        <Badge className="bg-secondary">Secundária</Badge>
+                        <Badge className="bg-gradient-to-r from-primary to-secondary text-white">Gradiente</Badge>
+                        <Badge variant="outline" className="border-primary">Contorno</Badge>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm font-medium">Cards com Destaque</Label>
+                      <div className="space-y-2 mt-2">
+                        <Card className="border-l-4 border-l-primary">
+                          <CardContent className="p-3">
+                            <h4 className="font-medium text-sm">Card Primário</h4>
+                            <p className="text-xs text-muted-foreground">
+                              Com borda da cor primária
+                            </p>
+                          </CardContent>
+                        </Card>
+                        <Card className="border-l-4 border-l-secondary">
+                          <CardContent className="p-3">
+                            <h4 className="font-medium text-sm">Card Secundário</h4>
+                            <p className="text-xs text-muted-foreground">
+                              Com borda da cor secundária
+                            </p>
+                          </CardContent>
+                        </Card>
+                        <Card className="bg-gradient-to-r from-primary/10 to-secondary/10">
+                          <CardContent className="p-3">
+                            <h4 className="font-medium text-sm">Card Gradiente</h4>
+                            <p className="text-xs text-muted-foreground">
+                              Com fundo gradiente sutil
+                            </p>
+                          </CardContent>
+                        </Card>
                       </div>
                     </div>
 
                     <div>
                       <Label className="text-sm font-medium">Links e Textos</Label>
-                      <div className="mt-2">
-                        <a href="#" className="text-primary hover:underline text-sm">
-                          Link com cor primária
-                        </a>
+                      <div className="mt-2 space-y-1">
+                        <div>
+                          <a href="#" className="text-primary hover:underline text-sm">
+                            Link com cor primária
+                          </a>
+                        </div>
+                        <div>
+                          <a href="#" className="text-secondary hover:underline text-sm">
+                            Link com cor secundária
+                          </a>
+                        </div>
                       </div>
-                    </div>
-
-                    <div>
-                      <Label className="text-sm font-medium">Cards</Label>
-                      <Card className="mt-2 border-l-4 border-l-primary">
-                        <CardContent className="p-3">
-                          <h4 className="font-medium text-sm">Card de Exemplo</h4>
-                          <p className="text-xs text-muted-foreground">
-                            Este card mostra como fica com a nova cor
-                          </p>
-                        </CardContent>
-                      </Card>
                     </div>
                   </div>
                 </CardContent>
@@ -408,11 +550,13 @@ export default function Customization() {
                   <CardTitle>ℹ️ Informações</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                  <p><strong>Cor Atual:</strong> {currentColor.name}</p>
-                  <p><strong>Preview:</strong> {previewColor.name}</p>
+                  <p><strong>Cor Primária Atual:</strong> {currentColor.name}</p>
+                  <p><strong>Cor Secundária Atual:</strong> {currentSecondaryColor.name}</p>
+                  <p><strong>Preview Primário:</strong> {previewColor.name}</p>
+                  <p><strong>Preview Secundário:</strong> {previewSecondaryColor.name}</p>
                   <p className="text-muted-foreground">
-                    💡 As alterações são aplicadas instantaneamente no preview, 
-                    mas só afetam todo o sistema após salvar.
+                    💡 As alterações são aplicadas instantaneamente no preview. 
+                    Use gradientes e combinações para criar um visual moderno e elegante.
                   </p>
                 </CardContent>
               </Card>

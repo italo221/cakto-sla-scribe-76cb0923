@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      color_combinations: {
+        Row: {
+          combination_name: string | null
+          id: string
+          primary_color_hex: string
+          primary_color_hsl: string
+          secondary_color_hex: string
+          secondary_color_hsl: string
+          used_at: string
+          used_by: string | null
+        }
+        Insert: {
+          combination_name?: string | null
+          id?: string
+          primary_color_hex: string
+          primary_color_hsl: string
+          secondary_color_hex: string
+          secondary_color_hsl: string
+          used_at?: string
+          used_by?: string | null
+        }
+        Update: {
+          combination_name?: string | null
+          id?: string
+          primary_color_hex?: string
+          primary_color_hsl?: string
+          secondary_color_hex?: string
+          secondary_color_hsl?: string
+          used_at?: string
+          used_by?: string | null
+        }
+        Relationships: []
+      }
       color_history: {
         Row: {
           color_hex: string
