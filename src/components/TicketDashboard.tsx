@@ -908,73 +908,111 @@ export default function SLADashboard() {
   // Render do Modo TV
   if (isTVMode) {
     return (
-      <div className="fixed inset-0 bg-gray-900 text-white overflow-hidden">
-        {/* Botão para sair do modo TV */}
+      <div className="fixed inset-0 bg-background overflow-auto">
+        {/* Botão para sair do modo TV - fixo no canto superior direito */}
         <button
           onClick={toggleTVMode}
-          className="absolute top-4 right-4 z-50 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full transition-colors"
+          className="fixed top-6 right-6 z-50 bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg shadow-lg transition-all hover:shadow-xl font-medium text-lg flex items-center gap-2"
         >
-          <X className="w-6 h-6" />
+          <X className="w-5 h-5" />
+          ⏎ Sair do Modo TV
         </button>
 
         {/* Faixa de alerta para tickets críticos */}
         {getCriticalSLAs().length > 0 && (
-          <div className="bg-red-600 text-white p-4 text-center animate-pulse">
-            <div className="flex items-center justify-center gap-2 text-2xl font-bold">
-              <AlertTriangle className="w-8 h-8" />
+          <div className="bg-red-50 border-l-4 border-red-400 text-red-800 p-6 mx-8 mt-6 rounded-r-lg shadow-sm">
+            <div className="flex items-center justify-center gap-3 text-2xl font-bold">
+              <AlertTriangle className="w-8 h-8 text-red-500" />
               ATENÇÃO: {getCriticalSLAs().length} TICKET{getCriticalSLAs().length > 1 ? 'S' : ''} CRÍTICO{getCriticalSLAs().length > 1 ? 'S' : ''}
-              <AlertTriangle className="w-8 h-8" />
+              <AlertTriangle className="w-8 h-8 text-red-500" />
             </div>
           </div>
         )}
 
         {/* Conteúdo principal do modo TV */}
-        <div className="p-8 h-full">
+        <div className="p-8 pb-20">
           {tvCurrentView === 'overview' ? (
             // Visão Geral
-            <div className="h-full flex flex-col">
-              <h1 className="text-6xl font-bold text-center mb-8 text-blue-400">
-                Dashboard SLA - Visão Geral
-              </h1>
+            <div className="max-w-7xl mx-auto space-y-8">
+              <div className="text-center mb-12">
+                <h1 className="text-6xl font-bold text-foreground mb-4">
+                  Dashboard SLA
+                </h1>
+                <p className="text-2xl text-muted-foreground">Visão Geral</p>
+              </div>
               
-              {/* KPIs principais */}
-              <div className="grid grid-cols-4 gap-8 mb-8">
-                <div className="bg-gray-800 p-8 rounded-lg text-center border-l-4 border-blue-500">
-                  <div className="text-5xl font-bold text-blue-400 mb-2">{metrics.total}</div>
-                  <div className="text-2xl text-gray-300">Total SLAs</div>
+              {/* KPIs principais - Topo */}
+              <div className="grid grid-cols-4 gap-8 mb-12">
+                <div className="bg-card p-8 rounded-2xl shadow-lg border border-border hover:shadow-xl transition-shadow">
+                  <div className="text-center">
+                    <div className="text-6xl font-bold text-blue-600 mb-3">{metrics.total}</div>
+                    <div className="text-2xl font-medium text-muted-foreground">Total SLAs</div>
+                  </div>
                 </div>
-                <div className="bg-gray-800 p-8 rounded-lg text-center border-l-4 border-green-500">
-                  <div className="text-5xl font-bold text-green-400 mb-2">{metrics.resolvidos}</div>
-                  <div className="text-2xl text-gray-300">Resolvidos</div>
+                <div className="bg-card p-8 rounded-2xl shadow-lg border border-border hover:shadow-xl transition-shadow">
+                  <div className="text-center">
+                    <div className="text-6xl font-bold text-green-600 mb-3">{metrics.resolvidos}</div>
+                    <div className="text-2xl font-medium text-muted-foreground">Resolvidos</div>
+                  </div>
                 </div>
-                <div className="bg-gray-800 p-8 rounded-lg text-center border-l-4 border-yellow-500">
-                  <div className="text-5xl font-bold text-yellow-400 mb-2">{metrics.abertos}</div>
-                  <div className="text-2xl text-gray-300">Em Aberto</div>
+                <div className="bg-card p-8 rounded-2xl shadow-lg border border-border hover:shadow-xl transition-shadow">
+                  <div className="text-center">
+                    <div className="text-6xl font-bold text-yellow-600 mb-3">{metrics.abertos}</div>
+                    <div className="text-2xl font-medium text-muted-foreground">Em Aberto</div>
+                  </div>
                 </div>
-                <div className="bg-gray-800 p-8 rounded-lg text-center border-l-4 border-red-500">
-                  <div className="text-5xl font-bold text-red-400 mb-2">{metrics.atrasados}</div>
-                  <div className="text-2xl text-gray-300">Atrasados</div>
+                <div className="bg-card p-8 rounded-2xl shadow-lg border border-border hover:shadow-xl transition-shadow">
+                  <div className="text-center">
+                    <div className="text-6xl font-bold text-red-600 mb-3">{metrics.atrasados}</div>
+                    <div className="text-2xl font-medium text-muted-foreground">Atrasados</div>
+                  </div>
                 </div>
               </div>
 
-              {/* Cumprimento de SLA */}
-              <div className="bg-gray-800 p-8 rounded-lg text-center mb-8">
-                <div className="text-4xl font-bold mb-4 text-gray-300">Cumprimento de SLA</div>
-                <div className={`text-7xl font-bold ${(metrics.cumprimento || 0) >= 80 ? 'text-green-400' : (metrics.cumprimento || 0) >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
-                  {(metrics.cumprimento || 0).toFixed(1)}%
+              {/* Cumprimento de SLA - Meio */}
+              <div className="bg-card p-12 rounded-2xl shadow-lg border border-border mb-12">
+                <div className="text-center">
+                  <h2 className="text-4xl font-bold mb-8 text-foreground">Cumprimento de SLA</h2>
+                  <div className="mb-8">
+                    <div className={`text-8xl font-bold mb-4 ${(metrics.cumprimento || 0) >= 80 ? 'text-green-600' : (metrics.cumprimento || 0) >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      {(metrics.cumprimento || 0).toFixed(1)}%
+                    </div>
+                  </div>
+                  
+                  {/* Barra visual do cumprimento */}
+                  <div className="w-full bg-gray-200 rounded-full h-6 mb-6">
+                    <div 
+                      className={`h-6 rounded-full transition-all duration-1000 ${(metrics.cumprimento || 0) >= 80 ? 'bg-green-500' : (metrics.cumprimento || 0) >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                      style={{ width: `${Math.min(metrics.cumprimento || 0, 100)}%` }}
+                    ></div>
+                  </div>
+                  
+                  <p className="text-xl text-muted-foreground">
+                    {metrics.resolvidos + metrics.fechados} de {metrics.total} SLAs resolvidos
+                  </p>
                 </div>
               </div>
 
-              {/* Tickets críticos em destaque */}
+              {/* Tickets críticos - Base */}
               {getCriticalSLAs().length > 0 && (
-                <div className="bg-red-900 p-6 rounded-lg">
-                  <h3 className="text-3xl font-bold mb-4 text-red-300">Tickets Críticos</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="bg-red-50 border border-red-200 p-8 rounded-2xl shadow-lg">
+                  <h3 className="text-3xl font-bold mb-6 text-red-800 text-center flex items-center justify-center gap-3">
+                    <AlertCircle className="w-8 h-8" />
+                    Tickets Críticos
+                  </h3>
+                  <div className="grid grid-cols-2 gap-6">
                     {getCriticalSLAs().slice(0, 4).map((sla) => (
-                      <div key={sla.id} className="bg-red-800 p-4 rounded-lg">
-                        <div className="text-xl font-semibold text-white">{sla.titulo}</div>
-                        <div className="text-lg text-red-200">Time: {sla.time_responsavel}</div>
-                        <div className="text-lg text-red-200">Criticidade: {sla.nivel_criticidade}</div>
+                      <div key={sla.id} className="bg-white border border-red-200 p-6 rounded-xl shadow-sm">
+                        <div className="space-y-3">
+                          <div className="text-xl font-semibold text-gray-900">{sla.titulo}</div>
+                          <div className="text-lg text-gray-700">
+                            <span className="font-medium">Time:</span> {sla.time_responsavel}
+                          </div>
+                          <div className="text-lg text-gray-700">
+                            <span className="font-medium">Criticidade:</span> 
+                            <Badge variant="destructive" className="ml-2">{sla.nivel_criticidade}</Badge>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -983,36 +1021,39 @@ export default function SLADashboard() {
             </div>
           ) : (
             // Visão por Times
-            <div className="h-full flex flex-col">
-              <h1 className="text-6xl font-bold text-center mb-8 text-blue-400">
-                Dashboard SLA - Visão por Times
-              </h1>
+            <div className="max-w-7xl mx-auto space-y-8">
+              <div className="text-center mb-12">
+                <h1 className="text-6xl font-bold text-foreground mb-4">
+                  Dashboard SLA
+                </h1>
+                <p className="text-2xl text-muted-foreground">Visão por Times</p>
+              </div>
               
-              <div className="grid grid-cols-2 gap-8 flex-1">
-                {getDetailedTimeData().map((time, index) => (
-                  <div key={time.time} className="bg-gray-800 p-6 rounded-lg">
-                    <h3 className="text-3xl font-bold mb-4 text-blue-300">{time.time}</h3>
-                    <div className="grid grid-cols-2 gap-4 text-xl">
-                      <div>
-                        <div className="text-gray-300">Total:</div>
-                        <div className="text-3xl font-bold text-blue-400">{time.total}</div>
+              <div className="grid grid-cols-2 gap-8">
+                {getDetailedTimeData().slice(0, 6).map((time, index) => (
+                  <div key={time.time} className="bg-card p-8 rounded-2xl shadow-lg border border-border hover:shadow-xl transition-shadow">
+                    <h3 className="text-3xl font-bold mb-6 text-foreground text-center">{time.time}</h3>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="text-center">
+                        <div className="text-2xl text-muted-foreground mb-2">Total</div>
+                        <div className="text-4xl font-bold text-blue-600">{time.total}</div>
                       </div>
-                      <div>
-                        <div className="text-gray-300">Resolvidos:</div>
-                        <div className="text-3xl font-bold text-green-400">{time.resolvidos}</div>
+                      <div className="text-center">
+                        <div className="text-2xl text-muted-foreground mb-2">Resolvidos</div>
+                        <div className="text-4xl font-bold text-green-600">{time.resolvidos}</div>
                       </div>
-                      <div>
-                        <div className="text-gray-300">Abertos:</div>
-                        <div className="text-3xl font-bold text-yellow-400">{time.abertos}</div>
+                      <div className="text-center">
+                        <div className="text-2xl text-muted-foreground mb-2">Abertos</div>
+                        <div className="text-4xl font-bold text-yellow-600">{time.abertos}</div>
                       </div>
-                      <div>
-                        <div className="text-gray-300">Atrasados:</div>
-                        <div className="text-3xl font-bold text-red-400">{time.atrasados}</div>
+                      <div className="text-center">
+                        <div className="text-2xl text-muted-foreground mb-2">Atrasados</div>
+                        <div className="text-4xl font-bold text-red-600">{time.atrasados}</div>
                       </div>
                     </div>
-                    <div className="mt-4 pt-4 border-t border-gray-700">
-                      <div className="text-gray-300">SLA:</div>
-                      <div className={`text-3xl font-bold ${(time.cumprimento || 0) >= 80 ? 'text-green-400' : (time.cumprimento || 0) >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                    <div className="mt-8 pt-6 border-t border-border text-center">
+                      <div className="text-2xl text-muted-foreground mb-2">SLA</div>
+                      <div className={`text-4xl font-bold ${(time.cumprimento || 0) >= 80 ? 'text-green-600' : (time.cumprimento || 0) >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
                         {(time.cumprimento || 0).toFixed(1)}%
                       </div>
                     </div>
@@ -1021,15 +1062,29 @@ export default function SLADashboard() {
               </div>
             </div>
           )}
-          
-          {/* Indicador de auto-refresh */}
-          <div className="absolute bottom-4 left-4 text-gray-400 text-lg">
-            🔄 Atualização automática ativa
-          </div>
-          
-          {/* Indicador da view atual */}
-          <div className="absolute bottom-4 right-4 text-gray-400 text-lg">
-            {tvCurrentView === 'overview' ? '📊 Visão Geral' : '👥 Visão por Times'}
+        </div>
+        
+        {/* Footer fixo com indicadores */}
+        <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4">
+          <div className="flex justify-between items-center max-w-7xl mx-auto">
+            <div className="flex items-center gap-2 text-muted-foreground text-lg">
+              <Activity className="w-5 h-5" />
+              Atualização automática ativa (30s)
+            </div>
+            
+            <div className="flex items-center gap-2 text-muted-foreground text-lg">
+              {tvCurrentView === 'overview' ? (
+                <>
+                  <BarChart3 className="w-5 h-5" />
+                  Visão Geral
+                </>
+              ) : (
+                <>
+                  <Users className="w-5 h-5" />
+                  Visão por Times
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
