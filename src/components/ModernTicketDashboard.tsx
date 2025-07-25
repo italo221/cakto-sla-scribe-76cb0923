@@ -4,6 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Separator } from "@/components/ui/separator";
 import { 
   BarChart3,
   CheckCircle2, 
@@ -20,11 +25,19 @@ import {
   Activity,
   ArrowUp,
   ArrowDown,
-  Minus
+  Minus,
+  Filter,
+  Calendar as CalendarIcon,
+  Lightbulb,
+  AlertCircle,
+  CheckCircle,
+  Info
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   PieChart,
   Pie,
@@ -39,11 +52,18 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 
+type DateRange = '7dias' | '30dias' | 'mes_anterior' | 'personalizado';
+type ViewType = 'global' | 'time' | 'comparativo';
+type StatusFilter = 'todos' | 'abertos' | 'resolvidos' | 'atrasados';
+type PriorityFilter = 'todos' | 'P0' | 'P1' | 'P2' | 'P3';
+
 interface SLAMetrics {
   total: number;
   abertos: number;
   resolvidos: number;
   emAndamento: number;
+  pausados: number;
+  fechados: number;
   atrasados: number;
   cumprimento: number;
   previousTotal: number;
@@ -68,6 +88,14 @@ interface Setor {
   nome: string;
   descricao: string;
   ativo: boolean;
+}
+
+interface CriticalSLA {
+  id: string;
+  titulo: string;
+  nivel_criticidade: string;
+  time_responsavel: string;
+  diasAtrasado: number;
 }
 
 const PRIORITY_COLORS = {
@@ -290,6 +318,8 @@ export default function ModernSLADashboard() {
     abertos: 0,
     resolvidos: 0,
     emAndamento: 0,
+    pausados: 0,
+    fechados: 0,
     atrasados: 0,
     cumprimento: 0,
     previousTotal: 0,
@@ -301,7 +331,16 @@ export default function ModernSLADashboard() {
   const [slaData, setSlaData] = useState<SLAData[]>([]);
   const [setores, setSetores] = useState<Setor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRange, setSelectedRange] = useState<string>('30dias');
+  
+  // Filtros avançados
+  const [selectedRange, setSelectedRange] = useState<DateRange>('30dias');
+  const [customDateFrom, setCustomDateFrom] = useState<Date>();
+  const [customDateTo, setCustomDateTo] = useState<Date>();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('todos');
+  const [viewType, setViewType] = useState<ViewType>('global');
+  const [selectedTime, setSelectedTime] = useState<string>('all');
+  const [compareSelectedTimes, setCompareSelectedTimes] = useState<string[]>([]);
 
   // Ícones para diferentes times
   const getTeamIcon = (teamName: string) => {
@@ -330,7 +369,7 @@ export default function ModernSLADashboard() {
       fetchSetores();
       fetchSLAMetrics();
     }
-  }, [user, selectedRange]);
+  }, [user, selectedRange, customDateFrom, customDateTo, statusFilter, priorityFilter, viewType, selectedTime, compareSelectedTimes]);
 
   const fetchSetores = async () => {
     try {
@@ -372,6 +411,34 @@ export default function ModernSLADashboard() {
           previousEnd: trintaDiasAtras
         };
       
+      case 'mes_anterior':
+        const inicioMesAtual = new Date(now.getFullYear(), now.getMonth(), 1);
+        const inicioMesAnterior = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        return { 
+          start: inicioMesAnterior, 
+          end: inicioMesAtual,
+          previousStart: new Date(now.getFullYear(), now.getMonth() - 2, 1),
+          previousEnd: inicioMesAnterior
+        };
+      
+      case 'personalizado':
+        if (customDateFrom && customDateTo) {
+          const diffTime = customDateTo.getTime() - customDateFrom.getTime();
+          const previousStart = new Date(customDateFrom.getTime() - diffTime);
+          return { 
+            start: customDateFrom, 
+            end: customDateTo,
+            previousStart,
+            previousEnd: customDateFrom
+          };
+        }
+        return { 
+          start: today, 
+          end: now,
+          previousStart: new Date(today.getTime() - 24 * 60 * 60 * 1000),
+          previousEnd: today
+        };
+      
       default:
         return { 
           start: today, 
@@ -380,6 +447,37 @@ export default function ModernSLADashboard() {
           previousEnd: today
         };
     }
+  };
+
+  const getRangeLabel = () => {
+    switch (selectedRange) {
+      case '7dias': return 'Últimos 7 dias';
+      case '30dias': return 'Últimos 30 dias';
+      case 'mes_anterior': return 'Mês anterior';
+      case 'personalizado': 
+        if (customDateFrom && customDateTo) {
+          return `${format(customDateFrom, 'dd/MM')} - ${format(customDateTo, 'dd/MM')}`;
+        }
+        return 'Período personalizado';
+    }
+  };
+
+  const getFilteredTimeName = () => {
+    if (viewType === 'global') return 'Visão Geral';
+    if (viewType === 'comparativo') return 'Modo Comparativo';
+    if (selectedTime === 'all') return 'Todos os Times';
+    const timeSetor = setores.find(s => s.id === selectedTime);
+    return timeSetor ? timeSetor.nome : 'Time Desconhecido';
+  };
+
+  const canAccessTime = (setorId: string) => {
+    if (isSuperAdmin) return true;
+    return userSetores.some(us => us.setor_id === setorId);
+  };
+
+  const getAvailableTimes = () => {
+    if (isSuperAdmin) return setores;
+    return setores.filter(s => canAccessTime(s.id));
   };
 
   const fetchSLAMetrics = async () => {
@@ -404,13 +502,28 @@ export default function ModernSLADashboard() {
         .gte('data_criacao', previousStart.toISOString())
         .lte('data_criacao', previousEnd.toISOString());
 
-      // Aplicar filtros de acesso para não super admins
-      if (!isSuperAdmin) {
+      // Aplicar filtros de time
+      if (viewType === 'time' && selectedTime !== 'all') {
+        currentQuery = currentQuery.eq('setor_id', selectedTime);
+        previousQuery = previousQuery.eq('setor_id', selectedTime);
+      } else if (viewType === 'comparativo' && compareSelectedTimes.length > 0) {
+        currentQuery = currentQuery.in('setor_id', compareSelectedTimes);
+        previousQuery = previousQuery.in('setor_id', compareSelectedTimes);
+      } else if (!isSuperAdmin) {
         const timeIds = userSetores.map(us => us.setor_id);
         if (timeIds.length > 0) {
           currentQuery = currentQuery.in('setor_id', timeIds);
           previousQuery = previousQuery.in('setor_id', timeIds);
+        } else {
+          currentQuery = currentQuery.eq('setor_id', 'none');
+          previousQuery = previousQuery.eq('setor_id', 'none');
         }
+      }
+
+      // Aplicar filtro de prioridade
+      if (priorityFilter !== 'todos') {
+        currentQuery = currentQuery.eq('nivel_criticidade', priorityFilter);
+        previousQuery = previousQuery.eq('nivel_criticidade', priorityFilter);
       }
 
       const [currentResult, previousResult] = await Promise.all([
@@ -421,14 +534,45 @@ export default function ModernSLADashboard() {
       if (currentResult.error) throw currentResult.error;
       if (previousResult.error) throw previousResult.error;
 
-      const currentSlas = currentResult.data || [];
+      let currentSlas = currentResult.data || [];
       const previousSlas = previousResult.data || [];
+
+      // Aplicar filtro de status
+      if (statusFilter !== 'todos') {
+        if (statusFilter === 'abertos') {
+          currentSlas = currentSlas.filter(sla => sla.status === 'aberto' || sla.status === 'em_andamento' || sla.status === 'pausado');
+        } else if (statusFilter === 'resolvidos') {
+          currentSlas = currentSlas.filter(sla => sla.status === 'resolvido' || sla.status === 'fechado');
+        } else if (statusFilter === 'atrasados') {
+          const agora = new Date();
+          currentSlas = currentSlas.filter(sla => {
+            if (sla.status === 'resolvido' || sla.status === 'fechado') return false;
+            
+            if (sla.prazo_interno) {
+              return new Date(sla.prazo_interno) < agora;
+            }
+            
+            const dataCriacao = new Date(sla.data_criacao);
+            const horasLimite = {
+              'P0': 24,
+              'P1': 24, 
+              'P2': 72,
+              'P3': 168
+            }[sla.nivel_criticidade] || 24;
+            
+            const prazoCalculado = new Date(dataCriacao.getTime() + horasLimite * 60 * 60 * 1000);
+            return prazoCalculado < agora;
+          });
+        }
+      }
 
       // Calcular métricas
       const total = currentSlas.length;
       const abertos = currentSlas.filter(sla => sla.status === 'aberto').length;
       const resolvidos = currentSlas.filter(sla => sla.status === 'resolvido').length;
+      const fechados = currentSlas.filter(sla => sla.status === 'fechado').length;
       const emAndamento = currentSlas.filter(sla => sla.status === 'em_andamento').length;
+      const pausados = currentSlas.filter(sla => sla.status === 'pausado').length;
       
       // Calcular atrasos
       const agora = new Date();
@@ -466,6 +610,8 @@ export default function ModernSLADashboard() {
         abertos,
         resolvidos,
         emAndamento,
+        pausados,
+        fechados,
         atrasados,
         cumprimento,
         previousTotal,
@@ -511,6 +657,104 @@ export default function ModernSLADashboard() {
       .slice(0, 6);
   };
 
+  // SLAs críticos em destaque
+  const getCriticalSLAs = (): CriticalSLA[] => {
+    const agora = new Date();
+    return slaData
+      .filter(sla => {
+        if (sla.status === 'resolvido' || sla.status === 'fechado') return false;
+        if (sla.nivel_criticidade !== 'P0' && sla.nivel_criticidade !== 'P1') return false;
+        
+        if (sla.prazo_interno) {
+          return new Date(sla.prazo_interno) < agora;
+        }
+        
+        const dataCriacao = new Date(sla.data_criacao);
+        const prazoCalculado = new Date(dataCriacao.getTime() + 24 * 60 * 60 * 1000);
+        return prazoCalculado < agora;
+      })
+      .map(sla => {
+        const dataCriacao = new Date(sla.data_criacao);
+        const diasAtrasado = Math.floor((agora.getTime() - dataCriacao.getTime()) / (1000 * 60 * 60 * 24));
+        
+        return {
+          id: sla.id,
+          titulo: sla.titulo,
+          nivel_criticidade: sla.nivel_criticidade,
+          time_responsavel: sla.time_responsavel,
+          diasAtrasado
+        };
+      })
+      .sort((a, b) => b.diasAtrasado - a.diasAtrasado);
+  };
+
+  // Insights automáticos
+  const getAutomatedInsights = () => {
+    const insights: Array<{
+      type: 'success' | 'warning' | 'error' | 'info';
+      icon: any;
+      message: string;
+    }> = [];
+    
+    const criticosAtrasados = getCriticalSLAs().length;
+    
+    // Insight de cumprimento
+    if (metrics.cumprimento >= 95) {
+      insights.push({
+        type: 'success',
+        icon: CheckCircle,
+        message: `Excelente performance! ${metrics.cumprimento.toFixed(1)}% de cumprimento de SLA.`
+      });
+    } else if (metrics.cumprimento >= 80) {
+      insights.push({
+        type: 'warning',
+        icon: AlertTriangle,
+        message: `Performance boa, mas pode melhorar: ${metrics.cumprimento.toFixed(1)}% de cumprimento.`
+      });
+    } else {
+      insights.push({
+        type: 'error',
+        icon: AlertCircle,
+        message: `Atenção necessária: apenas ${metrics.cumprimento.toFixed(1)}% de cumprimento de SLA.`
+      });
+    }
+    
+    // Insight de SLAs críticos
+    if (criticosAtrasados === 0) {
+      insights.push({
+        type: 'success',
+        icon: Shield,
+        message: `Nenhum SLA crítico (P0/P1) em atraso.`
+      });
+    } else {
+      insights.push({
+        type: 'error',
+        icon: AlertTriangle,
+        message: `${criticosAtrasados} SLA${criticosAtrasados > 1 ? 's' : ''} crítico${criticosAtrasados > 1 ? 's' : ''} em atraso.`
+      });
+    }
+    
+    // Insight de tendência
+    const trendChange = metrics.cumprimento - metrics.previousCumprimento;
+    if (Math.abs(trendChange) > 5) {
+      if (trendChange > 0) {
+        insights.push({
+          type: 'success',
+          icon: TrendingUp,
+          message: `Melhoria de ${trendChange.toFixed(1)}% no cumprimento vs período anterior.`
+        });
+      } else {
+        insights.push({
+          type: 'warning',
+          icon: TrendingDown,
+          message: `Queda de ${Math.abs(trendChange).toFixed(1)}% no cumprimento vs período anterior.`
+        });
+      }
+    }
+    
+    return insights;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       <div className="max-w-7xl mx-auto p-8 space-y-8">
@@ -525,18 +769,257 @@ export default function ModernSLADashboard() {
                 Monitoramento em tempo real dos acordos de nível de serviço
               </p>
             </div>
-            <Select value={selectedRange} onValueChange={setSelectedRange}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7dias">Últimos 7 dias</SelectItem>
-                <SelectItem value="30dias">Últimos 30 dias</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
           <div className="h-px bg-gradient-to-r from-primary/20 via-primary/40 to-transparent" />
         </div>
+
+        {/* Filtros Avançados */}
+        <Card className="border-0 shadow-md">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Filter className="w-5 h-5 text-primary" />
+              Filtros Avançados
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {/* Período */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Período</Label>
+                <Select value={selectedRange} onValueChange={(value: DateRange) => setSelectedRange(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7dias">Últimos 7 dias</SelectItem>
+                    <SelectItem value="30dias">Últimos 30 dias</SelectItem>
+                    <SelectItem value="mes_anterior">Mês anterior</SelectItem>
+                    <SelectItem value="personalizado">Personalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Data customizada */}
+              {selectedRange === 'personalizado' && (
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Data inicial</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "justify-start text-left font-normal",
+                            !customDateFrom && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {customDateFrom ? format(customDateFrom, "dd/MM/yyyy") : "Selecionar"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={customDateFrom}
+                          onSelect={setCustomDateFrom}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Data final</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "justify-start text-left font-normal",
+                            !customDateTo && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {customDateTo ? format(customDateTo, "dd/MM/yyyy") : "Selecionar"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={customDateTo}
+                          onSelect={setCustomDateTo}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </>
+              )}
+
+              {/* Status */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Status</Label>
+                <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="abertos">Abertos</SelectItem>
+                    <SelectItem value="resolvidos">Resolvidos</SelectItem>
+                    <SelectItem value="atrasados">Atrasados</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Prioridade */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Prioridade</Label>
+                <Select value={priorityFilter} onValueChange={(value: PriorityFilter) => setPriorityFilter(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="P0">P0 - Crítico</SelectItem>
+                    <SelectItem value="P1">P1 - Alto</SelectItem>
+                    <SelectItem value="P2">P2 - Médio</SelectItem>
+                    <SelectItem value="P3">P3 - Baixo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Visualização */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Visualização</Label>
+                <Select value={viewType} onValueChange={(value: ViewType) => setViewType(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="global">Visão Geral</SelectItem>
+                    <SelectItem value="time">Por Time</SelectItem>
+                    <SelectItem value="comparativo">Comparativo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Filtros condicionais por visualização */}
+            {viewType === 'time' && (
+              <div className="pt-4 border-t">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Selecionar Time</Label>
+                  <Select value={selectedTime} onValueChange={setSelectedTime}>
+                    <SelectTrigger className="max-w-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os Times</SelectItem>
+                      {getAvailableTimes().map(setor => (
+                        <SelectItem key={setor.id} value={setor.id}>
+                          {setor.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {viewType === 'comparativo' && (
+              <div className="pt-4 border-t">
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Times para Comparar</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {getAvailableTimes().map(setor => (
+                      <label key={setor.id} className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={compareSelectedTimes.includes(setor.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setCompareSelectedTimes([...compareSelectedTimes, setor.id]);
+                            } else {
+                              setCompareSelectedTimes(compareSelectedTimes.filter(id => id !== setor.id));
+                            }
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">{setor.nome}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t">
+              <span>Filtros ativos: {getRangeLabel()} • {getFilteredTimeName()}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedRange('30dias');
+                  setStatusFilter('todos');
+                  setPriorityFilter('todos');
+                  setViewType('global');
+                  setSelectedTime('all');
+                  setCompareSelectedTimes([]);
+                  setCustomDateFrom(undefined);
+                  setCustomDateTo(undefined);
+                }}
+              >
+                Limpar Filtros
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Insights Automáticos */}
+        <Card className="border-0 shadow-md">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Lightbulb className="w-5 h-5 text-primary" />
+              Insights Automáticos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {getAutomatedInsights().map((insight, index) => {
+                  const IconComponent = insight.icon;
+                  const colorClasses = {
+                    success: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+                    warning: 'text-amber-600 bg-amber-50 border-amber-200',
+                    error: 'text-red-600 bg-red-50 border-red-200',
+                    info: 'text-blue-600 bg-blue-50 border-blue-200'
+                  };
+
+                  return (
+                    <div
+                      key={index}
+                      className={cn(
+                        "flex items-center gap-3 p-4 rounded-lg border transition-all hover:shadow-sm",
+                        colorClasses[insight.type]
+                      )}
+                    >
+                      <IconComponent className="w-5 h-5 shrink-0" />
+                      <p className="text-sm font-medium">{insight.message}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* KPIs principais */}
         <div className="space-y-4">
