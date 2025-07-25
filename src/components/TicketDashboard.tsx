@@ -960,8 +960,8 @@ export default function SLADashboard() {
               {/* Cumprimento de SLA */}
               <div className="bg-gray-800 p-8 rounded-lg text-center mb-8">
                 <div className="text-4xl font-bold mb-4 text-gray-300">Cumprimento de SLA</div>
-                <div className={`text-7xl font-bold ${metrics.cumprimento >= 80 ? 'text-green-400' : metrics.cumprimento >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
-                  {metrics.cumprimento.toFixed(1)}%
+                <div className={`text-7xl font-bold ${(metrics.cumprimento || 0) >= 80 ? 'text-green-400' : (metrics.cumprimento || 0) >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                  {(metrics.cumprimento || 0).toFixed(1)}%
                 </div>
               </div>
 
@@ -1012,8 +1012,8 @@ export default function SLADashboard() {
                     </div>
                     <div className="mt-4 pt-4 border-t border-gray-700">
                       <div className="text-gray-300">SLA:</div>
-                      <div className={`text-3xl font-bold ${time.cumprimento >= 80 ? 'text-green-400' : time.cumprimento >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
-                        {time.cumprimento.toFixed(1)}%
+                      <div className={`text-3xl font-bold ${(time.cumprimento || 0) >= 80 ? 'text-green-400' : (time.cumprimento || 0) >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                        {(time.cumprimento || 0).toFixed(1)}%
                       </div>
                     </div>
                   </div>
