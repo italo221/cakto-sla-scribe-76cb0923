@@ -36,7 +36,7 @@ import {
 } from "recharts";
 
 type DateRange = '30dias' | '7dias' | 'hoje' | 'ontem';
-type ViewType = 'global' | 'setor';
+type ViewType = 'global' | 'time';
 
 interface SLAMetrics {
   total: number;
@@ -103,7 +103,7 @@ export default function SLADashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedRange, setSelectedRange] = useState<DateRange>('30dias');
   const [viewType, setViewType] = useState<ViewType>('global');
-  const [selectedSetor, setSelectedSetor] = useState<string>('all');
+  const [selectedTime, setSelectedTime] = useState<string>('all');
 
   useEffect(() => {
     if (user) {
@@ -116,7 +116,7 @@ export default function SLADashboard() {
     if (user && setores.length > 0) {
       fetchSLAMetrics();
     }
-  }, [user, selectedRange, viewType, selectedSetor, setores]);
+  }, [user, selectedRange, viewType, selectedTime, setores]);
 
   const fetchSetores = async () => {
     try {
@@ -129,7 +129,7 @@ export default function SLADashboard() {
       if (error) throw error;
       setSetores(data || []);
     } catch (error) {
-      console.error('Erro ao buscar setores:', error);
+      console.error('Erro ao buscar times:', error);
     }
   };
 
@@ -174,21 +174,21 @@ export default function SLADashboard() {
     }
   };
 
-  const getFilteredSetorName = () => {
+  const getFilteredTimeName = () => {
     if (viewType === 'global') return 'Visão Geral';
-    if (selectedSetor === 'all') return 'Todos os Setores';
-    const setor = setores.find(s => s.id === selectedSetor);
-    return setor ? setor.nome : 'Setor Desconhecido';
+    if (selectedTime === 'all') return 'Todos os Times';
+    const timeSetor = setores.find(s => s.id === selectedTime);
+    return timeSetor ? timeSetor.nome : 'Time Desconhecido';
   };
 
-  const canAccessSetor = (setorId: string) => {
+  const canAccessTime = (setorId: string) => {
     if (isSuperAdmin) return true;
     return userSetores.some(us => us.setor_id === setorId);
   };
 
-  const getAvailableSetores = () => {
+  const getAvailableTimes = () => {
     if (isSuperAdmin) return setores;
-    return setores.filter(s => canAccessSetor(s.id));
+    return setores.filter(s => canAccessTime(s.id));
   };
 
   const fetchSLAMetrics = async () => {
@@ -215,16 +215,16 @@ export default function SLADashboard() {
         .gte('data_criacao', start.toISOString())
         .lte('data_criacao', end.toISOString());
 
-      // Aplicar filtros de setor
-      if (viewType === 'setor' && selectedSetor !== 'all') {
-        query = query.eq('setor_id', selectedSetor);
+      // Aplicar filtros de time (baseado no setor_id)
+      if (viewType === 'time' && selectedTime !== 'all') {
+        query = query.eq('setor_id', selectedTime);
       } else if (!isSuperAdmin) {
-        // Para não super admins, filtrar apenas pelos setores que têm acesso
-        const setorIds = userSetores.map(us => us.setor_id);
-        if (setorIds.length > 0) {
-          query = query.in('setor_id', setorIds);
+        // Para não super admins, filtrar apenas pelos times que têm acesso
+        const timeIds = userSetores.map(us => us.setor_id);
+        if (timeIds.length > 0) {
+          query = query.in('setor_id', timeIds);
         } else {
-          // Se não tem acesso a nenhum setor, não mostrar nada
+          // Se não tem acesso a nenhum time, não mostrar nada
           query = query.eq('setor_id', 'none');
         }
       }
@@ -389,24 +389,6 @@ export default function SLADashboard() {
     return Object.entries(timeCount)
       .map(([time, count]) => ({ name: time, value: count }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 6);
-  };
-
-  const getSetorData = () => {
-    if (viewType !== 'global') return [];
-    
-    const setorCount = slaData.reduce((acc, sla) => {
-      if (sla.setor_id) {
-        const setor = setores.find(s => s.id === sla.setor_id);
-        const setorNome = setor?.nome || 'Setor Desconhecido';
-        acc[setorNome] = (acc[setorNome] || 0) + 1;
-      }
-      return acc;
-    }, {} as Record<string, number>);
-
-    return Object.entries(setorCount)
-      .map(([setor, count]) => ({ name: setor, value: count }))
-      .sort((a, b) => b.value - a.value)
       .slice(0, 8);
   };
 
@@ -418,7 +400,7 @@ export default function SLADashboard() {
         'Prioridade': sla.nivel_criticidade,
         'Time Responsável': sla.time_responsavel,
         'Data Criação': new Date(sla.data_criacao).toLocaleDateString('pt-BR'),
-        'Setor': setores.find(s => s.id === sla.setor_id)?.nome || 'N/A'
+        'Time': setores.find(s => s.id === sla.setor_id)?.nome || 'N/A'
       }));
 
       const csv = [
@@ -490,12 +472,12 @@ export default function SLADashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-              <Building2 className="h-6 w-6 sm:h-8 sm:w-8" />
-              Dashboard SLA - {getFilteredSetorName()}
+              <Users className="h-6 w-6 sm:h-8 sm:w-8" />
+              Dashboard SLA - {getFilteredTimeName()}
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground">
-              Acompanhe as métricas e desempenho dos SLAs
-              {!isSuperAdmin && " (acesso limitado aos seus setores)"}
+              Acompanhe as métricas e desempenho dos SLAs por time
+              {!isSuperAdmin && " (acesso limitado aos seus times)"}
             </p>
           </div>
           
@@ -522,24 +504,24 @@ export default function SLADashboard() {
               <Tabs value={viewType} onValueChange={(value) => setViewType(value as ViewType)}>
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="global">Visão Geral</TabsTrigger>
-                  <TabsTrigger value="setor">Por Setor</TabsTrigger>
+                  <TabsTrigger value="time">Por Time</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
 
-            {/* Seletor de setor (apenas para visualização por setor) */}
-            {viewType === 'setor' && (
+            {/* Seletor de time (apenas para visualização por time) */}
+            {viewType === 'time' && (
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium">Setor:</label>
-                <Select value={selectedSetor} onValueChange={setSelectedSetor}>
+                <label className="text-sm font-medium">Time:</label>
+                <Select value={selectedTime} onValueChange={setSelectedTime}>
                   <SelectTrigger className="w-48">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos os Setores</SelectItem>
-                    {getAvailableSetores().map(setor => (
-                      <SelectItem key={setor.id} value={setor.id}>
-                        {setor.nome}
+                    <SelectItem value="all">Todos os Times</SelectItem>
+                    {getAvailableTimes().map(time => (
+                      <SelectItem key={time.id} value={time.id}>
+                        {time.nome}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -833,17 +815,17 @@ export default function SLADashboard() {
         </Card>
 
         {/* SLAs por Time */}
-        <Card>
+        <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              SLAs por Time (Top 6)
+              SLAs por Time (Top 8)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {getTimeData().map((item, index) => (
-                <div key={item.name} className="flex items-center justify-between">
+                <div key={item.name} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-2">
                     <span className="text-xs sm:text-sm text-muted-foreground">#{index + 1}</span>
                     <span className="font-medium text-sm sm:text-base truncate">{item.name}</span>
@@ -852,43 +834,13 @@ export default function SLADashboard() {
                 </div>
               ))}
               {getTimeData().length === 0 && (
-                <p className="text-center text-muted-foreground py-8">
+                <p className="text-center text-muted-foreground py-8 col-span-2">
                   Nenhum dado disponível para o período selecionado
                 </p>
               )}
             </div>
           </CardContent>
         </Card>
-
-        {/* SLAs por Setor (apenas na visão global) */}
-        {viewType === 'global' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                SLAs por Setor (Top 8)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 sm:space-y-4">
-                {getSetorData().map((item, index) => (
-                  <div key={item.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs sm:text-sm text-muted-foreground">#{index + 1}</span>
-                      <span className="font-medium text-sm sm:text-base truncate">{item.name}</span>
-                    </div>
-                    <Badge variant="outline" className="text-xs">{item.value} SLAs</Badge>
-                  </div>
-                ))}
-                {getSetorData().length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">
-                    Nenhum dado disponível para o período selecionado
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );
