@@ -266,13 +266,8 @@ export default function Inbox() {
     setFilteredTickets(filtered);
   };
 
-  // Usar a lógica centralizada de filtros
-  const ticketFilters = useTicketFilters(tickets.map(t => ({
-    id: t.id,
-    status: t.status,
-    nivel_criticidade: t.nivel_criticidade,
-    data_criacao: t.data_criacao
-  })));
+  // Usar a lógica centralizada de filtros - sem map() para evitar re-renders
+  const ticketFilters = useTicketFilters(tickets);
 
   // Função centralizada para obter badge de status
   const getStatusBadge = (ticket: Ticket) => {

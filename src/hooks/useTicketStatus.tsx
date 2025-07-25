@@ -134,7 +134,7 @@ const getStatusLabel = (status: TicketStatusType): string => {
 };
 
 // Hook para filtrar tickets por categoria
-export const useTicketFilters = (tickets: SimpleTicket[]) => {
+export const useTicketFilters = (tickets: any[]) => {
   return useMemo(() => {
     const expired = tickets.filter(ticket => {
       if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;

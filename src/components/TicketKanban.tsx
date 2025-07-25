@@ -144,10 +144,15 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
           </Badge>
           <div className="flex items-center gap-1">
             {/* Badge de status com lógica centralizada */}
-            <Badge className={`${statusInfo.bgColor} ${statusInfo.textColor} ${statusInfo.borderColor} flex items-center gap-1 text-xs px-2 py-1`}>
-              <statusInfo.icon size={10} />
-              {statusInfo.displayStatus}
-            </Badge>
+            {(() => {
+              const StatusIcon = statusInfo.icon;
+              return (
+                <Badge className={`${statusInfo.bgColor} ${statusInfo.textColor} ${statusInfo.borderColor} flex items-center gap-1 text-xs px-2 py-1`}>
+                  <StatusIcon size={10} />
+                  {statusInfo.displayStatus}
+                </Badge>
+              );
+            })()}
             {/* Criticidade */}
             <span className={cn(
               "text-xs px-1.5 py-0.5 rounded text-white font-medium",
