@@ -267,19 +267,23 @@ export default function Inbox() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'aberto': { color: 'bg-red-100 text-red-800 border-red-200', icon: AlertCircle },
-      'em_andamento': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock },
-      'resolvido': { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle },
-      'fechado': { color: 'bg-gray-100 text-gray-800 border-gray-200', icon: X }
+      'aberto': { color: 'bg-red-100 text-red-800 border-red-200', icon: AlertCircle, label: 'Aberto' },
+      'em_andamento': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Activity, label: 'Em Andamento' },
+      'resolvido': { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle, label: 'Resolvido' },
+      'fechado': { color: 'bg-gray-100 text-gray-800 border-gray-200', icon: X, label: 'Fechado' }
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.aberto;
     const Icon = config.icon;
 
     return (
-      <Badge className={`${config.color} flex items-center gap-1`}>
+      <Badge className={`${config.color} flex items-center gap-1 border font-medium`}>
         <Icon size={12} />
-        {status.replace('_', ' ')}
+        {config.label}
+        {/* Spinner especial para "Em Andamento" */}
+        {status === 'em_andamento' && (
+          <Clock className="ml-1 h-3 w-3 animate-pulse text-yellow-600" />
+        )}
       </Badge>
     );
   };
@@ -653,14 +657,17 @@ export default function Inbox() {
               </Badge>
               <Badge
                 variant="outline"
-                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1"
+                className="cursor-pointer hover:bg-yellow-100 hover:text-yellow-800 hover:border-yellow-300 transition-colors flex items-center gap-1"
                 onClick={() => {
                   setStatusFilter('em_andamento');
                   setCriticalityFilter('all');
+                  setSetorFilter('all');
+                  setShowOnlyExpired(false);
                 }}
               >
-                <Activity className="w-3 h-3 text-yellow-500" />
+                <Activity className="w-3 h-3 text-yellow-600" />
                 Em Andamento
+                <Clock className="w-3 h-3 animate-pulse text-yellow-500" />
               </Badge>
               <Badge
                 variant="outline"

@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter, DragOverEvent, pointerWithin, rectIntersection, useDroppable } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AlertTriangle, Clock, CheckCircle, X, User } from "lucide-react";
+import { AlertTriangle, Clock, CheckCircle, X, User, Activity, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -109,18 +109,20 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
       {...attributes}
       {...(userCanEdit ? listeners : {})}
       className={cn(
-        "mb-2 cursor-pointer transition-all duration-200 group bg-white",
-        "border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm",
+        "mb-2 cursor-pointer transition-all duration-300 group bg-white animate-fade-in",
+        "border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md",
         // Destaque sutil para criticidade
         ticket.nivel_criticidade === 'P0' && "border-l-4 border-l-red-500",
         ticket.nivel_criticidade === 'P1' && "border-l-4 border-l-orange-500",
         ticket.nivel_criticidade === 'P2' && "border-l-4 border-l-yellow-500",
         ticket.nivel_criticidade === 'P3' && "border-l-4 border-l-blue-500",
-        // Estados de drag
-        isDragging && "opacity-70 rotate-2 scale-95",
-        isSortableDragging && "shadow-lg z-50",
+        // Estados de drag - animações suaves
+        isDragging && "opacity-80 rotate-1 scale-105 shadow-2xl z-50",
+        isSortableDragging && "shadow-xl scale-105 rotate-1",
         // Destaque para expirados
         expired && "bg-red-50 border-red-200",
+        // Status "Em Andamento" com destaque especial
+        ticket.status === 'em_andamento' && "bg-yellow-50 border-yellow-200 border-l-4 border-l-yellow-500",
         !userCanEdit && "cursor-default"
       )}
       onClick={() => onOpenDetail(ticket)}
@@ -132,6 +134,15 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
             {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
           </Badge>
           <div className="flex items-center gap-1">
+            {/* Indicador especial para "Em Andamento" */}
+            {ticket.status === 'em_andamento' && (
+              <div className="flex items-center gap-1">
+                <Loader2 className="h-3 w-3 text-yellow-600 animate-spin" />
+                <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 text-xs px-1.5 py-0.5">
+                  Em Andamento
+                </Badge>
+              </div>
+            )}
             {expired && (
               <AlertTriangle className="h-3 w-3 text-red-500" />
             )}
@@ -205,34 +216,65 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
 
 // Componente da coluna do Kanban
 function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit }: KanbanColumnProps) {
-  const [isDragOver, setIsDragOver] = useState(false);
+  const { setNodeRef, isOver } = useDroppable({
+    id: status,
+  });
+
+  const getColumnIcon = (status: string) => {
+    switch (status) {
+      case 'aberto':
+        return <AlertTriangle className="h-4 w-4 text-red-500" />;
+      case 'em_andamento':
+        return <Activity className="h-4 w-4 text-yellow-600" />;
+      case 'resolvido':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'fechado':
+        return <X className="h-4 w-4 text-gray-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const getColumnColor = (status: string) => {
+    switch (status) {
+      case 'aberto':
+        return 'border-red-300 bg-red-50';
+      case 'em_andamento':
+        return 'border-yellow-300 bg-yellow-50';
+      case 'resolvido':
+        return 'border-green-300 bg-green-50';
+      case 'fechado':
+        return 'border-gray-300 bg-gray-50';
+      default:
+        return 'border-gray-200 bg-gray-50';
+    }
+  };
 
   return (
-    <div className="flex-1 min-w-72 max-w-sm">
+    <div ref={setNodeRef} className="flex-1 min-w-72 max-w-sm">
       <div className={cn(
-        "bg-gray-50 rounded-lg border border-gray-200 h-full transition-all duration-200",
-        isDragOver && "bg-blue-50 border-blue-200"
+        "rounded-lg border h-full transition-all duration-300 ease-in-out",
+        getColumnColor(status),
+        // Destaque suave quando hover durante drag
+        isOver && userCanEdit && "border-blue-400 bg-blue-100 shadow-lg scale-102 transform",
+        // Animação de entrada
+        "animate-fade-in"
       )}>
         {/* Header da coluna */}
-        <div className="p-3 border-b border-gray-200">
+        <div className="p-3 border-b border-current border-opacity-20">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium text-sm text-gray-700">{title}</h3>
-            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full font-medium">
+            <div className="flex items-center gap-2">
+              {getColumnIcon(status)}
+              <h3 className="font-medium text-sm text-gray-700">{title}</h3>
+            </div>
+            <span className="text-xs bg-white bg-opacity-70 text-gray-600 px-2 py-1 rounded-full font-medium border">
               {tickets.length}
             </span>
           </div>
         </div>
         
         {/* Conteúdo da coluna */}
-        <div 
-          className="p-3 h-[calc(100vh-280px)] overflow-y-auto"
-          onDragOver={(e) => {
-            e.preventDefault();
-            setIsDragOver(true);
-          }}
-          onDragLeave={() => setIsDragOver(false)}
-          onDrop={() => setIsDragOver(false)}
-        >
+        <div className="p-3 h-[calc(100vh-280px)] overflow-y-auto">
           <SortableContext items={tickets.map(t => t.id)} strategy={verticalListSortingStrategy}>
             {tickets.map((ticket) => (
               <KanbanCard
@@ -258,6 +300,7 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit
 // Componente principal do Kanban
 export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, userRole }: TicketKanbanProps) {
   const [draggedTicket, setDraggedTicket] = useState<Ticket | null>(null);
+  const [activeColumn, setActiveColumn] = useState<string | null>(null);
   const { toast } = useToast();
 
   const userCanEdit = userRole === 'super_admin' || userRole === 'operador';
@@ -275,49 +318,76 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
       title: 'Aberto',
       status: 'aberto',
       tickets: ticketsByStatus.aberto,
-      color: 'bg-red-500'
+      color: 'bg-red-500',
+      icon: AlertTriangle,
+      description: 'Tickets aguardando início'
     },
     {
       title: 'Em Andamento',
       status: 'em_andamento',
       tickets: ticketsByStatus.em_andamento,
-      color: 'bg-yellow-500'
+      color: 'bg-yellow-500',
+      icon: Activity,
+      description: 'Tickets sendo trabalhados'
     },
     {
       title: 'Resolvido',
       status: 'resolvido',
       tickets: ticketsByStatus.resolvido,
-      color: 'bg-green-500'
+      color: 'bg-green-500',
+      icon: CheckCircle,
+      description: 'Tickets resolvidos'
     },
     {
       title: 'Fechado',
       status: 'fechado',
       tickets: ticketsByStatus.fechado,
-      color: 'bg-gray-500'
+      color: 'bg-gray-500',
+      icon: X,
+      description: 'Tickets finalizados'
     }
   ];
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const ticket = tickets.find(t => t.id === event.active.id);
     setDraggedTicket(ticket || null);
+    
+    // Log para debug
+    console.log('🎯 Iniciando drag:', ticket?.titulo, 'Status atual:', ticket?.status);
   }, [tickets]);
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const { over } = event;
+    setActiveColumn(over?.id as string || null);
+  }, []);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
     setDraggedTicket(null);
+    setActiveColumn(null);
 
-    if (!over || !userCanEdit) return;
+    if (!over || !userCanEdit) {
+      console.log('🚫 Drag cancelado - sem destino ou sem permissão');
+      return;
+    }
 
     const ticketId = active.id as string;
     const newStatus = over.id as string;
 
     // Verificar se é uma mudança válida de status
     if (!['aberto', 'em_andamento', 'resolvido', 'fechado'].includes(newStatus)) {
+      console.log('🚫 Status inválido:', newStatus);
       return;
     }
 
     const ticket = tickets.find(t => t.id === ticketId);
-    if (!ticket || ticket.status === newStatus) return;
+    if (!ticket || ticket.status === newStatus) {
+      console.log('🚫 Ticket não encontrado ou status igual');
+      return;
+    }
+
+    // Log para debug
+    console.log('🎯 Movendo ticket:', ticket.titulo, 'de', ticket.status, 'para', newStatus);
 
     try {
       const { error } = await supabase
@@ -330,64 +400,83 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
 
       if (error) throw error;
 
+      const statusLabels = {
+        'aberto': 'Aberto',
+        'em_andamento': 'Em Andamento',
+        'resolvido': 'Resolvido',
+        'fechado': 'Fechado'
+      };
+
       toast({
-        title: "Status atualizado",
-        description: `Ticket movido para "${newStatus.replace('_', ' ')}"`,
+        title: "✅ Status atualizado com sucesso",
+        description: `Ticket "${ticket.titulo}" movido para "${statusLabels[newStatus as keyof typeof statusLabels]}"`,
       });
 
+      console.log('✅ Status atualizado com sucesso');
       onTicketUpdate();
     } catch (error) {
-      console.error('Erro ao atualizar status:', error);
+      console.error('❌ Erro ao atualizar status:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível atualizar o status do ticket",
+        title: "❌ Erro ao atualizar",
+        description: "Não foi possível atualizar o status do ticket. Tente novamente.",
         variant: "destructive"
       });
     }
   }, [tickets, userCanEdit, onTicketUpdate, toast]);
 
   return (
-    <DndContext
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {columns.map((column) => (
-          <SortableContext
-            key={column.status}
-            items={[column.status]}
-            strategy={verticalListSortingStrategy}
-          >
-            <div
-              id={column.status}
-              className="flex-1 min-w-72 max-w-sm"
-            >
-              <KanbanColumn
-                title={column.title}
-                status={column.status}
-                tickets={column.tickets}
-                color={column.color}
+    <div className="space-y-4">
+      {/* Cabeçalho informativo */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-gray-900">Kanban Board</h2>
+          <p className="text-sm text-gray-500">
+            {userCanEdit 
+              ? "Arraste os tickets entre as colunas para alterar o status" 
+              : "Visualização somente leitura"}
+          </p>
+        </div>
+        <Badge variant="outline" className="text-xs">
+          {tickets.length} tickets total
+        </Badge>
+      </div>
+
+      <DndContext
+        collisionDetection={rectIntersection}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {columns.map((column) => (
+            <KanbanColumn
+              key={column.status}
+              title={column.title}
+              status={column.status}
+              tickets={column.tickets}
+              color={column.color}
+              onOpenDetail={onOpenDetail}
+              userCanEdit={userCanEdit}
+            />
+          ))}
+        </div>
+
+        <DragOverlay dropAnimation={{
+          duration: 400,
+          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+        }}>
+          {draggedTicket ? (
+            <div className="rotate-2 scale-110 opacity-95 shadow-2xl">
+              <KanbanCard
+                ticket={draggedTicket}
+                isDragging
                 onOpenDetail={onOpenDetail}
                 userCanEdit={userCanEdit}
               />
             </div>
-          </SortableContext>
-        ))}
-      </div>
-
-      <DragOverlay>
-        {draggedTicket ? (
-          <div className="rotate-3 scale-105 opacity-90">
-            <KanbanCard
-              ticket={draggedTicket}
-              isDragging
-              onOpenDetail={onOpenDetail}
-              userCanEdit={userCanEdit}
-            />
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </div>
   );
 }
