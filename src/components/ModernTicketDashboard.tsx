@@ -371,15 +371,15 @@ export default function ModernSLADashboard() {
 
   const getTeamColor = (index: number) => {
     // Usando tons de verde como padrão (cores secundárias customizáveis)
-    const colors = [
+    const greenColors = [
       'hsl(142 76% 36%)', // green primary
-      'hsl(142 76% 46%)', // green lighter
+      'hsl(142 76% 46%)', // green lighter  
       'hsl(142 76% 26%)', // green darker
       'hsl(158 76% 36%)', // green-teal
       'hsl(128 76% 36%)', // green-lime
       'hsl(156 76% 36%)'  // green-emerald
     ];
-    return colors[index % colors.length];
+    return greenColors[index % greenColors.length];
   };
 
   useEffect(() => {
