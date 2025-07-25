@@ -29,7 +29,9 @@ import {
   Activity,
   BarChart3,
   Lightbulb,
-  Zap
+  Zap,
+  Monitor,
+  X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -159,6 +161,12 @@ export default function SLADashboard() {
   const [viewType, setViewType] = useState<ViewType>('global');
   const [selectedTime, setSelectedTime] = useState<string>('all');
   const [compareSelectedTimes, setCompareSelectedTimes] = useState<string[]>([]);
+  
+  // Modo TV
+  const [isTVMode, setIsTVMode] = useState(false);
+  const [tvCurrentView, setTvCurrentView] = useState<'overview' | 'teams'>('overview');
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [viewRotationInterval, setViewRotationInterval] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -166,6 +174,65 @@ export default function SLADashboard() {
       fetchSLAMetrics();
     }
   }, [user]);
+
+  // Efeito para controlar auto-refresh e rotação no modo TV
+  useEffect(() => {
+    if (isTVMode) {
+      // Auto-refresh a cada 30 segundos
+      const refreshTimer = setInterval(() => {
+        if (user && setores.length > 0) {
+          fetchSLAMetrics();
+        }
+      }, 30000);
+      setAutoRefreshInterval(refreshTimer);
+
+      // Rotação entre views a cada 15 segundos
+      const rotationTimer = setInterval(() => {
+        setTvCurrentView(prev => prev === 'overview' ? 'teams' : 'overview');
+      }, 15000);
+      setViewRotationInterval(rotationTimer);
+
+      return () => {
+        if (refreshTimer) clearInterval(refreshTimer);
+        if (rotationTimer) clearInterval(rotationTimer);
+      };
+    } else {
+      // Limpar timers quando sair do modo TV
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        setAutoRefreshInterval(null);
+      }
+      if (viewRotationInterval) {
+        clearInterval(viewRotationInterval);
+        setViewRotationInterval(null);
+      }
+    }
+  }, [isTVMode, user, setores]);
+
+  // Função para entrar/sair do modo TV
+  const toggleTVMode = () => {
+    if (!isTVMode) {
+      // Entrar em fullscreen
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen();
+      }
+      setIsTVMode(true);
+    } else {
+      // Sair do fullscreen
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+      setIsTVMode(false);
+    }
+  };
+
+  // Limpar timers ao desmontar componente
+  useEffect(() => {
+    return () => {
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+      if (viewRotationInterval) clearInterval(viewRotationInterval);
+    };
+  }, []);
 
   useEffect(() => {
     if (user && setores.length > 0) {
@@ -686,6 +753,47 @@ export default function SLADashboard() {
       .slice(0, 8);
   };
 
+  // Função específica para dados detalhados por time no modo TV
+  const getDetailedTimeData = () => {
+    const timeStats = slaData.reduce((acc, sla) => {
+      const time = sla.time_responsavel;
+      if (!acc[time]) {
+        acc[time] = {
+          time,
+          total: 0,
+          abertos: 0,
+          resolvidos: 0,
+          atrasados: 0,
+          cumprimento: 0
+        };
+      }
+      
+      acc[time].total++;
+      
+      if (sla.status === 'resolvido' || sla.status === 'fechado') {
+        acc[time].resolvidos++;
+      } else {
+        acc[time].abertos++;
+      }
+      
+      // Verificar se está atrasado
+      if (sla.prazo_interno && new Date(sla.prazo_interno) < new Date() && sla.status !== 'resolvido' && sla.status !== 'fechado') {
+        acc[time].atrasados++;
+      }
+      
+      return acc;
+    }, {} as Record<string, any>);
+
+    // Calcular percentual de cumprimento para cada time
+    Object.values(timeStats).forEach((time: any) => {
+      time.cumprimento = time.total > 0 ? (time.resolvidos / time.total) * 100 : 0;
+    });
+
+    return Object.values(timeStats)
+      .sort((a: any, b: any) => b.total - a.total)
+      .slice(0, 6);
+  };
+
   const getComparisonData = () => {
     if (viewType !== 'comparativo' || compareSelectedTimes.length === 0) return [];
     
@@ -797,6 +905,137 @@ export default function SLADashboard() {
     );
   }
 
+  // Render do Modo TV
+  if (isTVMode) {
+    return (
+      <div className="fixed inset-0 bg-gray-900 text-white overflow-hidden">
+        {/* Botão para sair do modo TV */}
+        <button
+          onClick={toggleTVMode}
+          className="absolute top-4 right-4 z-50 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+
+        {/* Faixa de alerta para tickets críticos */}
+        {getCriticalSLAs().length > 0 && (
+          <div className="bg-red-600 text-white p-4 text-center animate-pulse">
+            <div className="flex items-center justify-center gap-2 text-2xl font-bold">
+              <AlertTriangle className="w-8 h-8" />
+              ATENÇÃO: {getCriticalSLAs().length} TICKET{getCriticalSLAs().length > 1 ? 'S' : ''} CRÍTICO{getCriticalSLAs().length > 1 ? 'S' : ''}
+              <AlertTriangle className="w-8 h-8" />
+            </div>
+          </div>
+        )}
+
+        {/* Conteúdo principal do modo TV */}
+        <div className="p-8 h-full">
+          {tvCurrentView === 'overview' ? (
+            // Visão Geral
+            <div className="h-full flex flex-col">
+              <h1 className="text-6xl font-bold text-center mb-8 text-blue-400">
+                Dashboard SLA - Visão Geral
+              </h1>
+              
+              {/* KPIs principais */}
+              <div className="grid grid-cols-4 gap-8 mb-8">
+                <div className="bg-gray-800 p-8 rounded-lg text-center border-l-4 border-blue-500">
+                  <div className="text-5xl font-bold text-blue-400 mb-2">{metrics.total}</div>
+                  <div className="text-2xl text-gray-300">Total SLAs</div>
+                </div>
+                <div className="bg-gray-800 p-8 rounded-lg text-center border-l-4 border-green-500">
+                  <div className="text-5xl font-bold text-green-400 mb-2">{metrics.resolvidos}</div>
+                  <div className="text-2xl text-gray-300">Resolvidos</div>
+                </div>
+                <div className="bg-gray-800 p-8 rounded-lg text-center border-l-4 border-yellow-500">
+                  <div className="text-5xl font-bold text-yellow-400 mb-2">{metrics.abertos}</div>
+                  <div className="text-2xl text-gray-300">Em Aberto</div>
+                </div>
+                <div className="bg-gray-800 p-8 rounded-lg text-center border-l-4 border-red-500">
+                  <div className="text-5xl font-bold text-red-400 mb-2">{metrics.atrasados}</div>
+                  <div className="text-2xl text-gray-300">Atrasados</div>
+                </div>
+              </div>
+
+              {/* Cumprimento de SLA */}
+              <div className="bg-gray-800 p-8 rounded-lg text-center mb-8">
+                <div className="text-4xl font-bold mb-4 text-gray-300">Cumprimento de SLA</div>
+                <div className={`text-7xl font-bold ${metrics.cumprimento >= 80 ? 'text-green-400' : metrics.cumprimento >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                  {metrics.cumprimento.toFixed(1)}%
+                </div>
+              </div>
+
+              {/* Tickets críticos em destaque */}
+              {getCriticalSLAs().length > 0 && (
+                <div className="bg-red-900 p-6 rounded-lg">
+                  <h3 className="text-3xl font-bold mb-4 text-red-300">Tickets Críticos</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {getCriticalSLAs().slice(0, 4).map((sla) => (
+                      <div key={sla.id} className="bg-red-800 p-4 rounded-lg">
+                        <div className="text-xl font-semibold text-white">{sla.titulo}</div>
+                        <div className="text-lg text-red-200">Time: {sla.time_responsavel}</div>
+                        <div className="text-lg text-red-200">Criticidade: {sla.nivel_criticidade}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            // Visão por Times
+            <div className="h-full flex flex-col">
+              <h1 className="text-6xl font-bold text-center mb-8 text-blue-400">
+                Dashboard SLA - Visão por Times
+              </h1>
+              
+              <div className="grid grid-cols-2 gap-8 flex-1">
+                {getDetailedTimeData().map((time, index) => (
+                  <div key={time.time} className="bg-gray-800 p-6 rounded-lg">
+                    <h3 className="text-3xl font-bold mb-4 text-blue-300">{time.time}</h3>
+                    <div className="grid grid-cols-2 gap-4 text-xl">
+                      <div>
+                        <div className="text-gray-300">Total:</div>
+                        <div className="text-3xl font-bold text-blue-400">{time.total}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-300">Resolvidos:</div>
+                        <div className="text-3xl font-bold text-green-400">{time.resolvidos}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-300">Abertos:</div>
+                        <div className="text-3xl font-bold text-yellow-400">{time.abertos}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-300">Atrasados:</div>
+                        <div className="text-3xl font-bold text-red-400">{time.atrasados}</div>
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-gray-700">
+                      <div className="text-gray-300">SLA:</div>
+                      <div className={`text-3xl font-bold ${time.cumprimento >= 80 ? 'text-green-400' : time.cumprimento >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                        {time.cumprimento.toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Indicador de auto-refresh */}
+          <div className="absolute bottom-4 left-4 text-gray-400 text-lg">
+            🔄 Atualização automática ativa
+          </div>
+          
+          {/* Indicador da view atual */}
+          <div className="absolute bottom-4 right-4 text-gray-400 text-lg">
+            {tvCurrentView === 'overview' ? '📊 Visão Geral' : '👥 Visão por Times'}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6 p-3 sm:p-6 animate-fade-in">
       {/* Header */}
@@ -819,6 +1058,15 @@ export default function SLADashboard() {
               Exportar
             </Button>
           )}
+          <Button 
+            variant={isTVMode ? "default" : "outline"} 
+            size="sm" 
+            onClick={toggleTVMode} 
+            className="hover-scale"
+          >
+            {isTVMode ? <X className="w-4 h-4 mr-2" /> : <Monitor className="w-4 h-4 mr-2" />}
+            {isTVMode ? 'Sair TV' : '🖥 Modo TV'}
+          </Button>
           <Badge variant="secondary" className="text-xs sm:text-sm">
             <Eye className="w-3 h-3 mr-1" />
             {isSuperAdmin ? 'Super Admin' : canEdit ? 'Operador' : 'Viewer'}
