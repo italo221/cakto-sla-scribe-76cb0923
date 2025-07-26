@@ -130,7 +130,9 @@ export default function JiraTicketCard({
         ticket.nivel_criticidade === 'P2' && "border-l-4 border-l-yellow-500",
         ticket.nivel_criticidade === 'P3' && "border-l-4 border-l-blue-500",
         // Destaque sutil para tickets atrasados
-        isExpired && "bg-red-50/30"
+        isExpired && "bg-red-50/30",
+        // Fundo verde claro para tickets resolvidos (apenas no modo lista)
+        ticket.status === 'resolvido' && "bg-green-50"
       )}
       onClick={() => onOpenDetail(ticket)}
     >

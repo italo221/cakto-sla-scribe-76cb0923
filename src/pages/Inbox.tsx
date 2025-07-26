@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Filter, Clock, AlertCircle, CheckCircle, X, Grid3X3, List, Star, User, MoreVertical, Play, Pause, CheckCircle2, XCircle, Eye, Columns3, AlertTriangle, Flag, Building, Target, Users, Activity, Inbox as InboxIcon, Circle } from "lucide-react";
+import { Search, Filter, Clock, AlertCircle, CheckCircle, X, Grid3X3, List, Star, User, MoreVertical, Play, Pause, CheckCircle2, XCircle, Eye, Columns3, AlertTriangle, Flag, Building, Target, Users, Activity, Inbox as InboxIcon, Circle, Info, Building2 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Navigation from "@/components/Navigation";
@@ -311,28 +311,25 @@ export default function Inbox() {
       );
     }
 
-    // Filtro por status
-    if (statusFilter !== 'all') {
-      console.log(`🔍 Aplicando filtro de status: "${statusFilter}"`);
-      console.log('📊 Status únicos encontrados:', [...new Set(filtered.map(t => `"${t.status}"`))]);
-      
-      // Verificar ticket específico mencionado pelo usuário
-      const ticket2025013 = filtered.find(t => t.ticket_number?.includes('2025-0013'));
-      if (ticket2025013) {
-        console.log('🎯 Ticket TICKET-2025-0013 encontrado:', {
-          ticket_number: ticket2025013.ticket_number,
-          status: ticket2025013.status,
-          titulo: ticket2025013.titulo
+    // Filtro específico para tickets atrasados (tem prioridade)
+    if (showOnlyExpired) {
+      filtered = filtered.filter(ticket => ticket.statusInfo.isExpired);
+    } else {
+      // Filtro por status - CORREÇÃO: Separar tickets atrasados dos outros status
+      if (statusFilter !== 'all') {
+        filtered = filtered.filter(ticket => {
+          const ticketStatus = ticket.status?.toString()?.trim()?.toLowerCase();
+          const filterStatus = statusFilter?.toString()?.trim()?.toLowerCase();
+          
+          // Se o filtro é para um status específico, NÃO incluir tickets atrasados
+          // Tickets atrasados só aparecem no filtro "Atrasados" ou quando nenhum filtro está ativo
+          if (ticket.statusInfo.isExpired) {
+            return false; // Tickets atrasados não aparecem em filtros de status normais
+          }
+          
+          return ticketStatus === filterStatus;
         });
       }
-      
-      // Fazer comparação mais robusta de status
-      filtered = filtered.filter(ticket => {
-        const ticketStatus = ticket.status?.toString()?.trim()?.toLowerCase();
-        const filterStatus = statusFilter?.toString()?.trim()?.toLowerCase();
-        return ticketStatus === filterStatus;
-      });
-      console.log('📊 Tickets depois do filtro:', filtered.length);
     }
 
     // Filtro por criticidade
@@ -340,18 +337,13 @@ export default function Inbox() {
       filtered = filtered.filter(ticket => ticket.nivel_criticidade === criticalityFilter);
     }
 
-    // Filtro por setor - CORREÇÃO: Tickets sem setor só aparecem em "Todos"
+    // Filtro por setor - CORREÇÃO: Apenas tickets do setor selecionado
     if (setorFilter !== 'all') {
       filtered = filtered.filter(ticket => {
-        // Se setor específico selecionado, mostrar APENAS tickets desse setor
-        // Tickets sem setor (null/undefined) ficam apenas em "Todos os setores"
+        // Mostrar APENAS tickets que pertencem ao setor selecionado
+        // Tickets sem setor (null/undefined) não aparecem em filtros específicos
         return ticket.setor_id === setorFilter;
       });
-    }
-
-    // Filtro específico para tickets atrasados
-    if (showOnlyExpired) {
-      filtered = filtered.filter(ticket => ticket.statusInfo.isExpired);
     }
 
     return filtered;
@@ -791,10 +783,30 @@ export default function Inbox() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os status</SelectItem>
-                  <SelectItem value="aberto">📋 Aberto</SelectItem>
-                  <SelectItem value="em_andamento">🔵 Em Andamento</SelectItem>
-                  <SelectItem value="resolvido">✅ Resolvido</SelectItem>
-                  <SelectItem value="fechado">⚫ Fechado</SelectItem>
+                  <SelectItem value="aberto">
+                    <div className="flex items-center gap-2">
+                      <Circle size={14} />
+                      Aberto
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="em_andamento">
+                    <div className="flex items-center gap-2">
+                      <Activity size={14} />
+                      Em Andamento
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="resolvido">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={14} />
+                      Resolvido
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="fechado">
+                    <div className="flex items-center gap-2">
+                      <X size={14} />
+                      Fechado
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -807,10 +819,30 @@ export default function Inbox() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as criticidades</SelectItem>
-                  <SelectItem value="P0">🚨 P0 - Crítico</SelectItem>
-                  <SelectItem value="P1">🔥 P1 - Alto</SelectItem>
-                  <SelectItem value="P2">⚠️ P2 - Médio</SelectItem>
-                  <SelectItem value="P3">ℹ️ P3 - Baixo</SelectItem>
+                  <SelectItem value="P0">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle size={14} className="text-red-500" />
+                      P0 - Crítico
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="P1">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle size={14} className="text-orange-500" />
+                      P1 - Alto
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="P2">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle size={14} className="text-yellow-500" />
+                      P2 - Médio
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="P3">
+                    <div className="flex items-center gap-2">
+                      <Info size={14} className="text-blue-500" />
+                      P3 - Baixo
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -825,7 +857,10 @@ export default function Inbox() {
                   <SelectItem value="all">Todos os setores</SelectItem>
                   {setores.map((setor) => (
                     <SelectItem key={setor.id} value={setor.id}>
-                      🏢 {setor.nome}
+                      <div className="flex items-center gap-2">
+                        <Building2 size={14} />
+                        {setor.nome}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
