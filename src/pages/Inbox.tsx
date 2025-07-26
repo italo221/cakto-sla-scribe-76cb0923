@@ -687,7 +687,7 @@ export default function Inbox() {
                         <Badge variant="secondary" className="font-mono text-xs">
                           {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
                         </Badge>
-                        <span className="font-medium text-gray-900">{ticket.titulo}</span>
+                        <span className="font-medium" style={{ color: '#111827' }}>{ticket.titulo}</span>
                         {getCriticalityBadge(ticket.nivel_criticidade)}
                       </div>
                       <div className="text-sm text-destructive font-medium">
