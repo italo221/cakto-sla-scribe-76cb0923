@@ -60,13 +60,6 @@ const getStatusConfig = (status: string, isExpired: boolean) => {
   }
 
   const configs = {
-    pausado: {
-      icon: AlertTriangle,
-      bgColor: "bg-orange-50",
-      textColor: "text-orange-700", 
-      borderColor: "border-orange-200",
-      label: "Pausado"
-    },
     em_andamento: {
       icon: Activity,
       bgColor: "bg-blue-50",
@@ -243,39 +236,16 @@ export default function JiraTicketCard({
           {/* Ações rápidas (aparecem no hover) */}
           {userCanEdit && (
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              {ticket.status === 'pausado' && (
+              {ticket.status === 'em_andamento' && (
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="default"
                   className="h-6 px-2 text-xs"
-                  onClick={(e) => handleStatusUpdate(e, 'em_andamento')}
+                  onClick={(e) => handleStatusUpdate(e, 'resolvido')}
                 >
-                  <Play className="h-3 w-3 mr-1" />
-                  Retomar
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Resolver
                 </Button>
-              )}
-              
-              {ticket.status === 'em_andamento' && (
-                <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-6 px-2 text-xs"
-                    onClick={(e) => handleStatusUpdate(e, 'pausado')}
-                  >
-                    <Pause className="h-3 w-3 mr-1" />
-                    Pausar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="default"
-                    className="h-6 px-2 text-xs"
-                    onClick={(e) => handleStatusUpdate(e, 'resolvido')}
-                  >
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Resolver
-                  </Button>
-                </>
               )}
             </div>
           )}

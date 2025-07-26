@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { AlertCircle, Clock, CheckCircle, X, Activity, AlertTriangle } from "lucide-react";
 
-export type TicketStatusType = 'aberto' | 'pausado' | 'em_andamento' | 'resolvido' | 'fechado';
+export type TicketStatusType = 'aberto' | 'em_andamento' | 'resolvido' | 'fechado';
 
 export interface TicketStatusInfo {
   status: TicketStatusType;
@@ -78,14 +78,6 @@ export const useTicketStatus = ({ ticket, userRole }: UseTicketStatusProps) => {
         borderColor: 'border-gray-200',
         icon: AlertCircle
       },
-      'pausado': {
-        displayStatus: 'Pausado',
-        color: 'bg-orange-400',
-        bgColor: 'bg-orange-50',
-        textColor: 'text-orange-700',
-        borderColor: 'border-orange-300',
-        icon: AlertCircle
-      },
       'em_andamento': {
         displayStatus: 'Em Andamento',
         color: 'bg-blue-500',
@@ -134,7 +126,6 @@ export const useTicketStatus = ({ ticket, userRole }: UseTicketStatusProps) => {
 const getStatusLabel = (status: TicketStatusType): string => {
   const labels = {
     'aberto': 'Aberto',
-    'pausado': 'Pausado',
     'em_andamento': 'Em Andamento',
     'resolvido': 'Resolvido',
     'fechado': 'Fechado'
@@ -165,7 +156,6 @@ export const useTicketFilters = (tickets: any[]) => {
     return {
       all: tickets,
       aberto: tickets.filter(t => t.status?.toString()?.trim()?.toLowerCase() === 'aberto'),
-      pausado: tickets.filter(t => t.status?.toString()?.trim()?.toLowerCase() === 'pausado'),
       em_andamento: tickets.filter(t => t.status?.toString()?.trim()?.toLowerCase() === 'em_andamento'),
       resolvido: tickets.filter(t => t.status?.toString()?.trim()?.toLowerCase() === 'resolvido'),
       fechado: tickets.filter(t => t.status?.toString()?.trim()?.toLowerCase() === 'fechado'),
@@ -190,7 +180,7 @@ export const validateStatusChange = (
   }
 
   // Status válidos que podem ser alterados manualmente
-  const validStatuses: TicketStatusType[] = ['aberto', 'pausado', 'em_andamento', 'resolvido', 'fechado'];
+  const validStatuses: TicketStatusType[] = ['aberto', 'em_andamento', 'resolvido', 'fechado'];
   
   if (!validStatuses.includes(toStatus)) {
     return { valid: false, reason: 'Status de destino inválido' };

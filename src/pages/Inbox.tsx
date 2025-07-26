@@ -145,9 +145,8 @@ export default function Inbox() {
       const sortedData = (data || []).sort((a, b) => {
         // 1. Prioridade por status - Tickets ativos primeiro
         const statusPriority = {
-          'aberto': 4,
-          'em_andamento': 3, 
-          'pausado': 2,
+          'aberto': 3,
+          'em_andamento': 2, 
           'resolvido': 1,
           'fechado': 0
         };
@@ -193,7 +192,6 @@ export default function Inbox() {
   const getStatusLabel = (status: string): string => {
     const labels = {
       'aberto': 'Aberto',
-      'pausado': 'Pausado',
       'em_andamento': 'Em Andamento',
       'resolvido': 'Resolvido',
       'fechado': 'Fechado'
@@ -253,14 +251,6 @@ export default function Inbox() {
             textColor: 'text-slate-700',
             borderColor: 'border-slate-300',
             icon: Circle
-          },
-          'pausado': {
-            displayStatus: 'Pausado',
-            color: 'bg-orange-400',
-            bgColor: 'bg-orange-50',
-            textColor: 'text-orange-700',
-            borderColor: 'border-orange-300',
-            icon: AlertCircle
           },
           'em_andamento': {
             displayStatus: 'Em Andamento',
@@ -350,9 +340,13 @@ export default function Inbox() {
       filtered = filtered.filter(ticket => ticket.nivel_criticidade === criticalityFilter);
     }
 
-    // Filtro por setor
+    // Filtro por setor - CORREÇÃO: Tickets sem setor só aparecem em "Todos"
     if (setorFilter !== 'all') {
-      filtered = filtered.filter(ticket => ticket.setor_id === setorFilter);
+      filtered = filtered.filter(ticket => {
+        // Se setor específico selecionado, mostrar APENAS tickets desse setor
+        // Tickets sem setor (null/undefined) ficam apenas em "Todos os setores"
+        return ticket.setor_id === setorFilter;
+      });
     }
 
     // Filtro específico para tickets atrasados
@@ -838,6 +832,61 @@ export default function Inbox() {
               </Select>
             </div>
 
+            {/* Tags de Filtros Ativos */}
+            {(searchTerm || statusFilter !== 'all' || criticalityFilter !== 'all' || setorFilter !== 'all' || showOnlyExpired) && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium text-blue-800">Filtros ativos:</span>
+                    {searchTerm && (
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                        Busca: "{searchTerm}"
+                        <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setSearchTerm('')} />
+                      </Badge>
+                    )}
+                    {statusFilter !== 'all' && (
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                        Status: {getStatusLabel(statusFilter)}
+                        <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setStatusFilter('all')} />
+                      </Badge>
+                    )}
+                    {criticalityFilter !== 'all' && (
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                        Criticidade: {criticalityFilter}
+                        <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setCriticalityFilter('all')} />
+                      </Badge>
+                    )}
+                    {setorFilter !== 'all' && (
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                        Setor: {setores.find(s => s.id === setorFilter)?.nome || 'Desconhecido'}
+                        <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setSetorFilter('all')} />
+                      </Badge>
+                    )}
+                    {showOnlyExpired && (
+                      <Badge variant="secondary" className="bg-red-100 text-red-800">
+                        Somente Atrasados
+                        <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setShowOnlyExpired(false)} />
+                      </Badge>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setStatusFilter('all');
+                      setCriticalityFilter('all');
+                      setSetorFilter('all');
+                      setShowOnlyExpired(false);
+                    }}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    Limpar Tudo
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Filtros Rápidos */}
             <div className="flex flex-wrap gap-2">
               <Badge
@@ -903,19 +952,6 @@ export default function Inbox() {
 
         {/* Cards de Estatísticas Atualizados */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-            onClick={() => {
-              console.log('🟡 Card Pausado clicado');
-              console.log('🟡 Aplicando filtro para: pausado');
-              applyQuickFilter('status', 'pausado');
-            }}
-          >
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold text-orange-600">{ticketFilters.pausado?.length || 0}</div>
-              <p className="text-sm text-muted-foreground">Pausados</p>
-            </CardContent>
-          </Card>
           <Card 
             className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
             onClick={() => applyQuickFilter('status', 'em_andamento')}
