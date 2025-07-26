@@ -532,7 +532,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
               <Button 
                 variant="outline" 
                 onClick={() => setShowTransferForm(!showTransferForm)}
-                className="gap-2"
+                className="gap-2 hover:bg-muted hover:shadow-sm transition-colors"
               >
                 <ArrowRightLeft className="h-4 w-4" />
                 Transferir Setor
@@ -560,62 +560,21 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
             )}
             
             {sla.status === 'em_andamento' && (
-              <>
-                <Button 
-                  variant="default" 
-                  onClick={() => handleChangeStatus('resolvido')}
-                  disabled={statusLoading !== null}
-                  className="gap-2 min-w-[120px]"
-                >
-                  {statusLoading === 'resolvido' ? (
-                    <>
-                      <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                      Resolvendo...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="h-4 w-4" />
-                      Resolver
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => handleChangeStatus('pausado')}
-                  disabled={statusLoading !== null}
-                  className="gap-2 min-w-[120px]"
-                >
-                  {statusLoading === 'pausado' ? (
-                    <>
-                      <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                      Pausando...
-                    </>
-                  ) : (
-                    <>
-                      <Pause className="h-4 w-4" />
-                      Pausar
-                    </>
-                  )}
-                </Button>
-              </>
-            )}
-            
-            {sla.status === 'pausado' && (
               <Button 
                 variant="default" 
-                onClick={() => handleChangeStatus('em_andamento')}
+                onClick={() => handleChangeStatus('resolvido')}
                 disabled={statusLoading !== null}
                 className="gap-2 min-w-[120px]"
               >
-                {statusLoading === 'em_andamento' ? (
+                {statusLoading === 'resolvido' ? (
                   <>
                     <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                    Retomando...
+                    Resolvendo...
                   </>
                 ) : (
                   <>
-                    <Play className="h-4 w-4" />
-                    Retomar
+                    <CheckCircle className="h-4 w-4" />
+                    Resolver
                   </>
                 )}
               </Button>
