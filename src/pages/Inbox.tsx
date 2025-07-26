@@ -601,9 +601,9 @@ export default function Inbox() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 Caixa de Entrada - Tickets
-                <Badge variant="secondary" className="ml-3 text-lg font-mono">
+                <Badge variant="outline" className="ml-3 text-lg font-mono bg-gray-100 text-gray-700 border-gray-300">
                   {filteredTicketsWithStatus.length}
                 </Badge>
               </h1>
@@ -635,7 +635,7 @@ export default function Inbox() {
               <CardTitle className="flex items-center gap-2 text-destructive">
                 <AlertCircle className="h-5 w-5 animate-pulse" />
                 Tickets Críticos Atrasados
-                <Badge variant="destructive" className="animate-glow-pulse flex items-center gap-1">
+                <Badge variant="destructive" className="animate-pulse-soft flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
                   {tickets.filter(ticket => {
                     if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
@@ -687,7 +687,7 @@ export default function Inbox() {
                         <Badge variant="secondary" className="font-mono text-xs">
                           {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
                         </Badge>
-                        <span className="font-medium">{ticket.titulo}</span>
+                        <span className="font-medium text-gray-900">{ticket.titulo}</span>
                         {getCriticalityBadge(ticket.nivel_criticidade)}
                       </div>
                       <div className="text-sm text-destructive font-medium">
