@@ -130,7 +130,7 @@ export default function JiraTicketCard({
   return (
     <Card 
       className={cn(
-        "group transition-all duration-200 hover:shadow-md cursor-pointer border border-border bg-white",
+        "group transition-all duration-200 hover:shadow-lg cursor-pointer border border-border bg-white",
         // Borda lateral para prioridade
         ticket.nivel_criticidade === 'P0' && "border-l-4 border-l-red-500",
         ticket.nivel_criticidade === 'P1' && "border-l-4 border-l-orange-500",
@@ -141,7 +141,7 @@ export default function JiraTicketCard({
       )}
       onClick={() => onOpenDetail(ticket)}
     >
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="py-3 px-4 space-y-3">
         {/* Header - Número e badges */}
         <div className="flex items-center justify-between">
           <Badge variant="outline" className="text-xs font-mono text-muted-foreground">
@@ -168,11 +168,11 @@ export default function JiraTicketCard({
         </div>
 
         {/* Título principal - estilo Jira */}
-        <div>
-          <h3 className="font-semibold text-gray-900 text-base leading-tight line-clamp-2 mb-1">
+        <div className="space-y-1">
+          <h3 className="font-bold text-gray-900 text-lg leading-tight line-clamp-2">
             {ticket.titulo}
           </h3>
-          <p className="text-sm text-gray-600 line-clamp-1">
+          <p className="text-sm text-gray-600 line-clamp-1 leading-relaxed">
             {ticket.descricao}
           </p>
         </div>
@@ -194,7 +194,7 @@ export default function JiraTicketCard({
         )}
 
         {/* Metadados - estilo Jira clean */}
-        <div className="grid grid-cols-2 gap-3 text-xs">
+        <div className="grid grid-cols-2 gap-3 text-xs leading-relaxed">
           <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
               <AvatarFallback className="text-xs text-gray-600 bg-gray-100">
@@ -225,10 +225,18 @@ export default function JiraTicketCard({
         {/* Footer - Data e pontuação */}
         <div className="flex items-center justify-between pt-2 border-t border-gray-100">
           <div className="flex items-center gap-3 text-xs text-gray-500">
-            <span>{format(new Date(ticket.data_criacao), "dd/MM", { locale: ptBR })}</span>
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              <span>{format(new Date(ticket.data_criacao), "dd/MM 'às' HH:mm", { locale: ptBR })}</span>
+            </div>
             <div className="flex items-center gap-1">
               <Target className="h-3 w-3" />
-              <span className="font-medium">{ticket.pontuacao_total}pts</span>
+              <span className={cn(
+                "font-medium",
+                (ticket.nivel_criticidade === 'P0' || ticket.nivel_criticidade === 'P1') && "text-red-600"
+              )}>
+                {ticket.pontuacao_total}pts
+              </span>
             </div>
           </div>
           
