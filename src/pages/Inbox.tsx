@@ -684,7 +684,7 @@ export default function Inbox() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
-                        <Badge variant="secondary" className="font-mono text-xs">
+                        <Badge variant="outline" className="font-mono text-xs bg-gray-100 text-gray-700 border-gray-300">
                           {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
                         </Badge>
                         <span className="font-medium" style={{ color: '#111827' }}>{ticket.titulo}</span>
