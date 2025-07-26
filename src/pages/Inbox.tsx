@@ -349,8 +349,47 @@ export default function Inbox() {
     return filtered;
   }, [ticketsWithStatus, searchTerm, statusFilter, criticalityFilter, setorFilter, showOnlyExpired]);
 
-  // Usar a lógica centralizada de filtros baseada nos ticketsWithStatus
-  const ticketFilters = useTicketFilters(ticketsWithStatus);
+  // Cálculo de contagens dos cards baseadas na mesma lógica dos filtros
+  const cardCounts = useMemo(() => {
+    const counts = {
+      aberto: 0,
+      em_andamento: 0,
+      resolvido: 0,
+      fechado: 0,
+      atrasado: 0
+    };
+
+    ticketsWithStatus.forEach(ticket => {
+      // Contar tickets atrasados
+      if (ticket.statusInfo.isExpired) {
+        counts.atrasado++;
+      }
+      
+      // Contar por status (apenas tickets NÃO atrasados para os status normais)
+      if (!ticket.statusInfo.isExpired) {
+        const status = ticket.status?.toString()?.trim()?.toLowerCase();
+        if (status === 'aberto') counts.aberto++;
+        else if (status === 'em_andamento') counts.em_andamento++;
+        else if (status === 'resolvido') counts.resolvido++;
+        else if (status === 'fechado') counts.fechado++;
+      }
+    });
+
+    return counts;
+  }, [ticketsWithStatus]);
+
+  // Contagem de tickets por setor para validação
+  const setorCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    
+    setores.forEach(setor => {
+      counts[setor.id] = ticketsWithStatus.filter(ticket => 
+        ticket.setor_id === setor.id
+      ).length;
+    });
+    
+    return counts;
+  }, [ticketsWithStatus, setores]);
 
   // Função para obter badge de status (agora sem hooks)
   const getStatusBadge = (ticketWithStatus: any) => {
@@ -997,14 +1036,14 @@ export default function Inbox() {
           </CardContent>
         </Card>
 
-        {/* Cards de Estatísticas Atualizados */}
+        {/* Cards de Estatísticas - Contagem Corrigida */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           <Card 
             className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
             onClick={() => applyQuickFilter('status', 'aberto')}
           >
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-slate-600">{ticketFilters.aberto.length}</div>
+              <div className="text-2xl font-bold text-slate-600">{cardCounts.aberto}</div>
               <p className="text-sm text-muted-foreground">Abertos</p>
             </CardContent>
           </Card>
@@ -1013,7 +1052,7 @@ export default function Inbox() {
             onClick={() => applyQuickFilter('status', 'em_andamento')}
           >
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-blue-600">{ticketFilters.em_andamento.length}</div>
+              <div className="text-2xl font-bold text-blue-600">{cardCounts.em_andamento}</div>
               <p className="text-sm text-muted-foreground">Em Andamento</p>
             </CardContent>
           </Card>
@@ -1022,7 +1061,7 @@ export default function Inbox() {
             onClick={() => applyQuickFilter('status', 'resolvido')}
           >
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-green-600">{ticketFilters.resolvido.length}</div>
+              <div className="text-2xl font-bold text-green-600">{cardCounts.resolvido}</div>
               <p className="text-sm text-muted-foreground">Resolvidos</p>
             </CardContent>
           </Card>
@@ -1038,26 +1077,47 @@ export default function Inbox() {
             }}
           >
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-red-600">{tickets.filter(ticket => {
-                if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
-                
-                const timeConfig = {
-                  'P0': 4 * 60 * 60 * 1000,
-                  'P1': 24 * 60 * 60 * 1000,
-                  'P2': 3 * 24 * 60 * 60 * 1000,
-                  'P3': 7 * 24 * 60 * 60 * 1000,
-                };
-                
-                const startTime = new Date(ticket.data_criacao).getTime();
-                const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
-                const deadline = startTime + timeLimit;
-                
-                return Date.now() > deadline;
-              }).length}</div>
+              <div className="text-2xl font-bold text-red-600">{cardCounts.atrasado}</div>
               <p className="text-sm text-muted-foreground">Atrasados</p>
             </CardContent>
           </Card>
+          
+          {/* Card adicional para mostrar Fechados */}
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+            onClick={() => applyQuickFilter('status', 'fechado')}
+          >
+            <CardContent className="p-6">
+              <div className="text-2xl font-bold text-gray-600">{cardCounts.fechado}</div>
+              <p className="text-sm text-muted-foreground">Fechados</p>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Debug: Cards de Setores para Verificação */}
+        {process.env.NODE_ENV === 'development' && (
+          <Card className="mb-6 border-dashed border-gray-300">
+            <CardHeader>
+              <CardTitle className="text-sm text-gray-500">Debug: Contagem por Setor</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                {setores.map(setor => (
+                  <div key={setor.id} className="flex justify-between">
+                    <span>{setor.nome}:</span>
+                    <span className="font-mono">{setorCounts[setor.id] || 0}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between">
+                  <span>Sem setor:</span>
+                  <span className="font-mono">
+                    {ticketsWithStatus.filter(t => !t.setor_id).length}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Renderização condicional: Lista ou Kanban */}
         {displayMode === 'kanban' ? (
