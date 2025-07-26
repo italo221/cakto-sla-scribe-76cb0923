@@ -610,21 +610,6 @@ export default function Inbox() {
               <p className="text-muted-foreground">Gerencie todas as demandas e acompanhe o status dos tickets</p>
             </div>
             
-            {/* Indicadores de urgência */}
-            <div className="flex gap-2">
-              {filteredTicketsWithStatus.filter(s => s.status !== 'resolvido' && s.status !== 'fechado').length > 0 && (
-                <Badge variant="destructive" className="animate-pulse">
-                  <AlertCircle className="w-3 h-3 mr-1" />
-                  {filteredTicketsWithStatus.filter(s => s.status !== 'resolvido' && s.status !== 'fechado').length} ativos
-                </Badge>
-              )}
-              {filteredTicketsWithStatus.filter(s => s.nivel_criticidade === 'P0' && s.status !== 'resolvido' && s.status !== 'fechado').length > 0 && (
-                <Badge variant="destructive" className="animate-glow-pulse flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" />
-                  {filteredTicketsWithStatus.filter(s => s.nivel_criticidade === 'P0' && s.status !== 'resolvido' && s.status !== 'fechado').length} críticos
-                </Badge>
-              )}
-            </div>
           </div>
         </div>
 
