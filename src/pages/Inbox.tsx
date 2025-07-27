@@ -982,66 +982,26 @@ export default function Inbox() {
               </div>
             )}
 
-            {/* Filtros Rápidos */}
-            <div className="flex flex-wrap gap-2">
-              <Badge
-                variant="outline"
-                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1"
-                onClick={() => {
-                  setStatusFilter('aberto');
-                  setCriticalityFilter('P0');
-                }}
-              >
-                <AlertTriangle className="w-3 h-3 text-red-500" />
-                Críticos Abertos
-              </Badge>
-              <Badge
-                variant="outline"
-                className="cursor-pointer hover:bg-blue-100 hover:text-blue-800 hover:border-blue-300 transition-colors flex items-center gap-1"
-                onClick={() => {
-                  setStatusFilter('em_andamento');
-                  setCriticalityFilter('all');
-                  setSetorFilter('all');
-                  setShowOnlyExpired(false);
-                }}
-              >
-                <Activity className="w-3 h-3 text-blue-600" />
-                Em Andamento
-                <Clock className="w-3 h-3 animate-pulse text-blue-500" />
-              </Badge>
-              <Badge
-                variant="outline"
-                className="cursor-pointer hover:bg-red-100 hover:text-red-800 hover:border-red-300 transition-colors flex items-center gap-1"
-                onClick={() => {
-                  console.log('🔍 Clicou em Atrasados - aplicando filtro específico');
-                  // Limpar outros filtros e aplicar filtro específico para atrasados
-                  setSearchTerm('');
-                  setStatusFilter('all');
-                  setCriticalityFilter('all');
-                  setSetorFilter('all');
-                  setShowOnlyExpired(true);
-                }}
-              >
-                <AlertTriangle className="w-3 h-3 text-red-600" />
-                Atrasados
-                <Clock className="w-3 h-3 animate-pulse text-red-500" />
-              </Badge>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearchTerm('');
-                  setStatusFilter('all');
-                  setCriticalityFilter('all');
-                  setSetorFilter('all');
-                  setShowOnlyExpired(false);
-                }}
-                className="h-6 px-2 text-xs flex items-center gap-1"
-              >
-                <X className="w-3 h-3" />
-                Limpar
-              </Button>
-            </div>
+            {/* Botão de Limpar Filtros (só aparece quando há filtros ativos) */}
+            {(searchTerm || statusFilter !== 'all' || criticalityFilter !== 'all' || setorFilter !== 'all' || showOnlyExpired) && (
+              <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setStatusFilter('all');
+                    setCriticalityFilter('all');
+                    setSetorFilter('all');
+                    setShowOnlyExpired(false);
+                  }}
+                  className="h-6 px-2 text-xs flex items-center gap-1"
+                >
+                  <X className="w-3 h-3" />
+                  Limpar
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
