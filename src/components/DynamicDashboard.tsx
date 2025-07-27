@@ -198,7 +198,14 @@ export default function DynamicDashboard() {
       if (!error && data) {
         const savedWidgets = data.setting_value as any;
         if (Array.isArray(savedWidgets)) {
-          setWidgets(savedWidgets);
+          // Merge saved preferences with default widgets to restore icon components
+          const mergedWidgets = defaultWidgets.map(defaultWidget => {
+            const savedWidget = savedWidgets.find(sw => sw.id === defaultWidget.id);
+            return savedWidget 
+              ? { ...defaultWidget, ...savedWidget, icon: defaultWidget.icon }
+              : defaultWidget;
+          });
+          setWidgets(mergedWidgets);
         }
       }
     } catch (error) {
