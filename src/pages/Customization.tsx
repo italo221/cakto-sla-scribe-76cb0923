@@ -27,10 +27,6 @@ interface ColorCombination {
   used_at: string;
 }
 
-export default function Customization() {
-  return <WhitelabelCustomization />;
-}
-
 function WhitelabelCustomization() {
   const { user } = useAuth();
   const [userRole, setUserRole] = useState<string>('viewer');
@@ -575,3 +571,5 @@ function WhitelabelCustomization() {
     </div>
   );
 }
+
+export default WhitelabelCustomization;
