@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PermissionsPanel from "@/components/PermissionsPanel";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -678,10 +679,11 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
         </div>
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="setores">Setores</TabsTrigger>
             <TabsTrigger value="assignments">Atribuições</TabsTrigger>
+            <TabsTrigger value="permissions">Permissões</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-6">
@@ -963,6 +965,10 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="permissions" className="space-y-6">
+            <PermissionsPanel />
           </TabsContent>
         </Tabs>
       </div>

@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      cargos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       color_combinations: {
         Row: {
           combination_name: string | null
@@ -125,9 +152,101 @@ export type Database = {
         }
         Relationships: []
       }
+      logs_permissoes: {
+        Row: {
+          acao: string
+          alteracoes: Json | null
+          cargo_alterado_id: string
+          cargo_alterado_nome: string
+          criado_em: string
+          id: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          acao: string
+          alteracoes?: Json | null
+          cargo_alterado_id: string
+          cargo_alterado_nome: string
+          criado_em?: string
+          id?: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Update: {
+          acao?: string
+          alteracoes?: Json | null
+          cargo_alterado_id?: string
+          cargo_alterado_nome?: string
+          criado_em?: string
+          id?: string
+          usuario_id?: string
+          usuario_nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logs_permissoes_cargo_alterado_id_fkey"
+            columns: ["cargo_alterado_id"]
+            isOneToOne: false
+            referencedRelation: "cargos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      permissoes_cargo: {
+        Row: {
+          cargo_id: string
+          created_at: string
+          id: string
+          pode_comentar: boolean
+          pode_criar_ticket: boolean
+          pode_editar_comentario: boolean
+          pode_editar_comentario_proprio: boolean
+          pode_editar_ticket: boolean
+          pode_excluir_comentario: boolean
+          pode_excluir_ticket: boolean
+          updated_at: string
+        }
+        Insert: {
+          cargo_id: string
+          created_at?: string
+          id?: string
+          pode_comentar?: boolean
+          pode_criar_ticket?: boolean
+          pode_editar_comentario?: boolean
+          pode_editar_comentario_proprio?: boolean
+          pode_editar_ticket?: boolean
+          pode_excluir_comentario?: boolean
+          pode_excluir_ticket?: boolean
+          updated_at?: string
+        }
+        Update: {
+          cargo_id?: string
+          created_at?: string
+          id?: string
+          pode_comentar?: boolean
+          pode_criar_ticket?: boolean
+          pode_editar_comentario?: boolean
+          pode_editar_comentario_proprio?: boolean
+          pode_editar_ticket?: boolean
+          pode_excluir_comentario?: boolean
+          pode_excluir_ticket?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permissoes_cargo_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: true
+            referencedRelation: "cargos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           ativo: boolean
+          cargo_id: string | null
           created_at: string
           email: string
           id: string
@@ -139,6 +258,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          cargo_id?: string | null
           created_at?: string
           email: string
           id?: string
@@ -150,6 +270,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          cargo_id?: string | null
           created_at?: string
           email?: string
           id?: string
@@ -159,7 +280,15 @@ export type Database = {
           user_id?: string
           user_type?: Database["public"]["Enums"]["user_type"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: false
+            referencedRelation: "cargos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       setores: {
         Row: {
