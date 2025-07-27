@@ -16,7 +16,8 @@ import {
   Menu,
   LogOut,
   User,
-  Palette
+  Palette,
+  Columns3
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,12 +28,14 @@ interface NavItem {
   label: string;
   icon: any;
   adminOnly?: boolean;
+  requireCreatePermission?: boolean;
 }
 
 const navItems: NavItem[] = [
-  { path: "/", label: "Criar Ticket", icon: Home },
+  { path: "/", label: "Criar Ticket", icon: Home, requireCreatePermission: true },
   { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { path: "/inbox", label: "Caixa de Entrada", icon: Inbox },
+  { path: "/kanban", label: "Kanban", icon: Columns3 },
   { path: "/integrations", label: "Integrações", icon: Settings },
   { path: "/customization", label: "Personalização", icon: Palette, adminOnly: true },
   { path: "/admin", label: "Admin", icon: Shield, adminOnly: true },
@@ -43,13 +46,17 @@ export default function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, profile, isSuperAdmin, signOut } = useAuth();
+  const { user, profile, isSuperAdmin, canEdit, signOut } = useAuth();
   
   const isActive = (path: string) => location.pathname === path;
   
   // Filtrar itens de navegação baseado no role do usuário
   const filteredNavItems = navItems.filter(item => {
     if (item.adminOnly && !isSuperAdmin) {
+      return false;
+    }
+    // Verificar permissão de criação para o item "Criar Ticket"
+    if (item.requireCreatePermission && !canEdit && !isSuperAdmin) {
       return false;
     }
     return true;

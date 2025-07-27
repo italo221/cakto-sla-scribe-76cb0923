@@ -1023,60 +1023,117 @@ export default function Inbox() {
           </CardContent>
         </Card>
 
-        {/* Cards de Estatísticas - Contagem Corrigida */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-            onClick={() => applyQuickFilter('status', 'aberto')}
-          >
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold text-slate-600">{cardCounts.aberto}</div>
-              <p className="text-sm text-muted-foreground">Abertos</p>
+        {/* Cards de Estatísticas - UX Refinado */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          {/* Card Total */}
+          <Card className="cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-2 border-transparent hover:border-primary/20 bg-gradient-to-br from-card to-card/50" 
+                onClick={() => {
+                  setStatusFilter('all');
+                  setShowOnlyExpired(false);
+                  setSearchTerm('');
+                  setCriticalityFilter('all');
+                  setSetorFilter('all');
+                }}>
+            <CardContent className="p-5 text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-10 translate-x-10" />
+              <div className="flex items-center justify-center mb-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Activity className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-primary mb-1">{cardCounts.aberto + cardCounts.em_andamento + cardCounts.resolvido + cardCounts.fechado + cardCounts.atrasado}</p>
+              <p className="text-sm font-medium text-muted-foreground">Total Geral</p>
             </CardContent>
           </Card>
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-            onClick={() => applyQuickFilter('status', 'em_andamento')}
-          >
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold text-blue-600">{cardCounts.em_andamento}</div>
-              <p className="text-sm text-muted-foreground">Em Andamento</p>
+
+          {/* Card Abertos */}
+          <Card className={cn(
+            "cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-2",
+            statusFilter === 'aberto' ? "border-slate-400 bg-slate-50 dark:bg-slate-900/20 shadow-lg" : "border-transparent hover:border-slate-300"
+          )} onClick={() => applyQuickFilter('status', 'aberto')}>
+            <CardContent className="p-5 text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-slate-500/5 rounded-full -translate-y-10 translate-x-10" />
+              <div className="flex items-center justify-center mb-3">
+                <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
+                  <Circle className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-slate-600 dark:text-slate-400 mb-1">{cardCounts.aberto}</p>
+              <p className="text-sm font-medium text-muted-foreground">Em Aberto</p>
             </CardContent>
           </Card>
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-            onClick={() => applyQuickFilter('status', 'resolvido')}
-          >
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold text-green-600">{cardCounts.resolvido}</div>
-              <p className="text-sm text-muted-foreground">Resolvidos</p>
+
+          {/* Card Em Andamento */}
+          <Card className={cn(
+            "cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-2",
+            statusFilter === 'em_andamento' ? "border-blue-400 bg-blue-50 dark:bg-blue-900/20 shadow-lg" : "border-transparent hover:border-blue-300"
+          )} onClick={() => applyQuickFilter('status', 'em_andamento')}>
+            <CardContent className="p-5 text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-full -translate-y-10 translate-x-10" />
+              <div className="flex items-center justify-center mb-3">
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-800">
+                  <Play className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">{cardCounts.em_andamento}</p>
+              <p className="text-sm font-medium text-muted-foreground">Em Progresso</p>
             </CardContent>
           </Card>
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-            onClick={() => {
-              // Filtrar apenas tickets atrasados
+
+          {/* Card Resolvidos */}
+          <Card className={cn(
+            "cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-2",
+            statusFilter === 'resolvido' ? "border-green-400 bg-green-50 dark:bg-green-900/20 shadow-lg" : "border-transparent hover:border-green-300"
+          )} onClick={() => applyQuickFilter('status', 'resolvido')}>
+            <CardContent className="p-5 text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/5 rounded-full -translate-y-10 translate-x-10" />
+              <div className="flex items-center justify-center mb-3">
+                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-800">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400 mb-1">{cardCounts.resolvido}</p>
+              <p className="text-sm font-medium text-muted-foreground">Concluídos</p>
+            </CardContent>
+          </Card>
+
+          {/* Card Fechados */}
+          <Card className={cn(
+            "cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-2",
+            statusFilter === 'fechado' ? "border-gray-400 bg-gray-50 dark:bg-gray-800/20 shadow-lg" : "border-transparent hover:border-gray-300"
+          )} onClick={() => applyQuickFilter('status', 'fechado')}>
+            <CardContent className="p-5 text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-gray-500/5 rounded-full -translate-y-10 translate-x-10" />
+              <div className="flex items-center justify-center mb-3">
+                <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
+                  <XCircle className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-gray-600 dark:text-gray-400 mb-1">{cardCounts.fechado}</p>
+              <p className="text-sm font-medium text-muted-foreground">Arquivados</p>
+            </CardContent>
+          </Card>
+
+          {/* Card Atrasados */}
+          <Card className={cn(
+            "cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-2",
+            showOnlyExpired ? "border-red-400 bg-red-50 dark:bg-red-900/20 shadow-lg" : "border-transparent hover:border-red-300"
+          )} onClick={() => {
               setSearchTerm('');
               setStatusFilter('all');
               setCriticalityFilter('all');
               setSetorFilter('all');
               setShowOnlyExpired(true);
-            }}
-          >
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold text-red-600">{cardCounts.atrasado}</div>
-              <p className="text-sm text-muted-foreground">Atrasados</p>
-            </CardContent>
-          </Card>
-          
-          {/* Card adicional para mostrar Fechados */}
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-            onClick={() => applyQuickFilter('status', 'fechado')}
-          >
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold text-gray-600">{cardCounts.fechado}</div>
-              <p className="text-sm text-muted-foreground">Fechados</p>
+            }}>
+            <CardContent className="p-5 text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/5 rounded-full -translate-y-10 translate-x-10" />
+              <div className="flex items-center justify-center mb-3">
+                <div className="p-2 rounded-lg bg-red-100 dark:bg-red-800">
+                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-red-600 dark:text-red-400 mb-1">{cardCounts.atrasado}</p>
+              <p className="text-sm font-medium text-muted-foreground">Com Atraso</p>
             </CardContent>
           </Card>
         </div>

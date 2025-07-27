@@ -305,17 +305,20 @@ export default function DynamicDashboard() {
 
   const renderChart = (widget: DashboardWidget) => {
     switch (widget.id) {
-      case 'status-chart':
+          case 'status-chart':
         return (
           <Card key={widget.id} className="col-span-full md:col-span-2 bg-card">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-foreground">
                 <PieChart className="w-5 h-5" />
-                {widget.name}
+                Distribuição por Status
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Visualização completa dos tickets por status
+              </p>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={350}>
                 <RechartsPieChart>
                   <Pie
                     data={dashboardData.statusData}
@@ -323,14 +326,25 @@ export default function DynamicDashboard() {
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    outerRadius={100}
-                    label={({ name, value }) => `${name}: ${value}`}
+                    outerRadius={120}
+                    innerRadius={60}
+                    paddingAngle={5}
+                    label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
+                    labelLine={false}
                   >
                     {dashboardData.statusData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip 
+                    formatter={(value, name) => [`${value} tickets`, name]}
+                    labelFormatter={(label) => `Status: ${label}`}
+                  />
+                  <Legend 
+                    verticalAlign="bottom" 
+                    height={36}
+                    formatter={(value) => <span className="text-sm font-medium text-foreground">{value}</span>}
+                  />
                 </RechartsPieChart>
               </ResponsiveContainer>
             </CardContent>
@@ -341,19 +355,55 @@ export default function DynamicDashboard() {
         return (
           <Card key={widget.id} className="col-span-full md:col-span-2 bg-card">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-foreground">
                 <BarChart3 className="w-5 h-5" />
-                {widget.name}
+                Tickets por Prioridade
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Distribuição de tickets por nível de criticidade
+              </p>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={dashboardData.priorityData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="value" fill="#10b981" />
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={dashboardData.priorityData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="hsl(var(--foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      color: 'hsl(var(--foreground))'
+                    }}
+                    formatter={(value, name, props) => [
+                      `${value} tickets`,
+                      `${props.payload.name.split(' - ')[1] || 'Prioridade'}`
+                    ]}
+                    labelFormatter={(label) => `Criticidade: ${label}`}
+                  />
+                  <Legend 
+                    formatter={(value) => <span className="text-sm font-medium text-foreground">Quantidade de Tickets</span>}
+                  />
+                  <Bar 
+                    dataKey="value" 
+                    radius={[4, 4, 0, 0]}
+                  >
+                    {dashboardData.priorityData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
