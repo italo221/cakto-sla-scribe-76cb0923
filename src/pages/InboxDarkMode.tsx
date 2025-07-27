@@ -78,6 +78,9 @@ export default function Inbox() {
   const { user, canEdit, isSuperAdmin } = useAuth();
   const [userRole, setUserRole] = useState<string>('viewer');
   const { toast } = useToast();
+  
+  // Define canDelete based on user permissions
+  const canDelete = isSuperAdmin;
 
   useEffect(() => {
     loadTickets();
@@ -510,6 +513,10 @@ export default function Inbox() {
     });
   };
 
+  const handleUpdateSelectedTicket = (updatedTicket: any) => {
+    setSelectedTicket(updatedTicket);
+  };
+
   if (!isSupabaseConfigured) {
     return (
       <div className="min-h-screen bg-background dark:bg-background">
@@ -768,17 +775,11 @@ export default function Inbox() {
               <JiraTicketCard
                 key={ticket.id}
                 ticket={ticket}
-                ticketWithStatus={ticket}
                 onOpenDetail={handleOpenTicketDetail}
-                onEdit={handleEditTicket}
-                onDelete={handleDeleteTicket}
-                getCriticalityBadge={getCriticalityBadge}
-                getStatusBadge={getStatusBadge}
-                getTempoMedioResolucao={getTempoMedioResolucao}
-                viewMode={viewMode}
-                currentUser={user}
-                canEdit={canEdit}
-                userRole={userRole}
+                onEditTicket={handleEditTicket}
+                onDeleteTicket={handleDeleteTicket}
+                userCanEdit={canEdit}
+                userCanDelete={canDelete}
               />
             ))
           )}
@@ -790,7 +791,7 @@ export default function Inbox() {
           isOpen={modalOpen}
           onClose={handleCloseModal}
           onUpdate={handleTicketUpdate}
-          setSelectedSLA={setSelectedTicket}
+          setSelectedSLA={handleUpdateSelectedTicket}
         />
 
         <TicketEditModal
@@ -804,7 +805,7 @@ export default function Inbox() {
           ticket={selectedTicketForDelete}
           isOpen={deleteModalOpen}
           onClose={handleCloseDeleteModal}
-          onUpdate={handleTicketUpdate}
+          onDelete={handleTicketUpdate}
         />
       </div>
     </div>
