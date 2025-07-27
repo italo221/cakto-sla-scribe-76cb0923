@@ -337,12 +337,23 @@ export default function Inbox() {
       filtered = filtered.filter(ticket => ticket.nivel_criticidade === criticalityFilter);
     }
 
-    // Filtro por setor - CORREÇÃO: Apenas tickets do setor selecionado
+    // Filtro por setor - CORREÇÃO DEFINITIVA: Usar setor_id quando disponível, senão mapear time_responsavel
     if (setorFilter !== 'all') {
       filtered = filtered.filter(ticket => {
-        // Mostrar APENAS tickets que pertencem ao setor selecionado
-        // Tickets sem setor (null/undefined) não aparecem em filtros específicos
-        return ticket.setor_id === setorFilter;
+        // Se o ticket tem setor_id definido, usar comparação direta
+        if (ticket.setor_id) {
+          return ticket.setor_id === setorFilter;
+        }
+        
+        // Se não tem setor_id, mapear o time_responsavel para o setor selecionado
+        const setorSelecionado = setores.find(s => s.id === setorFilter);
+        if (!setorSelecionado) return false;
+        
+        // Mapear time_responsavel para nome do setor (case insensitive)
+        const timeResponsavel = ticket.time_responsavel?.toLowerCase().trim();
+        const nomeSetor = setorSelecionado.nome?.toLowerCase().trim();
+        
+        return timeResponsavel === nomeSetor;
       });
     }
 
@@ -383,10 +394,22 @@ export default function Inbox() {
     const counts: Record<string, number> = {};
     
     setores.forEach(setor => {
-      counts[setor.id] = ticketsWithStatus.filter(ticket => 
-        ticket.setor_id === setor.id
-      ).length;
+      counts[setor.id] = ticketsWithStatus.filter(ticket => {
+        // Aplicar a mesma lógica do filtro para contagem
+        if (ticket.setor_id) {
+          return ticket.setor_id === setor.id;
+        }
+        
+        // Mapear time_responsavel para nome do setor
+        const timeResponsavel = ticket.time_responsavel?.toLowerCase().trim();
+        const nomeSetor = setor.nome?.toLowerCase().trim();
+        
+        return timeResponsavel === nomeSetor;
+      }).length;
     });
+    
+    // Adicionar log para debug
+    console.log('🔍 Debug - Contagem por setor (corrigida):', counts);
     
     return counts;
   }, [ticketsWithStatus, setores]);
