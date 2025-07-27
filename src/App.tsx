@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Integrations from "./pages/Integrations";
 import Inbox from "./pages/Inbox";
+import Kanban from "./pages/Kanban";
 import Documentation from "./pages/Documentation";
 import Admin from "./pages/Admin";
 import Customization from "./pages/Customization";
@@ -54,6 +55,11 @@ function App() {
               <Route path="/inbox" element={
                 <ProtectedRoute>
                   <Inbox />
+                </ProtectedRoute>
+              } />
+              <Route path="/kanban" element={
+                <ProtectedRoute>
+                  <Kanban />
                 </ProtectedRoute>
               } />
               <Route path="/documentation" element={
