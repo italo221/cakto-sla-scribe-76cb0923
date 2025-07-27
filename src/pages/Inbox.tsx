@@ -337,21 +337,15 @@ export default function Inbox() {
       filtered = filtered.filter(ticket => ticket.nivel_criticidade === criticalityFilter);
     }
 
-    // Filtro por setor - CORREÇÃO DEFINITIVA: Usar setor_id quando disponível, senão mapear time_responsavel
+    // Filtro por setor - FONTE DA VERDADE: time_responsavel (campo obrigatório)
     if (setorFilter !== 'all') {
       filtered = filtered.filter(ticket => {
-        // Se o ticket tem setor_id definido, usar comparação direta
-        if (ticket.setor_id) {
-          return ticket.setor_id === setorFilter;
-        }
-        
-        // Se não tem setor_id, mapear o time_responsavel para o setor selecionado
         const setorSelecionado = setores.find(s => s.id === setorFilter);
         if (!setorSelecionado) return false;
         
-        // Mapear time_responsavel para nome do setor (case insensitive)
-        const timeResponsavel = ticket.time_responsavel?.toLowerCase().trim();
-        const nomeSetor = setorSelecionado.nome?.toLowerCase().trim();
+        // Comparação estrita: time_responsavel deve ser exatamente igual ao nome do setor
+        const timeResponsavel = ticket.time_responsavel?.trim();
+        const nomeSetor = setorSelecionado.nome?.trim();
         
         return timeResponsavel === nomeSetor;
       });
@@ -389,27 +383,19 @@ export default function Inbox() {
     return counts;
   }, [ticketsWithStatus]);
 
-  // Contagem de tickets por setor para validação
+  // Contagem de tickets por setor baseada em time_responsavel
   const setorCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     
     setores.forEach(setor => {
       counts[setor.id] = ticketsWithStatus.filter(ticket => {
-        // Aplicar a mesma lógica do filtro para contagem
-        if (ticket.setor_id) {
-          return ticket.setor_id === setor.id;
-        }
-        
-        // Mapear time_responsavel para nome do setor
-        const timeResponsavel = ticket.time_responsavel?.toLowerCase().trim();
-        const nomeSetor = setor.nome?.toLowerCase().trim();
+        // Usar apenas time_responsavel como fonte da verdade
+        const timeResponsavel = ticket.time_responsavel?.trim();
+        const nomeSetor = setor.nome?.trim();
         
         return timeResponsavel === nomeSetor;
       }).length;
     });
-    
-    // Adicionar log para debug
-    console.log('🔍 Debug - Contagem por setor (corrigida):', counts);
     
     return counts;
   }, [ticketsWithStatus, setores]);
@@ -1117,30 +1103,6 @@ export default function Inbox() {
           </Card>
         </div>
 
-        {/* Debug: Cards de Setores para Verificação */}
-        {process.env.NODE_ENV === 'development' && (
-          <Card className="mb-6 border-dashed border-gray-300">
-            <CardHeader>
-              <CardTitle className="text-sm text-gray-500">Debug: Contagem por Setor</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-                {setores.map(setor => (
-                  <div key={setor.id} className="flex justify-between">
-                    <span>{setor.nome}:</span>
-                    <span className="font-mono">{setorCounts[setor.id] || 0}</span>
-                  </div>
-                ))}
-                <div className="flex justify-between">
-                  <span>Sem setor:</span>
-                  <span className="font-mono">
-                    {ticketsWithStatus.filter(t => !t.setor_id).length}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Renderização condicional: Lista ou Kanban */}
         {displayMode === 'kanban' ? (
