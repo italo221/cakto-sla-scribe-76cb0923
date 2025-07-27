@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Copy, FileText, MessageCircle, Calculator, Upload, X, File, Image, CheckCircle } from "lucide-react";
+import { Copy, FileText, MessageCircle, Calculator, Upload, X, File, Image, CheckCircle, Sparkles } from "lucide-react";
+import AITicketCreator from "@/components/AITicketCreator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -107,7 +108,8 @@ const criteriaQuestions = {
 type Step = 'welcome' | 'titulo' | 'tipo' | 'time' | 'descricao' | 'criteria' | 'observacoes' | 'complete' | 'validation-error' | 'update-mode' | 'query-mode';
 
 export default function TicketChat() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, canEdit, isSuperAdmin } = useAuth();
+  const [useAI, setUseAI] = useState(false);
   const [step, setStep] = useState<Step>('welcome');
   const [currentCriteria, setCurrentCriteria] = useState<string>('financeiro');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -129,6 +131,9 @@ export default function TicketChat() {
     arquivos: []
   });
   const { toast } = useToast();
+
+  // Verificar permissões de criação
+  const canCreateTickets = canEdit || isSuperAdmin;
 
   const addMessage = (type: 'assistant' | 'user', content: string) => {
     const newMessage: Message = {
@@ -1237,14 +1242,45 @@ export default function TicketChat() {
     handleInput(value);
   };
 
+  // Mostrar criador com IA se selecionado
+  if (useAI) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-chat-background">
+        <div className="container mx-auto max-w-4xl p-4">
+          <div className="mb-6 text-center">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              Criação Inteligente de Ticket
+            </h1>
+            <p className="text-muted-foreground mt-2">IA para preenchimento automático</p>
+            <Button 
+              onClick={() => setUseAI(false)} 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+            >
+              Voltar ao menu
+            </Button>
+          </div>
+          <AITicketCreator onTicketCreated={() => {
+            setUseAI(false);
+            toast({
+              title: "Sucesso!",
+              description: "Ticket criado com sucesso via IA.",
+            });
+          }} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-chat-background">
       <div className="container mx-auto max-w-4xl p-4">
         <div className="mb-6 text-center">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Sistema de SLA - Cakto
+            Sistema de Tickets
           </h1>
-          <p className="text-muted-foreground mt-2">Interface conversacional para abertura de SLAs</p>
+          <p className="text-muted-foreground mt-2">Interface conversacional para abertura de tickets</p>
         </div>
 
         <Card className="h-[700px] flex flex-col">
@@ -1256,28 +1292,43 @@ export default function TicketChat() {
                     <div className="p-8 rounded-lg bg-accent">
                       <MessageCircle className="mx-auto h-16 w-16 text-accent-foreground mb-4" />
                       <h2 className="text-2xl font-bold text-accent-foreground mb-4">
-                        Bem-vindo ao Sistema de SLA!
+                        Bem-vindo ao Sistema de Tickets!
                       </h2>
                       <p className="text-accent-foreground/80 max-w-2xl mx-auto leading-relaxed">
-                        Sou sua assistente virtual para abertura de SLAs. Vou te guiar através de algumas perguntas 
-                        para organizar sua demanda, calcular a pontuação de criticidade e classificar o nível de prioridade.
+                        {canCreateTickets ? (
+                          <>
+                            Sou sua assistente virtual para abertura de tickets. Escolha como deseja criar seu ticket:
+                            com assistência da IA para preenchimento automático ou manual detalhado.
+                          </>
+                        ) : (
+                          'Você pode consultar tickets existentes, mas não tem permissão para criar novos tickets.'
+                        )}
                       </p>
-                      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                        <h3 className="text-sm font-semibold text-blue-800 mb-2">🔄 Nova Funcionalidade V3:</h3>
-                        <p className="text-xs text-blue-700">
-                          Agora você também pode atualizar SLAs existentes usando linguagem natural!<br/>
-                          Exemplos: "Atualiza o status da #28 para resolvido" ou "Muda a urgência da #13 para P1"
+                      <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">✨ Recursos Disponíveis:</h3>
+                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                          • Criação com IA: Descreva o problema e a IA preencherá automaticamente<br/>
+                          • Criação manual: Controle total sobre todos os campos<br/>
+                          • Consultas inteligentes: Pergunte sobre tickets existentes
                         </p>
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <Button onClick={handleStart} size="lg" className="w-full px-8">
-                        <FileText className="mr-2 h-4 w-4" />
-                        Iniciar Nova Demanda de SLA
-                      </Button>
-                      <Button onClick={handleStartQuery} variant="outline" size="lg" className="w-full px-8">
+                      {canCreateTickets && (
+                        <>
+                          <Button onClick={() => setUseAI(true)} size="lg" className="w-full px-8 gap-2">
+                            <Sparkles className="h-4 w-4" />
+                            Criar Ticket com IA
+                          </Button>
+                          <Button onClick={handleStart} variant="outline" size="lg" className="w-full px-8">
+                            <FileText className="mr-2 h-4 w-4" />
+                            Criar Ticket Manual
+                          </Button>
+                        </>
+                      )}
+                      <Button onClick={handleStartQuery} variant="secondary" size="lg" className="w-full px-8">
                         <MessageCircle className="mr-2 h-4 w-4" />
-                        Consultar SLAs & Métricas
+                        Consultar Tickets & Métricas
                       </Button>
                     </div>
                   </div>

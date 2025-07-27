@@ -514,6 +514,21 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                 {getStatusBadge(sla.status)}
               </div>
               {getCriticalityBadge(sla.nivel_criticidade)}
+              {(canEdit || isSuperAdmin) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onClose();
+                    // Abrir modal de edição
+                    window.dispatchEvent(new CustomEvent('openEditModal', { detail: sla }));
+                  }}
+                  className="gap-2"
+                >
+                  <Edit3 className="h-4 w-4" />
+                  Editar
+                </Button>
+              )}
             </div>
           </div>
           

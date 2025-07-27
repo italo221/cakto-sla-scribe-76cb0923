@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from "@/integrations/supabase/client";
+// Reexportação do componente corrigido para modo escuro
+export { default } from './InboxDarkMode';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ interface Setor {
   nome: string;
 }
 
-export default function Inbox() {
+// Componente removido - usando InboxDarkMode
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [setores, setSetores] = useState<Setor[]>([]);
   const [loading, setLoading] = useState(true);

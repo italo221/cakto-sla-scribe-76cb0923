@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Palette, Save, RotateCcw, Clock, AlertTriangle, Sparkles } from "lucide-react";
 import Navigation from "@/components/Navigation";
+import CustomWhitelabelConfig from "@/components/WhitelabelCustomization";
 import { cn } from "@/lib/utils";
 
 interface ColorData {
@@ -28,6 +29,10 @@ interface ColorCombination {
 }
 
 export default function Customization() {
+  return <CustomWhitelabelConfig />;
+}
+
+function WhitelabelCustomization() {
   const { user } = useAuth();
   const [userRole, setUserRole] = useState<string>('viewer');
   const [currentColor, setCurrentColor] = useState<ColorData>({
