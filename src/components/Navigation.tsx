@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface NavItem {
   path: string;
@@ -164,6 +165,9 @@ export default function Navigation() {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+            
             {/* User Menu */}
             <UserMenu />
 

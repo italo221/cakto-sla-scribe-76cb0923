@@ -49,8 +49,7 @@ export default function CommentEditModal({ comment, isOpen, onClose, onUpdate }:
       const { error } = await supabase
         .from('sla_comentarios_internos')
         .update({ 
-          comentario: newComment.trim(),
-          updated_at: new Date().toISOString()
+          comentario: newComment.trim()
         })
         .eq('id', comment.id);
 

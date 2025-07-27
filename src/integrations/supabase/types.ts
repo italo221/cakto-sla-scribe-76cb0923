@@ -412,6 +412,7 @@ export type Database = {
           id: string
           setor_id: string
           sla_id: string
+          updated_at: string | null
         }
         Insert: {
           anexos?: Json | null
@@ -422,6 +423,7 @@ export type Database = {
           id?: string
           setor_id: string
           sla_id: string
+          updated_at?: string | null
         }
         Update: {
           anexos?: Json | null
@@ -432,6 +434,7 @@ export type Database = {
           id?: string
           setor_id?: string
           sla_id?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
