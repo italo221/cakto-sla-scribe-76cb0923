@@ -13,6 +13,8 @@ import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Navigation from "@/components/Navigation";
 import TicketDetailModal from "@/components/TicketDetailModal";
+import TicketEditModal from "@/components/TicketEditModal";
+import TicketDeleteModal from "@/components/TicketDeleteModal";
 import SupabaseStatus from "@/components/SupabaseStatus";
 import { TicketCountdown } from "@/components/TicketCountdown";
 import { useTicketCountdown } from "@/hooks/useTicketCountdown";
@@ -22,6 +24,7 @@ import TicketKanban from "@/components/TicketKanban";
 import JiraTicketCard from "@/components/JiraTicketCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useTicketStatus, useTicketFilters, validateStatusChange, type TicketStatusType } from "@/hooks/useTicketStatus";
+import { useToast } from "@/hooks/use-toast";
 
 interface Ticket {
   id: string;
@@ -64,6 +67,10 @@ export default function Inbox() {
   const [showOnlyExpired, setShowOnlyExpired] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedTicketForEdit, setSelectedTicketForEdit] = useState<Ticket | null>(null);
+  const [selectedTicketForDelete, setSelectedTicketForDelete] = useState<Ticket | null>(null);
   const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('detailed');
   const [displayMode, setDisplayMode] = useState<'list' | 'kanban'>(() => {
     return (localStorage.getItem('inbox-display-mode') as 'list' | 'kanban') || 'list';
@@ -71,8 +78,9 @@ export default function Inbox() {
   const [favoriteFilters, setFavoriteFilters] = useState<string[]>([]);
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   
-  const { user } = useAuth();
+  const { user, canEdit, isSuperAdmin } = useAuth();
   const [userRole, setUserRole] = useState<string>('viewer');
+  const { toast } = useToast();
 
   useEffect(() => {
     loadTickets();
@@ -467,6 +475,16 @@ export default function Inbox() {
   const handleOpenTicketDetail = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setModalOpen(true);
+  };
+
+  const handleEditTicket = (ticket: Ticket) => {
+    setSelectedTicketForEdit(ticket);
+    setEditModalOpen(true);
+  };
+
+  const handleDeleteTicket = (ticket: Ticket) => {
+    setSelectedTicketForDelete(ticket);
+    setDeleteModalOpen(true);
   };
 
   const handleUpdateSelectedTicket = (updatedTicket: Ticket) => {
@@ -1112,7 +1130,10 @@ export default function Inbox() {
                           ticket={ticket}
                           onOpenDetail={handleOpenTicketDetail}
                           onUpdateStatus={updateTicketStatus}
-                          userCanEdit={userRole === 'super_admin' || userRole === 'operador'}
+                          onEditTicket={handleEditTicket}
+                          onDeleteTicket={handleDeleteTicket}
+                          userCanEdit={canEdit}
+                          userCanDelete={isSuperAdmin}
                           isExpired={isExpired}
                         />
                       );
@@ -1133,6 +1154,28 @@ export default function Inbox() {
         onClose={handleCloseTicketDetail}
         onUpdate={loadTickets}
         setSelectedSLA={handleUpdateSelectedTicket}
+      />
+
+      {/* Modal de Edição de Ticket */}
+      <TicketEditModal
+        ticket={selectedTicketForEdit}
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedTicketForEdit(null);
+        }}
+        onUpdate={loadTickets}
+      />
+
+      {/* Modal de Exclusão de Ticket */}
+      <TicketDeleteModal
+        ticket={selectedTicketForDelete}
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSelectedTicketForDelete(null);
+        }}
+        onDelete={loadTickets}
       />
     </div>
   );

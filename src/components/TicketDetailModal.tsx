@@ -10,6 +10,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
+import CommentEditModal from "@/components/CommentEditModal";
+import CommentDeleteModal from "@/components/CommentDeleteModal";
 import { 
   MessageSquare, 
   Send, 
@@ -113,7 +115,7 @@ interface ActionLog {
 }
 
 export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSelectedSLA }: SLADetailModalProps) {
-  const { user, isAdmin, setores: userSetores } = useAuth();
+  const { user, isAdmin, setores: userSetores, canEdit, isSuperAdmin } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [actionLogs, setActionLogs] = useState<ActionLog[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -121,12 +123,16 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
   const [selectedSetor, setSelectedSetor] = useState('');
   const [transferLoading, setTransferLoading] = useState(false);
   const [commentLoading, setCommentLoading] = useState(false);
-  const [statusLoading, setStatusLoading] = useState<string | null>(null); // Track which status button is loading
+  const [statusLoading, setStatusLoading] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'comments' | 'history'>('comments');
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [attachments, setAttachments] = useState<FileList | null>(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selectedCommentForEdit, setSelectedCommentForEdit] = useState<Comment | null>(null);
+  const [selectedCommentForDelete, setSelectedCommentForDelete] = useState<Comment | null>(null);
+  const [editCommentModalOpen, setEditCommentModalOpen] = useState(false);
+  const [deleteCommentModalOpen, setDeleteCommentModalOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -884,12 +890,42 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-medium text-sm">{comment.autor_nome}</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {format(new Date(comment.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
-                                  </span>
-                                </div>
+                                 <div className="flex items-center justify-between mb-1">
+                                   <div className="flex items-center gap-2">
+                                     <span className="font-medium text-sm">{comment.autor_nome}</span>
+                                     <span className="text-xs text-muted-foreground">
+                                       {format(new Date(comment.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                                     </span>
+                                   </div>
+                                   {(canEdit && user?.id === comment.autor_id) || isSuperAdmin ? (
+                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                       {canEdit && user?.id === comment.autor_id && (
+                                         <Button
+                                           variant="ghost"
+                                           size="sm"
+                                           className="h-6 px-2 text-xs"
+                                           onClick={() => {
+                                             setSelectedCommentForEdit(comment);
+                                             setEditCommentModalOpen(true);
+                                           }}
+                                         >
+                                           <Edit3 className="h-3 w-3" />
+                                         </Button>
+                                       )}
+                                       <Button
+                                         variant="ghost"
+                                         size="sm"
+                                         className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                                         onClick={() => {
+                                           setSelectedCommentForDelete(comment);
+                                           setDeleteCommentModalOpen(true);
+                                         }}
+                                       >
+                                         <Trash2 className="h-3 w-3" />
+                                       </Button>
+                                     </div>
+                                   ) : null}
+                                 </div>
                                 <div className="space-y-2">
                                   <p className="text-sm leading-relaxed break-words">{comment.comentario}</p>
                                   
@@ -1023,6 +1059,27 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
           </Card>
         </div>
       </DialogContent>
+
+      {/* Modais de Edição e Exclusão de Comentários */}
+      <CommentEditModal
+        comment={selectedCommentForEdit}
+        isOpen={editCommentModalOpen}
+        onClose={() => {
+          setEditCommentModalOpen(false);
+          setSelectedCommentForEdit(null);
+        }}
+        onUpdate={loadComments}
+      />
+
+      <CommentDeleteModal
+        comment={selectedCommentForDelete}
+        isOpen={deleteCommentModalOpen}
+        onClose={() => {
+          setDeleteCommentModalOpen(false);
+          setSelectedCommentForDelete(null);
+        }}
+        onDelete={loadComments}
+      />
     </Dialog>
   );
 };

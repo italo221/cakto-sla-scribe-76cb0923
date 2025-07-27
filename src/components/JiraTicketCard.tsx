@@ -14,7 +14,9 @@ import {
   Circle,
   Activity,
   CheckCircle,
-  X
+  X,
+  Edit3,
+  Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -44,7 +46,10 @@ interface JiraTicketCardProps {
   ticket: Ticket;
   onOpenDetail: (ticket: Ticket) => void;
   onUpdateStatus?: (ticketId: string, newStatus: string) => void;
+  onEditTicket?: (ticket: Ticket) => void;
+  onDeleteTicket?: (ticket: Ticket) => void;
   userCanEdit: boolean;
+  userCanDelete: boolean;
   isExpired?: boolean;
 }
 
@@ -105,8 +110,11 @@ const getPriorityConfig = (priority: string) => {
 export default function JiraTicketCard({ 
   ticket, 
   onOpenDetail, 
-  onUpdateStatus, 
+  onUpdateStatus,
+  onEditTicket,
+  onDeleteTicket,
   userCanEdit,
+  userCanDelete,
   isExpired = false 
 }: JiraTicketCardProps) {
   const statusConfig = getStatusConfig(ticket.status, isExpired);
@@ -236,9 +244,9 @@ export default function JiraTicketCard({
           </div>
           
           {/* Ações rápidas (aparecem no hover) */}
-          {userCanEdit && (
+          {(userCanEdit || userCanDelete) && (
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              {ticket.status === 'em_andamento' && (
+              {userCanEdit && ticket.status === 'em_andamento' && (
                 <Button
                   size="sm"
                   variant="default"
@@ -247,6 +255,34 @@ export default function JiraTicketCard({
                 >
                   <CheckCircle2 className="h-3 w-3 mr-1" />
                   Resolver
+                </Button>
+              )}
+              {userCanEdit && onEditTicket && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditTicket(ticket);
+                  }}
+                >
+                  <Edit3 className="h-3 w-3 mr-1" />
+                  Editar
+                </Button>
+              )}
+              {userCanDelete && onDeleteTicket && (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="h-6 px-2 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteTicket(ticket);
+                  }}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Excluir
                 </Button>
               )}
             </div>
