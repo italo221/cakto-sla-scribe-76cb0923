@@ -708,25 +708,7 @@ const Admin = () => {
                     </DialogContent>
                   </Dialog>
 
-                   {setores.map(setor => <div key={setor.id} className="flex items-center justify-between p-4 border rounded-lg">
-                       <div className="space-y-1 flex-1">
-                         <p className="font-medium">{setor.nome}</p>
-                         <p className="text-sm text-muted-foreground">{setor.descricao}</p>
-                       </div>
-                       <div className="flex items-center gap-2">
-                         {setor.ativo ? <Badge variant="outline" className="text-green-600">
-                             <Check className="h-3 w-3 mr-1" />
-                             Ativo
-                           </Badge> : <Badge variant="outline" className="text-red-600">
-                             <X className="h-3 w-3 mr-1" />
-                             Inativo
-                           </Badge>}
-                         <Button variant="outline" size="sm" onClick={() => setSelectedSetorDetail(setor)}>
-                           <Building className="h-3 w-3 mr-1" />
-                           Gerenciar
-                         </Button>
-                       </div>
-                     </div>)}
+                   {setores.map(setor => <SetorCard key={setor.id} setor={setor} onSetorUpdate={fetchData} />)}
                  </div>
               </CardContent>
             </Card>
