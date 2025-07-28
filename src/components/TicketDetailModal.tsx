@@ -13,42 +13,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import CommentEditModal from "@/components/CommentEditModal";
 import CommentDeleteModal from "@/components/CommentDeleteModal";
-import { 
-  MessageSquare, 
-  Send, 
-  ArrowRightLeft, 
-  Calendar, 
-  User, 
-  Building, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle, 
-  X,
-  FileText,
-  Target,
-  ThumbsUp,
-  MoreHorizontal,
-  Play,
-  Pause,
-  Square,
-  RotateCcw,
-  History,
-  Reply,
-  Heart,
-  Share,
-  Edit3,
-  Smile,
-  Paperclip,
-  Download,
-  Trash2,
-  ExternalLink
-} from "lucide-react";
+import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit3, Smile, Paperclip, Download, Trash2, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
-
 interface SLA {
   id: string;
   ticket_number: string;
@@ -72,7 +41,6 @@ interface SLA {
   prazo_interno?: string;
   prioridade_operacional?: string;
 }
-
 interface Comment {
   id: string;
   comentario: string;
@@ -87,13 +55,11 @@ interface Comment {
     tipo: string;
   }>;
 }
-
 interface Setor {
   id: string;
   nome: string;
   descricao: string;
 }
-
 interface SLADetailModalProps {
   sla: SLA | null;
   isOpen: boolean;
@@ -101,7 +67,6 @@ interface SLADetailModalProps {
   onUpdate: () => void;
   setSelectedSLA?: (sla: SLA) => void; // Add this to update parent state immediately
 }
-
 interface ActionLog {
   id: string;
   acao: string;
@@ -113,10 +78,23 @@ interface ActionLog {
   dados_anteriores?: any;
   dados_novos?: any;
 }
-
-export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSelectedSLA }: SLADetailModalProps) {
-  const { user, isAdmin, setores: userSetores, canEdit, isSuperAdmin } = useAuth();
-  const { getSetorValidationMessage } = usePermissions();
+export default function SLADetailModal({
+  sla,
+  isOpen,
+  onClose,
+  onUpdate,
+  setSelectedSLA
+}: SLADetailModalProps) {
+  const {
+    user,
+    isAdmin,
+    setores: userSetores,
+    canEdit,
+    isSuperAdmin
+  } = useAuth();
+  const {
+    getSetorValidationMessage
+  } = usePermissions();
   const [comments, setComments] = useState<Comment[]>([]);
   const [actionLogs, setActionLogs] = useState<ActionLog[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -134,8 +112,9 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
   const [selectedCommentForDelete, setSelectedCommentForDelete] = useState<Comment | null>(null);
   const [editCommentModalOpen, setEditCommentModalOpen] = useState(false);
   const [deleteCommentModalOpen, setDeleteCommentModalOpen] = useState(false);
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   useEffect(() => {
     if (sla && isOpen && user) {
       loadComments();
@@ -143,90 +122,83 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
       loadSetores();
     }
   }, [sla, isOpen, user]);
-
   const loadComments = async () => {
     if (!sla) return;
-    
     try {
-      const { data, error } = await supabase
-        .from('sla_comentarios_internos')
-        .select('*')
-        .eq('sla_id', sla.id)
-        .order('created_at', { ascending: false });
-
+      const {
+        data,
+        error
+      } = await supabase.from('sla_comentarios_internos').select('*').eq('sla_id', sla.id).order('created_at', {
+        ascending: false
+      });
       if (error) throw error;
       setComments((data || []).map(comment => {
         return {
           ...comment,
-          anexos: comment.anexos ? (Array.isArray(comment.anexos) ? comment.anexos as Array<{nome: string; url: string; tamanho: number; tipo: string}> : []) : []
+          anexos: comment.anexos ? Array.isArray(comment.anexos) ? comment.anexos as Array<{
+            nome: string;
+            url: string;
+            tamanho: number;
+            tipo: string;
+          }> : [] : []
         };
       }));
     } catch (error) {
       console.error('Erro ao carregar comentários:', error);
     }
   };
-
   const loadActionLogs = async () => {
     if (!sla) return;
-    
     try {
-      const { data, error } = await supabase
-        .from('sla_action_logs')
-        .select('*')
-        .eq('sla_id', sla.id)
-        .order('timestamp', { ascending: false });
-
+      const {
+        data,
+        error
+      } = await supabase.from('sla_action_logs').select('*').eq('sla_id', sla.id).order('timestamp', {
+        ascending: false
+      });
       if (error) throw error;
       setActionLogs(data || []);
     } catch (error) {
       console.error('Erro ao carregar logs de ação:', error);
     }
   };
-
   const loadSetores = async () => {
     try {
-      const { data, error } = await supabase
-        .from('setores')
-        .select('*')
-        .eq('ativo', true)
-        .order('nome');
-
+      const {
+        data,
+        error
+      } = await supabase.from('setores').select('*').eq('ativo', true).order('nome');
       if (error) throw error;
       setSetores(data || []);
     } catch (error) {
       console.error('Erro ao carregar setores:', error);
     }
   };
-
   const uploadAttachments = async (comentarioId: string) => {
     if (!attachments || attachments.length === 0) {
       return [];
     }
     const uploadedFiles = [];
-    
     for (let i = 0; i < attachments.length; i++) {
       const file = attachments[i];
-      
+
       // Sanitizar nome do arquivo removendo caracteres especiais
-      const sanitizedFileName = file.name
-        .replace(/[^a-zA-Z0-9.-]/g, '_') // Substitui caracteres especiais por underscore
-        .replace(/_{2,}/g, '_') // Remove underscores duplicados
-        .replace(/^_|_$/g, ''); // Remove underscores do início e fim
-      
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_') // Substitui caracteres especiais por underscore
+      .replace(/_{2,}/g, '_') // Remove underscores duplicados
+      .replace(/^_|_$/g, ''); // Remove underscores do início e fim
+
       const fileExt = sanitizedFileName.split('.').pop();
       const fileName = `${comentarioId}/${Date.now()}_${sanitizedFileName}`;
       const filePath = `${sla.id}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('sla-anexos')
-        .upload(filePath, file);
-
+      const {
+        error: uploadError
+      } = await supabase.storage.from('sla-anexos').upload(filePath, file);
       if (uploadError) {
         console.error('Erro ao fazer upload do arquivo', file.name, ':', uploadError);
         toast({
           title: "Erro no upload",
           description: `Falha ao enviar ${file.name}: ${uploadError.message}`,
-          variant: "destructive",
+          variant: "destructive"
         });
         continue;
       }
@@ -234,16 +206,16 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
       // Para buckets privados, vamos usar apenas o caminho do arquivo
       // A URL será gerada no momento do download
       uploadedFiles.push({
-        nome: file.name, // Manter nome original para exibição
-        url: filePath, // Guardar apenas o caminho, não a URL pública
+        nome: file.name,
+        // Manter nome original para exibição
+        url: filePath,
+        // Guardar apenas o caminho, não a URL pública
         tamanho: file.size,
         tipo: file.type
       });
     }
-
     return uploadedFiles;
   };
-
   const handleAddComment = async () => {
     if (!sla || !newComment.trim() || !user) return;
 
@@ -253,7 +225,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
       toast({
         title: "Acesso negado",
         description: setorValidationMessage,
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -263,17 +235,14 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
       toast({
         title: "Erro",
         description: "Você não tem permissão para comentar em tickets.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     setCommentLoading(true);
     setUploadingFiles(true);
-    
     try {
       let comentarioSetorId;
-      
       if (isSuperAdmin) {
         // Super admin pode comentar em qualquer ticket
         comentarioSetorId = sla.setor_id || (userSetores.length > 0 ? userSetores[0].setor_id : null);
@@ -288,53 +257,48 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
           comentarioSetorId = userSetores[0].setor_id;
         }
       }
-      
       if (!comentarioSetorId) {
         toast({
           title: "Erro",
           description: "Você não tem permissão para comentar neste SLA.",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
 
       // Primeiro criar o comentário
-      const { data: commentData, error: commentError } = await supabase
-        .from('sla_comentarios_internos')
-        .insert({
-          sla_id: sla.id,
-          setor_id: comentarioSetorId,
-          autor_id: user.id,
-          autor_nome: user.user_metadata?.nome_completo || user.email || 'Usuário',
-          comentario: newComment.trim()
-        })
-        .select()
-        .single();
-
+      const {
+        data: commentData,
+        error: commentError
+      } = await supabase.from('sla_comentarios_internos').insert({
+        sla_id: sla.id,
+        setor_id: comentarioSetorId,
+        autor_id: user.id,
+        autor_nome: user.user_metadata?.nome_completo || user.email || 'Usuário',
+        comentario: newComment.trim()
+      }).select().single();
       if (commentError) throw commentError;
 
       // Depois fazer upload dos anexos se houver
       let anexosUpload = [];
       if (attachments && attachments.length > 0) {
         anexosUpload = await uploadAttachments(commentData.id);
-        
-        // Atualizar o comentário com os anexos
-        const { error: updateError } = await supabase
-          .from('sla_comentarios_internos')
-          .update({ anexos: anexosUpload })
-          .eq('id', commentData.id);
 
+        // Atualizar o comentário com os anexos
+        const {
+          error: updateError
+        } = await supabase.from('sla_comentarios_internos').update({
+          anexos: anexosUpload
+        }).eq('id', commentData.id);
         if (updateError) {
           console.error('Erro ao atualizar comentário com anexos:', updateError);
           throw updateError;
         }
       }
-
       toast({
         title: "Comentário publicado",
-        description: `Comentário adicionado${anexosUpload.length > 0 ? ` com ${anexosUpload.length} anexo(s)` : ''}.`,
+        description: `Comentário adicionado${anexosUpload.length > 0 ? ` com ${anexosUpload.length} anexo(s)` : ''}.`
       });
-
       setNewComment('');
       setAttachments(null);
       loadComments();
@@ -342,14 +306,13 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
       toast({
         title: "Erro ao publicar comentário",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setCommentLoading(false);
       setUploadingFiles(false);
     }
   };
-
   const handleChangeStatus = async (newStatus: string) => {
     if (!sla) return;
 
@@ -359,39 +322,41 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
       toast({
         title: "Acesso negado",
         description: setorValidationMessage,
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     setStatusLoading(newStatus); // Set which specific status is loading
     try {
       const oldStatus = sla.status;
-      
+
       // Update UI immediately for better UX
-      const updatedSLA = { ...sla, status: newStatus };
+      const updatedSLA = {
+        ...sla,
+        status: newStatus
+      };
       setSelectedSLA?.(updatedSLA);
-      
-      const { error } = await supabase
-        .from('sla_demandas')
-        .update({ status: newStatus })
-        .eq('id', sla.id);
-
+      const {
+        error
+      } = await supabase.from('sla_demandas').update({
+        status: newStatus
+      }).eq('id', sla.id);
       if (error) throw error;
-
       await supabase.rpc('log_sla_action', {
         p_sla_id: sla.id,
         p_acao: `mudanca_status_${oldStatus}_para_${newStatus}`,
         p_justificativa: `Status alterado de "${oldStatus}" para "${newStatus}"`,
-        p_dados_anteriores: { status: oldStatus },
-        p_dados_novos: { status: newStatus }
+        p_dados_anteriores: {
+          status: oldStatus
+        },
+        p_dados_novos: {
+          status: newStatus
+        }
       });
-
       toast({
         title: "Status alterado",
-        description: `SLA ${newStatus === 'fechado' ? 'fechado' : 'alterado'} com sucesso.`,
+        description: `SLA ${newStatus === 'fechado' ? 'fechado' : 'alterado'} com sucesso.`
       });
-
       onUpdate();
       loadActionLogs();
     } catch (error: any) {
@@ -400,28 +365,24 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
       toast({
         title: "Erro ao alterar status",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setStatusLoading(null);
     }
   };
-
   const handleTransferSetor = async () => {
     if (!sla || !selectedSetor) return;
-
     setTransferLoading(true);
     try {
       const setorOrigem = setores.find(s => s.id === sla.setor_id);
       const setorDestino = setores.find(s => s.id === selectedSetor);
-
-      const { error } = await supabase
-        .from('sla_demandas')
-        .update({ setor_id: selectedSetor })
-        .eq('id', sla.id);
-
+      const {
+        error
+      } = await supabase.from('sla_demandas').update({
+        setor_id: selectedSetor
+      }).eq('id', sla.id);
       if (error) throw error;
-
       await supabase.rpc('log_sla_action', {
         p_sla_id: sla.id,
         p_acao: 'transferencia_setor',
@@ -429,12 +390,10 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
         p_setor_destino_id: selectedSetor,
         p_justificativa: `Transferido de "${setorOrigem?.nome}" para "${setorDestino?.nome}"`
       });
-
       toast({
         title: "SLA transferido",
-        description: `Transferido para ${setorDestino?.nome} com sucesso.`,
+        description: `Transferido para ${setorDestino?.nome} com sucesso.`
       });
-
       setShowTransferForm(false);
       setSelectedSetor('');
       onUpdate();
@@ -443,17 +402,15 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
       toast({
         title: "Erro ao transferir SLA",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setTransferLoading(false);
     }
   };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAttachments(e.target.files);
   };
-
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -461,21 +418,20 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
-
   const downloadAttachment = async (filePath: string, fileName: string) => {
     try {
-      
       // Para buckets privados, usar URL assinada para download
-      const { data, error } = await supabase.storage
-        .from('sla-anexos')
-        .download(filePath);
-
+      const {
+        data,
+        error
+      } = await supabase.storage.from('sla-anexos').download(filePath);
       if (error) {
         console.error('Erro no download do Storage:', error);
         throw error;
       }
-
-      const blob = new Blob([data], { type: 'application/octet-stream' });
+      const blob = new Blob([data], {
+        type: 'application/octet-stream'
+      });
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
@@ -489,51 +445,62 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
       toast({
         title: "Erro no download",
         description: "Não foi possível baixar o arquivo.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'aberto': { color: 'bg-red-100 text-red-800 border-red-200', icon: AlertCircle },
-      'em_andamento': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock },
-      'resolvido': { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle },
-      'fechado': { color: 'bg-gray-100 text-gray-800 border-gray-200', icon: X }
+      'aberto': {
+        color: 'bg-red-100 text-red-800 border-red-200',
+        icon: AlertCircle
+      },
+      'em_andamento': {
+        color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        icon: Clock
+      },
+      'resolvido': {
+        color: 'bg-green-100 text-green-800 border-green-200',
+        icon: CheckCircle
+      },
+      'fechado': {
+        color: 'bg-gray-100 text-gray-800 border-gray-200',
+        icon: X
+      }
     };
-
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.aberto;
     const Icon = config.icon;
-
-    return (
-      <Badge className={`${config.color} flex items-center gap-1`}>
+    return <Badge className={`${config.color} flex items-center gap-1`}>
         <Icon size={12} />
         {status.replace('_', ' ')}
-      </Badge>
-    );
+      </Badge>;
   };
-
   const getCriticalityBadge = (criticality: string) => {
     const criticalityConfig = {
-      'P0': { color: 'bg-red-500 text-white', label: 'Crítico' },
-      'P1': { color: 'bg-orange-500 text-white', label: 'Alto' },
-      'P2': { color: 'bg-yellow-500 text-white', label: 'Médio' },
-      'P3': { color: 'bg-blue-500 text-white', label: 'Baixo' }
+      'P0': {
+        color: 'bg-red-500 text-white',
+        label: 'Crítico'
+      },
+      'P1': {
+        color: 'bg-orange-500 text-white',
+        label: 'Alto'
+      },
+      'P2': {
+        color: 'bg-yellow-500 text-white',
+        label: 'Médio'
+      },
+      'P3': {
+        color: 'bg-blue-500 text-white',
+        label: 'Baixo'
+      }
     };
-
     const config = criticalityConfig[criticality as keyof typeof criticalityConfig] || criticalityConfig.P3;
-
-    return (
-      <Badge className={config.color}>
+    return <Badge className={config.color}>
         {criticality} - {config.label}
-      </Badge>
-    );
+      </Badge>;
   };
-
   if (!sla) return null;
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+  return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-4">
           <div className="flex items-center justify-between">
@@ -541,29 +508,17 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
               {sla.ticket_number || `#${sla.id.slice(0, 8)}`} - {sla.titulo}
             </DialogTitle>
             <div className="flex items-center justify-between w-full max-w-[200px]">
-              {(canEdit || isSuperAdmin) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    onClose();
-                    // Abrir modal de edição
-                    window.dispatchEvent(new CustomEvent('openEditModal', { detail: sla }));
-                  }}
-                  className="gap-2"
-                >
+              {(canEdit || isSuperAdmin) && <Button variant="outline" size="sm" onClick={() => {
+              onClose();
+              // Abrir modal de edição
+              window.dispatchEvent(new CustomEvent('openEditModal', {
+                detail: sla
+              }));
+            }} className="gap-2">
                   <Edit3 className="h-4 w-4" />
                   Editar
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="h-8 w-8 p-0 ml-auto"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+                </Button>}
+              
             </div>
           </div>
         </DialogHeader>
@@ -572,111 +527,60 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
           {/* Ações de Status e Transferência */}
           <div className="flex flex-wrap gap-2 mb-6">
             {/* Botão de Transferência */}
-            {(isAdmin || userSetores.some(us => us.setor_id === sla.setor_id)) && (
-              <Button 
-                variant="outline" 
-                onClick={() => setShowTransferForm(!showTransferForm)}
-                className="gap-2 hover:bg-muted hover:shadow-sm transition-colors"
-              >
+            {(isAdmin || userSetores.some(us => us.setor_id === sla.setor_id)) && <Button variant="outline" onClick={() => setShowTransferForm(!showTransferForm)} className="gap-2 hover:bg-muted hover:shadow-sm transition-colors">
                 <ArrowRightLeft className="h-4 w-4" />
                 Transferir Setor
-              </Button>
-            )}
-            {sla.status === 'aberto' && (
-              <Button 
-                variant="default" 
-                onClick={() => handleChangeStatus('em_andamento')}
-                disabled={statusLoading !== null}
-                className="gap-2 min-w-[120px]"
-              >
-                {statusLoading === 'em_andamento' ? (
-                  <>
+              </Button>}
+            {sla.status === 'aberto' && <Button variant="default" onClick={() => handleChangeStatus('em_andamento')} disabled={statusLoading !== null} className="gap-2 min-w-[120px]">
+                {statusLoading === 'em_andamento' ? <>
                     <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
                     Iniciando...
-                  </>
-                ) : (
-                  <>
+                  </> : <>
                     <Play className="h-4 w-4" />
                     Iniciar
-                  </>
-                )}
-              </Button>
-            )}
+                  </>}
+              </Button>}
             
-            {sla.status === 'em_andamento' && user?.email !== sla.solicitante && (
-              <Button 
-                variant="default" 
-                onClick={() => handleChangeStatus('resolvido')}
-                disabled={statusLoading !== null}
-                className="gap-2 min-w-[120px]"
-              >
-                {statusLoading === 'resolvido' ? (
-                  <>
+            {sla.status === 'em_andamento' && user?.email !== sla.solicitante && <Button variant="default" onClick={() => handleChangeStatus('resolvido')} disabled={statusLoading !== null} className="gap-2 min-w-[120px]">
+                {statusLoading === 'resolvido' ? <>
                     <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
                     Resolvendo...
-                  </>
-                ) : (
-                  <>
+                  </> : <>
                     <CheckCircle className="h-4 w-4" />
                     Resolver
-                  </>
-                )}
-              </Button>
-            )}
+                  </>}
+              </Button>}
             
             {/* Aviso para quem criou o ticket */}
-            {sla.status === 'em_andamento' && user?.email === sla.solicitante && (
-              <div className="px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md text-sm text-amber-800 dark:text-amber-200">
+            {sla.status === 'em_andamento' && user?.email === sla.solicitante && <div className="px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md text-sm text-amber-800 dark:text-amber-200">
                 <AlertCircle className="h-4 w-4 inline mr-2" />
                 Quem criou o ticket não pode resolvê-lo. Aguarde o time responsável.
-              </div>
-            )}
+              </div>}
             
-            {sla.status === 'resolvido' && (
-              <>
-                <Button 
-                  variant="default" 
-                  onClick={() => handleChangeStatus('fechado')}
-                  disabled={statusLoading !== null}
-                  className="gap-2 min-w-[120px]"
-                >
-                  {statusLoading === 'fechado' ? (
-                    <>
+            {sla.status === 'resolvido' && <>
+                <Button variant="default" onClick={() => handleChangeStatus('fechado')} disabled={statusLoading !== null} className="gap-2 min-w-[120px]">
+                  {statusLoading === 'fechado' ? <>
                       <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
                       Fechando...
-                    </>
-                  ) : (
-                    <>
+                    </> : <>
                       <X className="h-4 w-4" />
                       Fechar SLA
-                    </>
-                  )}
+                    </>}
                 </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => handleChangeStatus('em_andamento')}
-                  disabled={statusLoading !== null}
-                  className="gap-2 min-w-[120px]"
-                >
-                  {statusLoading === 'em_andamento' ? (
-                    <>
+                <Button variant="outline" onClick={() => handleChangeStatus('em_andamento')} disabled={statusLoading !== null} className="gap-2 min-w-[120px]">
+                  {statusLoading === 'em_andamento' ? <>
                       <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
                       Reabrindo...
-                    </>
-                  ) : (
-                    <>
+                    </> : <>
                       <RotateCcw className="h-4 w-4" />
                       Reabrir SLA
-                    </>
-                  )}
+                    </>}
                 </Button>
-              </>
-            )}
+              </>}
           </div>
 
           {/* Formulário de Transferência */}
-          {showTransferForm && (
-            <Card className="mb-6 border-dashed">
+          {showTransferForm && <Card className="mb-6 border-dashed">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="flex-1">
@@ -686,80 +590,49 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                         <SelectValue placeholder="Selecione um setor" />
                       </SelectTrigger>
                       <SelectContent>
-                        {setores
-                          .filter(setor => setor.id !== sla.setor_id)
-                          .map((setor) => (
-                            <SelectItem key={setor.id} value={setor.id}>
+                        {setores.filter(setor => setor.id !== sla.setor_id).map(setor => <SelectItem key={setor.id} value={setor.id}>
                               {setor.nome}
-                            </SelectItem>
-                          ))}
+                            </SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      onClick={handleTransferSetor}
-                      disabled={!selectedSetor || transferLoading}
-                      size="sm"
-                    >
-                      {transferLoading ? (
-                        <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
-                      ) : (
-                        <ArrowRightLeft className="h-4 w-4 mr-2" />
-                      )}
+                    <Button onClick={handleTransferSetor} disabled={!selectedSetor || transferLoading} size="sm">
+                      {transferLoading ? <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" /> : <ArrowRightLeft className="h-4 w-4 mr-2" />}
                       Transferir
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      onClick={() => setShowTransferForm(false)}
-                      size="sm"
-                    >
+                    <Button variant="ghost" onClick={() => setShowTransferForm(false)} size="sm">
                       Cancelar
                     </Button>
                   </div>
                 </div>
               </CardContent>
-            </Card>
-          )}
+            </Card>}
 
           {/* Tabs de Discussão e Histórico */}
           <div className="flex gap-4 border-b mb-6">
-            <Button
-              variant={activeTab === 'comments' ? 'default' : 'ghost'}
-              onClick={() => setActiveTab('comments')}
-              className="flex items-center gap-2 px-4 py-2 rounded-b-none"
-            >
+            <Button variant={activeTab === 'comments' ? 'default' : 'ghost'} onClick={() => setActiveTab('comments')} className="flex items-center gap-2 px-4 py-2 rounded-b-none">
               <MessageSquare className="h-4 w-4" />
               Discussão
-              {comments.length > 0 && (
-                <Badge variant="secondary" className="ml-1 text-xs">
+              {comments.length > 0 && <Badge variant="secondary" className="ml-1 text-xs">
                   {comments.length}
-                </Badge>
-              )}
+                </Badge>}
             </Button>
-            <Button
-              variant={activeTab === 'history' ? 'default' : 'ghost'}
-              onClick={() => setActiveTab('history')}
-              className="flex items-center gap-2 px-4 py-2 rounded-b-none"
-            >
+            <Button variant={activeTab === 'history' ? 'default' : 'ghost'} onClick={() => setActiveTab('history')} className="flex items-center gap-2 px-4 py-2 rounded-b-none">
               <History className="h-4 w-4" />
               Histórico
-              {actionLogs.length > 0 && (
-                <Badge variant="secondary" className="ml-1 text-xs">
+              {actionLogs.length > 0 && <Badge variant="secondary" className="ml-1 text-xs">
                   {actionLogs.length}
-                </Badge>
-              )}
+                </Badge>}
             </Button>
           </div>
 
           {/* Conteúdo das Tabs */}
           <div className="mb-6">
-            {activeTab === 'comments' ? (
-              <Card className="flex-1 flex flex-col min-h-[400px] max-h-[400px]">
+            {activeTab === 'comments' ? <Card className="flex-1 flex flex-col min-h-[400px] max-h-[400px]">
                 <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
                   {/* Área de Novo Comentário */}
-                  {user && (
-                    <div className="p-4 border-b bg-muted/10 flex-shrink-0">
+                  {user && <div className="p-4 border-b bg-muted/10 flex-shrink-0">
                       <div className="flex gap-3">
                         <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
                           <AvatarFallback className="text-xs bg-primary text-primary-foreground">
@@ -767,116 +640,63 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-3 min-w-0">
-                          <Textarea
-                            placeholder="Escreva um comentário..."
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            className="min-h-[60px] max-h-[100px] resize-none border-0 bg-background shadow-sm focus:ring-2 focus:ring-primary/20"
-                          />
+                          <Textarea placeholder="Escreva um comentário..." value={newComment} onChange={e => setNewComment(e.target.value)} className="min-h-[60px] max-h-[100px] resize-none border-0 bg-background shadow-sm focus:ring-2 focus:ring-primary/20" />
                           {/* Área de anexos */}
-                          {attachments && attachments.length > 0 && (
-                            <div className="space-y-2">
+                          {attachments && attachments.length > 0 && <div className="space-y-2">
                               <label className="text-xs font-medium text-muted-foreground">Anexos selecionados:</label>
                               <div className="flex flex-wrap gap-2">
-                                {Array.from(attachments).map((file, index) => (
-                                  <div key={index} className="flex items-center gap-1 bg-muted px-2 py-1 rounded text-xs">
+                                {Array.from(attachments).map((file, index) => <div key={index} className="flex items-center gap-1 bg-muted px-2 py-1 rounded text-xs">
                                     <FileText className="h-3 w-3" />
                                     <span>{file.name}</span>
                                     <span className="text-muted-foreground">({formatFileSize(file.size)})</span>
-                                  </div>
-                                ))}
+                                  </div>)}
                               </div>
-                            </div>
-                          )}
+                            </div>}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <div className="relative">
-                                <Input
-                                  type="file"
-                                  multiple
-                                  onChange={handleFileChange}
-                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                  accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
-                                />
+                                <Input type="file" multiple onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif" />
                                 <Button variant="ghost" size="sm" className="h-8">
                                   <Paperclip className="h-4 w-4" />
                                 </Button>
                                </div>
                                <div className="relative">
-                                 <Button 
-                                   variant="ghost" 
-                                   size="sm" 
-                                   className="h-8"
-                                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                                 >
+                                 <Button variant="ghost" size="sm" className="h-8" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
                                    <Smile className="h-4 w-4" />
                                  </Button>
-                                 {showEmojiPicker && (
-                                   <>
+                                 {showEmojiPicker && <>
                                      {/* Overlay para fechar quando clicar fora */}
-                                     <div 
-                                       className="fixed inset-0 z-40" 
-                                       onClick={() => setShowEmojiPicker(false)}
-                                     />
+                                     <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
                                      <div className="absolute bottom-full left-0 mb-2 p-3 bg-background border rounded-lg shadow-lg z-50 w-64">
                                        <div className="text-xs text-muted-foreground mb-2 font-medium">Escolha um emoji:</div>
                                        <div className="grid grid-cols-8 gap-1">
-                                         {[
-                                           '😀', '😊', '😂', '🥰', '😎', '🤔', '😮', '😢',
-                                           '😡', '🤯', '🥳', '😴', '🤤', '🤒', '🤕', '😵',
-                                           '👍', '👎', '👌', '✌️', '🤞', '👏', '🙌', '🤝',
-                                           '❤️', '💙', '💚', '💛', '🧡', '💜', '🖤', '💯',
-                                           '🔥', '⚡', '💡', '🎉', '🎊', '✨', '⭐', '🌟',
-                                           '✅', '❌', '⚠️', '🚀', '📝', '📋', '💻', '🔧'
-                                         ].map((emoji) => (
-                                           <Button
-                                             key={emoji}
-                                             variant="ghost"
-                                             size="sm"
-                                             className="h-8 w-8 p-0 text-base hover:bg-muted hover:scale-110 transition-all duration-200"
-                                             onClick={() => {
-                                               setNewComment(prev => prev + emoji + ' ');
-                                               setShowEmojiPicker(false);
-                                             }}
-                                           >
+                                         {['😀', '😊', '😂', '🥰', '😎', '🤔', '😮', '😢', '😡', '🤯', '🥳', '😴', '🤤', '🤒', '🤕', '😵', '👍', '👎', '👌', '✌️', '🤞', '👏', '🙌', '🤝', '❤️', '💙', '💚', '💛', '🧡', '💜', '🖤', '💯', '🔥', '⚡', '💡', '🎉', '🎊', '✨', '⭐', '🌟', '✅', '❌', '⚠️', '🚀', '📝', '📋', '💻', '🔧'].map(emoji => <Button key={emoji} variant="ghost" size="sm" className="h-8 w-8 p-0 text-base hover:bg-muted hover:scale-110 transition-all duration-200" onClick={() => {
+                                  setNewComment(prev => prev + emoji + ' ');
+                                  setShowEmojiPicker(false);
+                                }}>
                                              {emoji}
-                                           </Button>
-                                         ))}
+                                           </Button>)}
                                        </div>
                                      </div>
-                                   </>
-                                 )}
+                                   </>}
                                </div>
                             </div>
-                            <Button 
-                              onClick={handleAddComment}
-                              disabled={!newComment.trim() || commentLoading || uploadingFiles}
-                              size="sm"
-                              className="h-8"
-                            >
-                              {(commentLoading || uploadingFiles) ? (
-                                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
-                              ) : (
-                                <Send className="h-4 w-4 mr-2" />
-                              )}
+                            <Button onClick={handleAddComment} disabled={!newComment.trim() || commentLoading || uploadingFiles} size="sm" className="h-8">
+                              {commentLoading || uploadingFiles ? <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" /> : <Send className="h-4 w-4 mr-2" />}
                               {uploadingFiles ? 'Enviando...' : commentLoading ? 'Publicando...' : 'Publicar'}
                             </Button>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    </div>}
 
                   {/* Lista de Comentários */}
                   <ScrollArea className="flex-1 p-4 overflow-y-auto">
-                    {!user ? (
-                      <div className="text-center text-muted-foreground py-8">
+                    {!user ? <div className="text-center text-muted-foreground py-8">
                         <MessageSquare className="h-8 w-8 mx-auto mb-3 opacity-30" />
                         <h3 className="font-medium mb-2">Faça login para ver comentários</h3>
                         <p className="text-sm">Você precisa estar logado para visualizar discussões</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4 pb-4">
+                      </div> : <div className="space-y-4 pb-4">
                         {/* Comentário inicial - Descrição do SLA */}
                         <div className="mb-6 pb-4 border-b-2 border-dashed border-border/50">
                           <div className="flex gap-3">
@@ -894,7 +714,9 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                                   </Badge>
                                 </div>
                                 <span className="text-xs text-muted-foreground">
-                                  {format(new Date(sla.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                                  {format(new Date(sla.data_criacao), "dd/MM/yyyy 'às' HH:mm", {
+                              locale: ptBR
+                            })}
                                 </span>
                               </div>
                               
@@ -908,28 +730,22 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                                 <p className="text-sm leading-relaxed text-blue-800 dark:text-blue-200 whitespace-pre-wrap">
                                   {sla.descricao}
                                 </p>
-                                {sla.observacoes && (
-                                  <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                                {sla.observacoes && <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
                                     <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">Observações:</p>
                                     <p className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap">
                                       {sla.observacoes}
                                     </p>
-                                  </div>
-                                )}
+                                  </div>}
                               </div>
                             </div>
                           </div>
                         </div>
 
                         {/* Comentários da discussão */}
-                        {comments.length === 0 ? (
-                          <div className="text-center text-muted-foreground py-6">
+                        {comments.length === 0 ? <div className="text-center text-muted-foreground py-6">
                             <MessageSquare className="h-6 w-6 mx-auto mb-2 opacity-30" />
                             <p className="text-sm">Seja o primeiro a comentar neste SLA</p>
-                          </div>
-                        ) : (
-                          comments.map((comment) => (
-                            <div key={comment.id} className="flex gap-3 group animate-fade-in">
+                          </div> : comments.map(comment => <div key={comment.id} className="flex gap-3 group animate-fade-in">
                               <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
                                 <AvatarFallback className="text-xs">
                                   {comment.autor_nome.substring(0, 2).toUpperCase()}
@@ -940,52 +756,32 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                                    <div className="flex items-center gap-2">
                                      <span className="font-medium text-sm">{comment.autor_nome}</span>
                                      <span className="text-xs text-muted-foreground">
-                                       {format(new Date(comment.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                                       {format(new Date(comment.created_at), "dd/MM 'às' HH:mm", {
+                              locale: ptBR
+                            })}
                                      </span>
                                    </div>
-                                   {(canEdit && user?.id === comment.autor_id) || isSuperAdmin ? (
-                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                       {canEdit && user?.id === comment.autor_id && (
-                                         <Button
-                                           variant="ghost"
-                                           size="sm"
-                                           className="h-6 px-2 text-xs"
-                                           onClick={() => {
-                                             setSelectedCommentForEdit(comment);
-                                             setEditCommentModalOpen(true);
-                                           }}
-                                         >
+                                   {canEdit && user?.id === comment.autor_id || isSuperAdmin ? <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                       {canEdit && user?.id === comment.autor_id && <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => {
+                            setSelectedCommentForEdit(comment);
+                            setEditCommentModalOpen(true);
+                          }}>
                                            <Edit3 className="h-3 w-3" />
-                                         </Button>
-                                       )}
-                                       <Button
-                                         variant="ghost"
-                                         size="sm"
-                                         className="h-6 px-2 text-xs text-destructive hover:text-destructive"
-                                         onClick={() => {
-                                           setSelectedCommentForDelete(comment);
-                                           setDeleteCommentModalOpen(true);
-                                         }}
-                                       >
+                                         </Button>}
+                                       <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-destructive hover:text-destructive" onClick={() => {
+                            setSelectedCommentForDelete(comment);
+                            setDeleteCommentModalOpen(true);
+                          }}>
                                          <Trash2 className="h-3 w-3" />
                                        </Button>
-                                     </div>
-                                   ) : null}
+                                     </div> : null}
                                  </div>
                                 <div className="space-y-2">
                                   <p className="text-sm leading-relaxed break-words">{comment.comentario}</p>
                                   
                                   {/* Botão de anexos integrado */}
-                                  {comment.anexos && comment.anexos.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-2">
-                                      {comment.anexos.map((anexo, index) => (
-                                        <Button
-                                          key={index}
-                                          variant="outline"
-                                          size="sm"
-                                          className="h-auto p-2 flex items-center gap-2 bg-muted/10 hover:bg-muted/30 border-dashed"
-                                          onClick={() => downloadAttachment(anexo.url, anexo.nome)}
-                                        >
+                                  {comment.anexos && comment.anexos.length > 0 && <div className="flex flex-wrap gap-2 mt-2">
+                                      {comment.anexos.map((anexo, index) => <Button key={index} variant="outline" size="sm" className="h-auto p-2 flex items-center gap-2 bg-muted/10 hover:bg-muted/30 border-dashed" onClick={() => downloadAttachment(anexo.url, anexo.nome)}>
                                           <Paperclip className="h-3 w-3 text-muted-foreground" />
                                           <div className="flex flex-col items-start">
                                             <span className="text-xs font-medium truncate max-w-[120px]">
@@ -996,34 +792,23 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                                             </span>
                                           </div>
                                           <Download className="h-3 w-3 ml-1 opacity-70" />
-                                        </Button>
-                                      ))}
-                                    </div>
-                                  )}
+                                        </Button>)}
+                                    </div>}
                                 </div>
                               </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
+                            </div>)}
+                      </div>}
                   </ScrollArea>
                 </CardContent>
-              </Card>
-            ) : (
-              <Card className="flex-1 flex flex-col min-h-[400px] max-h-[400px]">
+              </Card> : <Card className="flex-1 flex flex-col min-h-[400px] max-h-[400px]">
                 <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
                   <ScrollArea className="flex-1 p-4 overflow-y-auto">
-                    {actionLogs.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-8">
+                    {actionLogs.length === 0 ? <div className="text-center text-muted-foreground py-8">
                         <History className="h-8 w-8 mx-auto mb-3 opacity-30" />
                         <h3 className="font-medium mb-2">Nenhuma ação registrada</h3>
                         <p className="text-sm">As ações realizadas neste SLA aparecerão aqui</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {actionLogs.map((log) => (
-                          <div key={log.id} className="flex gap-3 pb-3 border-b border-border/30 last:border-0 animate-fade-in">
+                      </div> : <div className="space-y-4">
+                        {actionLogs.map(log => <div key={log.id} className="flex gap-3 pb-3 border-b border-border/30 last:border-0 animate-fade-in">
                             <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
@@ -1033,22 +818,19 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                                 </span>
                               </div>
                               <p className="text-xs text-muted-foreground mb-1">
-                                {format(new Date(log.timestamp), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                                {format(new Date(log.timestamp), "dd/MM/yyyy 'às' HH:mm", {
+                          locale: ptBR
+                        })}
                               </p>
-                              {log.justificativa && (
-                                <p className="text-sm mt-1 text-muted-foreground italic">
+                              {log.justificativa && <p className="text-sm mt-1 text-muted-foreground italic">
                                   "{log.justificativa}"
-                                </p>
-                              )}
+                                </p>}
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          </div>)}
+                      </div>}
                   </ScrollArea>
                 </CardContent>
-              </Card>
-            )}
+              </Card>}
           </div>
 
           {/* Informações Básicas */}
@@ -1076,7 +858,9 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                   <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
                   <div className="flex items-center gap-2 mt-1">
                     <Calendar className="h-4 w-4" />
-                    <span>{format(new Date(sla.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
+                    <span>{format(new Date(sla.data_criacao), "dd/MM/yyyy 'às' HH:mm", {
+                      locale: ptBR
+                    })}</span>
                   </div>
                 </div>
                 <div>
@@ -1095,37 +879,25 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                 <p className="mt-1 text-sm">{sla.descricao}</p>
               </div>
               
-              {sla.observacoes && (
-                <div>
+              {sla.observacoes && <div>
                   <label className="text-sm font-medium text-muted-foreground">Observações</label>
                   <p className="mt-1 text-sm">{sla.observacoes}</p>
-                </div>
-              )}
+                </div>}
             </CardContent>
           </Card>
         </div>
       </DialogContent>
 
       {/* Modais de Edição e Exclusão de Comentários */}
-      <CommentEditModal
-        comment={selectedCommentForEdit}
-        isOpen={editCommentModalOpen}
-        onClose={() => {
-          setEditCommentModalOpen(false);
-          setSelectedCommentForEdit(null);
-        }}
-        onUpdate={loadComments}
-      />
+      <CommentEditModal comment={selectedCommentForEdit} isOpen={editCommentModalOpen} onClose={() => {
+      setEditCommentModalOpen(false);
+      setSelectedCommentForEdit(null);
+    }} onUpdate={loadComments} />
 
-      <CommentDeleteModal
-        comment={selectedCommentForDelete}
-        isOpen={deleteCommentModalOpen}
-        onClose={() => {
-          setDeleteCommentModalOpen(false);
-          setSelectedCommentForDelete(null);
-        }}
-        onDelete={loadComments}
-      />
-    </Dialog>
-  );
-};
+      <CommentDeleteModal comment={selectedCommentForDelete} isOpen={deleteCommentModalOpen} onClose={() => {
+      setDeleteCommentModalOpen(false);
+      setSelectedCommentForDelete(null);
+    }} onDelete={loadComments} />
+    </Dialog>;
+}
+;
