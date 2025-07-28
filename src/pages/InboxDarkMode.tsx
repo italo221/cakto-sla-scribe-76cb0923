@@ -400,21 +400,12 @@ export default function Inbox() {
           return true;
         }
 
-        // Fallback: verificar por time_responsavel com várias possibilidades
+        // Fallback: verificar por time_responsavel com comparação exata
         const timeResponsavel = ticket.time_responsavel?.trim();
         const nomeSetor = setorSelecionado.nome?.trim();
         
-        // Comparação exata
-        if (timeResponsavel === nomeSetor) return true;
-        
-        // Comparação case-insensitive
-        if (timeResponsavel?.toLowerCase() === nomeSetor?.toLowerCase()) return true;
-        
-        // Casos especiais de inconsistência conhecidos
-        if (nomeSetor === 'TI SUPORTE' && timeResponsavel === 'TI Suporte') return true;
-        if (nomeSetor === 'Suporte' && timeResponsavel === 'TI Suporte') return true;
-        
-        return false;
+        // Comparação exata apenas - agora que os nomes estão consistentes
+        return timeResponsavel === nomeSetor;
       });
     }
     return filtered;
@@ -452,18 +443,11 @@ export default function Inbox() {
         // Verificar por setor_id primeiro
         if (ticket.setor_id === setor.id) return true;
         
-        // Fallback para time_responsavel com comparações flexíveis
+        // Fallback para time_responsavel com comparação exata
         const timeResponsavel = ticket.time_responsavel?.trim();
         const nomeSetor = setor.nome?.trim();
         
-        if (timeResponsavel === nomeSetor) return true;
-        if (timeResponsavel?.toLowerCase() === nomeSetor?.toLowerCase()) return true;
-        
-        // Casos especiais
-        if (nomeSetor === 'TI SUPORTE' && timeResponsavel === 'TI Suporte') return true;
-        if (nomeSetor === 'Suporte' && timeResponsavel === 'TI Suporte') return true;
-        
-        return false;
+        return timeResponsavel === nomeSetor;
       }).length;
     });
     return counts;

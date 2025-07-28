@@ -224,7 +224,7 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
                   <SelectItem value="Marketing">Marketing</SelectItem>
                   <SelectItem value="Produto">Produto</SelectItem>
                   <SelectItem value="Suporte">Suporte</SelectItem>
-                  <SelectItem value="TI Suporte">TI Suporte</SelectItem>
+                  <SelectItem value="TI">TI</SelectItem>
                   <SelectItem value="Jurídico">Jurídico</SelectItem>
                   <SelectItem value="Financeiro">Financeiro</SelectItem>
                 </SelectContent>
