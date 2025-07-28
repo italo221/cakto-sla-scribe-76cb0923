@@ -152,14 +152,15 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
       
       const observacoes = `Criado manualmente - Impacto: ${impactoOptions.find(opt => opt.value === formData.impacto)?.label}${formData.justificativa_impacto ? `\nJustificativa: ${formData.justificativa_impacto}` : ''}`;
       
+      // IMPORTANTE: O setor selecionado é quem deve ser responsável, não o criador
       const { error } = await supabase
         .from('sla_demandas')
         .insert({
           titulo: formData.titulo,
-          time_responsavel: formData.setor,
-          solicitante: user.email || 'Usuário logado',
+          time_responsavel: formData.setor, // Setor selecionado = responsável
+          solicitante: user.email || 'Usuário logado', // Criador = solicitante
           descricao: formData.descricao,
-          tipo_ticket: formData.tipo_ticket, // Agora usa o valor correto mapeado
+          tipo_ticket: formData.tipo_ticket,
           nivel_criticidade: criticidade,
           pontuacao_total: pontos,
           pontuacao_financeiro: Math.floor(pontos * 0.3),

@@ -61,10 +61,10 @@ export default function Inbox() {
   const [setores, setSetores] = useState<Setor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [criticalityFilter, setCriticalityFilter] = useState('all');
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'aberto' | 'em_andamento' | 'resolvido' | 'fechado' | 'atrasado' | 'critico'>('all');
   const [setorFilter, setSetorFilter] = useState('all');
-  const [showOnlyExpired, setShowOnlyExpired] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -72,8 +72,6 @@ export default function Inbox() {
   const [selectedTicketForEdit, setSelectedTicketForEdit] = useState<Ticket | null>(null);
   const [selectedTicketForDelete, setSelectedTicketForDelete] = useState<Ticket | null>(null);
   const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('detailed');
-  const [favoriteFilters, setFavoriteFilters] = useState<string[]>([]);
-  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   
   const { user, canEdit, isSuperAdmin } = useAuth();
   const [userRole, setUserRole] = useState<string>('viewer');
@@ -306,46 +304,119 @@ export default function Inbox() {
     }));
   }, [tickets, userRole]);
 
+  // Busca inteligente com sugestões
+  const generateSearchSuggestions = useCallback((term: string) => {
+    if (!term || term.length < 2) return [];
+    
+    const suggestions = new Set<string>();
+    const lowerTerm = term.toLowerCase();
+    
+    // Buscar em títulos, solicitantes, setores e números de ticket
+    ticketsWithStatus.forEach(ticket => {
+      // Títulos que contenham o termo
+      if (ticket.titulo.toLowerCase().includes(lowerTerm)) {
+        suggestions.add(ticket.titulo);
+      }
+      
+      // Solicitantes que contenham o termo
+      if (ticket.solicitante.toLowerCase().includes(lowerTerm)) {
+        suggestions.add(ticket.solicitante);
+      }
+      
+      // Setores que contenham o termo
+      if (ticket.time_responsavel.toLowerCase().includes(lowerTerm)) {
+        suggestions.add(ticket.time_responsavel);
+      }
+      
+      // Números de ticket que contenham o termo
+      if (ticket.ticket_number && ticket.ticket_number.toLowerCase().includes(lowerTerm)) {
+        suggestions.add(ticket.ticket_number);
+      }
+    });
+    
+    // Priorizar sugestões - tickets críticos e recentes primeiro
+    return Array.from(suggestions)
+      .slice(0, 8)
+      .sort((a, b) => {
+        const aTicket = ticketsWithStatus.find(t => 
+          t.titulo === a || t.solicitante === a || t.time_responsavel === a || t.ticket_number === a
+        );
+        const bTicket = ticketsWithStatus.find(t => 
+          t.titulo === b || t.solicitante === b || t.time_responsavel === b || t.ticket_number === b
+        );
+        
+        if (!aTicket || !bTicket) return 0;
+        
+        // Priorizar por criticidade
+        const criticalityOrder = { 'P0': 4, 'P1': 3, 'P2': 2, 'P3': 1 };
+        const aCritical = criticalityOrder[aTicket.nivel_criticidade as keyof typeof criticalityOrder] || 0;
+        const bCritical = criticalityOrder[bTicket.nivel_criticidade as keyof typeof criticalityOrder] || 0;
+        
+        if (aCritical !== bCritical) return bCritical - aCritical;
+        
+        // Depois por data (mais recentes primeiro)
+        return new Date(bTicket.data_criacao).getTime() - new Date(aTicket.data_criacao).getTime();
+      });
+  }, [ticketsWithStatus]);
+
+  // Atualizar sugestões quando o termo de busca mudar
+  useEffect(() => {
+    const suggestions = generateSearchSuggestions(searchTerm);
+    setSearchSuggestions(suggestions);
+    setShowSuggestions(searchTerm.length >= 2 && suggestions.length > 0);
+  }, [searchTerm, generateSearchSuggestions]);
+
+  // Busca inteligente com suporte a palavras incompletas e tolerância a erros
+  const smartSearch = useCallback((ticket: any, term: string) => {
+    if (!term) return true;
+    
+    const lowerTerm = term.toLowerCase();
+    const searchFields = [
+      ticket.titulo,
+      ticket.descricao,
+      ticket.solicitante,
+      ticket.time_responsavel,
+      ticket.ticket_number,
+      ...(ticket.tags || [])
+    ].filter(Boolean).map(field => field.toLowerCase());
+    
+    // Busca exata
+    const exactMatch = searchFields.some(field => field.includes(lowerTerm));
+    if (exactMatch) return true;
+    
+    // Busca por palavras parciais (para busca inteligente tipo Google)
+    const termWords = lowerTerm.split(' ').filter(word => word.length > 1);
+    const partialMatch = termWords.every(word => 
+      searchFields.some(field => field.includes(word))
+    );
+    
+    return partialMatch;
+  }, []);
+
   // Aplicar filtros aos tickets com status info
   const filteredTicketsWithStatus = useMemo(() => {
     let filtered = ticketsWithStatus;
 
-    // Filtro por termo de busca (incluindo tags)
+    // Busca inteligente
     if (searchTerm) {
-      filtered = filtered.filter(ticket => 
-        ticket.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.solicitante.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.time_responsavel.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (ticket.ticket_number && ticket.ticket_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (ticket.tags && ticket.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
-      );
+      filtered = filtered.filter(ticket => smartSearch(ticket, searchTerm));
     }
 
-    // Filtro por status - CORREÇÃO COMPLETA: Cada status mostra APENAS seus próprios tickets
-    if (statusFilter !== 'all') {
+    // Sistema de filtros unificado - apenas um filtro ativo por vez
+    if (activeFilter !== 'all') {
       filtered = filtered.filter(ticket => {
         const ticketStatus = ticket.status?.toString()?.trim()?.toLowerCase();
-        const filterStatus = statusFilter?.toString()?.trim()?.toLowerCase();
         
-        // Filtro especial para tickets atrasados
-        if (filterStatus === 'atrasado') {
-          return ticket.statusInfo.isExpired;
+        switch (activeFilter) {
+          case 'atrasado':
+            return ticket.statusInfo.isExpired;
+          case 'critico':
+            return ticket.nivel_criticidade === 'P0';
+          default:
+            // Para outros status, mostrar APENAS tickets com aquele status E que NÃO estejam atrasados
+            return ticketStatus === activeFilter && !ticket.statusInfo.isExpired;
         }
-        
-        // Para outros status, mostrar APENAS tickets com aquele status E que NÃO estejam atrasados
-        return ticketStatus === filterStatus && !ticket.statusInfo.isExpired;
       });
-    }
-
-    // Filtro específico para mostrar apenas tickets atrasados (usado pelos cards de estatística)
-    if (showOnlyExpired) {
-      filtered = filtered.filter(ticket => ticket.statusInfo.isExpired);
-    }
-
-    // Filtro por criticidade
-    if (criticalityFilter !== 'all') {
-      filtered = filtered.filter(ticket => ticket.nivel_criticidade === criticalityFilter);
     }
 
     // Filtro por setor - FONTE DA VERDADE: time_responsavel (campo obrigatório)
@@ -363,7 +434,7 @@ export default function Inbox() {
     }
 
     return filtered;
-  }, [ticketsWithStatus, searchTerm, statusFilter, criticalityFilter, setorFilter, showOnlyExpired]);
+  }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, smartSearch]);
 
   // Cálculo de contagens dos cards baseadas na mesma lógica dos filtros
   const cardCounts = useMemo(() => {
@@ -555,48 +626,41 @@ export default function Inbox() {
         <div className="bg-card dark:bg-card rounded-lg border border-border dark:border-border p-4 space-y-4">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground dark:text-muted-foreground h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Buscar por título, descrição, solicitante ou tags..."
+                placeholder="Buscar tickets (títulos, solicitantes, setores...)"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border"
+                onFocus={() => setShowSuggestions(searchTerm.length >= 2 && searchSuggestions.length > 0)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                className="pl-10 bg-background text-foreground border-border focus:border-primary"
               />
             </div>
             
+            {/* Dropdown de sugestões de busca */}
+            {showSuggestions && searchSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                {searchSuggestions.map((suggestion, index) => (
+                  <div
+                    key={index}
+                    className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
+                    onClick={() => {
+                      setSearchTerm(suggestion);
+                      setShowSuggestions(false);
+                    }}
+                  >
+                    {suggestion}
+                  </div>
+                ))}
+              </div>
+            )}
+            
             <div className="flex gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[140px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-background dark:bg-background border-border dark:border-border">
-                  <SelectItem value="all">Todos Status</SelectItem>
-                  <SelectItem value="aberto">Aberto</SelectItem>
-                  <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                  <SelectItem value="resolvido">Resolvido</SelectItem>
-                  <SelectItem value="fechado">Fechado</SelectItem>
-                  <SelectItem value="atrasado">Atrasados</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={criticalityFilter} onValueChange={setCriticalityFilter}>
-                <SelectTrigger className="w-[120px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-background dark:bg-background border-border dark:border-border">
-                  <SelectItem value="all">Criticidade</SelectItem>
-                  <SelectItem value="P0">P0 - Crítico</SelectItem>
-                  <SelectItem value="P1">P1 - Alto</SelectItem>
-                  <SelectItem value="P2">P2 - Médio</SelectItem>
-                  <SelectItem value="P3">P3 - Baixo</SelectItem>
-                </SelectContent>
-              </Select>
-
               <Select value={setorFilter} onValueChange={setSetorFilter}>
                 <SelectTrigger className="w-[160px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
-                  <SelectValue />
+                  <SelectValue placeholder="Setor" />
                 </SelectTrigger>
-                <SelectContent className="bg-background dark:bg-background border-border dark:border-border">
+                <SelectContent className="bg-popover border border-border">
                   <SelectItem value="all">Todos Setores</SelectItem>
                   {setores.map((setor) => (
                     <SelectItem key={setor.id} value={setor.id}>
@@ -609,17 +673,14 @@ export default function Inbox() {
           </div>
         </div>
 
-        {/* Status Cards */}
+        {/* Status Cards - Sistema de filtro unificado */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <Card 
             className={cn(
               "cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card",
-              statusFilter === 'aberto' ? 'ring-2 ring-slate-500 border-l-slate-500 bg-slate-50 dark:bg-slate-800' : 'border-l-slate-400 hover:border-l-slate-500'
+              activeFilter === 'aberto' ? 'ring-2 ring-slate-500 border-l-slate-500 bg-slate-50 dark:bg-slate-800' : 'border-l-slate-400 hover:border-l-slate-500'
             )}
-            onClick={() => {
-              setStatusFilter(statusFilter === 'aberto' ? 'all' : 'aberto');
-              setShowOnlyExpired(false);
-            }}
+            onClick={() => setActiveFilter(activeFilter === 'aberto' ? 'all' : 'aberto')}
           >
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
@@ -633,12 +694,9 @@ export default function Inbox() {
           <Card 
             className={cn(
               "cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card",
-              statusFilter === 'em_andamento' ? 'ring-2 ring-blue-500 border-l-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-l-blue-400 hover:border-l-blue-500'
+              activeFilter === 'em_andamento' ? 'ring-2 ring-blue-500 border-l-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-l-blue-400 hover:border-l-blue-500'
             )}
-            onClick={() => {
-              setStatusFilter(statusFilter === 'em_andamento' ? 'all' : 'em_andamento');
-              setShowOnlyExpired(false);
-            }}
+            onClick={() => setActiveFilter(activeFilter === 'em_andamento' ? 'all' : 'em_andamento')}
           >
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
@@ -652,12 +710,9 @@ export default function Inbox() {
           <Card 
             className={cn(
               "cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card",
-              statusFilter === 'resolvido' ? 'ring-2 ring-green-500 border-l-green-500 bg-green-50 dark:bg-green-900/20' : 'border-l-green-400 hover:border-l-green-500'
+              activeFilter === 'resolvido' ? 'ring-2 ring-green-500 border-l-green-500 bg-green-50 dark:bg-green-900/20' : 'border-l-green-400 hover:border-l-green-500'
             )}
-            onClick={() => {
-              setStatusFilter(statusFilter === 'resolvido' ? 'all' : 'resolvido');
-              setShowOnlyExpired(false);
-            }}
+            onClick={() => setActiveFilter(activeFilter === 'resolvido' ? 'all' : 'resolvido')}
           >
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
@@ -671,12 +726,9 @@ export default function Inbox() {
           <Card 
             className={cn(
               "cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card",
-              statusFilter === 'fechado' ? 'ring-2 ring-gray-500 border-l-gray-500 bg-gray-50 dark:bg-gray-800' : 'border-l-gray-400 hover:border-l-gray-500'
+              activeFilter === 'fechado' ? 'ring-2 ring-gray-500 border-l-gray-500 bg-gray-50 dark:bg-gray-800' : 'border-l-gray-400 hover:border-l-gray-500'
             )}
-            onClick={() => {
-              setStatusFilter(statusFilter === 'fechado' ? 'all' : 'fechado');
-              setShowOnlyExpired(false);
-            }}
+            onClick={() => setActiveFilter(activeFilter === 'fechado' ? 'all' : 'fechado')}
           >
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
@@ -690,12 +742,9 @@ export default function Inbox() {
           <Card 
             className={cn(
               "cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card",
-              statusFilter === 'atrasado' ? 'ring-2 ring-red-500 border-l-red-500 bg-red-50 dark:bg-red-900/20' : 'border-l-red-400 hover:border-l-red-500'
+              activeFilter === 'atrasado' ? 'ring-2 ring-red-500 border-l-red-500 bg-red-50 dark:bg-red-900/20' : 'border-l-red-400 hover:border-l-red-500'
             )}
-            onClick={() => {
-              setStatusFilter(statusFilter === 'atrasado' ? 'all' : 'atrasado');
-              setShowOnlyExpired(true);
-            }}
+            onClick={() => setActiveFilter(activeFilter === 'atrasado' ? 'all' : 'atrasado')}
           >
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
@@ -709,13 +758,9 @@ export default function Inbox() {
           <Card 
             className={cn(
               "cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card",
-              criticalityFilter === 'P0' ? 'ring-2 ring-red-600 border-l-red-600 bg-red-50 dark:bg-red-900/20' : 'border-l-red-500 hover:border-l-red-600'
+              activeFilter === 'critico' ? 'ring-2 ring-red-600 border-l-red-600 bg-red-50 dark:bg-red-900/20' : 'border-l-red-500 hover:border-l-red-600'
             )}
-            onClick={() => {
-              setCriticalityFilter(criticalityFilter === 'P0' ? 'all' : 'P0');
-              setStatusFilter('all');
-              setShowOnlyExpired(false);
-            }}
+            onClick={() => setActiveFilter(activeFilter === 'critico' ? 'all' : 'critico')}
           >
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
@@ -758,16 +803,15 @@ export default function Inbox() {
             <span>
               {filteredTicketsWithStatus.length} de {tickets.length} tickets
             </span>
-            {(searchTerm || statusFilter !== 'all' || criticalityFilter !== 'all' || setorFilter !== 'all') && (
+            {(searchTerm || activeFilter !== 'all' || setorFilter !== 'all') && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
                   setSearchTerm('');
-                  setStatusFilter('all');
-                  setCriticalityFilter('all');
+                  setActiveFilter('all');
                   setSetorFilter('all');
-                  setShowOnlyExpired(false);
+                  setShowSuggestions(false);
                 }}
                 className="text-xs"
               >
@@ -789,13 +833,13 @@ export default function Inbox() {
               <CardContent className="p-8 text-center">
                 <InboxIcon className="h-12 w-12 text-muted-foreground dark:text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground dark:text-foreground mb-2">
-                  {searchTerm || statusFilter !== 'all' || criticalityFilter !== 'all' || setorFilter !== 'all' 
+                  {searchTerm || activeFilter !== 'all' || setorFilter !== 'all' 
                     ? 'Nenhum ticket encontrado' 
                     : 'Nenhum ticket cadastrado'
                   }
                 </h3>
                 <p className="text-muted-foreground dark:text-muted-foreground">
-                  {searchTerm || statusFilter !== 'all' || criticalityFilter !== 'all' || setorFilter !== 'all'
+                  {searchTerm || activeFilter !== 'all' || setorFilter !== 'all'
                     ? 'Tente ajustar os filtros de busca.'
                     : 'Quando houver tickets, eles aparecerão aqui.'
                   }
