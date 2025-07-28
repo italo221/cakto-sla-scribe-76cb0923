@@ -45,17 +45,6 @@ export default function TicketDeleteModal({ ticket, isOpen, onClose, onDelete }:
 
     setLoading(true);
     try {
-      // Log da ação antes de deletar
-      await supabase.rpc('log_sla_action', {
-        p_sla_id: ticket.id,
-        p_acao: 'exclusao_ticket',
-        p_justificativa: 'Ticket excluído pelo administrador',
-        p_dados_anteriores: {
-          titulo: ticket.titulo,
-          solicitante: ticket.solicitante
-        }
-      });
-
       // Deletar comentários primeiro (devido às foreign keys)
       await supabase
         .from('sla_comentarios_internos')
@@ -81,6 +70,17 @@ export default function TicketDeleteModal({ ticket, isOpen, onClose, onDelete }:
         .eq('id', ticket.id);
 
       if (error) throw error;
+
+      // Log da ação APÓS deletar com sucesso
+      await supabase.rpc('log_sla_action', {
+        p_sla_id: ticket.id,
+        p_acao: 'exclusao_ticket',
+        p_justificativa: 'Ticket excluído pelo administrador',
+        p_dados_anteriores: {
+          titulo: ticket.titulo,
+          solicitante: ticket.solicitante
+        }
+      });
 
       toast({
         title: "Ticket excluído",
