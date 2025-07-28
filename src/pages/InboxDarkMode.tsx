@@ -622,7 +622,9 @@ export default function Inbox() {
             }}
           >
             <CardContent className="p-4 text-center">
-              <Circle className="h-6 w-6 mx-auto mb-2 text-slate-400 dark:text-slate-300" />
+              <div className="flex justify-center mb-2">
+                <Circle className="h-6 w-6 text-slate-400 dark:text-slate-300" />
+              </div>
               <div className="text-2xl font-bold text-slate-700 dark:text-slate-100">{cardCounts.aberto}</div>
               <div className="text-sm text-slate-600 dark:text-slate-300">Abertos</div>
             </CardContent>
@@ -639,7 +641,9 @@ export default function Inbox() {
             }}
           >
             <CardContent className="p-4 text-center">
-              <Activity className="h-6 w-6 mx-auto mb-2 text-blue-500 dark:text-blue-400" />
+              <div className="flex justify-center mb-2">
+                <Activity className="h-6 w-6 text-blue-500 dark:text-blue-400" />
+              </div>
               <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{cardCounts.em_andamento}</div>
               <div className="text-sm text-blue-600 dark:text-blue-400">Em Andamento</div>
             </CardContent>
@@ -656,7 +660,9 @@ export default function Inbox() {
             }}
           >
             <CardContent className="p-4 text-center">
-              <CheckCircle className="h-6 w-6 mx-auto mb-2 text-green-500 dark:text-green-400" />
+              <div className="flex justify-center mb-2">
+                <CheckCircle className="h-6 w-6 text-green-500 dark:text-green-400" />
+              </div>
               <div className="text-2xl font-bold text-green-700 dark:text-green-300">{cardCounts.resolvido}</div>
               <div className="text-sm text-green-600 dark:text-green-400">Resolvidos</div>
             </CardContent>
@@ -673,7 +679,9 @@ export default function Inbox() {
             }}
           >
             <CardContent className="p-4 text-center">
-              <X className="h-6 w-6 mx-auto mb-2 text-gray-500 dark:text-gray-400" />
+              <div className="flex justify-center mb-2">
+                <X className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+              </div>
               <div className="text-2xl font-bold text-gray-700 dark:text-gray-300">{cardCounts.fechado}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Fechados</div>
             </CardContent>
@@ -690,9 +698,33 @@ export default function Inbox() {
             }}
           >
             <CardContent className="p-4 text-center">
-              <AlertTriangle className="h-6 w-6 mx-auto mb-2 text-red-500 dark:text-red-400" />
+              <div className="flex justify-center mb-2">
+                <AlertTriangle className="h-6 w-6 text-red-500 dark:text-red-400" />
+              </div>
               <div className="text-2xl font-bold text-red-700 dark:text-red-300">{cardCounts.atrasado}</div>
               <div className="text-sm text-red-600 dark:text-red-400">Atrasados</div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={cn(
+              "cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card",
+              criticalityFilter === 'P0' ? 'ring-2 ring-red-600 border-l-red-600 bg-red-50 dark:bg-red-900/20' : 'border-l-red-500 hover:border-l-red-600'
+            )}
+            onClick={() => {
+              setCriticalityFilter(criticalityFilter === 'P0' ? 'all' : 'P0');
+              setStatusFilter('all');
+              setShowOnlyExpired(false);
+            }}
+          >
+            <CardContent className="p-4 text-center">
+              <div className="flex justify-center mb-2">
+                <Flag className="h-6 w-6 text-red-600 dark:text-red-500" />
+              </div>
+              <div className="text-2xl font-bold text-red-800 dark:text-red-300">
+                {ticketsWithStatus.filter(t => t.nivel_criticidade === 'P0').length}
+              </div>
+              <div className="text-sm text-red-700 dark:text-red-400">Críticos</div>
             </CardContent>
           </Card>
         </div>
