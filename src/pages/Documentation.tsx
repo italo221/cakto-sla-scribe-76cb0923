@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,6 +29,7 @@ const Documentation = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSection, setActiveSection] = useState("overview");
   const { toast } = useToast();
+  const { systemName } = useSystemSettings();
 
   const sections = [
     { id: "overview", label: "Visão Geral", icon: BookOpen, color: "text-blue-600" },
@@ -51,13 +53,13 @@ const Documentation = () => {
         <div className="text-center space-y-6 animate-fade-in-up">
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
             <BookOpen className="h-4 w-4" />
-            Documentação Sistema Manhattan
+            Documentação Sistema {systemName}
           </div>
           <h1 className="text-5xl font-bold text-gradient mb-4">
-            Sistema Manhattan
+            Sistema {systemName}
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Guia completo para utilizar o sistema de gestão de tickets Manhattan - 
+            Guia completo para utilizar o sistema de gestão de tickets {systemName} - 
             Plataforma moderna com Kanban, permissões granulares e personalização completa.
           </p>
           
