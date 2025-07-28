@@ -12,9 +12,9 @@ let lastFetchTime = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
 export const useSystemSettings = () => {
-  const [systemName, setSystemName] = useState('');
+  const [systemName, setSystemName] = useState('Cakto');
   const [systemLogo, setSystemLogo] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const fetchSystemSettings = async (forceRefresh = false) => {
     const now = Date.now();

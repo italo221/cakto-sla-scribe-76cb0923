@@ -39,48 +39,60 @@ function App() {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <div className="animate-fade-in">
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard" element={
+            <Routes>
+              <Route path="/" element={<div className="animate-fade-in"><Index /></div>} />
+              <Route path="/auth" element={<div className="animate-fade-in"><Auth /></div>} />
+              <Route path="/dashboard" element={
+                <div className="animate-fade-in">
                   <ProtectedRoute>
                     <Dashboard />
                   </ProtectedRoute>
-                } />
-                <Route path="/integrations" element={
+                </div>
+              } />
+              <Route path="/integrations" element={
+                <div className="animate-fade-in">
                   <ProtectedRoute>
                     <Integrations />
                   </ProtectedRoute>
-                } />
-                <Route path="/inbox" element={
+                </div>
+              } />
+              <Route path="/inbox" element={
+                <div className="animate-fade-in">
                   <ProtectedRoute>
                     <Inbox />
                   </ProtectedRoute>
-                } />
-                <Route path="/kanban" element={
+                </div>
+              } />
+              <Route path="/kanban" element={
+                <div className="animate-fade-in">
                   <ProtectedRoute>
                     <Kanban />
                   </ProtectedRoute>
-                } />
-                <Route path="/documentation" element={
+                </div>
+              } />
+              <Route path="/documentation" element={
+                <div className="animate-fade-in">
                   <ProtectedRoute>
                     <Documentation />
                   </ProtectedRoute>
-                } />
-                <Route path="/admin" element={
+                </div>
+              } />
+              <Route path="/admin" element={
+                <div className="animate-fade-in">
                   <ProtectedRoute requireSuperAdmin>
                     <Admin />
                   </ProtectedRoute>
-                } />
-                <Route path="/customization" element={
+                </div>
+              } />
+              <Route path="/customization" element={
+                <div className="animate-fade-in">
                   <ProtectedRoute requireSuperAdmin>
                     <Customization />
                   </ProtectedRoute>
-                } />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </div>
+                </div>
+              } />
+              <Route path="*" element={<div className="animate-fade-in"><NotFound /></div>} />
+            </Routes>
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>
