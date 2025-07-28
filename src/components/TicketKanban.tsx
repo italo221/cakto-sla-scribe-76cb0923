@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useTicketStatus, validateStatusChange, type TicketStatusType } from "@/hooks/useTicketStatus";
-
 interface Ticket {
   id: string;
   ticket_number: string;
@@ -33,7 +32,6 @@ interface Ticket {
   prazo_interno?: string;
   prioridade_operacional?: string;
 }
-
 interface KanbanCardProps {
   ticket: Ticket;
   isDragging?: boolean;
@@ -41,7 +39,6 @@ interface KanbanCardProps {
   onEditTicket?: (ticket: Ticket) => void;
   userCanEdit: boolean;
 }
-
 interface KanbanColumnProps {
   title: string;
   status: string;
@@ -51,7 +48,6 @@ interface KanbanColumnProps {
   onEditTicket?: (ticket: Ticket) => void;
   userCanEdit: boolean;
 }
-
 interface TicketKanbanProps {
   tickets: Ticket[];
   onOpenDetail: (ticket: Ticket) => void;
@@ -61,41 +57,41 @@ interface TicketKanbanProps {
 }
 
 // Componente do card do ticket no Kanban
-function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdit }: KanbanCardProps) {
+function KanbanCard({
+  ticket,
+  isDragging,
+  onOpenDetail,
+  onEditTicket,
+  userCanEdit
+}: KanbanCardProps) {
   const [isDragActive, setIsDragActive] = useState(false);
-  
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
-    isDragging: isSortableDragging,
-  } = useSortable({ 
+    isDragging: isSortableDragging
+  } = useSortable({
     id: ticket.id,
     disabled: !userCanEdit
   });
-
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition
   };
-
   const isExpired = () => {
     const timeConfig = {
       'P0': 4 * 60 * 60 * 1000,
       'P1': 24 * 60 * 60 * 1000,
       'P2': 3 * 24 * 60 * 60 * 1000,
-      'P3': 7 * 24 * 60 * 60 * 1000,
+      'P3': 7 * 24 * 60 * 60 * 1000
     };
-    
     const startTime = new Date(ticket.data_criacao).getTime();
     const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
     const deadline = startTime + timeLimit;
-    
     return Date.now() > deadline && ticket.status !== 'resolvido' && ticket.status !== 'fechado';
   };
-
   const getCriticalityColor = (criticality: string) => {
     const colors = {
       'P0': 'bg-destructive text-destructive-foreground',
@@ -107,14 +103,14 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdi
   };
 
   // Usar lógica centralizada de status
-  const statusInfo = useTicketStatus({ 
-    ticket: { 
-      id: ticket.id, 
-      status: ticket.status, 
-      nivel_criticidade: ticket.nivel_criticidade, 
-      data_criacao: ticket.data_criacao 
-    }, 
-    userRole: userCanEdit ? 'super_admin' : 'viewer' 
+  const statusInfo = useTicketStatus({
+    ticket: {
+      id: ticket.id,
+      status: ticket.status,
+      nivel_criticidade: ticket.nivel_criticidade,
+      data_criacao: ticket.data_criacao
+    },
+    userRole: userCanEdit ? 'super_admin' : 'viewer'
   });
 
   // Handlers para clique vs drag melhorados
@@ -122,53 +118,30 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdi
     if (!userCanEdit) return;
     setIsDragActive(true);
   };
-
   const handleMouseUp = () => {
     setIsDragActive(false);
   };
-
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isDragActive && !isSortableDragging) {
       onOpenDetail(ticket);
     }
   };
-
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onEditTicket) {
       onEditTicket(ticket);
     }
   };
-
-  return (
-    <Card
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...(userCanEdit ? listeners : {})}
-      className={cn(
-        "transition-all duration-300 group bg-white animate-fade-in relative cursor-pointer",
-        "border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md",
-        // Usar cores do statusInfo
-        statusInfo.bgColor,
-        statusInfo.borderColor,
-        // Destaque sutil para criticidade
-        ticket.nivel_criticidade === 'P0' && "border-l-4 border-l-red-500",
-        ticket.nivel_criticidade === 'P1' && "border-l-4 border-l-orange-500",
-        ticket.nivel_criticidade === 'P2' && "border-l-4 border-l-yellow-500",
-        ticket.nivel_criticidade === 'P3' && "border-l-4 border-l-blue-500",
-        // Estados de drag - animações mais fluidas
-        isDragging && "opacity-90 rotate-2 scale-105 shadow-2xl z-50 ring-2 ring-blue-300",
-        isSortableDragging && "shadow-xl scale-105 rotate-2 border-blue-400",
-        // Hover effect melhorado
-        userCanEdit && "hover:scale-102 hover:shadow-lg"
-      )}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onClick={handleClick}
-    >
+  return <Card ref={setNodeRef} style={style} {...attributes} {...userCanEdit ? listeners : {}} className={cn("transition-all duration-300 group bg-white animate-fade-in relative cursor-pointer", "border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md",
+  // Usar cores do statusInfo
+  statusInfo.bgColor, statusInfo.borderColor,
+  // Destaque sutil para criticidade
+  ticket.nivel_criticidade === 'P0' && "border-l-4 border-l-red-500", ticket.nivel_criticidade === 'P1' && "border-l-4 border-l-orange-500", ticket.nivel_criticidade === 'P2' && "border-l-4 border-l-yellow-500", ticket.nivel_criticidade === 'P3' && "border-l-4 border-l-blue-500",
+  // Estados de drag - animações mais fluidas
+  isDragging && "opacity-90 rotate-2 scale-105 shadow-2xl z-50 ring-2 ring-blue-300", isSortableDragging && "shadow-xl scale-105 rotate-2 border-blue-400",
+  // Hover effect melhorado
+  userCanEdit && "hover:scale-102 hover:shadow-lg")} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onClick={handleClick}>
       <CardContent className="p-3 space-y-2">
         {/* Header compacto */}
         <div className="flex items-center justify-between">
@@ -178,22 +151,14 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdi
           <div className="flex items-center gap-1">
             {/* Badge de status com lógica centralizada */}
             {(() => {
-              const StatusIcon = statusInfo.icon;
-              return (
-                <Badge className={`${statusInfo.bgColor} ${statusInfo.textColor} ${statusInfo.borderColor} flex items-center gap-1 text-xs px-2 py-1`}>
+            const StatusIcon = statusInfo.icon;
+            return <Badge className={`${statusInfo.bgColor} ${statusInfo.textColor} ${statusInfo.borderColor} flex items-center gap-1 text-xs px-2 py-1`}>
                   <StatusIcon size={10} />
                   {statusInfo.displayStatus}
-                </Badge>
-              );
-            })()}
+                </Badge>;
+          })()}
             {/* Criticidade */}
-            <span className={cn(
-              "text-xs px-1.5 py-0.5 rounded text-white font-medium",
-              ticket.nivel_criticidade === 'P0' && "bg-red-500",
-              ticket.nivel_criticidade === 'P1' && "bg-orange-500", 
-              ticket.nivel_criticidade === 'P2' && "bg-yellow-500",
-              ticket.nivel_criticidade === 'P3' && "bg-blue-500"
-            )}>
+            <span className={cn("text-xs px-1.5 py-0.5 rounded text-white font-medium", ticket.nivel_criticidade === 'P0' && "bg-red-500", ticket.nivel_criticidade === 'P1' && "bg-orange-500", ticket.nivel_criticidade === 'P2' && "bg-yellow-500", ticket.nivel_criticidade === 'P3' && "bg-blue-500")}>
               {ticket.nivel_criticidade}
             </span>
           </div>
@@ -205,20 +170,14 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdi
         </h4>
 
         {/* Tags minimalistas */}
-        {ticket.tags && ticket.tags.length > 0 && (
-          <div className="flex gap-1 flex-wrap">
-            {ticket.tags.slice(0, 2).map((tag: string, index: number) => (
-              <span key={index} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+        {ticket.tags && ticket.tags.length > 0 && <div className="flex gap-1 flex-wrap">
+            {ticket.tags.slice(0, 2).map((tag: string, index: number) => <span key={index} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
                 {tag}
-              </span>
-            ))}
-            {ticket.tags.length > 2 && (
-              <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded">
+              </span>)}
+            {ticket.tags.length > 2 && <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded">
                 +{ticket.tags.length - 2}
-              </span>
-            )}
-          </div>
-        )}
+              </span>}
+          </div>}
 
         {/* Info compacta */}
         <div className="space-y-1.5 text-xs text-gray-500">
@@ -244,34 +203,39 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdi
         {/* Footer minimalista */}
         <div className="flex items-center justify-between pt-1 border-t border-gray-100">
           <span className="text-xs text-gray-400">
-            {format(new Date(ticket.data_criacao), "dd/MM", { locale: ptBR })}
+            {format(new Date(ticket.data_criacao), "dd/MM", {
+            locale: ptBR
+          })}
           </span>
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 font-medium">
               {ticket.pontuacao_total}pts
             </span>
-            {userCanEdit && onEditTicket && (
-              <button
-                onClick={handleEditClick}
-                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                title="Editar ticket"
-              >
+            {userCanEdit && onEditTicket && <button onClick={handleEditClick} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" title="Editar ticket">
                 Editar
-              </button>
-            )}
+              </button>}
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }
 
 // Componente da coluna do Kanban
-function KanbanColumn({ title, status, tickets, color, onOpenDetail, onEditTicket, userCanEdit }: KanbanColumnProps) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: status,
+function KanbanColumn({
+  title,
+  status,
+  tickets,
+  color,
+  onOpenDetail,
+  onEditTicket,
+  userCanEdit
+}: KanbanColumnProps) {
+  const {
+    setNodeRef,
+    isOver
+  } = useDroppable({
+    id: status
   });
-
   const getColumnIcon = (status: string) => {
     switch (status) {
       case 'aberto':
@@ -286,7 +250,6 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, onEditTicke
         return null;
     }
   };
-
   const getColumnColor = (status: string) => {
     switch (status) {
       case 'aberto':
@@ -301,17 +264,12 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, onEditTicke
         return 'border-gray-200 bg-gray-50';
     }
   };
-
-  return (
-    <div ref={setNodeRef} className="flex-1 min-w-72 max-w-sm">
-      <div className={cn(
-        "rounded-lg border h-full transition-all duration-300 ease-in-out relative",
-        getColumnColor(status),
-        // Destaque suave quando hover durante drag
-        isOver && userCanEdit && "border-blue-400 bg-blue-50 shadow-lg scale-[1.02] transform ring-2 ring-blue-200",
-        // Animação de entrada
-        "animate-fade-in"
-      )}>
+  return <div ref={setNodeRef} className="flex-1 min-w-72 max-w-sm">
+      <div className={cn("rounded-lg border h-full transition-all duration-300 ease-in-out relative", getColumnColor(status),
+    // Destaque suave quando hover durante drag
+    isOver && userCanEdit && "border-blue-400 bg-blue-50 shadow-lg scale-[1.02] transform ring-2 ring-blue-200",
+    // Animação de entrada
+    "animate-fade-in")}>
         {/* Header da coluna */}
         <div className="p-3 border-b border-current border-opacity-20">
           <div className="flex items-center justify-between">
@@ -326,57 +284,45 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, onEditTicke
         </div>
         
         {/* Indicador visual de drop zone quando arrastrando */}
-        {isOver && userCanEdit && (
-          <div className="absolute inset-0 bg-blue-100 bg-opacity-50 border-2 border-dashed border-blue-400 rounded-lg flex items-center justify-center z-10 pointer-events-none">
+        {isOver && userCanEdit && <div className="absolute inset-0 bg-blue-100 bg-opacity-50 border-2 border-dashed border-blue-400 rounded-lg flex items-center justify-center z-10 pointer-events-none">
             <div className="bg-blue-500 text-white px-3 py-1 rounded-md text-sm font-medium shadow-lg">
               Solte aqui para mover
             </div>
-          </div>
-        )}
+          </div>}
         
         {/* Conteúdo da coluna */}
-        <div className={cn(
-          "p-3 h-[calc(100vh-280px)] overflow-y-auto transition-all duration-300",
-          isOver && userCanEdit && "transform scale-98 opacity-90"
-        )}>
+        <div className={cn("p-3 h-[calc(100vh-280px)] overflow-y-auto transition-all duration-300", isOver && userCanEdit && "transform scale-98 opacity-90")}>
           <SortableContext items={tickets.map(t => t.id)} strategy={verticalListSortingStrategy}>
             <div className="space-y-2">
-              {tickets.map((ticket) => (
-                <KanbanCard
-                  key={ticket.id}
-                  ticket={ticket}
-                  onOpenDetail={onOpenDetail}
-                  onEditTicket={onEditTicket}
-                  userCanEdit={userCanEdit}
-                />
-              ))}
+              {tickets.map(ticket => <KanbanCard key={ticket.id} ticket={ticket} onOpenDetail={onOpenDetail} onEditTicket={onEditTicket} userCanEdit={userCanEdit} />)}
             </div>
           </SortableContext>
-          {tickets.length === 0 && (
-            <div className={cn(
-              "text-center py-8 transition-all duration-300",
-              isOver && userCanEdit ? "text-blue-500 scale-105" : "text-gray-400"
-            )}>
+          {tickets.length === 0 && <div className={cn("text-center py-8 transition-all duration-300", isOver && userCanEdit ? "text-blue-500 scale-105" : "text-gray-400")}>
               <div className="text-2xl mb-2">
                 {isOver && userCanEdit ? "⬇️" : "📋"}
               </div>
               <p className="text-sm">
                 {isOver && userCanEdit ? "Solte o ticket aqui" : "Nenhum ticket"}
               </p>
-            </div>
-          )}
+            </div>}
         </div>
       </div>
-    </div>
-  );
+    </div>;
 }
 
 // Componente principal do Kanban
-export default function TicketKanban({ tickets, onOpenDetail, onEditTicket, onTicketUpdate, userRole }: TicketKanbanProps) {
+export default function TicketKanban({
+  tickets,
+  onOpenDetail,
+  onEditTicket,
+  onTicketUpdate,
+  userRole
+}: TicketKanbanProps) {
   const [draggedTicket, setDraggedTicket] = useState<Ticket | null>(null);
   const [activeColumn, setActiveColumn] = useState<string | null>(null);
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   const userCanEdit = userRole === 'super_admin' || userRole === 'operador';
 
   // Organizar tickets por status
@@ -384,67 +330,61 @@ export default function TicketKanban({ tickets, onOpenDetail, onEditTicket, onTi
     aberto: tickets.filter(t => t.status === 'aberto'),
     em_andamento: tickets.filter(t => t.status === 'em_andamento'),
     resolvido: tickets.filter(t => t.status === 'resolvido'),
-    fechado: tickets.filter(t => t.status === 'fechado'),
+    fechado: tickets.filter(t => t.status === 'fechado')
   };
-
-  const columns = [
-    {
-      title: 'Aberto',
-      status: 'aberto',
-      tickets: ticketsByStatus.aberto,
-      color: 'bg-slate-400',
-      icon: Circle,
-      description: 'Tickets recém-criados'
-    },
-    {
-      title: 'Em Andamento',
-      status: 'em_andamento',
-      tickets: ticketsByStatus.em_andamento,
-      color: 'bg-yellow-500',
-      icon: Activity,
-      description: 'Tickets sendo trabalhados'
-    },
-    {
-      title: 'Resolvido',
-      status: 'resolvido',
-      tickets: ticketsByStatus.resolvido,
-      color: 'bg-green-500',
-      icon: CheckCircle,
-      description: 'Tickets resolvidos'
-    },
-    {
-      title: 'Fechado',
-      status: 'fechado',
-      tickets: ticketsByStatus.fechado,
-      color: 'bg-gray-500',
-      icon: X,
-      description: 'Tickets finalizados'
-    }
-  ];
-
+  const columns = [{
+    title: 'Aberto',
+    status: 'aberto',
+    tickets: ticketsByStatus.aberto,
+    color: 'bg-slate-400',
+    icon: Circle,
+    description: 'Tickets recém-criados'
+  }, {
+    title: 'Em Andamento',
+    status: 'em_andamento',
+    tickets: ticketsByStatus.em_andamento,
+    color: 'bg-yellow-500',
+    icon: Activity,
+    description: 'Tickets sendo trabalhados'
+  }, {
+    title: 'Resolvido',
+    status: 'resolvido',
+    tickets: ticketsByStatus.resolvido,
+    color: 'bg-green-500',
+    icon: CheckCircle,
+    description: 'Tickets resolvidos'
+  }, {
+    title: 'Fechado',
+    status: 'fechado',
+    tickets: ticketsByStatus.fechado,
+    color: 'bg-gray-500',
+    icon: X,
+    description: 'Tickets finalizados'
+  }];
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const ticket = tickets.find(t => t.id === event.active.id);
     setDraggedTicket(ticket || null);
-    
+
     // Log para debug
     console.log('🎯 Iniciando drag:', ticket?.titulo, 'Status atual:', ticket?.status);
   }, [tickets]);
-
   const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { over } = event;
+    const {
+      over
+    } = event;
     setActiveColumn(over?.id as string || null);
   }, []);
-
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
-    const { active, over } = event;
+    const {
+      active,
+      over
+    } = event;
     setDraggedTicket(null);
     setActiveColumn(null);
-
     if (!over || !userCanEdit) {
       console.log('🚫 Drag cancelado - sem destino ou sem permissão');
       return;
     }
-
     const ticketId = active.id as string;
     const newStatus = over.id as TicketStatusType;
 
@@ -453,7 +393,6 @@ export default function TicketKanban({ tickets, onOpenDetail, onEditTicket, onTi
       console.log('🚫 Status inválido:', newStatus);
       return;
     }
-
     const ticket = tickets.find(t => t.id === ticketId);
     if (!ticket) {
       console.log('🚫 Ticket não encontrado');
@@ -461,17 +400,11 @@ export default function TicketKanban({ tickets, onOpenDetail, onEditTicket, onTi
     }
 
     // Validar mudança de status
-    const validation = validateStatusChange(
-      ticket.status as TicketStatusType, 
-      newStatus, 
-      userCanEdit ? 'super_admin' : 'viewer'
-    );
-
+    const validation = validateStatusChange(ticket.status as TicketStatusType, newStatus, userCanEdit ? 'super_admin' : 'viewer');
     if (!validation.valid) {
       console.log('🚫 Mudança inválida:', validation.reason);
       return;
     }
-
     if (ticket.status === newStatus) {
       console.log('🚫 Status igual');
       return;
@@ -479,30 +412,24 @@ export default function TicketKanban({ tickets, onOpenDetail, onEditTicket, onTi
 
     // Log para debug
     console.log('🎯 Movendo ticket:', ticket.titulo, 'de', ticket.status, 'para', newStatus);
-
     try {
-      const { error } = await supabase
-        .from('sla_demandas')
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', ticketId);
-
+      const {
+        error
+      } = await supabase.from('sla_demandas').update({
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      }).eq('id', ticketId);
       if (error) throw error;
-
       const statusLabels = {
         'aberto': 'Aberto',
         'em_andamento': 'Em Andamento',
         'resolvido': 'Resolvido',
         'fechado': 'Fechado'
       };
-
       toast({
         title: "✅ Status atualizado com sucesso",
-        description: `Ticket "${ticket.titulo}" movido para "${statusLabels[newStatus as keyof typeof statusLabels]}"`,
+        description: `Ticket "${ticket.titulo}" movido para "${statusLabels[newStatus as keyof typeof statusLabels]}"`
       });
-
       console.log('✅ Status atualizado com sucesso');
       onTicketUpdate();
     } catch (error) {
@@ -514,65 +441,35 @@ export default function TicketKanban({ tickets, onOpenDetail, onEditTicket, onTi
       });
     }
   }, [tickets, userCanEdit, onTicketUpdate, toast]);
-
-  return (
-    <div className="space-y-4">
+  return <div className="space-y-4">
       {/* Cabeçalho informativo */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-gray-900">Kanban Board</h2>
-          <p className="text-sm text-gray-500">
-            {userCanEdit 
-              ? "Arraste os tickets entre as colunas para alterar o status" 
-              : "Visualização somente leitura"}
+          
+          <p className="text-sm text-slate-400 text-center mx-[14px] px-[3px] my-[11px]">
+            {userCanEdit ? "Arraste os tickets entre as colunas para alterar o status" : "Visualização somente leitura"}
           </p>
         </div>
-        <Badge variant="outline" className="text-xs">
+        <Badge variant="outline" className="text-xs mx-[8px]">
           {tickets.length} tickets total
         </Badge>
       </div>
 
-      <DndContext
-        collisionDetection={pointerWithin}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
+      <DndContext collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
         <div className="flex gap-4 overflow-x-auto pb-4">
-          {columns.map((column) => (
-            <KanbanColumn
-              key={column.status}
-              title={column.title}
-              status={column.status}
-              tickets={column.tickets}
-              color={column.color}
-              onOpenDetail={onOpenDetail}
-              onEditTicket={onEditTicket}
-              userCanEdit={userCanEdit}
-            />
-          ))}
+          {columns.map(column => <KanbanColumn key={column.status} title={column.title} status={column.status} tickets={column.tickets} color={column.color} onOpenDetail={onOpenDetail} onEditTicket={onEditTicket} userCanEdit={userCanEdit} />)}
         </div>
 
-        <DragOverlay 
-          dropAnimation={{
-            duration: 500,
-            easing: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-          }}
-          style={{ transformOrigin: '0 0' }}
-        >
-          {draggedTicket ? (
-            <div className="rotate-3 scale-110 opacity-95 shadow-2xl ring-2 ring-blue-400">
-              <KanbanCard
-                ticket={draggedTicket}
-                isDragging
-                onOpenDetail={onOpenDetail}
-                onEditTicket={onEditTicket}
-                userCanEdit={userCanEdit}
-              />
-            </div>
-          ) : null}
+        <DragOverlay dropAnimation={{
+        duration: 500,
+        easing: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+      }} style={{
+        transformOrigin: '0 0'
+      }}>
+          {draggedTicket ? <div className="rotate-3 scale-110 opacity-95 shadow-2xl ring-2 ring-blue-400">
+              <KanbanCard ticket={draggedTicket} isDragging onOpenDetail={onOpenDetail} onEditTicket={onEditTicket} userCanEdit={userCanEdit} />
+            </div> : null}
         </DragOverlay>
       </DndContext>
-    </div>
-  );
+    </div>;
 }
