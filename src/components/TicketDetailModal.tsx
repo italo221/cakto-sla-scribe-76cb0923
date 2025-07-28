@@ -504,7 +504,7 @@ export default function SLADetailModal({
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-4">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-bold">
+            <DialogTitle className="text-xl font-bold mx-0 px-0 my-0">
               {sla.ticket_number || `#${sla.id.slice(0, 8)}`} - {sla.titulo}
             </DialogTitle>
             <div className="flex items-center justify-between w-full max-w-[200px]">
@@ -514,7 +514,7 @@ export default function SLADetailModal({
               window.dispatchEvent(new CustomEvent('openEditModal', {
                 detail: sla
               }));
-            }} className="gap-2">
+            }} className="gap-2 mx-[99px]">
                   <Edit3 className="h-4 w-4" />
                   Editar
                 </Button>}
@@ -552,7 +552,7 @@ export default function SLADetailModal({
               </Button>}
             
             {/* Aviso para quem criou o ticket */}
-            {sla.status === 'em_andamento' && user?.email === sla.solicitante && <div className="px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md text-sm text-amber-800 dark:text-amber-200">
+            {sla.status === 'em_andamento' && user?.email === sla.solicitante && <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md text-sm text-amber-800 dark:text-amber-200 px-[14px] mx-[5px] my-0 py-[6px]">
                 <AlertCircle className="h-4 w-4 inline mr-2" />
                 Quem criou o ticket não pode resolvê-lo. Aguarde o time responsável.
               </div>}
