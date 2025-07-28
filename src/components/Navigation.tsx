@@ -108,6 +108,7 @@ export default function Navigation() {
   
   // Filtrar itens de navegação baseado no role do usuário
   const filteredNavItems = navItems.filter(item => {
+    // ADMIN MENU: Apenas Super Admin pode ver
     if (item.adminOnly && !isSuperAdmin) {
       return false;
     }
@@ -195,10 +196,12 @@ export default function Navigation() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onClick={() => navigate('/admin')} disabled={!isSuperAdmin}>
-            <User className="mr-2 h-4 w-4" />
-            Gerenciar Usuários
-          </DropdownMenuItem>
+          {isSuperAdmin && (
+            <DropdownMenuItem onClick={() => navigate('/admin')}>
+              <User className="mr-2 h-4 w-4" />
+              Gerenciar Usuários
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSignOut}>
             <LogOut className="mr-2 h-4 w-4" />

@@ -226,7 +226,7 @@ export default function ImprovedPermissionsPanel() {
     }
   };
 
-  const handleEditCargo = async () => {
+  const handleUpdateCargo = async () => {
     if (!editingCargo || !newCargoNome.trim()) {
       toast({
         title: "Erro",
@@ -525,7 +525,7 @@ export default function ImprovedPermissionsPanel() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Button onClick={editingCargo ? handleEditCargo : handleCreateCargo} disabled={saving}>
+                    <Button onClick={editingCargo ? handleUpdateCargo : handleCreateCargo} disabled={saving}>
                       {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                       {editingCargo ? 'Atualizar' : 'Criar'}
                     </Button>
@@ -640,18 +640,53 @@ export default function ImprovedPermissionsPanel() {
                           <thead>
                             <tr className="border-b">
                               <th className="text-left p-3 font-medium">Permissão</th>
-                              {cargos.map(cargo => (
-                                <th key={cargo.id} className="text-center p-3 font-medium min-w-[120px]">
-                                  <div className="space-y-1">
-                                    <div className="font-semibold">{cargo.nome}</div>
-                                    {cargo.descricao && (
-                                      <div className="text-xs text-muted-foreground">
-                                        {cargo.descricao}
-                                      </div>
-                                    )}
-                                  </div>
-                                </th>
-                              ))}
+                               {cargos.map(cargo => (
+                                 <th key={cargo.id} className="text-center p-3 font-medium min-w-[120px]">
+                                   <div className="space-y-2">
+                                     <div className="flex items-center justify-center gap-2">
+                                       <span className="font-semibold">{cargo.nome}</span>
+                                       <div className="flex gap-1">
+                                         <Tooltip>
+                                           <TooltipTrigger asChild>
+                                             <Button
+                                               variant="ghost"
+                                               size="sm"
+                                               onClick={() => {
+                                                 setEditingCargo(cargo);
+                                                 setNewCargoNome(cargo.nome);
+                                                 setNewCargoDesc(cargo.descricao);
+                                                 setCargoDialogOpen(true);
+                                               }}
+                                               className="h-6 w-6 p-0"
+                                             >
+                                               <Edit className="h-3 w-3" />
+                                             </Button>
+                                           </TooltipTrigger>
+                                           <TooltipContent>Editar cargo</TooltipContent>
+                                         </Tooltip>
+                                         <Tooltip>
+                                           <TooltipTrigger asChild>
+                                             <Button
+                                               variant="ghost"
+                                               size="sm"
+                                               onClick={() => handleDeleteCargo(cargo)}
+                                               className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                             >
+                                               <Trash2 className="h-3 w-3" />
+                                             </Button>
+                                           </TooltipTrigger>
+                                           <TooltipContent>Excluir cargo</TooltipContent>
+                                         </Tooltip>
+                                       </div>
+                                     </div>
+                                     {cargo.descricao && (
+                                       <div className="text-xs text-muted-foreground">
+                                         {cargo.descricao}
+                                       </div>
+                                     )}
+                                   </div>
+                                 </th>
+                               ))}
                             </tr>
                           </thead>
                            <tbody>
@@ -691,27 +726,6 @@ export default function ImprovedPermissionsPanel() {
                                               handlePermissionChange(cargo.id, permission.key, value)
                                             }
                                           />
-                                          <div className="flex gap-1">
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={() => {
-                                                setEditingCargo(cargo);
-                                                setNewCargoNome(cargo.nome);
-                                                setNewCargoDesc(cargo.descricao);
-                                                setCargoDialogOpen(true);
-                                              }}
-                                            >
-                                              <Edit className="h-3 w-3" />
-                                            </Button>
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={() => handleDeleteCargo(cargo)}
-                                            >
-                                              <Trash2 className="h-3 w-3" />
-                                            </Button>
-                                          </div>
                                         </div>
                                       </td>
                                     );

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Loader2, Upload, X } from "lucide-react";
 
 interface Ticket {
@@ -32,7 +33,8 @@ interface TicketEditModalProps {
 }
 
 export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: TicketEditModalProps) {
-  const { canEdit } = useAuth();
+  const { user } = useAuth();
+  const { canEditTicket } = usePermissions();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -65,7 +67,7 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ticket || !canEdit) return;
+    if (!ticket || !canEditTicket(ticket)) return;
 
     setLoading(true);
     try {
@@ -121,7 +123,7 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
     }
   };
 
-  if (!canEdit) return null;
+  if (!ticket || !canEditTicket(ticket)) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

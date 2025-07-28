@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Loader2, AlertTriangle } from "lucide-react";
 
 interface Ticket {
@@ -21,12 +22,13 @@ interface TicketDeleteModalProps {
 }
 
 export default function TicketDeleteModal({ ticket, isOpen, onClose, onDelete }: TicketDeleteModalProps) {
-  const { isSuperAdmin } = useAuth();
+  const { user } = useAuth();
+  const { canDeleteTicket } = usePermissions();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
-    if (!ticket || !isSuperAdmin) return;
+    if (!ticket || !canDeleteTicket(ticket)) return;
 
     setLoading(true);
     try {
@@ -79,7 +81,7 @@ export default function TicketDeleteModal({ ticket, isOpen, onClose, onDelete }:
     }
   };
 
-  if (!isSuperAdmin) return null;
+  if (!ticket || !canDeleteTicket(ticket)) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

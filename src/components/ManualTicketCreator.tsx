@@ -184,7 +184,8 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
           pontuacao_urgencia: Math.floor(pontos * 0.1),
           pontuacao_operacional: Math.floor(pontos * 0.1),
           observacoes: observacoes,
-          status: 'aberto'
+          status: 'aberto',
+          setor_id: setores.find(s => s.nome === formData.setor)?.id // Adicionar setor_id
         });
 
       if (error) throw error;
@@ -286,24 +287,7 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
             {errors.setor && <p className="text-sm text-destructive">{errors.setor}</p>}
           </div>
 
-          {/* Perguntas específicas por setor */}
-          {formData.setor && getPerguntasEspecificas().map((pergunta, index) => (
-            <div key={index}>
-              <label className="text-sm font-medium">{pergunta}</label>
-              <Input
-                value={index === 0 ? formData.pergunta_especifica_1 : formData.pergunta_especifica_2}
-                onChange={(e) => setFormData({
-                  ...formData, 
-                  [index === 0 ? 'pergunta_especifica_1' : 'pergunta_especifica_2']: e.target.value
-                })}
-                placeholder="Sua resposta (opcional)"
-                maxLength={200}
-              />
-              <p className="text-xs text-muted-foreground">
-                {getCharacterCount(index === 0 ? formData.pergunta_especifica_1 : formData.pergunta_especifica_2, 200)}
-              </p>
-            </div>
-          ))}
+          {/* Perguntas específicas removidas conforme solicitado */}
 
           {/* Título */}
           <div>
