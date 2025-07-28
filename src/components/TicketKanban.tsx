@@ -62,8 +62,7 @@ interface TicketKanbanProps {
 
 // Componente do card do ticket no Kanban
 function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdit }: KanbanCardProps) {
-  const [isDragInitiated, setIsDragInitiated] = useState(false);
-  const [dragTimeout, setDragTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
   
   const {
     attributes,
@@ -74,7 +73,7 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdi
     isDragging: isSortableDragging,
   } = useSortable({ 
     id: ticket.id,
-    disabled: !userCanEdit || !isDragInitiated
+    disabled: !userCanEdit
   });
 
   const style = {
@@ -118,28 +117,19 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdi
     userRole: userCanEdit ? 'super_admin' : 'viewer' 
   });
 
-  // Handlers para clique vs drag
+  // Handlers para clique vs drag melhorados
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!userCanEdit) return;
-    
-    const timeout = setTimeout(() => {
-      setIsDragInitiated(true);
-    }, 300); // 300ms de delay para iniciar drag
-    
-    setDragTimeout(timeout);
+    setIsDragActive(true);
   };
 
   const handleMouseUp = () => {
-    if (dragTimeout) {
-      clearTimeout(dragTimeout);
-      setDragTimeout(null);
-    }
-    setIsDragInitiated(false);
+    setIsDragActive(false);
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    if (!isDragInitiated && !isSortableDragging) {
-      e.stopPropagation();
+    e.stopPropagation();
+    if (!isDragActive && !isSortableDragging) {
       onOpenDetail(ticket);
     }
   };
@@ -156,9 +146,9 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdi
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...(userCanEdit && isDragInitiated ? listeners : {})}
+      {...(userCanEdit ? listeners : {})}
       className={cn(
-        "transition-all duration-300 group bg-white animate-fade-in relative",
+        "transition-all duration-300 group bg-white animate-fade-in relative cursor-pointer",
         "border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md",
         // Usar cores do statusInfo
         statusInfo.bgColor,
@@ -171,9 +161,7 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdi
         // Estados de drag - animações mais fluidas
         isDragging && "opacity-90 rotate-2 scale-105 shadow-2xl z-50 ring-2 ring-blue-300",
         isSortableDragging && "shadow-xl scale-105 rotate-2 border-blue-400",
-        // Cursor states
-        userCanEdit ? (isDragInitiated ? "cursor-grabbing" : "cursor-pointer") : "cursor-default",
-        // Hover effect melhorado para drag
+        // Hover effect melhorado
         userCanEdit && "hover:scale-102 hover:shadow-lg"
       )}
       onMouseDown={handleMouseDown}

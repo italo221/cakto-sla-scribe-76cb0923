@@ -1,24 +1,288 @@
-# 🎯 Sistema de Gestão de SLA
+# Sistema de Gestão de Tickets - Manhattan
 
-Um sistema completo de gestão de SLA (Service Level Agreement) construído com React, TypeScript, Tailwind CSS e Supabase.
+## 📋 Visão Geral do Sistema
 
-## ✨ Funcionalidades
+O Sistema Manhattan é uma plataforma moderna de gestão de tickets desenvolvida com React, TypeScript e Supabase. O sistema oferece uma interface intuitiva para criação, edição e acompanhamento de tickets, com funcionalidades avançadas de permissionamento e personalização.
 
-- 📋 **Gestão de SLAs**: Criação, edição e acompanhamento de demandas
-- 💬 **Sistema de Comentários**: Interface moderna estilo redes sociais
-- 📊 **Dashboard Analítico**: Métricas e pontuações detalhadas
-- 🔄 **Transferência de Setores**: Movimentação fluida entre departamentos
-- 📈 **Histórico Completo**: Log de todas as ações realizadas
-- 👥 **Gestão de Usuários**: Controle de acesso e permissões
-- 🏢 **Gestão de Setores**: Organização departamental
-- 🔐 **Autenticação**: Sistema seguro com Supabase Auth
+### 🎯 Principais Funcionalidades
+- **Gestão de Tickets**: Criação, edição, visualização e exclusão de tickets
+- **Kanban Board**: Interface visual para acompanhamento do fluxo de trabalho
+- **Sistema de Permissões**: Controle granular baseado em perfis e setores
+- **Personalização**: Customização de cores, logo e nome do sistema
+- **Dashboard Analytics**: Visão geral com métricas e indicadores
+- **Modo Escuro**: Interface adaptável para diferentes preferências
+
+---
+
+## 🎫 Fluxo de Tickets
+
+### Criação de Tickets
+
+#### Processo Unificado
+- **Botão único**: Existe apenas um botão "Criar Ticket" que unifica IA e criação manual
+- **Campos obrigatórios**: Exibem aviso visual (vermelho) quando não preenchidos
+- **Contador de caracteres**: Disponível em campos de texto longos
+- **Interface limpa**: Removida duplicação de componentes e corrigido modo escuro
+
+#### Campos Obrigatórios
+1. **Título**: Descrição concisa do ticket
+2. **Descrição**: Detalhamento do problema/solicitação
+3. **Tipo de Ticket**: 
+   - Bug
+   - Feature 
+   - Suporte
+   - Melhoria
+   - Solicitação
+4. **Prioridade**: P0 (Crítico), P1 (Alto), P2 (Médio), P3 (Baixo)
+5. **Time Responsável**: Setor que será responsável pelo ticket
+6. **Solicitante**: Preenchido automaticamente com o usuário logado
+
+#### Regras de Negócio
+- O **setor selecionado** na criação é o responsável pelo ticket
+- **Não existem mais** perguntas condicionais baseadas no setor
+- Usuários **devem ter um setor atribuído** para criar tickets
+- Sistema de pontuação automática baseada nos critérios selecionados
+
+### Status dos Tickets
+
+#### Fluxo de Status
+1. **Aberto**: Status inicial de todos os tickets criados
+2. **Em Andamento**: Ticket sendo trabalhado pela equipe responsável
+3. **Resolvido**: Ticket concluído, aguardando confirmação
+4. **Fechado**: Ticket finalizado e arquivado
+
+#### Status Especiais
+- **Atrasado**: Calculado automaticamente baseado no prazo da prioridade:
+  - P0: 4 horas
+  - P1: 24 horas  
+  - P2: 3 dias
+  - P3: 7 dias
+
+**Nota**: A opção de "pausar" tickets foi removida do sistema.
+
+### Edição de Tickets
+
+#### Permissões de Edição
+- **Super Admin**: Pode editar qualquer ticket
+- **Líder do Setor**: Pode editar tickets do seu setor
+- **Operador**: Pode editar apenas tickets que criou
+
+#### Campos Editáveis
+- Título, descrição, tipo, prioridade, time responsável, status, observações
+- **Campo não editável**: Solicitante (mantém o criador original)
+- **Tags removidas**: Simplificação da interface de edição
+
+#### Validações
+- Usuários sem setor atribuído não podem editar tickets
+- Verificação de permissões em tempo real
+- Log automático de todas as alterações
+
+---
+
+## 👥 Permissões e Perfis de Usuário
+
+### Tipos de Usuário
+
+#### Super Admin
+- **Acesso total** ao sistema
+- Pode editar/excluir qualquer ticket
+- Gerencia setores, usuários e permissões
+- Acesso ao painel de administração
+- Personalização do sistema (cores, logo, nome)
+
+#### Operador
+- Pode **criar tickets**
+- Pode **editar apenas tickets que criou**
+- Visualiza dashboard e relatórios
+- **Não pode se transformar em Super Admin** (correção de bug)
+
+#### Viewer
+- **Apenas visualização** do dashboard
+- Não pode criar tickets
+- Não vê histórico detalhado
+- **Não tem acesso** ao menu "Admin"
+
+#### Líder de Setor
+- Além das permissões de Operador
+- Pode **editar/excluir tickets do seu setor**
+- Gerencia equipe do setor
+- **Apenas 1 líder por setor** é permitido
+
+### Validações de Setor
+
+#### Regra Principal
+Usuários **devem estar atribuídos a um setor** antes de:
+- Criar tickets
+- Editar tickets
+- Acessar funcionalidades de gestão
+
+Mensagem exibida: *"Você precisa ser atribuído a um setor/time antes de criar ou editar tickets. Contate um administrador."*
+
+---
+
+## 📊 Kanban e Caixa de Entrada
+
+### Kanban Board
+
+#### Design e Interface
+- **Layout minimalista**: Seguindo commit "fix dark mode background"
+- **Cores suaves**: Removidas cores pesadas acima das colunas
+- **Scroll vertical** restaurado para melhor navegação
+- **Responsivo**: Adaptável a diferentes tamanhos de tela
+
+#### Funcionalidades de Drag & Drop
+- **Modernizado**: Tickets não desaparecem ao serem movidos
+- **Drop inteligente**: Funciona em qualquer área da coluna
+- **Animações suaves**: Criação automática de espaço para o ticket
+- **Feedback visual**: Sistema reativo e responsivo ao movimento
+
+#### Interação com Tickets
+- **Clique**: Abre detalhes do ticket imediatamente
+- **Edição**: Botão "Editar" aparece no hover do card
+- **Arrastar**: Funcionalidade completa de drag & drop para mudança de status
+
+### Caixa de Entrada
+
+#### Interface Limpa
+- **Tags desnecessárias removidas**: Layout mais clean e focado
+- **Opções essenciais**: Apenas Editar e Visualizar disponíveis
+- **Filtros otimizados**: Sistema inteligente de filtragem
+
+#### Sistema de Busca Inteligente
+- **Autocomplete**: Sugere tickets conforme digitação
+- **Busca Google-like**: Busca inteligente por palavras-chave
+- **Filtros múltiplos**: Combinação de texto, status e setor
+
+#### Correções de Filtros
+- **Lógica corrigida**: Setor mostra apenas tickets corretos
+- **Bug resolvido**: Cards não ficam mais "presos" ao selecionar críticos
+- **Performance melhorada**: Filtros mais responsivos
+
+---
+
+## 🎨 Personalização do Sistema
+
+### Customizações Disponíveis (Super Admin)
+
+#### Identidade Visual
+1. **Nome do Sistema**: Alterar "Manhattan" para qualquer nome desejado
+2. **Logo do Sistema**: Upload e gerenciamento de logo personalizada
+3. **Cores do Sistema**: Personalização completa da paleta de cores
+4. **Tema**: Modo claro/escuro com persistência de preferência
+
+#### Configurações Técnicas
+- **Armazenamento**: Logo e configurações salvas no Supabase
+- **Carregamento automático**: Aplicação das personalizações na inicialização
+- **Cache otimizado**: Performance mantida mesmo com customizações
+
+---
+
+## ⚙️ Administração do Sistema
+
+### Gestão de Permissões
+
+#### Cargos e Funções
+- **Criação de cargos**: Adicionar novos cargos ao sistema
+- **Edição**: Modificar permissões existentes
+- **Exclusão**: Remover cargos desnecessários
+- **Interface otimizada**: Botões de ação ao lado do título do cargo
+
+#### Permissões Granulares
+Cada cargo pode ter permissões específicas para:
+- Criar tickets
+- Editar tickets próprios
+- Editar tickets do setor
+- Excluir tickets
+- Comentar em tickets
+- Resolver tickets
+
+### Gestão de Setores
+
+#### Funcionalidades
+- **Criação/edição** de setores
+- **Atribuição de usuários** a setores
+- **Definição de líder** (1 por setor)
+- **Listagem de membros** da equipe
+
+#### Visualização
+- **Lista completa** de usuários por setor
+- **Identificação visual** do líder
+- **Gestão centralizada** pelo Super Admin
+
+### Limpeza de Interface
+
+#### Elementos Removidos
+- Tags irrelevantes como "Admin Master" e "Colaborador"
+- Elementos visuais desnecessários
+- Duplicações de componentes
+- Ícones excessivos
+
+---
+
+## 🔗 Integração com Supabase
+
+### Configurações de Segurança
+
+#### Row Level Security (RLS)
+- **Políticas otimizadas** para cada tabela
+- **Acesso baseado em perfil** de usuário
+- **Prevenção de escalação** de privilégios
+
+#### Performance
+- **Queries otimizadas** para carregamento rápido
+- **Índices estratégicos** nas tabelas principais
+- **Cache inteligente** para dados frequentes
+
+### Estrutura do Banco
+
+#### Tabelas Principais
+- `sla_demandas`: Tickets do sistema
+- `profiles`: Perfis de usuário
+- `setores`: Departamentos/equipes
+- `user_setores`: Relacionamento usuário-setor
+- `permissoes_cargo`: Permissões por cargo
+
+#### Logs e Auditoria
+- `sla_action_logs`: Log de ações nos tickets
+- `sla_logs`: Logs gerais do sistema
+- `logs_permissoes`: Auditoria de alterações de permissão
+
+---
+
+## 🎨 UI/UX e Design System
+
+### Filosofia de Design
+
+#### Minimalismo Moderno
+- **Estilo SaaS**: Interface clean e profissional
+- **Elementos essenciais**: Remoção de componentes desnecessários
+- **Hierarquia visual**: Clara e intuitiva
+
+#### Acessibilidade
+- **Contraste otimizado**: Cores adequadas para diferentes contextos
+- **Responsividade**: Funciona em tablets, desktops e dispositivos móveis
+- **Modo escuro**: Implementação completa com consistência visual
+
+### Componentes
+
+#### Sistema de Cores
+- **Paleta consistente**: Cores harmoniosas e profissionais
+- **Estados visuais**: Hover, focus e active bem definidos
+- **Correções aplicadas**: Botões verdes sem halo ciano
+
+#### Tipografia
+- **Hierarquia clara**: Tamanhos e pesos bem definidos
+- **Legibilidade**: Contraste adequado em todos os modos
+- **Consistência**: Uso uniforme em todo o sistema
+
+---
 
 ## 🚀 Instalação Rápida
 
 ### 1. Clone o Projeto
 ```bash
 git clone <URL_DO_REPOSITORIO>
-cd sistema-sla
+cd sistema-tickets
 ```
 
 ### 2. Configure o Supabase
@@ -28,413 +292,19 @@ cd sistema-sla
 2. Crie uma conta gratuita
 3. Clique em "New Project"
 4. Escolha sua organização
-5. Dê um nome para o projeto (ex: "sistema-sla")
+5. Dê um nome para o projeto (ex: "sistema-tickets")
 6. Defina uma senha segura para o banco
 7. Escolha a região mais próxima
 8. Clique em "Create new project"
 
-#### 2.2. Configurar Banco de Dados
-1. Aguarde o projeto ser criado (1-2 minutos)
-2. No painel do Supabase, vá em **SQL Editor**
-3. Clique em **"New query"**
-4. Copie e cole o script SQL abaixo:
-
-```sql
--- =============================================
--- SCRIPT DE INSTALAÇÃO - SISTEMA SLA
--- =============================================
-
--- Criar tipos enumerados
-CREATE TYPE user_type AS ENUM ('administrador_master', 'colaborador_setor');
-CREATE TYPE prioridade_operacional AS ENUM ('baixa', 'media', 'alta', 'critica');
-
--- Tabela de perfis de usuário
-CREATE TABLE public.profiles (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL UNIQUE,
-  email TEXT NOT NULL,
-  nome_completo TEXT NOT NULL,
-  user_type user_type NOT NULL DEFAULT 'colaborador_setor',
-  ativo BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- Tabela de setores
-CREATE TABLE public.setores (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  nome TEXT NOT NULL,
-  descricao TEXT,
-  ativo BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- Tabela de relacionamento usuário-setor
-CREATE TABLE public.user_setores (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL,
-  setor_id UUID NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  UNIQUE(user_id, setor_id)
-);
-
--- Tabela de demandas SLA
-CREATE TABLE public.sla_demandas (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  ticket_number TEXT,
-  titulo TEXT NOT NULL,
-  time_responsavel TEXT NOT NULL,
-  solicitante TEXT NOT NULL,
-  descricao TEXT NOT NULL,
-  pontuacao_financeiro INTEGER NOT NULL,
-  pontuacao_cliente INTEGER NOT NULL,
-  pontuacao_reputacao INTEGER NOT NULL,
-  pontuacao_urgencia INTEGER NOT NULL,
-  pontuacao_operacional INTEGER NOT NULL,
-  pontuacao_total INTEGER NOT NULL,
-  nivel_criticidade TEXT NOT NULL,
-  observacoes TEXT,
-  status TEXT NOT NULL DEFAULT 'aberto',
-  tags TEXT[],
-  setor_id UUID,
-  prioridade_operacional prioridade_operacional DEFAULT 'media',
-  prazo_interno TIMESTAMP WITH TIME ZONE,
-  responsavel_interno TEXT,
-  arquivos JSONB,
-  data_criacao TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Tabela de comentários internos
-CREATE TABLE public.sla_comentarios_internos (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  sla_id UUID NOT NULL,
-  setor_id UUID NOT NULL,
-  autor_id UUID NOT NULL,
-  autor_nome TEXT NOT NULL,
-  comentario TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- Tabela de logs de ação
-CREATE TABLE public.sla_action_logs (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  sla_id UUID NOT NULL,
-  acao TEXT NOT NULL,
-  autor_id UUID NOT NULL,
-  autor_email TEXT NOT NULL,
-  setor_origem_id UUID,
-  setor_destino_id UUID,
-  justificativa TEXT,
-  dados_anteriores JSONB,
-  dados_novos JSONB,
-  timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- Tabela de logs gerais
-CREATE TABLE public.sla_logs (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  id_demanda UUID,
-  tipo_acao TEXT NOT NULL,
-  usuario_responsavel TEXT,
-  dados_criados JSONB,
-  origem TEXT NOT NULL DEFAULT 'chat_lovable',
-  timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- Inserir setores padrão
-INSERT INTO public.setores (nome, descricao) VALUES
-('TI', 'Tecnologia da Informação'),
-('Financeiro', 'Departamento Financeiro'),
-('Suporte', 'Suporte ao Cliente'),
-('Produto', 'Desenvolvimento de Produto'),
-('Compliance', 'Conformidade e Regulamentação');
-
--- Habilitar RLS em todas as tabelas
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.setores ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_setores ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sla_demandas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sla_comentarios_internos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sla_action_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sla_logs ENABLE ROW LEVEL SECURITY;
-
--- Funções auxiliares
-CREATE OR REPLACE FUNCTION public.is_admin(user_uuid UUID DEFAULT auth.uid())
-RETURNS BOOLEAN
-LANGUAGE SQL
-STABLE SECURITY DEFINER
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.profiles 
-    WHERE user_id = user_uuid 
-    AND user_type = 'administrador_master'
-  );
-$$;
-
-CREATE OR REPLACE FUNCTION public.user_has_setor_access(setor_uuid UUID, user_uuid UUID DEFAULT auth.uid())
-RETURNS BOOLEAN
-LANGUAGE SQL
-STABLE SECURITY DEFINER
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.user_setores 
-    WHERE user_id = user_uuid 
-    AND setor_id = setor_uuid
-  );
-$$;
-
--- Função para criar perfil automaticamente
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER
-LANGUAGE PLPGSQL
-SECURITY DEFINER SET search_path = ''
-AS $$
-BEGIN
-  INSERT INTO public.profiles (user_id, email, nome_completo, user_type)
-  VALUES (
-    new.id,
-    new.email,
-    COALESCE(new.raw_user_meta_data->>'nome_completo', new.email),
-    COALESCE((new.raw_user_meta_data->>'user_type')::public.user_type, 'colaborador_setor')
-  );
-  RETURN new;
-END;
-$$;
-
--- Trigger para criar perfil automaticamente
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
-
--- Função para atualizar updated_at
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER
-LANGUAGE PLPGSQL
-AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$;
-
--- Triggers para updated_at
-CREATE TRIGGER update_profiles_updated_at
-  BEFORE UPDATE ON public.profiles
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_setores_updated_at
-  BEFORE UPDATE ON public.setores
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_sla_demandas_updated_at
-  BEFORE UPDATE ON public.sla_demandas
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at_column();
-
--- Função para gerar número de ticket
-CREATE OR REPLACE FUNCTION public.generate_ticket_number()
-RETURNS TEXT
-LANGUAGE PLPGSQL
-AS $$
-DECLARE
-  current_year TEXT;
-  sequence_number TEXT;
-  ticket_number TEXT;
-BEGIN
-  current_year := EXTRACT(YEAR FROM CURRENT_DATE)::text;
-  
-  SELECT LPAD((COUNT(*) + 1)::text, 4, '0') 
-  INTO sequence_number
-  FROM public.sla_demandas 
-  WHERE EXTRACT(YEAR FROM data_criacao) = EXTRACT(YEAR FROM CURRENT_DATE);
-  
-  ticket_number := 'TICKET-' || current_year || '-' || sequence_number;
-  
-  RETURN ticket_number;
-END;
-$$;
-
--- Trigger para gerar ticket automaticamente
-CREATE OR REPLACE FUNCTION public.auto_generate_ticket()
-RETURNS TRIGGER
-LANGUAGE PLPGSQL
-AS $$
-BEGIN
-  IF NEW.ticket_number IS NULL THEN
-    NEW.ticket_number := public.generate_ticket_number();
-  END IF;
-  
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER auto_generate_ticket_trigger
-  BEFORE INSERT ON public.sla_demandas
-  FOR EACH ROW
-  EXECUTE FUNCTION public.auto_generate_ticket();
-
--- Função para log de ações
-CREATE OR REPLACE FUNCTION public.log_sla_action(
-  p_sla_id UUID, 
-  p_acao TEXT, 
-  p_setor_origem_id UUID DEFAULT NULL::UUID, 
-  p_setor_destino_id UUID DEFAULT NULL::UUID, 
-  p_justificativa TEXT DEFAULT NULL::TEXT, 
-  p_dados_anteriores JSONB DEFAULT NULL::JSONB, 
-  p_dados_novos JSONB DEFAULT NULL::JSONB
-)
-RETURNS UUID
-LANGUAGE PLPGSQL
-SECURITY DEFINER
-AS $$
-DECLARE
-  log_id UUID;
-  user_profile RECORD;
-BEGIN
-  SELECT email, nome_completo INTO user_profile
-  FROM public.profiles
-  WHERE user_id = auth.uid();
-  
-  INSERT INTO public.sla_action_logs (
-    sla_id, acao, autor_id, autor_email,
-    setor_origem_id, setor_destino_id, justificativa,
-    dados_anteriores, dados_novos
-  ) VALUES (
-    p_sla_id, p_acao, auth.uid(), user_profile.email,
-    p_setor_origem_id, p_setor_destino_id, p_justificativa,
-    p_dados_anteriores, p_dados_novos
-  ) RETURNING id INTO log_id;
-  
-  RETURN log_id;
-END;
-$$;
-
--- Função para adicionar comentários
-CREATE OR REPLACE FUNCTION public.add_sla_comment(
-  p_sla_id UUID, 
-  p_setor_id UUID, 
-  p_comentario TEXT
-)
-RETURNS UUID
-LANGUAGE PLPGSQL
-SECURITY DEFINER
-AS $$
-DECLARE
-  comment_id UUID;
-  user_profile RECORD;
-BEGIN
-  IF NOT public.user_has_setor_access(p_setor_id) AND NOT public.is_admin() THEN
-    RAISE EXCEPTION 'Acesso negado ao setor';
-  END IF;
-  
-  SELECT nome_completo INTO user_profile
-  FROM public.profiles
-  WHERE user_id = auth.uid();
-  
-  INSERT INTO public.sla_comentarios_internos (
-    sla_id, setor_id, autor_id, autor_nome, comentario
-  ) VALUES (
-    p_sla_id, p_setor_id, auth.uid(), user_profile.nome_completo, p_comentario
-  ) RETURNING id INTO comment_id;
-  
-  RETURN comment_id;
-END;
-$$;
-
--- Políticas RLS para profiles
-CREATE POLICY "profiles_select_own" ON public.profiles
-  FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "profiles_select_admin" ON public.profiles
-  FOR SELECT USING (is_admin());
-
-CREATE POLICY "profiles_update_own" ON public.profiles
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "profiles_insert_admin" ON public.profiles
-  FOR INSERT WITH CHECK (is_admin());
-
--- Políticas RLS para setores
-CREATE POLICY "setores_select_authenticated" ON public.setores
-  FOR SELECT USING (auth.uid() IS NOT NULL);
-
-CREATE POLICY "setores_all_admin" ON public.setores
-  FOR ALL USING (is_admin());
-
--- Políticas RLS para user_setores
-CREATE POLICY "user_setores_select_own" ON public.user_setores
-  FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "user_setores_select_admin" ON public.user_setores
-  FOR SELECT USING (is_admin());
-
-CREATE POLICY "user_setores_all_admin" ON public.user_setores
-  FOR ALL USING (is_admin());
-
--- Políticas RLS para sla_demandas
-CREATE POLICY "sla_select_admin" ON public.sla_demandas
-  FOR SELECT USING (is_admin());
-
-CREATE POLICY "sla_select_setor" ON public.sla_demandas
-  FOR SELECT USING (user_has_setor_access(setor_id));
-
-CREATE POLICY "sla_insert_authenticated" ON public.sla_demandas
-  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-
-CREATE POLICY "sla_update_admin" ON public.sla_demandas
-  FOR UPDATE USING (is_admin());
-
-CREATE POLICY "sla_update_setor" ON public.sla_demandas
-  FOR UPDATE USING (user_has_setor_access(setor_id));
-
--- Políticas para comentários
-CREATE POLICY "comentarios_select_admin" ON public.sla_comentarios_internos
-  FOR SELECT USING (is_admin());
-
-CREATE POLICY "comentarios_select_setor" ON public.sla_comentarios_internos
-  FOR SELECT USING (user_has_setor_access(setor_id));
-
-CREATE POLICY "comentarios_insert_setor" ON public.sla_comentarios_internos
-  FOR INSERT WITH CHECK (user_has_setor_access(setor_id));
-
--- Políticas para logs
-CREATE POLICY "sla_logs_select_admin" ON public.sla_action_logs
-  FOR SELECT USING (is_admin());
-
-CREATE POLICY "sla_logs_select_setor_access" ON public.sla_action_logs
-  FOR SELECT USING (sla_id IN (
-    SELECT s.id FROM sla_demandas s WHERE user_has_setor_access(s.setor_id)
-  ));
-
-CREATE POLICY "sla_logs_insert_authenticated" ON public.sla_action_logs
-  FOR INSERT WITH CHECK (auth.uid() = autor_id);
-
--- Políticas para sla_logs
-CREATE POLICY "Permitir leitura de logs" ON public.sla_logs
-  FOR SELECT USING (true);
-
-CREATE POLICY "Permitir inserção de logs" ON public.sla_logs
-  FOR INSERT WITH CHECK (true);
-
--- Configurar autenticação automática
-UPDATE auth.config SET enable_signup = true;
-```
-
-5. Clique em **"Run"** para executar o script
-6. Aguarde a confirmação de sucesso
-
-#### 2.3. Obter Credenciais
+#### 2.2. Obter Credenciais
 1. No painel do Supabase, vá em **Settings** (Configurações)
 2. Vá em **API**
 3. Copie:
    - **URL**: Algo como `https://xxxxxxxxxxxxx.supabase.co`
    - **anon/public key**: Uma string longa começando com `eyJ...`
 
-#### 2.4. Configurar Projeto
+#### 2.3. Configurar Projeto
 1. No projeto Lovable, vá em **Project Settings** (ícone de engrenagem)
 2. Vá em **Integrations**
 3. Conecte com Supabase usando as credenciais copiadas
@@ -447,7 +317,7 @@ UPDATE auth.config SET enable_signup = true;
    - **Email**: seu@email.com
    - **Senha**: sua_senha_segura
    - **Nome**: Seu Nome Completo
-   - **Tipo**: Administrador Master
+   - **Tipo**: Super Admin
 
 ### 4. Configuração Inicial
 
@@ -457,102 +327,156 @@ UPDATE auth.config SET enable_signup = true;
    - Configurar setores adicionais
    - Atribuir usuários aos setores
 
+---
+
 ## 📱 Como Usar
 
 ### Dashboard Principal (`/`)
-- Visão geral dos SLAs
+- Visão geral dos tickets
 - Estatísticas em tempo real
 - Acesso rápido às funcionalidades
 
 ### Caixa de Entrada (`/inbox`)
-- Lista todos os SLAs
+- Lista todos os tickets
 - Filtros avançados
-- Clique em "Ver Detalhes" para:
-  - Gerenciar status (Aberto → Em Andamento → Resolvido → Fechado)
-  - Adicionar comentários
-  - Transferir entre setores
-  - Ver histórico completo
+- Busca inteligente com autocomplete
+- Clique em tickets para ver detalhes
+
+### Kanban Board (`/kanban`)
+- Visualização em colunas por status
+- Drag & drop para mudança de status
+- Edição rápida de tickets
+- Interface responsiva
 
 ### Área Administrativa (`/admin`)
 - Gestão de usuários
 - Criação e edição de setores
-- Atribuição de permissões
+- Configuração de permissões
+- Personalização do sistema
+
+---
 
 ## 🏗️ Estrutura do Projeto
 
 ```
 src/
 ├── components/
-│   ├── ui/                 # Componentes base (shadcn/ui)
-│   ├── Navigation.tsx      # Navegação principal
-│   ├── SLAChat.tsx        # Interface de criação de SLA
-│   ├── SLADashboard.tsx   # Dashboard de SLAs
-│   ├── SLADetailModal.tsx # Modal detalhado do SLA
-│   └── SupabaseStatus.tsx # Verificação de conectividade
+│   ├── ui/                    # Componentes base (shadcn/ui)
+│   ├── Navigation.tsx         # Navegação principal
+│   ├── TicketKanban.tsx      # Kanban board
+│   ├── TicketDetailModal.tsx  # Modal detalhado do ticket
+│   ├── TicketEditModal.tsx    # Modal de edição
+│   ├── ManualTicketCreator.tsx # Criação de tickets
+│   └── ThemeToggle.tsx        # Alternador de tema
 ├── pages/
-│   ├── Index.tsx          # Página inicial
-│   ├── Inbox.tsx          # Caixa de entrada
-│   ├── Admin.tsx          # Área administrativa
-│   └── Auth.tsx           # Autenticação
+│   ├── Index.tsx             # Dashboard principal
+│   ├── Inbox.tsx             # Caixa de entrada
+│   ├── Kanban.tsx            # Página do Kanban
+│   ├── Admin.tsx             # Área administrativa
+│   ├── Customization.tsx     # Personalização
+│   └── Auth.tsx              # Autenticação
 ├── hooks/
-│   └── useAuth.tsx        # Hook de autenticação
+│   ├── useAuth.tsx           # Hook de autenticação
+│   ├── usePermissions.tsx    # Hook de permissões
+│   ├── useTheme.tsx          # Hook de tema
+│   └── useTicketStatus.tsx   # Hook de status
 ├── lib/
-│   └── supabase-config.ts # Configuração flexível do Supabase
-└── integrations/supabase/ # Configuração do Supabase
+│   └── supabase-config.ts    # Configuração do Supabase
+└── integrations/
+    └── supabase/             # Cliente e tipos do Supabase
 ```
-
-## 🔧 Tecnologias
-
-- **Frontend**: React 18, TypeScript, Tailwind CSS
-- **Backend**: Supabase (PostgreSQL, Auth, Realtime)
-- **UI**: shadcn/ui, Lucide Icons
-- **Deployment**: Lovable Platform
-
-## 🆘 Solução de Problemas
-
-### ⚠️ "Supabase não configurado"
-Se ver esta mensagem, siga os passos de instalação acima.
-
-### 🔐 Problemas de Autenticação
-1. Verifique se o Supabase foi configurado corretamente
-2. Confirme que as URLs de redirecionamento estão corretas em **Authentication > URL Configuration**
-
-### 📊 Dados não aparecem
-1. Verifique se executou o script SQL completo
-2. Confirme que o usuário tem permissões adequadas
-3. Verifique se foi atribuído aos setores corretos
-
-### 💬 Comentários não funcionam
-Certifique-se de que o usuário está atribuído ao setor do SLA em `/admin`.
-
-## 🚀 Deploy
-
-### Lovable Platform
-1. No projeto Lovable, clique em **Publish**
-2. Configure domínio personalizado se necessário
-3. Seu sistema estará online!
-
-### Outros Ambientes
-Para deploy em outras plataformas:
-1. Configure as variáveis de ambiente:
-   - `SUPABASE_URL`
-   - `SUPABASE_ANON_KEY`
-2. Build: `npm run build`
-3. Deploy a pasta `dist/`
-
-## 🤝 Contribuição
-
-1. Fork o projeto
-2. Crie uma branch para sua feature
-3. Faça commit das mudanças
-4. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para detalhes.
 
 ---
 
-**🎉 Pronto! Seu sistema de gestão de SLA está funcionando!**
+## 📚 Changelog
 
-Para dúvidas ou suporte, abra uma issue no repositório.
+### Versão Atual - 2.0.0
+
+#### ✅ Funcionalidades Implementadas
+- [x] Sistema unificado de criação de tickets
+- [x] Kanban com drag & drop modernizado
+- [x] Permissões granulares por setor
+- [x] Personalização completa do sistema
+- [x] Interface otimizada para modo escuro
+- [x] Sistema de busca inteligente
+- [x] Gestão de setores e líderes
+- [x] Logs de auditoria completos
+
+#### 🔧 Correções Aplicadas
+- [x] Bug de escalação de privilégios
+- [x] Filtros de setor corrigidos
+- [x] Drag & drop do Kanban restaurado
+- [x] Interface de criação duplicada removida
+- [x] Cores e contrastes melhorados
+- [x] Responsividade em todas as telas
+
+#### 🗑️ Elementos Removidos
+- [x] Perguntas condicionais por setor
+- [x] Opção de pausar tickets
+- [x] Tags desnecessárias da interface
+- [x] Elementos visuais excessivos
+- [x] Duplicações de componentes
+
+#### 🎨 Melhorias de UI/UX
+- [x] Design minimalista estilo SaaS
+- [x] Interações mais fluidas
+- [x] Animações suaves
+- [x] Contraste otimizado
+- [x] Modo escuro completo
+
+---
+
+## 🛠️ Guia de Desenvolvimento
+
+### Tecnologias Utilizadas
+- **Frontend**: React 18, TypeScript, Tailwind CSS
+- **Backend**: Supabase (PostgreSQL, Auth, Storage)
+- **Build**: Vite
+- **UI Components**: Radix UI, Lucide Icons
+- **Drag & Drop**: @dnd-kit
+
+### Comandos Principais
+```bash
+# Instalação
+npm install
+
+# Desenvolvimento
+npm run dev
+
+# Build
+npm run build
+
+# Typecheck
+npm run typecheck
+```
+
+### Estrutura de Dados
+
+#### Principais Entidades
+- **Tickets**: Demandas principais do sistema
+- **Usuários**: Perfis e autenticação
+- **Setores**: Organização departamental
+- **Permissões**: Controle de acesso granular
+
+#### Relacionamentos
+- Usuário ↔ Setor (muitos para muitos)
+- Ticket → Setor (muitos para um)
+- Ticket → Usuário (muitos para um - criador)
+
+---
+
+## 📞 Suporte
+
+Para dúvidas técnicas ou sugestões de melhorias, entre em contato com a equipe de desenvolvimento.
+
+### Recursos Úteis
+- **Documentação do Supabase**: [supabase.com/docs](https://supabase.com/docs)
+- **Guia do Tailwind CSS**: [tailwindcss.com/docs](https://tailwindcss.com/docs)
+- **React Documentation**: [react.dev](https://react.dev)
+- **Lovable Documentation**: [docs.lovable.dev](https://docs.lovable.dev)
+
+---
+
+*Documentação atualizada em: Janeiro 2025*  
+*Versão do Sistema: 2.0.0*  
+*Última revisão: Sistema de Gestão de Tickets Manhattan*
