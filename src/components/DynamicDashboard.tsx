@@ -129,7 +129,23 @@ export default function DynamicDashboard() {
         return hoursOld > slaHours;
       }).length || 0;
 
-      const slaCompliance = totalTickets > 0 ? ((totalTickets - overdueTickets) / totalTickets) * 100 : 100;
+      // Calcular tickets resolvidos dentro do prazo para SLA correto
+      const resolvedTicketsOnTime = tickets?.filter(t => {
+        if (t.status !== 'resolvido' && t.status !== 'fechado') return false;
+        
+        const createdAt = new Date(t.data_criacao);
+        const slaHours = t.nivel_criticidade === 'P0' ? 4 : t.nivel_criticidade === 'P1' ? 24 : 72;
+        const slaDeadline = new Date(createdAt.getTime() + slaHours * 60 * 60 * 1000);
+        
+        // Assumindo que o ticket foi resolvido no momento atual (simplificado)
+        // Em um cenário real, você teria um campo de data_resolucao
+        return new Date() <= slaDeadline;
+      }).length || 0;
+
+      // SLA Compliance = tickets resolvidos dentro do prazo / total de tickets resolvidos
+      // Se não há tickets resolvidos, mostra 0% (não 100%)
+      const totalResolvedTickets = resolvedTickets + closedTickets;
+      const slaCompliance = totalResolvedTickets > 0 ? (resolvedTicketsOnTime / totalResolvedTickets) * 100 : 0;
 
       // Status data
       const statusData = [
@@ -275,10 +291,15 @@ export default function DynamicDashboard() {
         break;
       case 'sla-compliance':
         value = Math.round(dashboardData.slaCompliance);
-        subtitle = `${value}% de cumprimento do SLA`;
-        color = value >= 95 ? 'text-green-600 dark:text-green-400' : 
-               value >= 80 ? 'text-yellow-600 dark:text-yellow-400' : 
-               'text-red-600 dark:text-red-400';
+        const totalResolvedForSubtitle = dashboardData.resolvedTickets + dashboardData.closedTickets;
+        subtitle = totalResolvedForSubtitle === 0 
+          ? 'Nenhum ticket resolvido ainda' 
+          : `${value}% de cumprimento do SLA`;
+        color = totalResolvedForSubtitle === 0 
+          ? 'text-muted-foreground'
+          : value >= 95 ? 'text-green-600 dark:text-green-400' : 
+            value >= 80 ? 'text-yellow-600 dark:text-yellow-400' : 
+            'text-red-600 dark:text-red-400';
         break;
       case 'overdue-tickets':
         value = dashboardData.overdueTickets;

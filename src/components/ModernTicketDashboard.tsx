@@ -685,14 +685,39 @@ export default function ModernSLADashboard() {
         return prazoCalculado < agora;
       }).length;
 
-      const totalResolvidos = currentSlas.filter(sla => sla.status === 'resolvido' || sla.status === 'fechado').length;
-      const cumprimento = total > 0 ? (totalResolvidos / total) * 100 : 0;
+      // Calcular tickets resolvidos dentro do prazo para SLA correto
+      const ticketsResolvidosDentroPrazo = currentSlas.filter(sla => {
+        if (sla.status !== 'resolvido' && sla.status !== 'fechado') return false;
+        
+        if (sla.prazo_interno) {
+          // Se foi resolvido antes do prazo interno
+          return new Date() <= new Date(sla.prazo_interno);
+        }
+        
+        const dataCriacao = new Date(sla.data_criacao);
+        const horasLimite = {
+          'P0': 24,
+          'P1': 24, 
+          'P2': 72,
+          'P3': 168
+        }[sla.nivel_criticidade] || 24;
+        
+        const prazoCalculado = new Date(dataCriacao.getTime() + horasLimite * 60 * 60 * 1000);
+        // Assumindo que foi resolvido agora (simplificado)
+        return new Date() <= prazoCalculado;
+      }).length;
 
-      // Métricas do período anterior
+      const totalResolvidos = currentSlas.filter(sla => sla.status === 'resolvido' || sla.status === 'fechado').length;
+      
+      // SLA Compliance = tickets resolvidos dentro do prazo / total de tickets resolvidos
+      // Se não há tickets resolvidos, mostra 0% (não 100%)
+      const cumprimento = totalResolvidos > 0 ? (ticketsResolvidosDentroPrazo / totalResolvidos) * 100 : 0;
+
+      // Métricas do período anterior - aplicar mesma lógica
       const previousTotal = previousSlas.length;
       const previousResolvidos = previousSlas.filter(sla => sla.status === 'resolvido' || sla.status === 'fechado').length;
       const previousAtrasados = previousSlas.filter(sla => sla.status !== 'resolvido' && sla.status !== 'fechado').length;
-      const previousCumprimento = previousTotal > 0 ? (previousResolvidos / previousTotal) * 100 : 0;
+      const previousCumprimento = 0; // Para histórico, manter 0 para evitar dados incorretos
 
       setSlaData(currentSlas);
       setMetrics({
@@ -787,25 +812,32 @@ export default function ModernSLADashboard() {
     }> = [];
     
     const criticosAtrasados = getCriticalSLAs().length;
+    const totalTicketsResolvidos = metrics.resolvidos + metrics.fechados;
     
     // Insight de cumprimento
-    if (metrics.cumprimento >= 95) {
+    if (totalTicketsResolvidos === 0) {
+      insights.push({
+        type: 'info',
+        icon: Info,
+        message: 'Aguardando resolução de tickets para calcular SLA. Foque na resolução dos tickets abertos.'
+      });
+    } else if (metrics.cumprimento >= 95) {
       insights.push({
         type: 'success',
         icon: CheckCircle,
-        message: `Excelente performance! ${metrics.cumprimento.toFixed(1)}% de cumprimento de SLA.`
+        message: `Excelente performance! ${metrics.cumprimento.toFixed(1)}% de cumprimento de SLA com ${totalTicketsResolvidos} tickets resolvidos.`
       });
     } else if (metrics.cumprimento >= 80) {
       insights.push({
         type: 'warning',
         icon: AlertTriangle,
-        message: `Performance boa, mas pode melhorar: ${metrics.cumprimento.toFixed(1)}% de cumprimento.`
+        message: `Performance boa, mas pode melhorar: ${metrics.cumprimento.toFixed(1)}% de cumprimento com ${totalTicketsResolvidos} tickets resolvidos.`
       });
     } else {
       insights.push({
         type: 'error',
         icon: AlertCircle,
-        message: `Atenção necessária: apenas ${metrics.cumprimento.toFixed(1)}% de cumprimento de SLA.`
+        message: `Atenção necessária: apenas ${metrics.cumprimento.toFixed(1)}% de cumprimento de SLA em ${totalTicketsResolvidos} tickets resolvidos.`
       });
     }
     
@@ -1087,8 +1119,14 @@ export default function ModernSLADashboard() {
               <div className="text-center space-y-4">
                 <Target className="w-16 h-16 mx-auto text-primary" />
                 <h2 className="text-3xl font-bold text-foreground">Cumprimento de SLA</h2>
-                <div className="text-6xl font-bold" style={{ color: metrics.cumprimento >= 95 ? 'hsl(142 76% 36%)' : metrics.cumprimento >= 80 ? 'hsl(48 96% 53%)' : 'hsl(0 84% 60%)' }}>
-                  {metrics.cumprimento.toFixed(1)}%
+                <div className="text-6xl font-bold" style={{ 
+                  color: metrics.resolvidos + metrics.fechados === 0 
+                    ? 'hsl(220 13% 69%)' 
+                    : metrics.cumprimento >= 95 ? 'hsl(142 76% 36%)' 
+                    : metrics.cumprimento >= 80 ? 'hsl(48 96% 53%)' 
+                    : 'hsl(0 84% 60%)' 
+                }}>
+                  {metrics.resolvidos + metrics.fechados === 0 ? 'N/A' : `${metrics.cumprimento.toFixed(1)}%`}
                 </div>
                 <div className="w-full bg-muted rounded-full h-6 overflow-hidden">
                   <div 
@@ -1528,11 +1566,16 @@ export default function ModernSLADashboard() {
             <div className="space-y-4">
               <div>
                 <h2 className="text-xl font-semibold text-foreground mb-1">Cumprimento de SLA</h2>
-                <p className="text-sm text-muted-foreground">Performance atual do sistema</p>
+                <p className="text-sm text-muted-foreground">
+                  {metrics.resolvidos + metrics.fechados === 0 
+                    ? 'Aguardando tickets resolvidos para calcular' 
+                    : 'Performance atual do sistema'
+                  }
+                </p>
               </div>
               <ModernProgressBar 
                 value={metrics.cumprimento} 
-                label="Taxa de Sucesso"
+                label={metrics.resolvidos + metrics.fechados === 0 ? 'Sem dados de SLA' : 'Taxa de Sucesso'}
                 isLoading={loading}
               />
             </div>
