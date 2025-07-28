@@ -413,7 +413,12 @@ export default function DynamicDashboard() {
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px',
-                      color: 'hsl(var(--foreground))'
+                      color: 'hsl(var(--foreground))',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                    }}
+                    cursor={{
+                      fill: 'hsl(var(--muted))',
+                      fillOpacity: 0.1
                     }}
                     formatter={(value, name, props) => [
                       `${value} tickets`,
