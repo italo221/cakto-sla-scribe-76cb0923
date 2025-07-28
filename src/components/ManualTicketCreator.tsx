@@ -26,11 +26,11 @@ const impactoOptions = [
 ];
 
 const tipoTicketOptions = [
-  { label: 'Solicitação de tarefa', value: 'sugestao_melhoria' },
+  { label: 'Solicitação de tarefa', value: 'solicitacao_tarefa' },
   { label: 'Reporte de problema', value: 'bug' }, 
-  { label: 'Dúvida técnica', value: 'sugestao_melhoria' },
-  { label: 'Feedback/sugestão', value: 'sugestao_melhoria' },
-  { label: 'Atualização de projeto', value: 'sugestao_melhoria' }
+  { label: 'Dúvida técnica', value: 'duvida_tecnica' },
+  { label: 'Feedback/sugestão', value: 'feedback_sugestao' },
+  { label: 'Atualização de projeto', value: 'atualizacao_projeto' }
 ];
 
 const perguntasPorSetor = {
