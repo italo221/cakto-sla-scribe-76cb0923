@@ -215,58 +215,40 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit
   const getColumnIcon = (status: string) => {
     switch (status) {
       case 'aberto':
-        return <Circle className="h-4 w-4 text-slate-500" />;
+        return <Circle className="h-4 w-4" />;
       case 'em_andamento':
-        return <Activity className="h-4 w-4 text-yellow-600" />;
+        return <Activity className="h-4 w-4" />;
       case 'resolvido':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4" />;
       case 'fechado':
-        return <X className="h-4 w-4 text-gray-500" />;
+        return <X className="h-4 w-4" />;
       default:
         return null;
     }
   };
 
-  const getColumnColor = (status: string) => {
-    switch (status) {
-      case 'aberto':
-        return 'bg-red-500';
-      case 'em_andamento':
-        return 'bg-blue-500';
-      case 'resolvido':
-        return 'bg-green-500';
-      case 'fechado':
-        return 'bg-gray-500';
-      default:
-        return 'bg-gray-400';
-    }
-  };
-
   return (
-    <div className="flex-1 min-w-[300px]">
-      <div 
-        className={cn(
-          "rounded-lg border bg-card transition-all duration-300 ease-in-out",
-          isOver && userCanEdit && "ring-2 ring-primary shadow-xl scale-[1.02] bg-accent/30 border-primary/50"
-        )}
-      >
-      <div className={cn("p-4 rounded-t-lg border-b transition-all duration-300", getColumnColor(status))}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {getColumnIcon(status)}
-            <h3 className="font-semibold text-white">{title}</h3>
+    <div className="flex-1 min-w-[300px] max-w-[350px]">
+      <div className="bg-card border rounded-lg shadow-sm h-full flex flex-col">
+        {/* Header da coluna - minimalista */}
+        <div className="p-4 border-b">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {getColumnIcon(status)}
+              <h3 className="font-semibold text-foreground">{title}</h3>
+            </div>
+            <Badge variant="secondary" className="text-xs">
+              {tickets.length}
+            </Badge>
           </div>
-          <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-            {tickets.length}
-          </Badge>
         </div>
-      </div>
         
+        {/* Área de drop com scroll */}
         <div 
           ref={setNodeRef}
           className={cn(
-            "min-h-[500px] p-4 space-y-3 transition-all duration-300 ease-in-out",
-            isOver && userCanEdit && "bg-accent/20 shadow-inner"
+            "flex-1 p-3 space-y-3 overflow-y-auto scrollbar-thin max-h-[calc(100vh-300px)]",
+            isOver && userCanEdit && "bg-accent/10 border-2 border-dashed border-primary/30 rounded-lg"
           )}
         >
           <SortableContext items={tickets.map(t => t.id)} strategy={verticalListSortingStrategy}>
@@ -281,18 +263,15 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit
           </SortableContext>
           
           {/* Área de drop visual quando está vazia */}
-          {tickets.length === 0 && isOver && userCanEdit && (
-            <div className="border-2 border-dashed border-primary/30 rounded-lg p-8 bg-accent/10 text-center">
-              <Circle className="h-8 w-8 mx-auto mb-2 text-primary/50" />
-              <p className="text-sm text-muted-foreground">Solte o ticket aqui</p>
-            </div>
-          )}
-          
-          {/* Mensagem quando vazio e sem drag */}
-          {tickets.length === 0 && !isOver && (
-            <div className="text-center py-8 text-muted-foreground">
+          {tickets.length === 0 && (
+            <div className={cn(
+              "text-center py-12 text-muted-foreground transition-all duration-200",
+              isOver && userCanEdit && "bg-primary/5 rounded-lg"
+            )}>
               <Circle className="h-8 w-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">Nenhum ticket nesta coluna</p>
+              <p className="text-sm">
+                {isOver && userCanEdit ? "Solte o ticket aqui" : "Nenhum ticket"}
+              </p>
             </div>
           )}
         </div>
@@ -313,25 +292,25 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
       title: 'Aberto',
       status: 'aberto',
       tickets: tickets.filter(t => t.status === 'aberto'),
-      color: 'bg-red-500'
+      color: 'red'
     },
     {
       title: 'Em Andamento',
       status: 'em_andamento',
       tickets: tickets.filter(t => t.status === 'em_andamento'),
-      color: 'bg-blue-500'
+      color: 'blue'
     },
     {
       title: 'Resolvido',
       status: 'resolvido',
       tickets: tickets.filter(t => t.status === 'resolvido'),
-      color: 'bg-green-500'
+      color: 'green'
     },
     {
       title: 'Fechado',
       status: 'fechado',
       tickets: tickets.filter(t => t.status === 'fechado'),
-      color: 'bg-gray-500'
+      color: 'gray'
     }
   ];
 
@@ -412,41 +391,43 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
   }, [tickets, userCanEdit, toast, onTicketUpdate]);
 
   return (
-    <DndContext 
-      sensors={sensors} 
-      collisionDetection={rectIntersection}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex gap-6 overflow-x-auto pb-4">
-        {columns.map(column => (
-          <KanbanColumn
-            key={column.status}
-            title={column.title}
-            status={column.status}
-            tickets={column.tickets}
-            color={column.color}
-            onOpenDetail={onOpenDetail}
-            userCanEdit={userCanEdit}
-          />
-        ))}
-      </div>
-      
-      <DragOverlay dropAnimation={{
-        duration: 200,
-        easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-      }}>
-        {activeTicket ? (
-          <div className="transform rotate-3 scale-105 shadow-2xl">
+    <div className="h-full">
+      <DndContext 
+        sensors={sensors} 
+        collisionDetection={rectIntersection}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex gap-4 h-full overflow-x-auto pb-4">
+          {columns.map(column => (
+            <KanbanColumn
+              key={column.status}
+              title={column.title}
+              status={column.status}
+              tickets={column.tickets}
+              color={column.color}
+              onOpenDetail={onOpenDetail}
+              userCanEdit={userCanEdit}
+            />
+          ))}
+        </div>
+        
+        <DragOverlay 
+          dropAnimation={{
+            duration: 200,
+            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+          }}
+        >
+          {activeTicket ? (
             <KanbanCard
               ticket={activeTicket}
               isDragging={true}
               onOpenDetail={onOpenDetail}
               userCanEdit={userCanEdit}
             />
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </div>
   );
 }
