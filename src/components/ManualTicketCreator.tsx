@@ -394,12 +394,12 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
               <SelectTrigger className={errors.tipo_ticket ? 'border-destructive' : ''}>
                 <SelectValue placeholder="Selecione o tipo de ticket" />
               </SelectTrigger>
-              <SelectContent className="bg-popover border border-border z-50">
+              <SelectContent className="bg-popover border border-border z-50 max-h-60 overflow-auto">
                 {tipoTicketOptions.map(tipo => (
                   <SelectItem 
                     key={tipo.value} 
                     value={tipo.value}
-                    className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                    className="cursor-pointer hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                   >
                     {tipo.label}
                   </SelectItem>
