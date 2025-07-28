@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils";
 import TicketKanban from "@/components/TicketKanban";
 import JiraTicketCard from "@/components/JiraTicketCard";
 import { useAuth } from "@/hooks/useAuth";
-import { useTicketStatus, useTicketFilters, validateStatusChange, type TicketStatusType } from "@/hooks/useTicketStatus";
 import { useToast } from "@/hooks/use-toast";
 
 interface Ticket {
