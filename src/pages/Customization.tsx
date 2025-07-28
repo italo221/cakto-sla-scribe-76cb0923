@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Palette, Save, RotateCcw, Sparkles, AlertTriangle, Upload, Image, Type, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Navigation from "@/components/Navigation";
@@ -28,6 +29,7 @@ interface ColorCombination {
 
 export default function WhitelabelCustomization() {
   const { user, profile } = useAuth();
+  const { systemName, systemLogo, updateSystemName, updateSystemLogo, clearCache } = useSystemSettings();
   const [currentColor, setCurrentColor] = useState<ColorData>({ hsl: '142 76% 36%', hex: '#16a34a', name: 'Verde Padrão' });
   const [currentSecondaryColor, setCurrentSecondaryColor] = useState<ColorData>({ hsl: '262 83% 58%', hex: '#8b5cf6', name: 'Roxo Padrão' });
   const [previewColor, setPreviewColor] = useState<ColorData>({ hsl: '', hex: '', name: '' });
@@ -38,10 +40,8 @@ export default function WhitelabelCustomization() {
   const [loading, setLoading] = useState(true);
   const [colorCombinations, setColorCombinations] = useState<ColorCombination[]>([]);
   
-  // Novas variáveis de estado para nome e logo
-  const [systemName, setSystemName] = useState('Manhattan');
+  // Estados para personalização
   const [newSystemName, setNewSystemName] = useState('Manhattan');
-  const [systemLogo, setSystemLogo] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -54,6 +54,12 @@ export default function WhitelabelCustomization() {
       setLoading(false);
     }
   }, [user, profile]);
+
+  // Sincronizar newSystemName com systemName do hook
+  useEffect(() => {
+    setNewSystemName(systemName);
+    setLogoPreview(systemLogo);
+  }, [systemName, systemLogo]);
 
   const loadCurrentColors = async () => {
     try {
@@ -96,13 +102,11 @@ export default function WhitelabelCustomization() {
 
       if (nameResponse.data?.setting_value) {
         const nameValue = nameResponse.data.setting_value as string;
-        setSystemName(nameValue);
         setNewSystemName(nameValue);
       }
 
       if (logoResponse.data?.setting_value) {
         const logoValue = logoResponse.data.setting_value as string;
-        setSystemLogo(logoValue);
         setLogoPreview(logoValue);
       }
     } catch (error) {
@@ -314,10 +318,14 @@ export default function WhitelabelCustomization() {
       // Atualizar estados
       setCurrentColor(previewColor);
       setCurrentSecondaryColor(previewSecondaryColor);
-      setSystemName(newSystemName);
-      if (logoUrl) setSystemLogo(logoUrl);
+      updateSystemName(newSystemName);
+      if (logoUrl) updateSystemLogo(logoUrl);
       setHasChanges(false);
       setLogoFile(null);
+      
+      // Limpar cache para forçar recarregamento
+      clearCache();
+      
       await loadColorCombinations();
       
       toast.success("✅ Configurações salvas com sucesso!", {

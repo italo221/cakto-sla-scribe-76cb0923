@@ -22,8 +22,7 @@ import {
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 interface NavItem {
   path: string;
@@ -49,57 +48,8 @@ export default function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [systemName, setSystemName] = useState('Manhattan');
-  const [systemLogo, setSystemLogo] = useState<string | null>(null);
   const { user, profile, isSuperAdmin, canEdit, signOut } = useAuth();
-
-  // Carregar configurações do sistema
-  useEffect(() => {
-    const loadSystemSettings = async () => {
-      try {
-        const { data: nameData } = await supabase
-          .from('system_settings')
-          .select('setting_value')
-          .eq('setting_key', 'system_name')
-          .single();
-
-        const { data: logoData } = await supabase
-          .from('system_settings')
-          .select('setting_value')
-          .eq('setting_key', 'system_logo')
-          .single();
-
-        if (nameData?.setting_value) {
-          setSystemName(nameData.setting_value as string);
-        }
-
-        if (logoData?.setting_value) {
-          setSystemLogo(logoData.setting_value as string);
-        }
-      } catch (error) {
-        // Se não conseguir carregar, usar valores padrão
-        console.log('Usando configurações padrão do sistema');
-      }
-    };
-
-    loadSystemSettings();
-
-    // Subscrever a mudanças nas configurações do sistema
-    const subscription = supabase
-      .channel('system_settings_changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'system_settings'
-      }, () => {
-        loadSystemSettings();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(subscription);
-    };
-  }, []);
+  const { systemName, systemLogo } = useSystemSettings();
   
   const isActive = (path: string) => location.pathname === path;
   
