@@ -112,7 +112,7 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
       {...attributes}
       {...listeners}
       className={cn(
-        "cursor-pointer transition-all duration-200 ease-in-out hover:shadow-lg hover:scale-[1.02] group",
+        "cursor-pointer transition-all duration-200 ease-in-out hover:shadow-lg hover:scale-[1.02] group bg-card dark:bg-card",
         isDragging && "opacity-60 rotate-3 scale-105 shadow-2xl z-10",
         isSortableDragging && "shadow-lg scale-105",
         isExpired() && "border-red-500 bg-red-50 dark:bg-red-950/20",

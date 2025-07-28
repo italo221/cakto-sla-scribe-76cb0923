@@ -104,7 +104,7 @@ export const usePermissions = () => {
   };
 
   const canDeleteTicket = (ticket: any) => {
-    // Apenas Super Admin pode excluir qualquer ticket
+    // Super Admin pode excluir QUALQUER ticket sem restrições
     if (isSuperAdmin) return true;
 
     // Verificar permissões por setor
@@ -122,8 +122,7 @@ export const usePermissions = () => {
     // Operadores NÃO podem excluir tickets (nem os próprios)
     if (profile?.role === 'operador') return false;
 
-    // Usuários normais não podem excluir tickets de outros setores
-    // Apenas líderes do próprio setor podem excluir
+    // Líderes do setor podem excluir qualquer ticket do próprio setor
     if (ticket.setor_id && isLeaderOfSetor(ticket.setor_id)) {
       return true;
     }
