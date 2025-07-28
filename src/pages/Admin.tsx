@@ -12,29 +12,13 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { 
-  Users, 
-  Building2, 
-  UserPlus, 
-  Building, 
-  Shield, 
-  Trash2, 
-  Edit,
-  Check,
-  X,
-  AlertCircle,
-  Plus,
-  UserX,
-  Save,
-  Loader2
-} from "lucide-react";
+import { Users, Building2, UserPlus, Building, Shield, Trash2, Edit, Check, X, AlertCircle, Plus, UserX, Save, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
 import SupabaseStatus from "@/components/SupabaseStatus";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
-
 interface Profile {
   id: string;
   user_id: string;
@@ -45,14 +29,12 @@ interface Profile {
   ativo: boolean;
   created_at: string;
 }
-
 interface Setor {
   id: string;
   nome: string;
   descricao: string;
   ativo: boolean;
 }
-
 interface UserSetor {
   id: string;
   user_id: string;
@@ -62,85 +44,76 @@ interface UserSetor {
 }
 
 // Componente para cartão de usuário com edição
-const UserCard = ({ user, onUserUpdate }: { user: Profile; onUserUpdate: () => void }) => {
+const UserCard = ({
+  user,
+  onUserUpdate
+}: {
+  user: Profile;
+  onUserUpdate: () => void;
+}) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(user.nome_completo);
   const [editedRole, setEditedRole] = useState(user.role);
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   const handleSave = async () => {
     if (!editedName.trim()) {
       toast({
         title: "Erro",
         description: "Nome não pode estar vazio.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          nome_completo: editedName.trim(),
-          role: editedRole
-        })
-        .eq('id', user.id);
-
+      const {
+        error
+      } = await supabase.from('profiles').update({
+        nome_completo: editedName.trim(),
+        role: editedRole
+      }).eq('id', user.id);
       if (error) throw error;
-
       toast({
         title: "Perfil atualizado",
-        description: "Nome e role atualizados com sucesso.",
+        description: "Nome e role atualizados com sucesso."
       });
-
       setIsEditing(false);
       onUserUpdate();
     } catch (error: any) {
       toast({
         title: "Erro ao atualizar",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const handleToggleActive = async () => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ ativo: !user.ativo })
-        .eq('id', user.id);
-
+      const {
+        error
+      } = await supabase.from('profiles').update({
+        ativo: !user.ativo
+      }).eq('id', user.id);
       if (error) throw error;
-
       toast({
         title: user.ativo ? "Usuário desativado" : "Usuário ativado",
-        description: `${user.nome_completo} foi ${user.ativo ? 'desativado' : 'ativado'} com sucesso.`,
+        description: `${user.nome_completo} foi ${user.ativo ? 'desativado' : 'ativado'} com sucesso.`
       });
-
       onUserUpdate();
     } catch (error: any) {
       toast({
         title: "Erro ao alterar status",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
-  return (
-    <div className="flex items-center justify-between p-4 border rounded-lg">
+  return <div className="flex items-center justify-between p-4 border rounded-lg">
       <div className="space-y-1 flex-1">
-        {isEditing ? (
-          <div className="space-y-2">
-            <Input
-              value={editedName}
-              onChange={(e) => setEditedName(e.target.value)}
-              placeholder="Nome completo"
-              className="max-w-xs"
-            />
-            <Select value={editedRole} onValueChange={(value) => setEditedRole(value as any)}>
+        {isEditing ? <div className="space-y-2">
+            <Input value={editedName} onChange={e => setEditedName(e.target.value)} placeholder="Nome completo" className="max-w-xs" />
+            <Select value={editedRole} onValueChange={value => setEditedRole(value as any)}>
               <SelectTrigger className="max-w-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -156,70 +129,45 @@ const UserCard = ({ user, onUserUpdate }: { user: Profile; onUserUpdate: () => v
                 Salvar
               </Button>
               <Button size="sm" variant="outline" onClick={() => {
-                setIsEditing(false);
-                setEditedName(user.nome_completo);
-                setEditedRole(user.role);
-              }}>
+            setIsEditing(false);
+            setEditedName(user.nome_completo);
+            setEditedRole(user.role);
+          }}>
                 Cancelar
               </Button>
             </div>
-          </div>
-        ) : (
-          <div>
+          </div> : <div>
             <p className="font-medium">{user.nome_completo}</p>
             <Badge variant={user.role === 'super_admin' ? 'default' : user.role === 'operador' ? 'secondary' : 'outline'} className="text-xs mt-1">
               {user.role === 'super_admin' ? 'Super Admin' : user.role === 'operador' ? 'Operador' : 'Viewer'}
             </Badge>
-          </div>
-        )}
+          </div>}
         <p className="text-sm text-muted-foreground">{user.email}</p>
       </div>
       <div className="flex items-center gap-2">
-        <Badge variant={user.role === 'super_admin' ? 'destructive' : 'secondary'}>
-          <Shield className="h-3 w-3 mr-1" />
-          {user.role === 'super_admin' ? 'Super Admin' : user.role === 'operador' ? 'Operador' : 'Viewer'}
-        </Badge>
-        {user.ativo ? (
-          <Badge variant="outline" className="text-green-600">
+        
+        {user.ativo ? <Badge variant="outline" className="text-green-600">
             <Check className="h-3 w-3 mr-1" />
             Ativo
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="text-red-600">
+          </Badge> : <Badge variant="outline" className="text-red-600">
             <X className="h-3 w-3 mr-1" />
             Inativo
-          </Badge>
-        )}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsEditing(!isEditing)}
-          disabled={isEditing}
-        >
+          </Badge>}
+        <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)} disabled={isEditing}>
           <Edit className="h-3 w-3" />
         </Button>
-        <Button
-          variant={user.ativo ? "destructive" : "default"}
-          size="sm"
-          onClick={handleToggleActive}
-        >
-          {user.ativo ? (
-            <>
+        <Button variant={user.ativo ? "destructive" : "default"} size="sm" onClick={handleToggleActive}>
+          {user.ativo ? <>
               <UserX className="h-3 w-3 mr-1" />
               Desativar
-            </>
-          ) : (
-            <>
+            </> : <>
               <Check className="h-3 w-3 mr-1" />
               Ativar
-            </>
-          )}
+            </>}
         </Button>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 const Admin = () => {
   const [users, setUsers] = useState<Profile[]>([]);
   const [setores, setSetores] = useState<Setor[]>([]);
@@ -229,22 +177,23 @@ const Admin = () => {
   const [setorDialogOpen, setSetorDialogOpen] = useState(false);
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
-  
+
   // Form states
   const [selectedUser, setSelectedUser] = useState("");
   const [selectedSetor, setSelectedSetor] = useState("");
   const [newSetorName, setNewSetorName] = useState("");
   const [newSetorDesc, setNewSetorDesc] = useState("");
-  
+
   // User form states
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserType, setNewUserType] = useState<"administrador_master" | "colaborador_setor">("colaborador_setor");
   const [selectedSetorDetail, setSelectedSetorDetail] = useState<Setor | null>(null);
-  
-  const { toast } = useToast();
-  
+  const {
+    toast
+  } = useToast();
+
   // Sistema aberto - sempre autenticado como admin
   const isAuthenticated = true;
   const isAdmin = true;
@@ -252,27 +201,19 @@ const Admin = () => {
   // Fetch data
   const fetchData = async () => {
     try {
-      const [usersResponse, setoresResponse, userSetoresResponse] = await Promise.all([
-        supabase.from('profiles').select('*').order('nome_completo'),
-        supabase.from('setores').select('*').order('nome'),
-        supabase
-          .from('user_setores')
-          .select(`
+      const [usersResponse, setoresResponse, userSetoresResponse] = await Promise.all([supabase.from('profiles').select('*').order('nome_completo'), supabase.from('setores').select('*').order('nome'), supabase.from('user_setores').select(`
             id,
             user_id,
             setor_id,
             setores:setor_id (id, nome, descricao, ativo),
             profiles:user_id (nome_completo, email)
-          `)
-      ]);
-
+          `)]);
       if (usersResponse.error) throw usersResponse.error;
       if (setoresResponse.error) throw setoresResponse.error;
       if (userSetoresResponse.error) throw userSetoresResponse.error;
-
       setUsers(usersResponse.data || []);
       setSetores(setoresResponse.data || []);
-      
+
       // Transform userSetores data to match interface
       const transformedUserSetores = (userSetoresResponse.data || []).map((item: any) => ({
         id: item.id,
@@ -281,19 +222,17 @@ const Admin = () => {
         setor: item.setores,
         profile: item.profiles
       }));
-      
       setUserSetores(transformedUserSetores);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar dados",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     if (isAdmin) {
       fetchData();
@@ -306,26 +245,22 @@ const Admin = () => {
       toast({
         title: "Erro",
         description: "Nome do setor é obrigatório.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     try {
-      const { error } = await supabase
-        .from('setores')
-        .insert({
-          nome: newSetorName.trim(),
-          descricao: newSetorDesc.trim(),
-        });
-
+      const {
+        error
+      } = await supabase.from('setores').insert({
+        nome: newSetorName.trim(),
+        descricao: newSetorDesc.trim()
+      });
       if (error) throw error;
-
       toast({
         title: "Setor criado com sucesso!",
-        description: `O setor "${newSetorName}" foi criado.`,
+        description: `O setor "${newSetorName}" foi criado.`
       });
-
       setNewSetorName("");
       setNewSetorDesc("");
       setSetorDialogOpen(false);
@@ -334,7 +269,7 @@ const Admin = () => {
       toast({
         title: "Erro ao criar setor",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -345,26 +280,25 @@ const Admin = () => {
       toast({
         title: "Erro",
         description: "Todos os campos são obrigatórios.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     if (newUserPassword.length < 6) {
       toast({
         title: "Erro",
         description: "A senha deve ter pelo menos 6 caracteres.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     setCreatingUser(true);
-
     try {
       const redirectUrl = `${window.location.origin}/`;
-      
-      const { data, error } = await supabase.auth.signUp({
+      const {
+        data,
+        error
+      } = await supabase.auth.signUp({
         email: newUserEmail.trim(),
         password: newUserPassword,
         options: {
@@ -375,14 +309,11 @@ const Admin = () => {
           }
         }
       });
-
       if (error) throw error;
-
       toast({
         title: "Usuário criado com sucesso!",
-        description: `O usuário "${newUserName}" foi criado. Um e-mail de confirmação foi enviado.`,
+        description: `O usuário "${newUserName}" foi criado. Um e-mail de confirmação foi enviado.`
       });
-
       setNewUserName("");
       setNewUserEmail("");
       setNewUserPassword("");
@@ -393,160 +324,125 @@ const Admin = () => {
       toast({
         title: "Erro ao criar usuário",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setCreatingUser(false);
     }
   };
 
-// Componente para cartão de setor com edição
-const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () => void }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedName, setEditedName] = useState(setor.nome);
-  const [editedDesc, setEditedDesc] = useState(setor.descricao || '');
-  const { toast } = useToast();
-
-  const handleSave = async () => {
-    if (!editedName.trim()) {
-      toast({
-        title: "Erro",
-        description: "Nome do setor não pode estar vazio.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('setores')
-        .update({ 
+  // Componente para cartão de setor com edição
+  const SetorCard = ({
+    setor,
+    onSetorUpdate
+  }: {
+    setor: Setor;
+    onSetorUpdate: () => void;
+  }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedName, setEditedName] = useState(setor.nome);
+    const [editedDesc, setEditedDesc] = useState(setor.descricao || '');
+    const {
+      toast
+    } = useToast();
+    const handleSave = async () => {
+      if (!editedName.trim()) {
+        toast({
+          title: "Erro",
+          description: "Nome do setor não pode estar vazio.",
+          variant: "destructive"
+        });
+        return;
+      }
+      try {
+        const {
+          error
+        } = await supabase.from('setores').update({
           nome: editedName.trim(),
           descricao: editedDesc.trim()
-        })
-        .eq('id', setor.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Setor atualizado",
-        description: "Informações do setor atualizadas com sucesso.",
-      });
-
-      setIsEditing(false);
-      onSetorUpdate();
-    } catch (error: any) {
-      toast({
-        title: "Erro ao atualizar",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleToggleActive = async () => {
-    try {
-      const { error } = await supabase
-        .from('setores')
-        .update({ ativo: !setor.ativo })
-        .eq('id', setor.id);
-
-      if (error) throw error;
-
-      toast({
-        title: setor.ativo ? "Setor desativado" : "Setor ativado",
-        description: `${setor.nome} foi ${setor.ativo ? 'desativado' : 'ativado'} com sucesso.`,
-      });
-
-      onSetorUpdate();
-    } catch (error: any) {
-      toast({
-        title: "Erro ao alterar status",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  return (
-    <div className="flex items-center justify-between p-4 border rounded-lg">
+        }).eq('id', setor.id);
+        if (error) throw error;
+        toast({
+          title: "Setor atualizado",
+          description: "Informações do setor atualizadas com sucesso."
+        });
+        setIsEditing(false);
+        onSetorUpdate();
+      } catch (error: any) {
+        toast({
+          title: "Erro ao atualizar",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
+    };
+    const handleToggleActive = async () => {
+      try {
+        const {
+          error
+        } = await supabase.from('setores').update({
+          ativo: !setor.ativo
+        }).eq('id', setor.id);
+        if (error) throw error;
+        toast({
+          title: setor.ativo ? "Setor desativado" : "Setor ativado",
+          description: `${setor.nome} foi ${setor.ativo ? 'desativado' : 'ativado'} com sucesso.`
+        });
+        onSetorUpdate();
+      } catch (error: any) {
+        toast({
+          title: "Erro ao alterar status",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
+    };
+    return <div className="flex items-center justify-between p-4 border rounded-lg">
       <div className="space-y-1 flex-1">
-        {isEditing ? (
-          <div className="space-y-2">
-            <Input
-              value={editedName}
-              onChange={(e) => setEditedName(e.target.value)}
-              placeholder="Nome do setor"
-              className="max-w-xs"
-            />
-            <Input
-              value={editedDesc}
-              onChange={(e) => setEditedDesc(e.target.value)}
-              placeholder="Descrição"
-              className="max-w-xs"
-            />
+        {isEditing ? <div className="space-y-2">
+            <Input value={editedName} onChange={e => setEditedName(e.target.value)} placeholder="Nome do setor" className="max-w-xs" />
+            <Input value={editedDesc} onChange={e => setEditedDesc(e.target.value)} placeholder="Descrição" className="max-w-xs" />
             <div className="flex gap-2">
               <Button size="sm" onClick={handleSave}>
                 <Save className="h-3 w-3 mr-1" />
                 Salvar
               </Button>
               <Button size="sm" variant="outline" onClick={() => {
-                setIsEditing(false);
-                setEditedName(setor.nome);
-                setEditedDesc(setor.descricao || '');
-              }}>
+              setIsEditing(false);
+              setEditedName(setor.nome);
+              setEditedDesc(setor.descricao || '');
+            }}>
                 Cancelar
               </Button>
             </div>
-          </div>
-        ) : (
-          <>
+          </div> : <>
             <p className="font-medium">{setor.nome}</p>
             <p className="text-sm text-muted-foreground">{setor.descricao}</p>
-          </>
-        )}
+          </>}
       </div>
       <div className="flex items-center gap-2">
-        {setor.ativo ? (
-          <Badge variant="outline" className="text-green-600">
+        {setor.ativo ? <Badge variant="outline" className="text-green-600">
             <Check className="h-3 w-3 mr-1" />
             Ativo
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="text-red-600">
+          </Badge> : <Badge variant="outline" className="text-red-600">
             <X className="h-3 w-3 mr-1" />
             Inativo
-          </Badge>
-        )}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsEditing(!isEditing)}
-          disabled={isEditing}
-        >
+          </Badge>}
+        <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)} disabled={isEditing}>
           <Edit className="h-3 w-3" />
         </Button>
-        <Button
-          variant={setor.ativo ? "destructive" : "default"}
-          size="sm"
-          onClick={handleToggleActive}
-        >
-          {setor.ativo ? (
-            <>
+        <Button variant={setor.ativo ? "destructive" : "default"} size="sm" onClick={handleToggleActive}>
+          {setor.ativo ? <>
               <UserX className="h-3 w-3 mr-1" />
               Desativar
-            </>
-          ) : (
-            <>
+            </> : <>
               <Check className="h-3 w-3 mr-1" />
               Ativar
-            </>
-          )}
+            </>}
         </Button>
       </div>
-    </div>
-  );
-};
+    </div>;
+  };
 
   // Assign user to sector
   const handleAssignUserToSetor = async () => {
@@ -554,36 +450,32 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
       toast({
         title: "Erro",
         description: "Selecione um usuário e um setor.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     try {
-      const { error } = await supabase
-        .from('user_setores')
-        .insert({
-          user_id: selectedUser,
-          setor_id: selectedSetor,
-        });
-
+      const {
+        error
+      } = await supabase.from('user_setores').insert({
+        user_id: selectedUser,
+        setor_id: selectedSetor
+      });
       if (error) {
         if (error.code === '23505') {
           toast({
             title: "Erro",
             description: "Este usuário já está atribuído a este setor.",
-            variant: "destructive",
+            variant: "destructive"
           });
           return;
         }
         throw error;
       }
-
       toast({
         title: "Usuário atribuído com sucesso!",
-        description: "O usuário foi adicionado ao setor.",
+        description: "O usuário foi adicionado ao setor."
       });
-
       setSelectedUser("");
       setSelectedSetor("");
       setDialogOpen(false);
@@ -592,7 +484,7 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
       toast({
         title: "Erro ao atribuir usuário",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -600,31 +492,25 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
   // Remove user from sector
   const handleRemoveUserFromSetor = async (userSetorId: string) => {
     try {
-      const { error } = await supabase
-        .from('user_setores')
-        .delete()
-        .eq('id', userSetorId);
-
+      const {
+        error
+      } = await supabase.from('user_setores').delete().eq('id', userSetorId);
       if (error) throw error;
-
       toast({
         title: "Usuário removido do setor",
-        description: "A atribuição foi removida com sucesso.",
+        description: "A atribuição foi removida com sucesso."
       });
-
       fetchData();
     } catch (error: any) {
       toast({
         title: "Erro ao remover usuário",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-background">
+    return <div className="min-h-screen bg-background">
         <Navigation />
         <div className="container mx-auto py-8">
           <Alert variant="destructive">
@@ -634,31 +520,23 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
             </AlertDescription>
           </Alert>
         </div>
-      </div>
-    );
+      </div>;
   }
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
+    return <div className="min-h-screen bg-background">
         <Navigation />
         <div className="container mx-auto py-8">
           <div className="text-center">Carregando...</div>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <Navigation />
       
       <div className="container mx-auto py-4 sm:py-6 lg:py-8 px-2 sm:px-4 max-w-6xl">
-        {!isSupabaseConfigured && (
-          <div className="mb-6">
+        {!isSupabaseConfigured && <div className="mb-6">
             <SupabaseStatus />
-          </div>
-        )}
+          </div>}
         
         {/* Sistema aberto - acesso total */}
         <Alert className="mb-6">
@@ -714,36 +592,19 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="user-name">Nome Completo</Label>
-                        <Input
-                          id="user-name"
-                          value={newUserName}
-                          onChange={(e) => setNewUserName(e.target.value)}
-                          placeholder="Ex: João Silva"
-                        />
+                        <Input id="user-name" value={newUserName} onChange={e => setNewUserName(e.target.value)} placeholder="Ex: João Silva" />
                       </div>
                       <div>
                         <Label htmlFor="user-email">E-mail</Label>
-                        <Input
-                          id="user-email"
-                          type="email"
-                          value={newUserEmail}
-                          onChange={(e) => setNewUserEmail(e.target.value)}
-                          placeholder="Ex: joao@empresa.com"
-                        />
+                        <Input id="user-email" type="email" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="Ex: joao@empresa.com" />
                       </div>
                       <div>
                         <Label htmlFor="user-password">Senha</Label>
-                        <Input
-                          id="user-password"
-                          type="password"
-                          value={newUserPassword}
-                          onChange={(e) => setNewUserPassword(e.target.value)}
-                          placeholder="Mínimo 6 caracteres"
-                        />
+                        <Input id="user-password" type="password" value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
                       </div>
                       <div>
                         <Label htmlFor="user-type">Tipo de Usuário</Label>
-                        <Select value={newUserType} onValueChange={(value) => setNewUserType(value as "administrador_master" | "colaborador_setor")}>
+                        <Select value={newUserType} onValueChange={value => setNewUserType(value as "administrador_master" | "colaborador_setor")}>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o tipo" />
                           </SelectTrigger>
@@ -765,14 +626,10 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
                       </div>
                       <div className="flex gap-2">
                         <Button onClick={handleCreateUser} className="flex-1" disabled={creatingUser}>
-                          {creatingUser ? (
-                            <>
+                          {creatingUser ? <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               Criando...
-                            </>
-                          ) : (
-                            "Criar Usuário"
-                          )}
+                            </> : "Criar Usuário"}
                         </Button>
                         <Button variant="outline" onClick={() => setUserDialogOpen(false)}>
                           Cancelar
@@ -797,9 +654,7 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
               </CardHeader>
               <CardContent>
                  <div className="space-y-4">
-                   {users.map((user) => (
-                     <UserCard key={user.id} user={user} onUserUpdate={fetchData} />
-                   ))}
+                   {users.map(user => <UserCard key={user.id} user={user} onUserUpdate={fetchData} />)}
                  </div>
               </CardContent>
             </Card>
@@ -835,21 +690,11 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
                       <div className="space-y-4">
                         <div>
                           <Label htmlFor="setor-name">Nome do Setor</Label>
-                          <Input
-                            id="setor-name"
-                            value={newSetorName}
-                            onChange={(e) => setNewSetorName(e.target.value)}
-                            placeholder="Ex: Marketing"
-                          />
+                          <Input id="setor-name" value={newSetorName} onChange={e => setNewSetorName(e.target.value)} placeholder="Ex: Marketing" />
                         </div>
                         <div>
                           <Label htmlFor="setor-desc">Descrição</Label>
-                          <Input
-                            id="setor-desc"
-                            value={newSetorDesc}
-                            onChange={(e) => setNewSetorDesc(e.target.value)}
-                            placeholder="Ex: Setor de Marketing e Comunicação"
-                          />
+                          <Input id="setor-desc" value={newSetorDesc} onChange={e => setNewSetorDesc(e.target.value)} placeholder="Ex: Setor de Marketing e Comunicação" />
                         </div>
                         <div className="flex gap-2">
                           <Button onClick={handleCreateSetor} className="flex-1">
@@ -863,35 +708,25 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
                     </DialogContent>
                   </Dialog>
 
-                   {setores.map((setor) => (
-                     <div key={setor.id} className="flex items-center justify-between p-4 border rounded-lg">
+                   {setores.map(setor => <div key={setor.id} className="flex items-center justify-between p-4 border rounded-lg">
                        <div className="space-y-1 flex-1">
                          <p className="font-medium">{setor.nome}</p>
                          <p className="text-sm text-muted-foreground">{setor.descricao}</p>
                        </div>
                        <div className="flex items-center gap-2">
-                         {setor.ativo ? (
-                           <Badge variant="outline" className="text-green-600">
+                         {setor.ativo ? <Badge variant="outline" className="text-green-600">
                              <Check className="h-3 w-3 mr-1" />
                              Ativo
-                           </Badge>
-                         ) : (
-                           <Badge variant="outline" className="text-red-600">
+                           </Badge> : <Badge variant="outline" className="text-red-600">
                              <X className="h-3 w-3 mr-1" />
                              Inativo
-                           </Badge>
-                         )}
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => setSelectedSetorDetail(setor)}
-                         >
+                           </Badge>}
+                         <Button variant="outline" size="sm" onClick={() => setSelectedSetorDetail(setor)}>
                            <Building className="h-3 w-3 mr-1" />
                            Gerenciar
                          </Button>
                        </div>
-                     </div>
-                   ))}
+                     </div>)}
                  </div>
               </CardContent>
             </Card>
@@ -932,11 +767,9 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
                               <SelectValue placeholder="Selecione um usuário" />
                             </SelectTrigger>
                             <SelectContent>
-                              {users.filter(u => u.user_type === 'colaborador_setor').map((user) => (
-                                <SelectItem key={user.user_id} value={user.user_id}>
+                              {users.filter(u => u.user_type === 'colaborador_setor').map(user => <SelectItem key={user.user_id} value={user.user_id}>
                                   {user.nome_completo} ({user.email})
-                                </SelectItem>
-                              ))}
+                                </SelectItem>)}
                             </SelectContent>
                           </Select>
                         </div>
@@ -947,11 +780,9 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
                               <SelectValue placeholder="Selecione um setor" />
                             </SelectTrigger>
                             <SelectContent>
-                               {setores.filter(s => s.ativo).map((setor) => (
-                                <SelectItem key={setor.id} value={setor.id}>
+                               {setores.filter(s => s.ativo).map(setor => <SelectItem key={setor.id} value={setor.id}>
                                   {setor.nome}
-                                </SelectItem>
-                              ))}
+                                </SelectItem>)}
                             </SelectContent>
                           </Select>
                         </div>
@@ -968,23 +799,17 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
                   </Dialog>
 
                   <div className="space-y-4">
-                    {userSetores.map((userSetor) => (
-                      <div key={userSetor.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    {userSetores.map(userSetor => <div key={userSetor.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="space-y-1">
                           <p className="font-medium">{userSetor.profile?.nome_completo}</p>
                           <p className="text-sm text-muted-foreground">{userSetor.profile?.email}</p>
                           <Badge variant="outline">{userSetor.setor?.nome}</Badge>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRemoveUserFromSetor(userSetor.id)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => handleRemoveUserFromSetor(userSetor.id)}>
                           <Trash2 className="h-4 w-4 mr-2" />
                           Remover
                         </Button>
-                      </div>
-                    ))}
+                      </div>)}
                   </div>
                 </div>
               </CardContent>
@@ -1001,19 +826,12 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
         </Tabs>
 
         {/* Modal de detalhes do setor */}
-        {selectedSetorDetail && (
-          <Dialog open={!!selectedSetorDetail} onOpenChange={() => setSelectedSetorDetail(null)}>
+        {selectedSetorDetail && <Dialog open={!!selectedSetorDetail} onOpenChange={() => setSelectedSetorDetail(null)}>
             <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[80vh] overflow-y-auto">
-              <SetorDetailPanel
-                setor={selectedSetorDetail}
-                onClose={() => setSelectedSetorDetail(null)}
-              />
+              <SetorDetailPanel setor={selectedSetorDetail} onClose={() => setSelectedSetorDetail(null)} />
             </DialogContent>
-          </Dialog>
-        )}
+          </Dialog>}
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Admin;
