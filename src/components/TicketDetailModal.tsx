@@ -542,11 +542,6 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
               {sla.ticket_number || `#${sla.id.slice(0, 8)}`} - {sla.titulo}
             </DialogTitle>
             <div className="flex items-center gap-2">
-              <TicketCountdown 
-                dataCriacao={sla.data_criacao}
-                criticidade={sla.nivel_criticidade}
-                status={sla.status}
-              />
               <div className={`transition-all duration-300 ${statusLoading ? 'animate-pulse' : ''}`}>
                 {getStatusBadge(sla.status)}
               </div>
@@ -566,6 +561,15 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                   Editar
                 </Button>
               )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="gap-2"
+              >
+                <X className="h-4 w-4" />
+                Fechar
+              </Button>
             </div>
           </div>
           

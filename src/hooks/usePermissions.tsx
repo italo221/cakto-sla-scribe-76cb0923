@@ -57,7 +57,7 @@ export const usePermissions = () => {
     // Super Admin pode editar qualquer ticket
     if (isSuperAdmin) return true;
 
-    // Se é operador, pode editar apenas tickets que criou
+    // Se é operador, pode editar apenas tickets que criou (baseado no email)
     if (profile?.role === 'operador') {
       return ticket.solicitante === user?.email;
     }
