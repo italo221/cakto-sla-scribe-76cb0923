@@ -175,12 +175,10 @@ const UserCard = ({ user, onUserUpdate }: { user: Profile; onUserUpdate: () => v
         <p className="text-sm text-muted-foreground">{user.email}</p>
       </div>
       <div className="flex items-center gap-2">
-        {user.user_type === 'administrador_master' ? (
-          <Badge variant={user.role === 'super_admin' ? 'destructive' : 'secondary'}>
-            <Shield className="h-3 w-3 mr-1" />
-            {user.role === 'super_admin' ? 'Super Admin' : user.role === 'operador' ? 'Operador' : 'Viewer'}
-          </Badge>
-        )}
+        <Badge variant={user.role === 'super_admin' ? 'destructive' : 'secondary'}>
+          <Shield className="h-3 w-3 mr-1" />
+          {user.role === 'super_admin' ? 'Super Admin' : user.role === 'operador' ? 'Operador' : 'Viewer'}
+        </Badge>
         {user.ativo ? (
           <Badge variant="outline" className="text-green-600">
             <Check className="h-3 w-3 mr-1" />
@@ -1013,7 +1011,6 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
             </DialogContent>
           </Dialog>
         )}
-        </Tabs>
       </div>
     </div>
   );

@@ -290,6 +290,50 @@ export type Database = {
           },
         ]
       }
+      setor_permissoes: {
+        Row: {
+          created_at: string
+          id: string
+          pode_comentar: boolean
+          pode_criar_ticket: boolean
+          pode_editar_ticket: boolean
+          pode_excluir_ticket: boolean
+          pode_resolver_ticket: boolean
+          setor_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pode_comentar?: boolean
+          pode_criar_ticket?: boolean
+          pode_editar_ticket?: boolean
+          pode_excluir_ticket?: boolean
+          pode_resolver_ticket?: boolean
+          setor_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pode_comentar?: boolean
+          pode_criar_ticket?: boolean
+          pode_editar_ticket?: boolean
+          pode_excluir_ticket?: boolean
+          pode_resolver_ticket?: boolean
+          setor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "setor_permissoes_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: true
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       setores: {
         Row: {
           ativo: boolean
@@ -725,18 +769,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_leader: boolean
           setor_id: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          is_leader?: boolean
           setor_id: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_leader?: boolean
           setor_id?: string
           user_id?: string
         }
