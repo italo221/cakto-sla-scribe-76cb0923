@@ -141,7 +141,7 @@ All colors MUST be HSL.
     --destructive-hover: 0 62.8% 35%;
 
     --success: 142 76% 36%;
-    --success-foreground: 210 40% 98%;
+    --success-foreground: 0 0% 100%;
     --success-light: 142 76% 15%;
 
     --warning: 45 93% 47%;
