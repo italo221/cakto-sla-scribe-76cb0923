@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,18 +13,7 @@ interface ManualTicketCreatorProps {
   onTicketCreated?: () => void;
 }
 
-const setorOptions = [
-  "Produto",
-  "Compliance", 
-  "Suporte",
-  "Marketing",
-  "Comercial",
-  "Financeiro",
-  "Tecnologia",
-  "Recursos Humanos",
-  "Jurídico",
-  "Operações"
-];
+// Setores serão buscados dinamicamente do banco
 
 const impactoOptions = [
   { value: 'risco_grave', label: 'Risco grave (multas, prejuízo financeiro, problemas legais)', pontos: 25 },
@@ -86,6 +75,7 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'complete'>('form');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [setores, setSetores] = useState<{id: string, nome: string}[]>([]);
   
   const [formData, setFormData] = useState({
     setor: '',
@@ -100,6 +90,31 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
     nivel_criticidade: 'P3',
     pontuacao_total: 0
   });
+
+  // Buscar setores do banco
+  useEffect(() => {
+    const fetchSetores = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('setores')
+          .select('id, nome')
+          .eq('ativo', true)
+          .order('nome');
+        
+        if (error) throw error;
+        setSetores(data || []);
+      } catch (error) {
+        console.error('Erro ao buscar setores:', error);
+        toast({
+          title: "Erro ao carregar setores",
+          description: "Não foi possível carregar a lista de setores.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchSetores();
+  }, []);
 
   const calculateCriticality = (impacto: string) => {
     const impactoData = impactoOptions.find(opt => opt.value === impacto);
@@ -263,8 +278,8 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
                 <SelectValue placeholder="Selecione o setor responsável" />
               </SelectTrigger>
               <SelectContent className="bg-popover border border-border z-50">
-                {setorOptions.map(setor => (
-                  <SelectItem key={setor} value={setor}>{setor}</SelectItem>
+                {setores.map(setor => (
+                  <SelectItem key={setor.id} value={setor.nome}>{setor.nome}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

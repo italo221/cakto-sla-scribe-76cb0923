@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImprovedPermissionsPanel from "@/components/ImprovedPermissionsPanel";
 import EnhancedPermissionsLogs from "@/components/EnhancedPermissionsLogs";
+import SetorPermissionsPanel from "@/components/SetorPermissionsPanel";
+import SetorDetailPanel from "@/components/SetorDetailPanel";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -174,14 +176,9 @@ const UserCard = ({ user, onUserUpdate }: { user: Profile; onUserUpdate: () => v
       </div>
       <div className="flex items-center gap-2">
         {user.user_type === 'administrador_master' ? (
-          <Badge variant="destructive">
+          <Badge variant={user.role === 'super_admin' ? 'destructive' : 'secondary'}>
             <Shield className="h-3 w-3 mr-1" />
-            Admin Master
-          </Badge>
-        ) : (
-          <Badge variant="secondary">
-            <Users className="h-3 w-3 mr-1" />
-            Colaborador
+            {user.role === 'super_admin' ? 'Super Admin' : user.role === 'operador' ? 'Operador' : 'Viewer'}
           </Badge>
         )}
         {user.ativo ? (
@@ -246,6 +243,7 @@ const Admin = () => {
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserType, setNewUserType] = useState<"administrador_master" | "colaborador_setor">("colaborador_setor");
+  const [selectedSetorDetail, setSelectedSetorDetail] = useState<Setor | null>(null);
   
   const { toast } = useToast();
   
@@ -680,11 +678,12 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
         </div>
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="setores">Setores</TabsTrigger>
             <TabsTrigger value="assignments">Atribuições</TabsTrigger>
             <TabsTrigger value="permissions">Permissões</TabsTrigger>
+            <TabsTrigger value="setor-permissions">Permissões por Setor</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-6">
@@ -867,7 +866,33 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
                   </Dialog>
 
                    {setores.map((setor) => (
-                     <SetorCard key={setor.id} setor={setor} onSetorUpdate={fetchData} />
+                     <div key={setor.id} className="flex items-center justify-between p-4 border rounded-lg">
+                       <div className="space-y-1 flex-1">
+                         <p className="font-medium">{setor.nome}</p>
+                         <p className="text-sm text-muted-foreground">{setor.descricao}</p>
+                       </div>
+                       <div className="flex items-center gap-2">
+                         {setor.ativo ? (
+                           <Badge variant="outline" className="text-green-600">
+                             <Check className="h-3 w-3 mr-1" />
+                             Ativo
+                           </Badge>
+                         ) : (
+                           <Badge variant="outline" className="text-red-600">
+                             <X className="h-3 w-3 mr-1" />
+                             Inativo
+                           </Badge>
+                         )}
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => setSelectedSetorDetail(setor)}
+                         >
+                           <Building className="h-3 w-3 mr-1" />
+                           Gerenciar
+                         </Button>
+                       </div>
+                     </div>
                    ))}
                  </div>
               </CardContent>
@@ -971,6 +996,23 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
           <TabsContent value="permissions" className="space-y-6">
             <ImprovedPermissionsPanel />
           </TabsContent>
+
+          <TabsContent value="setor-permissions" className="space-y-6">
+            <SetorPermissionsPanel />
+          </TabsContent>
+        </Tabs>
+
+        {/* Modal de detalhes do setor */}
+        {selectedSetorDetail && (
+          <Dialog open={!!selectedSetorDetail} onOpenChange={() => setSelectedSetorDetail(null)}>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <SetorDetailPanel
+                setor={selectedSetorDetail}
+                onClose={() => setSelectedSetorDetail(null)}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
         </Tabs>
       </div>
     </div>

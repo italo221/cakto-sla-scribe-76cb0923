@@ -226,6 +226,81 @@ export default function ImprovedPermissionsPanel() {
     }
   };
 
+  const handleEditCargo = async () => {
+    if (!editingCargo || !newCargoNome.trim()) {
+      toast({
+        title: "Erro",
+        description: "Nome do cargo é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('cargos')
+        .update({
+          nome: newCargoNome.trim(),
+          descricao: newCargoDesc.trim(),
+        })
+        .eq('id', editingCargo.id);
+
+      if (error) throw error;
+
+      await logAction('editou_cargo', editingCargo.id, newCargoNome.trim());
+
+      toast({
+        title: "Cargo atualizado!",
+        description: `O cargo "${newCargoNome}" foi atualizado.`,
+      });
+
+      setNewCargoNome("");
+      setNewCargoDesc("");
+      setEditingCargo(null);
+      setCargoDialogOpen(false);
+      fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar cargo",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteCargo = async (cargo: Cargo) => {
+    if (!confirm(`Tem certeza que deseja excluir o cargo "${cargo.nome}"?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('cargos')
+        .update({ ativo: false })
+        .eq('id', cargo.id);
+
+      if (error) throw error;
+
+      await logAction('excluiu_cargo', cargo.id, cargo.nome);
+
+      toast({
+        title: "Cargo excluído!",
+        description: `O cargo "${cargo.nome}" foi excluído.`,
+      });
+
+      fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao excluir cargo",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCreateCargo = async () => {
     if (!newCargoNome.trim()) {
       toast({
@@ -428,7 +503,7 @@ export default function ImprovedPermissionsPanel() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Criar Novo Cargo</DialogTitle>
+                  <DialogTitle>{editingCargo ? 'Editar Cargo' : 'Criar Novo Cargo'}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -450,11 +525,16 @@ export default function ImprovedPermissionsPanel() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Button onClick={handleCreateCargo} disabled={saving}>
+                    <Button onClick={editingCargo ? handleEditCargo : handleCreateCargo} disabled={saving}>
                       {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      Criar
+                      {editingCargo ? 'Atualizar' : 'Criar'}
                     </Button>
-                    <Button variant="outline" onClick={() => setCargoDialogOpen(false)}>
+                    <Button variant="outline" onClick={() => {
+                      setCargoDialogOpen(false);
+                      setEditingCargo(null);
+                      setNewCargoNome("");
+                      setNewCargoDesc("");
+                    }}>
                       Cancelar
                     </Button>
                   </div>
@@ -574,7 +654,7 @@ export default function ImprovedPermissionsPanel() {
                               ))}
                             </tr>
                           </thead>
-                          <tbody>
+                           <tbody>
                             {category.permissions.map(permission => {
                               const PermissionIcon = permission.icon;
                               return (
@@ -604,12 +684,35 @@ export default function ImprovedPermissionsPanel() {
                                     
                                     return (
                                       <td key={cargo.id} className="p-3 text-center">
-                                        <Switch
-                                          checked={isEnabled}
-                                          onCheckedChange={(value) => 
-                                            handlePermissionChange(cargo.id, permission.key, value)
-                                          }
-                                        />
+                                        <div className="flex items-center justify-center gap-2">
+                                          <Switch
+                                            checked={isEnabled}
+                                            onCheckedChange={(value) => 
+                                              handlePermissionChange(cargo.id, permission.key, value)
+                                            }
+                                          />
+                                          <div className="flex gap-1">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => {
+                                                setEditingCargo(cargo);
+                                                setNewCargoNome(cargo.nome);
+                                                setNewCargoDesc(cargo.descricao);
+                                                setCargoDialogOpen(true);
+                                              }}
+                                            >
+                                              <Edit className="h-3 w-3" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => handleDeleteCargo(cargo)}
+                                            >
+                                              <Trash2 className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        </div>
                                       </td>
                                     );
                                   })}
