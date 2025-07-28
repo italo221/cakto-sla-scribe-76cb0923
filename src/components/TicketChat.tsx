@@ -1,5 +1,4 @@
-import { useState } from "react";
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1253,6 +1252,37 @@ export default function TicketChat() {
     handleInput(value);
   };
 
+
+  // Mostrar criador de ticket se step for 'create-ticket'
+  if (step === 'create-ticket') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-chat-background">
+        <div className="container mx-auto max-w-4xl p-4">
+          <div className="mb-6 text-center">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              Criar Novo Ticket
+            </h1>
+            <p className="text-muted-foreground mt-2">Preencha as informações para registrar sua demanda</p>
+            <Button 
+              onClick={() => setStep('welcome')} 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+            >
+              Voltar ao menu
+            </Button>
+          </div>
+          <ManualTicketCreator onTicketCreated={() => {
+            setStep('welcome');
+            toast({
+              title: "Sucesso!",
+              description: "Ticket criado com sucesso.",
+            });
+          }} />
+        </div>
+      </div>
+    );
+  }
 
   // Mostrar criador manual se step for 'titulo'
   if (step === 'titulo' as any) {
