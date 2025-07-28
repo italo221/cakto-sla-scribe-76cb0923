@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Settings,
   BarChart3,
@@ -91,6 +92,7 @@ export default function DynamicDashboard() {
 
   const { user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     loadDashboardData();
@@ -333,7 +335,7 @@ export default function DynamicDashboard() {
 
   const renderChart = (widget: DashboardWidget) => {
     switch (widget.id) {
-          case 'status-chart':
+      case 'status-chart':
         return (
           <Card key={widget.id} className="col-span-full md:col-span-2 bg-card">
             <CardHeader>
@@ -346,7 +348,7 @@ export default function DynamicDashboard() {
               </p>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
+              <ResponsiveContainer width="100%" height={isMobile ? 250 : 350}>
                 <RechartsPieChart>
                   <Pie
                     data={dashboardData.statusData}
@@ -354,10 +356,10 @@ export default function DynamicDashboard() {
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    outerRadius={120}
-                    innerRadius={60}
+                    outerRadius={isMobile ? 80 : 120}
+                    innerRadius={isMobile ? 40 : 60}
                     paddingAngle={5}
-                    label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
+                    label={isMobile ? false : ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
                     labelLine={false}
                   >
                     {dashboardData.statusData.map((entry, index) => (

@@ -16,6 +16,7 @@ import { Users, Building2, UserPlus, Building, Shield, Trash2, Edit, Check, X, A
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import Navigation from "@/components/Navigation";
 import SupabaseStatus from "@/components/SupabaseStatus";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
@@ -46,10 +47,12 @@ interface UserSetor {
 // Componente para cartão de usuário com edição
 const UserCard = ({
   user,
-  onUserUpdate
+  onUserUpdate,
+  isMobile
 }: {
   user: Profile;
   onUserUpdate: () => void;
+  isMobile: boolean;
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(user.nome_completo);
@@ -109,12 +112,12 @@ const UserCard = ({
       });
     }
   };
-  return <div className="flex items-center justify-between p-4 border rounded-lg">
-      <div className="space-y-1 flex-1">
+  return <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center justify-between'} p-4 border rounded-lg`}>
+      <div className={`space-y-1 ${isMobile ? 'w-full' : 'flex-1'}`}>
         {isEditing ? <div className="space-y-2">
-            <Input value={editedName} onChange={e => setEditedName(e.target.value)} placeholder="Nome completo" className="max-w-xs" />
+            <Input value={editedName} onChange={e => setEditedName(e.target.value)} placeholder="Nome completo" className={isMobile ? 'w-full' : 'max-w-xs'} />
             <Select value={editedRole} onValueChange={value => setEditedRole(value as any)}>
-              <SelectTrigger className="max-w-xs">
+              <SelectTrigger className={isMobile ? 'w-full' : 'max-w-xs'}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -123,8 +126,8 @@ const UserCard = ({
                 <SelectItem value="viewer">Viewer</SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex gap-2">
-              <Button size="sm" onClick={handleSave}>
+            <div className={`flex gap-2 ${isMobile ? 'flex-col' : ''}`}>
+              <Button size="sm" onClick={handleSave} className={isMobile ? 'w-full' : ''}>
                 <Save className="h-3 w-3 mr-1" />
                 Salvar
               </Button>
@@ -132,7 +135,7 @@ const UserCard = ({
             setIsEditing(false);
             setEditedName(user.nome_completo);
             setEditedRole(user.role);
-          }}>
+          }} className={isMobile ? 'w-full' : ''}>
                 Cancelar
               </Button>
             </div>
@@ -144,7 +147,7 @@ const UserCard = ({
           </div>}
         <p className="text-sm text-muted-foreground">{user.email}</p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className={`flex items-center gap-2 ${isMobile ? 'w-full justify-start flex-wrap' : ''}`}>
         
         {user.ativo ? <Badge variant="outline" className="text-green-600">
             <Check className="h-3 w-3 mr-1" />
@@ -159,10 +162,10 @@ const UserCard = ({
         <Button variant={user.ativo ? "destructive" : "default"} size="sm" onClick={handleToggleActive}>
           {user.ativo ? <>
               <UserX className="h-3 w-3 mr-1" />
-              Desativar
+              {isMobile ? '' : 'Desativar'}
             </> : <>
               <Check className="h-3 w-3 mr-1" />
-              Ativar
+              {isMobile ? '' : 'Ativar'}
             </>}
         </Button>
       </div>
@@ -190,9 +193,8 @@ const Admin = () => {
   const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserType, setNewUserType] = useState<"administrador_master" | "colaborador_setor">("colaborador_setor");
   const [selectedSetorDetail, setSelectedSetorDetail] = useState<Setor | null>(null);
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Sistema aberto - sempre autenticado como admin
   const isAuthenticated = true;
@@ -335,11 +337,13 @@ const Admin = () => {
   const SetorCard = ({
     setor,
     onSetorUpdate,
-    setSelectedSetorDetail
+    setSelectedSetorDetail,
+    isMobile
   }: {
     setor: Setor;
     onSetorUpdate: () => void;
     setSelectedSetorDetail?: (setor: Setor) => void;
+    isMobile: boolean;
   }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedName, setEditedName] = useState(setor.nome);
@@ -399,13 +403,13 @@ const Admin = () => {
         });
       }
     };
-    return <div className="flex items-center justify-between p-4 border rounded-lg">
-      <div className="space-y-1 flex-1">
+    return <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center justify-between'} p-4 border rounded-lg`}>
+      <div className={`space-y-1 ${isMobile ? 'w-full' : 'flex-1'}`}>
         {isEditing ? <div className="space-y-2">
-            <Input value={editedName} onChange={e => setEditedName(e.target.value)} placeholder="Nome do setor" className="max-w-xs" />
-            <Input value={editedDesc} onChange={e => setEditedDesc(e.target.value)} placeholder="Descrição" className="max-w-xs" />
-            <div className="flex gap-2">
-              <Button size="sm" onClick={handleSave}>
+            <Input value={editedName} onChange={e => setEditedName(e.target.value)} placeholder="Nome do setor" className={isMobile ? 'w-full' : 'max-w-xs'} />
+            <Input value={editedDesc} onChange={e => setEditedDesc(e.target.value)} placeholder="Descrição" className={isMobile ? 'w-full' : 'max-w-xs'} />
+            <div className={`flex gap-2 ${isMobile ? 'flex-col' : ''}`}>
+              <Button size="sm" onClick={handleSave} className={isMobile ? 'w-full' : ''}>
                 <Save className="h-3 w-3 mr-1" />
                 Salvar
               </Button>
@@ -413,7 +417,7 @@ const Admin = () => {
               setIsEditing(false);
               setEditedName(setor.nome);
               setEditedDesc(setor.descricao || '');
-            }}>
+            }} className={isMobile ? 'w-full' : ''}>
                 Cancelar
               </Button>
             </div>
@@ -422,7 +426,7 @@ const Admin = () => {
             <p className="text-sm text-muted-foreground">{setor.descricao}</p>
           </>}
       </div>
-      <div className="flex items-center gap-2">
+      <div className={`flex items-center gap-2 ${isMobile ? 'w-full justify-start flex-wrap' : ''}`}>
         {setor.ativo ? <Badge variant="outline" className="text-green-600">
             <Check className="h-3 w-3 mr-1" />
             Ativo
@@ -435,15 +439,15 @@ const Admin = () => {
         </Button>
         <Button variant="outline" size="sm" onClick={() => setSelectedSetorDetail?.(setor)}>
           <Building className="h-3 w-3 mr-1" />
-          Gerenciar
+          {isMobile ? '' : 'Gerenciar'}
         </Button>
         <Button variant={setor.ativo ? "destructive" : "default"} size="sm" onClick={handleToggleActive}>
           {setor.ativo ? <>
               <UserX className="h-3 w-3 mr-1" />
-              Desativar
+              {isMobile ? '' : 'Desativar'}
             </> : <>
               <Check className="h-3 w-3 mr-1" />
-              Ativar
+              {isMobile ? '' : 'Ativar'}
             </>}
         </Button>
       </div>
@@ -560,13 +564,22 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="users">Usuários</TabsTrigger>
-            <TabsTrigger value="setores">Setores</TabsTrigger>
-            <TabsTrigger value="assignments">Atribuições</TabsTrigger>
-            <TabsTrigger value="permissions">Permissões</TabsTrigger>
-            <TabsTrigger value="setor-permissions">Permissões por Setor</TabsTrigger>
+          <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-5'} ${isMobile ? 'mb-4' : ''}`}>
+            <TabsTrigger value="users" className={isMobile ? 'text-xs' : ''}>Usuários</TabsTrigger>
+            <TabsTrigger value="setores" className={isMobile ? 'text-xs' : ''}>Setores</TabsTrigger>
+            {!isMobile && <TabsTrigger value="assignments">Atribuições</TabsTrigger>}
+            {!isMobile && <TabsTrigger value="permissions">Permissões</TabsTrigger>}
+            {!isMobile && <TabsTrigger value="setor-permissions">Permissões por Setor</TabsTrigger>}
           </TabsList>
+          
+          {/* Mobile secondary tabs */}
+          {isMobile && (
+            <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsTrigger value="assignments" className="text-xs">Atribuições</TabsTrigger>
+              <TabsTrigger value="permissions" className="text-xs">Permissões</TabsTrigger>
+              <TabsTrigger value="setor-permissions" className="text-xs">Por Setor</TabsTrigger>
+            </TabsList>
+          )}
 
           <TabsContent value="users" className="space-y-6">
             {/* Card para criar novo usuário */}
@@ -660,7 +673,7 @@ const Admin = () => {
               </CardHeader>
               <CardContent>
                  <div className="space-y-4">
-                   {users.map(user => <UserCard key={user.id} user={user} onUserUpdate={fetchData} />)}
+                   {users.map(user => <UserCard key={user.id} user={user} onUserUpdate={fetchData} isMobile={isMobile} />)}
                  </div>
               </CardContent>
             </Card>
@@ -714,7 +727,7 @@ const Admin = () => {
                     </DialogContent>
                   </Dialog>
 
-                   {setores.map(setor => <SetorCard key={setor.id} setor={setor} onSetorUpdate={fetchData} setSelectedSetorDetail={setSelectedSetorDetail} />)}
+                   {setores.map(setor => <SetorCard key={setor.id} setor={setor} onSetorUpdate={fetchData} setSelectedSetorDetail={setSelectedSetorDetail} isMobile={isMobile} />)}
                  </div>
               </CardContent>
             </Card>

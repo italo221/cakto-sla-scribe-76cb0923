@@ -20,6 +20,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import Navigation from "@/components/Navigation";
 
 interface Integration {
@@ -34,6 +35,7 @@ interface Integration {
 
 export default function Integrations() {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState("apis");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [zapierUrl, setZapierUrl] = useState("");
@@ -182,24 +184,32 @@ export default function Integrations() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="apis">APIs & Chaves</TabsTrigger>
-            <TabsTrigger value="automation">Automação</TabsTrigger>
-            <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-4'}`}>
+            <TabsTrigger value="apis" className={isMobile ? 'text-xs' : ''}>APIs & Chaves</TabsTrigger>
+            <TabsTrigger value="automation" className={isMobile ? 'text-xs' : ''}>Automação</TabsTrigger>
+            {!isMobile && <TabsTrigger value="webhooks">Webhooks</TabsTrigger>}
+            {!isMobile && <TabsTrigger value="overview">Visão Geral</TabsTrigger>}
           </TabsList>
+          
+          {/* Mobile secondary tabs */}
+          {isMobile && (
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="webhooks" className="text-xs">Webhooks</TabsTrigger>
+              <TabsTrigger value="overview" className="text-xs">Visão Geral</TabsTrigger>
+            </TabsList>
+          )}
 
           {/* Visão Geral */}
           <TabsContent value="overview" className="space-y-6">
             <div className="grid gap-4">
               {integrations.map((integration) => (
-                <Card key={integration.id} className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                <Card key={integration.id} className="p-4 sm:p-6">
+                  <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center justify-between'}`}>
+                    <div className={`flex items-center gap-4 ${isMobile ? 'w-full' : ''}`}>
                       <div className="p-2 rounded-lg bg-muted">
                         <integration.icon className="h-6 w-6" />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <h3 className="font-semibold">{integration.name}</h3>
                         <p className="text-sm text-muted-foreground">
                           {integration.description}
@@ -211,7 +221,7 @@ export default function Integrations() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className={`flex items-center gap-3 ${isMobile ? 'w-full justify-start' : ''}`}>
                       {getStatusIcon(integration.status)}
                       {getStatusBadge(integration.status)}
                     </div>
@@ -285,13 +295,14 @@ export default function Integrations() {
                 
                 <div className="space-y-3">
                   <label className="text-sm font-medium">URL do Webhook Zapier</label>
-                  <div className="flex gap-2">
+                  <div className={`flex gap-2 ${isMobile ? 'flex-col' : ''}`}>
                     <Input
                       placeholder="https://hooks.zapier.com/hooks/catch/..."
                       value={zapierUrl}
                       onChange={(e) => setZapierUrl(e.target.value)}
+                      className={isMobile ? 'w-full' : ''}
                     />
-                    <Button onClick={handleTestZapier} variant="outline">
+                    <Button onClick={handleTestZapier} variant="outline" className={isMobile ? 'w-full' : ''}>
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Testar
                     </Button>
@@ -329,13 +340,14 @@ export default function Integrations() {
 
                 <div className="space-y-3">
                   <label className="text-sm font-medium">URL do Endpoint</label>
-                  <div className="flex gap-2">
+                  <div className={`flex gap-2 ${isMobile ? 'flex-col' : ''}`}>
                     <Input
                       placeholder="https://seu-sistema.com/webhooks/sla"
                       value={webhookUrl}
                       onChange={(e) => setWebhookUrl(e.target.value)}
+                      className={isMobile ? 'w-full' : ''}
                     />
-                    <Button onClick={handleTestWebhook} variant="outline">
+                    <Button onClick={handleTestWebhook} variant="outline" className={isMobile ? 'w-full' : ''}>
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Testar
                     </Button>
