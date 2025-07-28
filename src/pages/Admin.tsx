@@ -334,10 +334,12 @@ const Admin = () => {
   // Componente para cartão de setor com edição
   const SetorCard = ({
     setor,
-    onSetorUpdate
+    onSetorUpdate,
+    setSelectedSetorDetail
   }: {
     setor: Setor;
     onSetorUpdate: () => void;
+    setSelectedSetorDetail?: (setor: Setor) => void;
   }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedName, setEditedName] = useState(setor.nome);
@@ -430,6 +432,10 @@ const Admin = () => {
           </Badge>}
         <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)} disabled={isEditing}>
           <Edit className="h-3 w-3" />
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setSelectedSetorDetail?.(setor)}>
+          <Building className="h-3 w-3 mr-1" />
+          Gerenciar
         </Button>
         <Button variant={setor.ativo ? "destructive" : "default"} size="sm" onClick={handleToggleActive}>
           {setor.ativo ? <>
@@ -708,7 +714,7 @@ const Admin = () => {
                     </DialogContent>
                   </Dialog>
 
-                   {setores.map(setor => <SetorCard key={setor.id} setor={setor} onSetorUpdate={fetchData} />)}
+                   {setores.map(setor => <SetorCard key={setor.id} setor={setor} onSetorUpdate={fetchData} setSelectedSetorDetail={setSelectedSetorDetail} />)}
                  </div>
               </CardContent>
             </Card>
