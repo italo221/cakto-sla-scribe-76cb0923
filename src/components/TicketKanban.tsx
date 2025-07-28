@@ -141,7 +141,7 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdi
     >
       <CardContent className="p-3 space-y-2">
         <div className="flex items-center justify-between">
-          <Badge variant="secondary" className="text-xs font-mono">
+          <Badge variant="default" className="text-xs font-mono bg-primary text-primary-foreground">
             {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
           </Badge>
           {ticket.nivel_criticidade === 'P0' && (
@@ -167,7 +167,7 @@ function DroppableColumn({ id, title, tickets, onOpenDetail, onEditTicket, userC
     <div className="flex flex-col h-full min-h-[400px]">
       <div className="flex items-center justify-between mb-4 p-3 bg-muted/50 rounded-lg">
         <h3 className="font-medium text-sm text-foreground">{title}</h3>
-        <Badge variant="secondary" className="text-xs">
+        <Badge variant="default" className="text-xs bg-primary text-primary-foreground">
           {tickets.length}
         </Badge>
       </div>
