@@ -23,14 +23,10 @@ const Dashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 lg:w-400">
+            <TabsList className="grid w-full grid-cols-2 lg:w-400">
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
                 Visão Geral
-              </TabsTrigger>
-              <TabsTrigger value="dynamic" className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                Dashboard Dinâmico
               </TabsTrigger>
               <TabsTrigger value="metrics" className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
@@ -46,13 +42,6 @@ const Dashboard = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="dynamic" className="space-y-6">
-              <Card className="bg-card">
-                <CardContent className="p-6">
-                  <DynamicDashboard />
-                </CardContent>
-              </Card>
-            </TabsContent>
 
             <TabsContent value="metrics" className="space-y-6">
               <ModernTicketDashboard />
