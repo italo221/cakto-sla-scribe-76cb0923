@@ -80,13 +80,15 @@ export default function SetorDetailPanel({ setor, onClose }: SetorDetailPanelPro
       if (userSetoresResponse.error) throw userSetoresResponse.error;
       if (profilesResponse.error) throw profilesResponse.error;
 
-      const transformedUserSetores = (userSetoresResponse.data || []).map((item: any) => ({
-        id: item.id,
-        user_id: item.user_id,
-        setor_id: item.setor_id,
-        is_leader: item.is_leader || false,
-        profile: item.profiles
-      }));
+      const transformedUserSetores = (userSetoresResponse.data || [])
+        .map((item: any) => ({
+          id: item.id,
+          user_id: item.user_id,
+          setor_id: item.setor_id,
+          is_leader: item.is_leader || false,
+          profile: item.profiles
+        }))
+        .filter(item => item.profile !== null); // Filtrar apenas usuários com perfil válido
 
       setUserSetores(transformedUserSetores);
       
@@ -332,50 +334,57 @@ export default function SetorDetailPanel({ setor, onClose }: SetorDetailPanelPro
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {userSetores.map(userSetor => (
-              <div key={userSetor.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  {userSetor.is_leader && (
-                    <Star className="h-4 w-4 text-yellow-500" />
-                  )}
-                  <div>
-                    <p className="font-medium">{userSetor.profile.nome_completo}</p>
-                    <p className="text-sm text-muted-foreground">{userSetor.profile.email}</p>
-                    <div className="flex gap-2 mt-1">
-                      <Badge variant="secondary">
-                        {userSetor.profile.role === 'super_admin' ? 'Super Admin' : 
-                         userSetor.profile.role === 'operador' ? 'Operador' : 'Viewer'}
-                      </Badge>
-                      {userSetor.is_leader && (
-                        <Badge variant="default">
-                          ⭐ Líder
+            {userSetores.map(userSetor => {
+              // Proteção adicional caso o profile seja null
+              if (!userSetor.profile) {
+                return null;
+              }
+              
+              return (
+                <div key={userSetor.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {userSetor.is_leader && (
+                      <Star className="h-4 w-4 text-yellow-500" />
+                    )}
+                    <div>
+                      <p className="font-medium">{userSetor.profile.nome_completo}</p>
+                      <p className="text-sm text-muted-foreground">{userSetor.profile.email}</p>
+                      <div className="flex gap-2 mt-1">
+                        <Badge variant="secondary">
+                          {userSetor.profile.role === 'super_admin' ? 'Super Admin' : 
+                           userSetor.profile.role === 'operador' ? 'Operador' : 'Viewer'}
                         </Badge>
-                      )}
+                        {userSetor.is_leader && (
+                          <Badge variant="default">
+                            ⭐ Líder
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  {!userSetor.is_leader && (
+                  <div className="flex gap-2">
+                    {!userSetor.is_leader && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleToggleLeader(userSetor.id, false, userSetor.profile.nome_completo)}
+                      >
+                        <Star className="h-3 w-3 mr-1" />
+                        Tornar Líder
+                      </Button>
+                    )}
                     <Button
-                      variant="outline"
+                      variant="destructive"
                       size="sm"
-                      onClick={() => handleToggleLeader(userSetor.id, false, userSetor.profile.nome_completo)}
+                      onClick={() => handleRemoveUser(userSetor.id, userSetor.profile.nome_completo)}
                     >
-                      <Star className="h-3 w-3 mr-1" />
-                      Tornar Líder
+                      <UserMinus className="h-3 w-3 mr-1" />
+                      Remover
                     </Button>
-                  )}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleRemoveUser(userSetor.id, userSetor.profile.nome_completo)}
-                  >
-                    <UserMinus className="h-3 w-3 mr-1" />
-                    Remover
-                  </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             
             {userSetores.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
