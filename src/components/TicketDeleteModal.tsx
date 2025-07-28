@@ -68,7 +68,7 @@ export default function TicketDeleteModal({ ticket, isOpen, onClose, onDelete }:
         .delete()
         .eq('sla_id', ticket.id);
 
-      // Deletar logs gerais (sla_logs)
+      // Deletar logs gerais (sla_logs) - apenas os que pertencem a este ticket
       await supabase
         .from('sla_logs')
         .delete()
