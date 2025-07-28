@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Copy, FileText, MessageCircle, Calculator, Upload, X, File, Image, CheckCircle, Sparkles } from "lucide-react";
 import AITicketCreator from "@/components/AITicketCreator";
+import ManualTicketCreator from "@/components/ManualTicketCreator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -1253,7 +1254,7 @@ export default function TicketChat() {
             </h1>
             <p className="text-muted-foreground mt-2">IA para preenchimento automático</p>
             <Button 
-              onClick={() => setUseAI(false)} 
+              onClick={() => { setUseAI(false); setStep('welcome'); }} 
               variant="outline" 
               size="sm" 
               className="mt-2"
@@ -1264,9 +1265,43 @@ export default function TicketChat() {
           <div className="bg-card dark:bg-card rounded-lg border border-border">
             <AITicketCreator onTicketCreated={() => {
               setUseAI(false);
+              setStep('welcome');
               toast({
                 title: "Sucesso!",
                 description: "Ticket criado com sucesso via IA.",
+              });
+            }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar criador manual se step for 'titulo'
+  if (step === 'titulo' as any) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-chat-background">
+        <div className="container mx-auto max-w-4xl p-4">
+          <div className="mb-6 text-center">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              Criação Manual de Ticket
+            </h1>
+            <p className="text-muted-foreground mt-2">Controle total sobre todos os campos</p>
+            <Button 
+              onClick={() => setStep('welcome')} 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+            >
+              Voltar ao menu
+            </Button>
+          </div>
+          <div className="bg-card dark:bg-card rounded-lg border border-border">
+            <ManualTicketCreator onTicketCreated={() => {
+              setStep('welcome');
+              toast({
+                title: "Sucesso!",
+                description: "Ticket criado com sucesso manualmente.",
               });
             }} />
           </div>
@@ -1322,7 +1357,7 @@ export default function TicketChat() {
                             <Sparkles className="h-4 w-4" />
                             Criar Ticket com IA
                           </Button>
-                          <Button onClick={handleStart} variant="outline" size="lg" className="w-full px-8">
+                           <Button onClick={() => setStep('titulo')} variant="outline" size="lg" className="w-full px-8">
                             <FileText className="mr-2 h-4 w-4" />
                             Criar Ticket Manual
                           </Button>

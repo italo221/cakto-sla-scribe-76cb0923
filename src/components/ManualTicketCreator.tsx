@@ -7,9 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Send, RefreshCw, CheckCircle } from "lucide-react";
+import { Send, CheckCircle, RefreshCw } from "lucide-react";
 
-interface AITicketCreatorProps {
+interface ManualTicketCreatorProps {
   onTicketCreated?: () => void;
 }
 
@@ -38,18 +38,25 @@ const tipoTicketOptions = [
   'Solicitação de tarefa',
   'Reporte de problema', 
   'Dúvida técnica',
-  'Feedback / sugestão',
+  'Feedback/sugestão',
   'Atualização de projeto'
 ];
 
-export default function AITicketCreator({ onTicketCreated }: AITicketCreatorProps) {
+const perguntasPorSetor = {
+  Marketing: ['Qual plataforma está envolvida?', 'Há alguma campanha ativa relacionada?'],
+  Financeiro: ['Há impacto monetário direto?', 'Existe algum vencimento relacionado?'],
+  'Recursos Humanos': ['Impacta folha de pagamento, admissão ou desligamento?'],
+  Operações: ['Há atraso logístico?', 'Existe erro de cadastro?'],
+  default: ['Qual a urgência?', 'Algum risco de retrabalho?']
+};
+
+export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCreatorProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<'form' | 'review' | 'complete'>('form');
+  const [step, setStep] = useState<'form' | 'complete'>('form');
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  // Form data estruturado
   const [formData, setFormData] = useState({
     setor: '',
     titulo: '',
@@ -57,6 +64,8 @@ export default function AITicketCreator({ onTicketCreated }: AITicketCreatorProp
     impacto: '',
     justificativa_impacto: '',
     tipo_ticket: '',
+    pergunta_especifica_1: '',
+    pergunta_especifica_2: '',
     time_responsavel: '',
     nivel_criticidade: 'P3',
     pontuacao_total: 0
@@ -87,7 +96,7 @@ export default function AITicketCreator({ onTicketCreated }: AITicketCreatorProp
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleFormSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) {
       toast({
         title: "Campos obrigatórios",
@@ -97,20 +106,6 @@ export default function AITicketCreator({ onTicketCreated }: AITicketCreatorProp
       return;
     }
 
-    // Calcular criticidade automaticamente baseado no impacto
-    const { criticidade, pontos } = calculateCriticality(formData.impacto);
-    
-    setFormData(prev => ({
-      ...prev,
-      time_responsavel: prev.setor, // Time responsável = setor selecionado
-      nivel_criticidade: criticidade,
-      pontuacao_total: pontos
-    }));
-    
-    setStep('review');
-  };
-
-  const createTicket = async () => {
     if (!user) {
       toast({
         title: "Erro de autenticação",
@@ -122,34 +117,32 @@ export default function AITicketCreator({ onTicketCreated }: AITicketCreatorProp
 
     setLoading(true);
     try {
-      const observacoes = `Criado via IA - Impacto: ${impactoOptions.find(opt => opt.value === formData.impacto)?.label}${formData.justificativa_impacto ? `\nJustificativa: ${formData.justificativa_impacto}` : ''}`;
+      // Calcular criticidade automaticamente baseado no impacto
+      const { criticidade, pontos } = calculateCriticality(formData.impacto);
       
-      const { data, error } = await supabase
+      const observacoes = `Criado manualmente - Impacto: ${impactoOptions.find(opt => opt.value === formData.impacto)?.label}${formData.justificativa_impacto ? `\nJustificativa: ${formData.justificativa_impacto}` : ''}`;
+      
+      const { error } = await supabase
         .from('sla_demandas')
         .insert({
           titulo: formData.titulo,
-          time_responsavel: formData.time_responsavel,
+          time_responsavel: formData.setor,
           solicitante: user.email || 'Usuário logado',
           descricao: formData.descricao,
           tipo_ticket: formData.tipo_ticket,
-          nivel_criticidade: formData.nivel_criticidade,
-          pontuacao_total: formData.pontuacao_total,
-          pontuacao_financeiro: Math.floor(formData.pontuacao_total * 0.3),
-          pontuacao_cliente: Math.floor(formData.pontuacao_total * 0.3),
-          pontuacao_reputacao: Math.floor(formData.pontuacao_total * 0.2),
-          pontuacao_urgencia: Math.floor(formData.pontuacao_total * 0.1),
-          pontuacao_operacional: Math.floor(formData.pontuacao_total * 0.1),
+          nivel_criticidade: criticidade,
+          pontuacao_total: pontos,
+          pontuacao_financeiro: Math.floor(pontos * 0.3),
+          pontuacao_cliente: Math.floor(pontos * 0.3),
+          pontuacao_reputacao: Math.floor(pontos * 0.2),
+          pontuacao_urgencia: Math.floor(pontos * 0.1),
+          pontuacao_operacional: Math.floor(pontos * 0.1),
           observacoes: observacoes,
           status: 'aberto'
-        })
-        .select();
+        });
 
-      if (error) {
-        console.error('Erro específico do Supabase:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('Ticket criado com sucesso:', data);
       setStep('complete');
       toast({
         title: "Ticket criado com sucesso!",
@@ -179,6 +172,8 @@ export default function AITicketCreator({ onTicketCreated }: AITicketCreatorProp
       impacto: '',
       justificativa_impacto: '',
       tipo_ticket: '',
+      pergunta_especifica_1: '',
+      pergunta_especifica_2: '',
       time_responsavel: '',
       nivel_criticidade: 'P3',
       pontuacao_total: 0
@@ -190,14 +185,9 @@ export default function AITicketCreator({ onTicketCreated }: AITicketCreatorProp
     return `${text.length}/${limit} caracteres`;
   };
 
-  const getCriticalityColor = (level: string) => {
-    const colors = {
-      'P0': 'bg-red-500 text-white',
-      'P1': 'bg-orange-500 text-white', 
-      'P2': 'bg-yellow-500 text-white',
-      'P3': 'bg-blue-500 text-white'
-    };
-    return colors[level as keyof typeof colors] || colors.P3;
+  const getPerguntasEspecificas = () => {
+    if (!formData.setor) return [];
+    return perguntasPorSetor[formData.setor as keyof typeof perguntasPorSetor] || perguntasPorSetor.default;
   };
 
   if (step === 'complete') {
@@ -221,130 +211,18 @@ export default function AITicketCreator({ onTicketCreated }: AITicketCreatorProp
     );
   }
 
-  if (step === 'review') {
-    return (
-      <Card className="w-full max-w-2xl mx-auto bg-card dark:bg-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            Revisar Ticket
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Título</label>
-              <Input
-                value={formData.titulo}
-                onChange={(e) => setFormData({...formData, titulo: e.target.value})}
-                placeholder="Título do ticket"
-                maxLength={100}
-              />
-              <p className="text-xs text-muted-foreground">
-                {getCharacterCount(formData.titulo, 100)}
-              </p>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium">Setor Responsável</label>
-              <Select
-                value={formData.setor}
-                onValueChange={(value) => setFormData({...formData, setor: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-50">
-                  {setorOptions.map(setor => (
-                    <SelectItem key={setor} value={setor}>{setor}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium">Descrição</label>
-              <Textarea
-                value={formData.descricao}
-                onChange={(e) => setFormData({...formData, descricao: e.target.value})}
-                rows={4}
-                placeholder="Descrição detalhada do problema"
-                maxLength={500}
-              />
-              <p className="text-xs text-muted-foreground">
-                {getCharacterCount(formData.descricao, 500)}
-              </p>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium">Impacto</label>
-              <Select
-                value={formData.impacto}
-                onValueChange={(value) => setFormData({...formData, impacto: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-50">
-                  {impactoOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">Tipo de Ticket</label>
-              <Select
-                value={formData.tipo_ticket}
-                onValueChange={(value) => setFormData({...formData, tipo_ticket: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-50">
-                  {tipoTicketOptions.map(tipo => (
-                    <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
-              <div className="text-sm font-medium">Criticidade Calculada:</div>
-              <span className={`px-3 py-1 rounded text-sm font-medium ${getCriticalityColor(formData.nivel_criticidade)}`}>
-                {formData.nivel_criticidade} - {formData.pontuacao_total} pontos
-              </span>
-            </div>
-          </div>
-          
-          <div className="flex gap-3">
-            <Button onClick={() => setStep('form')} variant="outline" className="flex-1">
-              Voltar
-            </Button>
-            <Button onClick={createTicket} disabled={loading} className="flex-1">
-              {loading ? 'Criando...' : 'Criar Ticket'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card className="w-full max-w-2xl mx-auto bg-card dark:bg-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5" />
-          Criação Estruturada de Ticket
+          Criação Manual de Ticket
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
+          {/* Setor */}
           <div>
-            <label className="text-sm font-medium">Setor *</label>
+            <label className="text-sm font-medium">A qual setor está relacionado este ticket? *</label>
             <Select
               value={formData.setor}
               onValueChange={(value) => setFormData({...formData, setor: value})}
@@ -361,6 +239,26 @@ export default function AITicketCreator({ onTicketCreated }: AITicketCreatorProp
             {errors.setor && <p className="text-sm text-destructive">{errors.setor}</p>}
           </div>
 
+          {/* Perguntas específicas por setor */}
+          {formData.setor && getPerguntasEspecificas().map((pergunta, index) => (
+            <div key={index}>
+              <label className="text-sm font-medium">{pergunta}</label>
+              <Input
+                value={index === 0 ? formData.pergunta_especifica_1 : formData.pergunta_especifica_2}
+                onChange={(e) => setFormData({
+                  ...formData, 
+                  [index === 0 ? 'pergunta_especifica_1' : 'pergunta_especifica_2']: e.target.value
+                })}
+                placeholder="Sua resposta (opcional)"
+                maxLength={200}
+              />
+              <p className="text-xs text-muted-foreground">
+                {getCharacterCount(index === 0 ? formData.pergunta_especifica_1 : formData.pergunta_especifica_2, 200)}
+              </p>
+            </div>
+          ))}
+
+          {/* Título */}
           <div>
             <label className="text-sm font-medium">Título *</label>
             <Input
@@ -376,6 +274,7 @@ export default function AITicketCreator({ onTicketCreated }: AITicketCreatorProp
             {errors.titulo && <p className="text-sm text-destructive">{errors.titulo}</p>}
           </div>
 
+          {/* Descrição */}
           <div>
             <label className="text-sm font-medium">Descrição *</label>
             <Textarea
@@ -392,6 +291,7 @@ export default function AITicketCreator({ onTicketCreated }: AITicketCreatorProp
             {errors.descricao && <p className="text-sm text-destructive">{errors.descricao}</p>}
           </div>
 
+          {/* Impacto */}
           <div>
             <label className="text-sm font-medium">Qual é o impacto dessa demanda se não for realizada? *</label>
             <Select
@@ -412,6 +312,7 @@ export default function AITicketCreator({ onTicketCreated }: AITicketCreatorProp
             {errors.impacto && <p className="text-sm text-destructive">{errors.impacto}</p>}
           </div>
 
+          {/* Justificativa do impacto */}
           <div>
             <label className="text-sm font-medium">Justificativa do impacto (opcional)</label>
             <Textarea
@@ -426,6 +327,7 @@ export default function AITicketCreator({ onTicketCreated }: AITicketCreatorProp
             </p>
           </div>
 
+          {/* Tipo de ticket */}
           <div>
             <label className="text-sm font-medium">Tipo de ticket *</label>
             <Select
@@ -455,11 +357,12 @@ export default function AITicketCreator({ onTicketCreated }: AITicketCreatorProp
         </div>
         
         <Button 
-          onClick={handleFormSubmit} 
+          onClick={handleSubmit} 
+          disabled={loading}
           className="w-full gap-2"
         >
           <Send className="h-4 w-4" />
-          Processar Ticket
+          {loading ? 'Criando ticket...' : 'Criar Ticket'}
         </Button>
       </CardContent>
     </Card>
