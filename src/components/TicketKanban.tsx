@@ -1,17 +1,16 @@
 import { useState, useCallback, useRef } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, DragOverEvent, pointerWithin, useDroppable } from '@dnd-kit/core';
-import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, pointerWithin, useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AlertTriangle, Clock, CheckCircle, X, User, Activity, Loader2, Circle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useTicketStatus, validateStatusChange, type TicketStatusType } from "@/hooks/useTicketStatus";
+import { validateStatusChange, type TicketStatusType } from "@/hooks/useTicketStatus";
 
 interface Ticket {
   id: string;
@@ -52,57 +51,19 @@ interface DroppableColumnProps {
   userCanEdit: boolean;
 }
 
-function DroppableColumn({ id, title, tickets, onOpenDetail, onEditTicket, userCanEdit }: DroppableColumnProps) {
-  const { setNodeRef, isOver } = useDroppable({ id });
-
-  return (
-    <div className="flex flex-col h-full min-h-[400px]">
-      <div className="flex items-center justify-between mb-4 p-3 bg-muted/50 rounded-lg">
-        <h3 className="font-medium text-sm text-foreground">{title}</h3>
-        <Badge variant="secondary" className="text-xs">
-          {tickets.length}
-        </Badge>
-      </div>
-      
-      <div
-        ref={setNodeRef}
-        className={cn(
-          "flex-1 p-2 rounded-lg border-2 border-dashed transition-colors min-h-[300px]",
-          isOver 
-            ? "border-primary bg-primary/5" 
-            : "border-border bg-transparent"
-        )}
-      >
-        <SortableContext items={tickets.map(t => t.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-3">
-            {tickets.map(ticket => (
-              <KanbanCard
-                key={ticket.id}
-                ticket={ticket}
-                isDragging={false}
-                onOpenDetail={onOpenDetail}
-                onEditTicket={onEditTicket}
-                userCanEdit={userCanEdit}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </div>
-    </div>
-  );
-}
-
-function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdit }: {
+interface KanbanCardProps {
   ticket: Ticket;
   isDragging: boolean;
   onOpenDetail: (ticket: Ticket) => void;
   onEditTicket: (ticket: Ticket) => void;
   userCanEdit: boolean;
-}) {
+}
+
+function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdit }: KanbanCardProps) {
   const [isDragActive, setIsDragActive] = useState(false);
-  const pointerEventRef = useRef(null);
-  const dragTimeout = useRef(null);
-  const startPosition = useRef(null);
+  const pointerEventRef = useRef<any>(null);
+  const dragTimeout = useRef<NodeJS.Timeout | null>(null);
+  const startPosition = useRef<{ x: number; y: number } | null>(null);
 
   const {
     attributes,
@@ -121,7 +82,7 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdi
     transition
   };
 
-  const handleMouseDown = (e: any) => {
+  const handleMouseDown = (e: React.MouseEvent) => {
     if (!userCanEdit) return;
     startPosition.current = { x: e.clientX, y: e.clientY };
     pointerEventRef.current = e;
@@ -131,7 +92,7 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdi
     }, 200);
   };
 
-  const handleMouseMove = (e: any) => {
+  const handleMouseMove = (e: React.MouseEvent) => {
     if (!startPosition.current) return;
     const dx = Math.abs(e.clientX - startPosition.current.x);
     const dy = Math.abs(e.clientY - startPosition.current.y);
@@ -153,17 +114,10 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdi
     setIsDragActive(false);
   };
 
-  const handleClick = (e: any) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isDragActive && !isSortableDragging) {
       onOpenDetail(ticket);
-    }
-  };
-
-  const handleEditClick = (e: any) => {
-    e.stopPropagation();
-    if (onEditTicket) {
-      onEditTicket(ticket);
     }
   };
 
@@ -203,6 +157,46 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdi
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function DroppableColumn({ id, title, tickets, onOpenDetail, onEditTicket, userCanEdit }: DroppableColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+
+  return (
+    <div className="flex flex-col h-full min-h-[400px]">
+      <div className="flex items-center justify-between mb-4 p-3 bg-muted/50 rounded-lg">
+        <h3 className="font-medium text-sm text-foreground">{title}</h3>
+        <Badge variant="secondary" className="text-xs">
+          {tickets.length}
+        </Badge>
+      </div>
+      
+      <div
+        ref={setNodeRef}
+        className={cn(
+          "flex-1 p-2 rounded-lg border-2 border-dashed transition-colors min-h-[300px]",
+          isOver 
+            ? "border-primary bg-primary/5" 
+            : "border-border bg-transparent"
+        )}
+      >
+        <SortableContext items={tickets.map(t => t.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-3">
+            {tickets.map(ticket => (
+              <KanbanCard
+                key={ticket.id}
+                ticket={ticket}
+                isDragging={false}
+                onOpenDetail={onOpenDetail}
+                onEditTicket={onEditTicket}
+                userCanEdit={userCanEdit}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </div>
+    </div>
   );
 }
 
