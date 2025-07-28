@@ -24,7 +24,7 @@ All colors MUST be HSL.
     /* Primary brand colors */
     --primary: 142 76% 42%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 142 76% 36%;
+    --primary-hover: 142 76% 48%;
     --primary-light: 142 76% 95%;
 
     /* Secondary colors */
@@ -121,7 +121,7 @@ All colors MUST be HSL.
 
     --primary: 142 76% 42%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 142 76% 36%;
+    --primary-hover: 142 76% 48%;
     --primary-light: 142 76% 15%;
 
     --secondary: 217.2 32.6% 17.5%;
