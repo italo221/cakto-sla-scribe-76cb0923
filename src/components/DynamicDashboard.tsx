@@ -309,7 +309,7 @@ export default function DynamicDashboard() {
     }
 
     return (
-      <Card key={widget.id} className="bg-card hover:bg-card-hover transition-colors">
+      <Card key={widget.id} className="bg-card hover:bg-muted/10 transition-colors">
         <CardContent className="p-6">
           <div className="flex items-start justify-between">
             <div className="space-y-2">
