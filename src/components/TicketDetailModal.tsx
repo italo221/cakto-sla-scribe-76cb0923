@@ -621,7 +621,7 @@ export default function SLADetailModal({
             <Button variant={activeTab === 'history' ? 'default' : 'ghost'} onClick={() => setActiveTab('history')} className="flex items-center gap-2 px-4 py-2 rounded-b-none">
               <History className="h-4 w-4" />
               Histórico
-              {actionLogs.length > 0 && <Badge variant="secondary" className="ml-1 text-xs">
+              {actionLogs.length > 0 && <Badge variant="default" className="ml-1 text-xs bg-primary text-primary-foreground">
                   {actionLogs.length}
                 </Badge>}
             </Button>
