@@ -389,22 +389,21 @@ export default function Inbox() {
       });
     }
 
-    // Filtro por setor - Usar AMBOS setor_id E time_responsavel para máxima compatibilidade
+    // Filtro por setor - priorizar setor_id quando existir, igual à contagem
     if (setorFilter !== 'all') {
       filtered = filtered.filter(ticket => {
         const setorSelecionado = setores.find(s => s.id === setorFilter);
         if (!setorSelecionado) return false;
 
-        // Verificar por setor_id primeiro (mais confiável)
-        if (ticket.setor_id === setorFilter) {
-          return true;
+        // Se tem setor_id, usar apenas ele (não considerar time_responsavel)
+        if (ticket.setor_id) {
+          return ticket.setor_id === setorFilter;
         }
 
-        // Fallback: verificar por time_responsavel com comparação exata
+        // Fallback apenas quando não há setor_id definido
         const timeResponsavel = ticket.time_responsavel?.trim();
         const nomeSetor = setorSelecionado.nome?.trim();
         
-        // Comparação exata apenas - agora que os nomes estão consistentes
         return timeResponsavel === nomeSetor;
       });
     }
@@ -435,15 +434,17 @@ export default function Inbox() {
     return counts;
   }, [ticketsWithStatus]);
 
-  // Contagem de tickets por setor baseada em setor_id e time_responsavel
+  // Contagem de tickets por setor - priorizar setor_id quando existir
   const setorCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     setores.forEach(setor => {
       counts[setor.id] = ticketsWithStatus.filter(ticket => {
-        // Verificar por setor_id primeiro
-        if (ticket.setor_id === setor.id) return true;
+        // Se tem setor_id, usar apenas ele (não considerar time_responsavel)
+        if (ticket.setor_id) {
+          return ticket.setor_id === setor.id;
+        }
         
-        // Fallback para time_responsavel com comparação exata
+        // Fallback apenas quando não há setor_id definido
         const timeResponsavel = ticket.time_responsavel?.trim();
         const nomeSetor = setor.nome?.trim();
         
