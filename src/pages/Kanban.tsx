@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import TicketKanban from "@/components/TicketKanban";
 import TicketDetailModal from "@/components/TicketDetailModal";
+import TicketEditModal from "@/components/TicketEditModal";
 import SetorValidationAlert from "@/components/SetorValidationAlert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,8 @@ export default function KanbanPage() {
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedTicketForEdit, setSelectedTicketForEdit] = useState<Ticket | null>(null);
   
   const { user, canEdit } = useAuth();
   const { toast } = useToast();
@@ -71,6 +74,11 @@ export default function KanbanPage() {
   const handleOpenTicketDetail = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setModalOpen(true);
+  };
+
+  const handleEditTicket = (ticket: Ticket) => {
+    setSelectedTicketForEdit(ticket);
+    setEditModalOpen(true);
   };
 
   const handleTicketUpdate = () => {
@@ -202,9 +210,10 @@ export default function KanbanPage() {
                 <RefreshCw className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : (
-              <TicketKanban
-                tickets={tickets}
+              <TicketKanban 
+                tickets={tickets} 
                 onOpenDetail={handleOpenTicketDetail}
+                onEditTicket={handleEditTicket}
                 onTicketUpdate={handleTicketUpdate}
                 userRole={canEdit ? 'operador' : 'viewer'}
               />
@@ -222,6 +231,19 @@ export default function KanbanPage() {
               setSelectedTicket(null);
             }}
             onUpdate={loadTickets}
+          />
+        )}
+
+        {/* Ticket Edit Modal */}
+        {selectedTicketForEdit && (
+          <TicketEditModal
+            ticket={selectedTicketForEdit}
+            isOpen={editModalOpen}
+            onClose={() => {
+              setEditModalOpen(false);
+              setSelectedTicketForEdit(null);
+            }}
+            onUpdate={handleTicketUpdate}
           />
         )}
       </div>

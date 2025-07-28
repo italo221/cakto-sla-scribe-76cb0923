@@ -145,7 +145,7 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div>
               <Label htmlFor="titulo">Título</Label>
               <Input
@@ -155,6 +155,7 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
                 required
               />
             </div>
+            
             <div>
               <Label htmlFor="solicitante">Solicitante</Label>
               <Input
@@ -187,13 +188,14 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="bug">Bug</SelectItem>
-                  <SelectItem value="sugestao_melhoria">Feature</SelectItem>
-                  <SelectItem value="sugestao_melhoria">Suporte</SelectItem>
-                  <SelectItem value="sugestao_melhoria">Melhoria</SelectItem>
-                  <SelectItem value="sugestao_melhoria">Solicitação</SelectItem>
+                  <SelectItem value="feature">Feature</SelectItem>
+                  <SelectItem value="suporte">Suporte</SelectItem>
+                  <SelectItem value="melhoria">Melhoria</SelectItem>
+                  <SelectItem value="solicitacao">Solicitação</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            
             <div>
               <Label htmlFor="nivel_criticidade">Prioridade</Label>
               <Select value={formData.nivel_criticidade} onValueChange={(value) => setFormData({ ...formData, nivel_criticidade: value })}>

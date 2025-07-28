@@ -38,6 +38,7 @@ interface KanbanCardProps {
   ticket: Ticket;
   isDragging?: boolean;
   onOpenDetail: (ticket: Ticket) => void;
+  onEditTicket?: (ticket: Ticket) => void;
   userCanEdit: boolean;
 }
 
@@ -47,18 +48,23 @@ interface KanbanColumnProps {
   tickets: Ticket[];
   color: string;
   onOpenDetail: (ticket: Ticket) => void;
+  onEditTicket?: (ticket: Ticket) => void;
   userCanEdit: boolean;
 }
 
 interface TicketKanbanProps {
   tickets: Ticket[];
   onOpenDetail: (ticket: Ticket) => void;
+  onEditTicket?: (ticket: Ticket) => void;
   onTicketUpdate: () => void;
   userRole: string;
 }
 
 // Componente do card do ticket no Kanban
-function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCardProps) {
+function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdit }: KanbanCardProps) {
+  const [isDragInitiated, setIsDragInitiated] = useState(false);
+  const [dragTimeout, setDragTimeout] = useState<NodeJS.Timeout | null>(null);
+  
   const {
     attributes,
     listeners,
@@ -68,7 +74,7 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
     isDragging: isSortableDragging,
   } = useSortable({ 
     id: ticket.id,
-    disabled: !userCanEdit
+    disabled: !userCanEdit || !isDragInitiated
   });
 
   const style = {
@@ -112,14 +118,47 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
     userRole: userCanEdit ? 'super_admin' : 'viewer' 
   });
 
+  // Handlers para clique vs drag
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!userCanEdit) return;
+    
+    const timeout = setTimeout(() => {
+      setIsDragInitiated(true);
+    }, 300); // 300ms de delay para iniciar drag
+    
+    setDragTimeout(timeout);
+  };
+
+  const handleMouseUp = () => {
+    if (dragTimeout) {
+      clearTimeout(dragTimeout);
+      setDragTimeout(null);
+    }
+    setIsDragInitiated(false);
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (!isDragInitiated && !isSortableDragging) {
+      e.stopPropagation();
+      onOpenDetail(ticket);
+    }
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onEditTicket) {
+      onEditTicket(ticket);
+    }
+  };
+
   return (
     <Card
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...(userCanEdit ? listeners : {})}
+      {...(userCanEdit && isDragInitiated ? listeners : {})}
       className={cn(
-        "cursor-pointer transition-all duration-300 group bg-white animate-fade-in",
+        "transition-all duration-300 group bg-white animate-fade-in relative",
         "border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md",
         // Usar cores do statusInfo
         statusInfo.bgColor,
@@ -132,11 +171,15 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
         // Estados de drag - animações mais fluidas
         isDragging && "opacity-90 rotate-2 scale-105 shadow-2xl z-50 ring-2 ring-blue-300",
         isSortableDragging && "shadow-xl scale-105 rotate-2 border-blue-400",
-        !userCanEdit && "cursor-default",
+        // Cursor states
+        userCanEdit ? (isDragInitiated ? "cursor-grabbing" : "cursor-pointer") : "cursor-default",
         // Hover effect melhorado para drag
-        userCanEdit && "hover:scale-102 hover:shadow-lg hover:rotate-1"
+        userCanEdit && "hover:scale-102 hover:shadow-lg"
       )}
-      onClick={() => onOpenDetail(ticket)}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onClick={handleClick}
     >
       <CardContent className="p-3 space-y-2">
         {/* Header compacto */}
@@ -215,9 +258,20 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
           <span className="text-xs text-gray-400">
             {format(new Date(ticket.data_criacao), "dd/MM", { locale: ptBR })}
           </span>
-          <span className="text-xs text-gray-500 font-medium">
-            {ticket.pontuacao_total}pts
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 font-medium">
+              {ticket.pontuacao_total}pts
+            </span>
+            {userCanEdit && onEditTicket && (
+              <button
+                onClick={handleEditClick}
+                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                title="Editar ticket"
+              >
+                Editar
+              </button>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -225,7 +279,7 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
 }
 
 // Componente da coluna do Kanban
-function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit }: KanbanColumnProps) {
+function KanbanColumn({ title, status, tickets, color, onOpenDetail, onEditTicket, userCanEdit }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: status,
   });
@@ -304,6 +358,7 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit
                   key={ticket.id}
                   ticket={ticket}
                   onOpenDetail={onOpenDetail}
+                  onEditTicket={onEditTicket}
                   userCanEdit={userCanEdit}
                 />
               ))}
@@ -329,7 +384,7 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit
 }
 
 // Componente principal do Kanban
-export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, userRole }: TicketKanbanProps) {
+export default function TicketKanban({ tickets, onOpenDetail, onEditTicket, onTicketUpdate, userRole }: TicketKanbanProps) {
   const [draggedTicket, setDraggedTicket] = useState<Ticket | null>(null);
   const [activeColumn, setActiveColumn] = useState<string | null>(null);
   const { toast } = useToast();
@@ -504,6 +559,7 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
               tickets={column.tickets}
               color={column.color}
               onOpenDetail={onOpenDetail}
+              onEditTicket={onEditTicket}
               userCanEdit={userCanEdit}
             />
           ))}
@@ -522,6 +578,7 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
                 ticket={draggedTicket}
                 isDragging
                 onOpenDetail={onOpenDetail}
+                onEditTicket={onEditTicket}
                 userCanEdit={userCanEdit}
               />
             </div>
