@@ -128,7 +128,7 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1.5 flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+              <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
                 {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
               </span>
               {isExpired() && (
@@ -138,7 +138,7 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
                 </Badge>
               )}
             </div>
-            <h4 className="font-medium text-sm leading-tight text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-primary transition-colors">
+            <h4 className="font-semibold text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors">
               {ticket.titulo}
             </h4>
           </div>
@@ -148,15 +148,31 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
         </div>
 
         {/* Descrição compacta */}
-        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
+        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
           {ticket.descricao}
         </p>
 
+        {/* Tags (apenas as 2 primeiras) */}
+        {ticket.tags && ticket.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {ticket.tags.slice(0, 2).map((tag, index) => (
+              <span key={index} className="text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded">
+                {tag}
+              </span>
+            ))}
+            {ticket.tags.length > 2 && (
+              <span className="text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded">
+                +{ticket.tags.length - 2}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Info compacta */}
-        <div className="space-y-1.5 text-xs text-gray-500">
+        <div className="space-y-1.5 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-medium text-gray-600">
+            <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-medium text-primary">
                 {ticket.solicitante.charAt(0).toUpperCase()}
               </span>
             </div>
@@ -166,7 +182,7 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
           </div>
           
           <div className="flex items-center gap-2">
-            <User className="h-3 w-3 text-gray-400" />
+            <User className="h-3 w-3 text-muted-foreground" />
             <span className="truncate" title={ticket.time_responsavel}>
               {ticket.time_responsavel}
             </span>
@@ -174,13 +190,16 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
         </div>
 
         {/* Footer minimalista */}
-        <div className="flex items-center justify-between pt-1 border-t border-gray-100">
-          <span className="text-xs text-gray-400">
+        <div className="flex items-center justify-between pt-2 border-t">
+          <span className="text-xs text-muted-foreground">
             {format(new Date(ticket.data_criacao), "dd/MM", { locale: ptBR })}
           </span>
-          <span className="text-xs text-gray-500 font-medium">
-            {ticket.pontuacao_total}pts
-          </span>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground font-medium">
+              {ticket.pontuacao_total}
+            </span>
+            <span className="text-xs text-muted-foreground">pts</span>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -231,17 +250,17 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit
           isOver && userCanEdit && "ring-2 ring-primary shadow-xl scale-[1.02] bg-accent/30 border-primary/50"
         )}
       >
-        <div className={cn("p-4 border-b transition-all duration-300", getColumnColor(status))}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {getColumnIcon(status)}
-              <h3 className="font-semibold text-white">{title}</h3>
-            </div>
-            <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-              {tickets.length}
-            </Badge>
+      <div className={cn("p-4 rounded-t-lg border-b transition-all duration-300", getColumnColor(status))}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {getColumnIcon(status)}
+            <h3 className="font-semibold text-white">{title}</h3>
           </div>
+          <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+            {tickets.length}
+          </Badge>
         </div>
+      </div>
         
         <div 
           ref={setNodeRef}

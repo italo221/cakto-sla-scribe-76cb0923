@@ -130,6 +130,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Listener para mudanças no perfil em tempo real
+  useEffect(() => {
+    if (!user) return;
+
+    const profileSubscription = supabase
+      .channel('profile_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          // Atualizar o perfil imediatamente quando houver mudanças
+          setProfile(payload.new as Profile);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      profileSubscription.unsubscribe();
+    };
+  }, [user]);
+
   const refreshProfile = async () => {
     if (user) {
       await fetchProfile(user.id);

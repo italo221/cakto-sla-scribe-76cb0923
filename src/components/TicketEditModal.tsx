@@ -62,6 +62,19 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         observacoes: ticket.observacoes || '',
         tags: ticket.tags ? ticket.tags.join(', ') : ''
       });
+    } else if (!isOpen) {
+      // Limpar formulário quando modal fechar
+      setFormData({
+        titulo: '',
+        descricao: '',
+        tipo_ticket: '',
+        nivel_criticidade: '',
+        time_responsavel: '',
+        solicitante: '',
+        status: '',
+        observacoes: '',
+        tags: ''
+      });
     }
   }, [ticket, isOpen]);
 
