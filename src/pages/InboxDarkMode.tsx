@@ -25,7 +25,6 @@ import TicketKanban from "@/components/TicketKanban";
 import JiraTicketCard from "@/components/JiraTicketCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-
 interface Ticket {
   id: string;
   ticket_number: string;
@@ -50,12 +49,10 @@ interface Ticket {
   prazo_interno?: string;
   prioridade_operacional?: string;
 }
-
 interface Setor {
   id: string;
   nome: string;
 }
-
 export default function Inbox() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [setores, setSetores] = useState<Setor[]>([]);
@@ -72,60 +69,55 @@ export default function Inbox() {
   const [selectedTicketForEdit, setSelectedTicketForEdit] = useState<Ticket | null>(null);
   const [selectedTicketForDelete, setSelectedTicketForDelete] = useState<Ticket | null>(null);
   const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('detailed');
-  
-  const { user, canEdit, isSuperAdmin } = useAuth();
+  const {
+    user,
+    canEdit,
+    isSuperAdmin
+  } = useAuth();
   const [userRole, setUserRole] = useState<string>('viewer');
-  const { toast } = useToast();
-  
+  const {
+    toast
+  } = useToast();
+
   // Define canDelete based on user permissions
   const canDelete = isSuperAdmin;
-
   useEffect(() => {
     loadTickets();
     loadSetores();
     loadUserRole();
-    
+
     // Event listener para abrir modal de edição
     const handleOpenEditModal = (event: CustomEvent) => {
       const ticket = event.detail;
       setSelectedTicketForEdit(ticket);
       setEditModalOpen(true);
     };
-
     window.addEventListener('openEditModal', handleOpenEditModal as EventListener);
-    
     return () => {
       window.removeEventListener('openEditModal', handleOpenEditModal as EventListener);
     };
   }, []);
-
   const loadSetores = async () => {
     try {
-      const { data, error } = await supabase
-        .from('setores')
-        .select('id, nome')
-        .eq('ativo', true)
-        .order('nome');
-
+      const {
+        data,
+        error
+      } = await supabase.from('setores').select('id, nome').eq('ativo', true).order('nome');
       if (error) throw error;
       setSetores(data || []);
     } catch (error) {
       console.error('Erro ao carregar setores:', error);
     }
   };
-
   const loadUserRole = async () => {
     if (!user) return;
-    
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role, user_type')
-        .eq('user_id', user.id)
-        .single();
-
+      const {
+        data,
+        error
+      } = await supabase.from('profiles').select('role, user_type').eq('user_id', user.id).single();
       if (error) throw error;
-      
+
       // Converter role/user_type para o formato esperado
       if (data.role === 'super_admin' || data.user_type === 'administrador_master') {
         setUserRole('super_admin');
@@ -139,58 +131,54 @@ export default function Inbox() {
       setUserRole('viewer');
     }
   };
-
   const loadTickets = async () => {
     try {
-      const { data, error } = await supabase
-        .from('sla_demandas')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('sla_demandas').select(`
           *,
           setores (
             id,
             nome
           )
         `);
-
       if (error) throw error;
-      
+
       // Aplicar ordenação inteligente
       const sortedData = (data || []).sort((a, b) => {
         // 1. Prioridade por status - Tickets ativos primeiro
         const statusPriority = {
           'aberto': 3,
-          'em_andamento': 2, 
+          'em_andamento': 2,
           'resolvido': 1,
           'fechado': 0
         };
-        
         const statusDiff = (statusPriority[b.status] || 0) - (statusPriority[a.status] || 0);
         if (statusDiff !== 0) return statusDiff;
-        
+
         // 2. Se mesmo status, priorizar por criticidade (P0 > P1 > P2 > P3)
         const criticalityPriority = {
           'P0': 4,
           'P1': 3,
-          'P2': 2, 
+          'P2': 2,
           'P3': 1
         };
-        
         const criticalityDiff = (criticalityPriority[b.nivel_criticidade] || 0) - (criticalityPriority[a.nivel_criticidade] || 0);
         if (criticalityDiff !== 0) return criticalityDiff;
-        
+
         // 3. Se mesma criticidade, priorizar por pontuação total
         const scoreDiff = (b.pontuacao_total || 0) - (a.pontuacao_total || 0);
         if (scoreDiff !== 0) return scoreDiff;
-        
+
         // 4. Por último, para tickets ativos, mais antigos primeiro (urgência)
         if ((statusPriority[a.status] || 0) >= 2 && (statusPriority[b.status] || 0) >= 2) {
           return new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime();
         }
-        
+
         // 5. Para tickets resolvidos/fechados, mais recentes primeiro
         return new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime();
       });
-      
       setTickets(sortedData);
     } catch (error) {
       console.error('Erro ao carregar SLAs:', error);
@@ -217,22 +205,22 @@ export default function Inbox() {
       statusInfo: (() => {
         // Replicar a lógica do useTicketStatus aqui para evitar hooks em loops
         const userCanEdit = userRole === 'super_admin' || userRole === 'operador';
-        
+
         // Calcular se está atrasado
         const isExpired = (() => {
           if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
-          
           const timeConfig = {
-            'P0': 4 * 60 * 60 * 1000, // 4 horas
-            'P1': 24 * 60 * 60 * 1000, // 24 horas
-            'P2': 3 * 24 * 60 * 60 * 1000, // 3 dias
-            'P3': 7 * 24 * 60 * 60 * 1000, // 7 dias
+            'P0': 4 * 60 * 60 * 1000,
+            // 4 horas
+            'P1': 24 * 60 * 60 * 1000,
+            // 24 horas
+            'P2': 3 * 24 * 60 * 60 * 1000,
+            // 3 dias
+            'P3': 7 * 24 * 60 * 60 * 1000 // 7 dias
           };
-          
           const startTime = new Date(ticket.data_criacao).getTime();
           const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
           const deadline = startTime + timeLimit;
-          
           return Date.now() > deadline;
         })();
 
@@ -286,9 +274,7 @@ export default function Inbox() {
             icon: X
           }
         };
-
         const config = statusConfig[ticket.status as keyof typeof statusConfig] || statusConfig.aberto;
-
         return {
           status: ticket.status,
           isExpired: false,
@@ -307,56 +293,52 @@ export default function Inbox() {
   // Busca inteligente com sugestões
   const generateSearchSuggestions = useCallback((term: string) => {
     if (!term || term.length < 2) return [];
-    
     const suggestions = new Set<string>();
     const lowerTerm = term.toLowerCase();
-    
+
     // Buscar em títulos, solicitantes, setores e números de ticket
     ticketsWithStatus.forEach(ticket => {
       // Títulos que contenham o termo
       if (ticket.titulo.toLowerCase().includes(lowerTerm)) {
         suggestions.add(ticket.titulo);
       }
-      
+
       // Solicitantes que contenham o termo
       if (ticket.solicitante.toLowerCase().includes(lowerTerm)) {
         suggestions.add(ticket.solicitante);
       }
-      
+
       // Setores que contenham o termo
       if (ticket.time_responsavel.toLowerCase().includes(lowerTerm)) {
         suggestions.add(ticket.time_responsavel);
       }
-      
+
       // Números de ticket que contenham o termo
       if (ticket.ticket_number && ticket.ticket_number.toLowerCase().includes(lowerTerm)) {
         suggestions.add(ticket.ticket_number);
       }
     });
-    
+
     // Priorizar sugestões - tickets críticos e recentes primeiro
-    return Array.from(suggestions)
-      .slice(0, 8)
-      .sort((a, b) => {
-        const aTicket = ticketsWithStatus.find(t => 
-          t.titulo === a || t.solicitante === a || t.time_responsavel === a || t.ticket_number === a
-        );
-        const bTicket = ticketsWithStatus.find(t => 
-          t.titulo === b || t.solicitante === b || t.time_responsavel === b || t.ticket_number === b
-        );
-        
-        if (!aTicket || !bTicket) return 0;
-        
-        // Priorizar por criticidade
-        const criticalityOrder = { 'P0': 4, 'P1': 3, 'P2': 2, 'P3': 1 };
-        const aCritical = criticalityOrder[aTicket.nivel_criticidade as keyof typeof criticalityOrder] || 0;
-        const bCritical = criticalityOrder[bTicket.nivel_criticidade as keyof typeof criticalityOrder] || 0;
-        
-        if (aCritical !== bCritical) return bCritical - aCritical;
-        
-        // Depois por data (mais recentes primeiro)
-        return new Date(bTicket.data_criacao).getTime() - new Date(aTicket.data_criacao).getTime();
-      });
+    return Array.from(suggestions).slice(0, 8).sort((a, b) => {
+      const aTicket = ticketsWithStatus.find(t => t.titulo === a || t.solicitante === a || t.time_responsavel === a || t.ticket_number === a);
+      const bTicket = ticketsWithStatus.find(t => t.titulo === b || t.solicitante === b || t.time_responsavel === b || t.ticket_number === b);
+      if (!aTicket || !bTicket) return 0;
+
+      // Priorizar por criticidade
+      const criticalityOrder = {
+        'P0': 4,
+        'P1': 3,
+        'P2': 2,
+        'P3': 1
+      };
+      const aCritical = criticalityOrder[aTicket.nivel_criticidade as keyof typeof criticalityOrder] || 0;
+      const bCritical = criticalityOrder[bTicket.nivel_criticidade as keyof typeof criticalityOrder] || 0;
+      if (aCritical !== bCritical) return bCritical - aCritical;
+
+      // Depois por data (mais recentes primeiro)
+      return new Date(bTicket.data_criacao).getTime() - new Date(aTicket.data_criacao).getTime();
+    });
   }, [ticketsWithStatus]);
 
   // Atualizar sugestões quando o termo de busca mudar
@@ -369,27 +351,16 @@ export default function Inbox() {
   // Busca inteligente com suporte a palavras incompletas e tolerância a erros
   const smartSearch = useCallback((ticket: any, term: string) => {
     if (!term) return true;
-    
     const lowerTerm = term.toLowerCase();
-    const searchFields = [
-      ticket.titulo,
-      ticket.descricao,
-      ticket.solicitante,
-      ticket.time_responsavel,
-      ticket.ticket_number,
-      ...(ticket.tags || [])
-    ].filter(Boolean).map(field => field.toLowerCase());
-    
+    const searchFields = [ticket.titulo, ticket.descricao, ticket.solicitante, ticket.time_responsavel, ticket.ticket_number, ...(ticket.tags || [])].filter(Boolean).map(field => field.toLowerCase());
+
     // Busca exata
     const exactMatch = searchFields.some(field => field.includes(lowerTerm));
     if (exactMatch) return true;
-    
+
     // Busca por palavras parciais (para busca inteligente tipo Google)
     const termWords = lowerTerm.split(' ').filter(word => word.length > 1);
-    const partialMatch = termWords.every(word => 
-      searchFields.some(field => field.includes(word))
-    );
-    
+    const partialMatch = termWords.every(word => searchFields.some(field => field.includes(word)));
     return partialMatch;
   }, []);
 
@@ -406,7 +377,6 @@ export default function Inbox() {
     if (activeFilter !== 'all') {
       filtered = filtered.filter(ticket => {
         const ticketStatus = ticket.status?.toString()?.trim()?.toLowerCase();
-        
         switch (activeFilter) {
           case 'atrasado':
             return ticket.statusInfo.isExpired;
@@ -424,15 +394,13 @@ export default function Inbox() {
       filtered = filtered.filter(ticket => {
         const setorSelecionado = setores.find(s => s.id === setorFilter);
         if (!setorSelecionado) return false;
-        
+
         // Comparação estrita: time_responsavel deve ser exatamente igual ao nome do setor
         const timeResponsavel = ticket.time_responsavel?.trim();
         const nomeSetor = setorSelecionado.nome?.trim();
-        
         return timeResponsavel === nomeSetor;
       });
     }
-
     return filtered;
   }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, smartSearch]);
 
@@ -445,40 +413,32 @@ export default function Inbox() {
       fechado: 0,
       atrasado: 0
     };
-
     ticketsWithStatus.forEach(ticket => {
       // Contar tickets atrasados
       if (ticket.statusInfo.isExpired) {
         counts.atrasado++;
       }
-      
+
       // Contar por status (apenas tickets NÃO atrasados para os status normais)
       if (!ticket.statusInfo.isExpired) {
         const status = ticket.status?.toString()?.trim()?.toLowerCase();
-        if (status === 'aberto') counts.aberto++;
-        else if (status === 'em_andamento') counts.em_andamento++;
-        else if (status === 'resolvido') counts.resolvido++;
-        else if (status === 'fechado') counts.fechado++;
+        if (status === 'aberto') counts.aberto++;else if (status === 'em_andamento') counts.em_andamento++;else if (status === 'resolvido') counts.resolvido++;else if (status === 'fechado') counts.fechado++;
       }
     });
-
     return counts;
   }, [ticketsWithStatus]);
 
   // Contagem de tickets por setor baseada em time_responsavel
   const setorCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    
     setores.forEach(setor => {
       counts[setor.id] = ticketsWithStatus.filter(ticket => {
         // Usar apenas time_responsavel como fonte da verdade
         const timeResponsavel = ticket.time_responsavel?.trim();
         const nomeSetor = setor.nome?.trim();
-        
         return timeResponsavel === nomeSetor;
       }).length;
     });
-    
     return counts;
   }, [ticketsWithStatus, setores]);
 
@@ -490,8 +450,7 @@ export default function Inbox() {
 
     // Se for ticket "Em Aberto" e estiver atrasado, mostrar ambos os badges
     if (isAberto && isExpired) {
-      return (
-        <div className="flex items-center gap-1">
+      return <div className="flex items-center gap-1">
           <Badge className={`${ticketWithStatus.statusInfo.bgColor} ${ticketWithStatus.statusInfo.textColor} ${ticketWithStatus.statusInfo.borderColor} flex items-center gap-1 border font-medium border-l-4 border-l-slate-400 dark:border-l-slate-500`}>
             <Icon size={12} />
             Aberto
@@ -500,107 +459,94 @@ export default function Inbox() {
             <AlertTriangle size={12} />
             Atrasado
           </Badge>
-        </div>
-      );
+        </div>;
     }
 
     // Badge normal com borda lateral especial para tickets "Em Aberto"
     const borderClass = isAberto ? 'border-l-4 border-l-slate-400 dark:border-l-slate-500' : '';
-    
-    return (
-      <Badge className={`${ticketWithStatus.statusInfo.bgColor} ${ticketWithStatus.statusInfo.textColor} ${ticketWithStatus.statusInfo.borderColor} flex items-center gap-1 border font-medium ${borderClass}`}>
+    return <Badge className={`${ticketWithStatus.statusInfo.bgColor} ${ticketWithStatus.statusInfo.textColor} ${ticketWithStatus.statusInfo.borderColor} flex items-center gap-1 border font-medium ${borderClass}`}>
         <Icon size={12} />
         {ticketWithStatus.statusInfo.displayStatus}
         {/* Spinner especial para "Em Andamento" */}
-        {ticketWithStatus.status === 'em_andamento' && !ticketWithStatus.statusInfo.isExpired && (
-          <Clock className="ml-1 h-3 w-3 animate-pulse text-blue-600 dark:text-blue-400" />
-        )}
-      </Badge>
-    );
+        {ticketWithStatus.status === 'em_andamento' && !ticketWithStatus.statusInfo.isExpired && <Clock className="ml-1 h-3 w-3 animate-pulse text-blue-600 dark:text-blue-400" />}
+      </Badge>;
   };
-
   const getCriticalityBadge = (criticality: string) => {
     const criticalityConfig = {
-      'P0': { color: 'bg-red-500 text-white', label: 'Crítico' },
-      'P1': { color: 'bg-orange-500 text-white', label: 'Alto' },
-      'P2': { color: 'bg-yellow-500 text-white', label: 'Médio' },
-      'P3': { color: 'bg-blue-500 text-white', label: 'Baixo' }
+      'P0': {
+        color: 'bg-red-500 text-white',
+        label: 'Crítico'
+      },
+      'P1': {
+        color: 'bg-orange-500 text-white',
+        label: 'Alto'
+      },
+      'P2': {
+        color: 'bg-yellow-500 text-white',
+        label: 'Médio'
+      },
+      'P3': {
+        color: 'bg-blue-500 text-white',
+        label: 'Baixo'
+      }
     };
-
     const config = criticalityConfig[criticality as keyof typeof criticalityConfig] || criticalityConfig.P3;
-
-    return (
-      <Badge className={config.color}>
+    return <Badge className={config.color}>
         {criticality} - {config.label}
-      </Badge>
-    );
+      </Badge>;
   };
-
   const getTempoMedioResolucao = (criticality: string) => {
     const tempos = {
       'P0': '4 horas',
-      'P1': '24 horas', 
+      'P1': '24 horas',
       'P2': '3 dias úteis',
       'P3': '7 dias úteis'
     };
     return tempos[criticality as keyof typeof tempos] || '7 dias úteis';
   };
-
   const handleOpenTicketDetail = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setModalOpen(true);
   };
-
   const handleEditTicket = (ticket: Ticket) => {
     setSelectedTicketForEdit(ticket);
     setEditModalOpen(true);
   };
-
   const handleDeleteTicket = (ticket: Ticket) => {
     setSelectedTicketForDelete(ticket);
     setDeleteModalOpen(true);
   };
-
   const handleCloseModal = () => {
     setModalOpen(false);
     setSelectedTicket(null);
   };
-
   const handleCloseEditModal = () => {
     setEditModalOpen(false);
     setSelectedTicketForEdit(null);
   };
-
   const handleCloseDeleteModal = () => {
     setDeleteModalOpen(false);
     setSelectedTicketForDelete(null);
   };
-
   const handleTicketUpdate = () => {
     loadTickets();
     toast({
       title: "Ticket atualizado",
-      description: "O ticket foi atualizado com sucesso.",
+      description: "O ticket foi atualizado com sucesso."
     });
   };
-
   const handleUpdateSelectedTicket = (updatedTicket: any) => {
     setSelectedTicket(updatedTicket);
   };
-
   if (!isSupabaseConfigured) {
-    return (
-      <div className="min-h-screen bg-background dark:bg-background">
+    return <div className="min-h-screen bg-background dark:bg-background">
         <Navigation />
         <div className="container mx-auto p-6">
           <SupabaseStatus />
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-background dark:bg-background text-foreground dark:text-foreground">
+  return <div className="min-h-screen bg-background dark:bg-background text-foreground dark:text-foreground">
       <Navigation />
       
       <div className="container mx-auto p-6 space-y-6">
@@ -630,33 +576,18 @@ export default function Inbox() {
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Buscar tickets (títulos, solicitantes, setores...)"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onFocus={() => setShowSuggestions(searchTerm.length >= 2 && searchSuggestions.length > 0)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                className="pl-10 bg-background text-foreground border-border focus:border-primary"
-              />
+              <Input placeholder="Buscar tickets (títulos, solicitantes, setores...)" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onFocus={() => setShowSuggestions(searchTerm.length >= 2 && searchSuggestions.length > 0)} onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} className="pl-10 bg-background text-foreground border-border focus:border-primary" />
             </div>
             
             {/* Dropdown de sugestões de busca */}
-            {showSuggestions && searchSuggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
-                {searchSuggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
-                    onClick={() => {
-                      setSearchTerm(suggestion);
-                      setShowSuggestions(false);
-                    }}
-                  >
+            {showSuggestions && searchSuggestions.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                {searchSuggestions.map((suggestion, index) => <div key={index} className="px-3 py-2 hover:bg-accent cursor-pointer text-sm" onClick={() => {
+              setSearchTerm(suggestion);
+              setShowSuggestions(false);
+            }}>
                     {suggestion}
-                  </div>
-                ))}
-              </div>
-            )}
+                  </div>)}
+              </div>}
             
             <div className="flex gap-2">
               <Select value={setorFilter} onValueChange={setSetorFilter}>
@@ -665,11 +596,9 @@ export default function Inbox() {
                 </SelectTrigger>
                 <SelectContent className="bg-popover border border-border">
                   <SelectItem value="all">Todos Setores</SelectItem>
-                  {setores.map((setor) => (
-                    <SelectItem key={setor.id} value={setor.id}>
+                  {setores.map(setor => <SelectItem key={setor.id} value={setor.id}>
                       {setor.nome} ({setorCounts[setor.id] || 0})
-                    </SelectItem>
-                  ))}
+                    </SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -678,13 +607,7 @@ export default function Inbox() {
 
         {/* Status Cards - Sistema de filtro unificado */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <Card 
-            className={cn(
-              "cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card",
-              activeFilter === 'aberto' ? 'ring-2 ring-slate-500 border-l-slate-500 bg-slate-50 dark:bg-slate-800' : 'border-l-slate-400 hover:border-l-slate-500'
-            )}
-            onClick={() => setActiveFilter(activeFilter === 'aberto' ? 'all' : 'aberto')}
-          >
+          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'aberto' ? 'ring-2 ring-slate-500 border-l-slate-500 bg-slate-50 dark:bg-slate-800' : 'border-l-slate-400 hover:border-l-slate-500')} onClick={() => setActiveFilter(activeFilter === 'aberto' ? 'all' : 'aberto')}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <Circle className="h-6 w-6 text-slate-400 dark:text-slate-300" />
@@ -694,13 +617,7 @@ export default function Inbox() {
             </CardContent>
           </Card>
 
-          <Card 
-            className={cn(
-              "cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card",
-              activeFilter === 'em_andamento' ? 'ring-2 ring-blue-500 border-l-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-l-blue-400 hover:border-l-blue-500'
-            )}
-            onClick={() => setActiveFilter(activeFilter === 'em_andamento' ? 'all' : 'em_andamento')}
-          >
+          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'em_andamento' ? 'ring-2 ring-blue-500 border-l-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-l-blue-400 hover:border-l-blue-500')} onClick={() => setActiveFilter(activeFilter === 'em_andamento' ? 'all' : 'em_andamento')}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <Activity className="h-6 w-6 text-blue-500 dark:text-blue-400" />
@@ -710,13 +627,7 @@ export default function Inbox() {
             </CardContent>
           </Card>
 
-          <Card 
-            className={cn(
-              "cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card",
-              activeFilter === 'resolvido' ? 'ring-2 ring-green-500 border-l-green-500 bg-green-50 dark:bg-green-900/20' : 'border-l-green-400 hover:border-l-green-500'
-            )}
-            onClick={() => setActiveFilter(activeFilter === 'resolvido' ? 'all' : 'resolvido')}
-          >
+          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'resolvido' ? 'ring-2 ring-green-500 border-l-green-500 bg-green-50 dark:bg-green-900/20' : 'border-l-green-400 hover:border-l-green-500')} onClick={() => setActiveFilter(activeFilter === 'resolvido' ? 'all' : 'resolvido')}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <CheckCircle className="h-6 w-6 text-green-500 dark:text-green-400" />
@@ -726,13 +637,7 @@ export default function Inbox() {
             </CardContent>
           </Card>
 
-          <Card 
-            className={cn(
-              "cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card",
-              activeFilter === 'fechado' ? 'ring-2 ring-gray-500 border-l-gray-500 bg-gray-50 dark:bg-gray-800' : 'border-l-gray-400 hover:border-l-gray-500'
-            )}
-            onClick={() => setActiveFilter(activeFilter === 'fechado' ? 'all' : 'fechado')}
-          >
+          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'fechado' ? 'ring-2 ring-gray-500 border-l-gray-500 bg-gray-50 dark:bg-gray-800' : 'border-l-gray-400 hover:border-l-gray-500')} onClick={() => setActiveFilter(activeFilter === 'fechado' ? 'all' : 'fechado')}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <X className="h-6 w-6 text-gray-500 dark:text-gray-400" />
@@ -742,13 +647,7 @@ export default function Inbox() {
             </CardContent>
           </Card>
 
-          <Card 
-            className={cn(
-              "cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card",
-              activeFilter === 'atrasado' ? 'ring-2 ring-red-500 border-l-red-500 bg-red-50 dark:bg-red-900/20' : 'border-l-red-400 hover:border-l-red-500'
-            )}
-            onClick={() => setActiveFilter(activeFilter === 'atrasado' ? 'all' : 'atrasado')}
-          >
+          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'atrasado' ? 'ring-2 ring-red-500 border-l-red-500 bg-red-50 dark:bg-red-900/20' : 'border-l-red-400 hover:border-l-red-500')} onClick={() => setActiveFilter(activeFilter === 'atrasado' ? 'all' : 'atrasado')}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <AlertTriangle className="h-6 w-6 text-red-500 dark:text-red-400" />
@@ -758,13 +657,7 @@ export default function Inbox() {
             </CardContent>
           </Card>
 
-          <Card 
-            className={cn(
-              "cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card",
-              activeFilter === 'critico' ? 'ring-2 ring-red-600 border-l-red-600 bg-red-50 dark:bg-red-900/20' : 'border-l-red-500 hover:border-l-red-600'
-            )}
-            onClick={() => setActiveFilter(activeFilter === 'critico' ? 'all' : 'critico')}
-          >
+          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'critico' ? 'ring-2 ring-red-600 border-l-red-600 bg-red-50 dark:bg-red-900/20' : 'border-l-red-500 hover:border-l-red-600')} onClick={() => setActiveFilter(activeFilter === 'critico' ? 'all' : 'critico')}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <Flag className="h-6 w-6 text-red-600 dark:text-red-500" />
@@ -780,113 +673,51 @@ export default function Inbox() {
         {/* Controls */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setViewMode(viewMode === 'detailed' ? 'compact' : 'detailed')}
-              className="gap-2"
-            >
-              <List className="h-4 w-4" />
-              {viewMode === 'detailed' ? 'Visão Compacta' : 'Visão Detalhada'}
-            </Button>
+            
             
             {/* Link para Kanban separado */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.location.href = '/kanban'}
-              className="gap-2"
-            >
-              <Columns3 className="h-4 w-4" />
-              Ver Kanban
-            </Button>
+            
           </div>
 
           <div className="flex items-center gap-4 text-sm text-muted-foreground dark:text-muted-foreground">
-            <span>
+            <span className="mx-0 px-0 my-[5px] py-0 text-base text-center">
               {filteredTicketsWithStatus.length} de {tickets.length} tickets
             </span>
-            {(searchTerm || activeFilter !== 'all' || setorFilter !== 'all') && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearchTerm('');
-                  setActiveFilter('all');
-                  setSetorFilter('all');
-                  setShowSuggestions(false);
-                }}
-                className="text-xs"
-              >
+            {(searchTerm || activeFilter !== 'all' || setorFilter !== 'all') && <Button variant="ghost" size="sm" onClick={() => {
+            setSearchTerm('');
+            setActiveFilter('all');
+            setSetorFilter('all');
+            setShowSuggestions(false);
+          }} className="text-xs">
                 Limpar filtros
-              </Button>
-            )}
+              </Button>}
           </div>
         </div>
 
         {/* Tickets List */}
         <div className="space-y-4">
-          {loading ? (
-            <div className="text-center py-8">
+          {loading ? <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
               <p className="mt-2 text-muted-foreground dark:text-muted-foreground">Carregando tickets...</p>
-            </div>
-          ) : filteredTicketsWithStatus.length === 0 ? (
-            <Card className="border-dashed bg-card dark:bg-card">
+            </div> : filteredTicketsWithStatus.length === 0 ? <Card className="border-dashed bg-card dark:bg-card">
               <CardContent className="p-8 text-center">
                 <InboxIcon className="h-12 w-12 text-muted-foreground dark:text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground dark:text-foreground mb-2">
-                  {searchTerm || activeFilter !== 'all' || setorFilter !== 'all' 
-                    ? 'Nenhum ticket encontrado' 
-                    : 'Nenhum ticket cadastrado'
-                  }
+                  {searchTerm || activeFilter !== 'all' || setorFilter !== 'all' ? 'Nenhum ticket encontrado' : 'Nenhum ticket cadastrado'}
                 </h3>
                 <p className="text-muted-foreground dark:text-muted-foreground">
-                  {searchTerm || activeFilter !== 'all' || setorFilter !== 'all'
-                    ? 'Tente ajustar os filtros de busca.'
-                    : 'Quando houver tickets, eles aparecerão aqui.'
-                  }
+                  {searchTerm || activeFilter !== 'all' || setorFilter !== 'all' ? 'Tente ajustar os filtros de busca.' : 'Quando houver tickets, eles aparecerão aqui.'}
                 </p>
               </CardContent>
-            </Card>
-          ) : (
-            filteredTicketsWithStatus.map((ticket) => (
-              <JiraTicketCard
-                key={ticket.id}
-                ticket={ticket}
-                onOpenDetail={handleOpenTicketDetail}
-                onEditTicket={handleEditTicket}
-                onDeleteTicket={handleDeleteTicket}
-                userCanEdit={canEdit}
-                userCanDelete={canDelete}
-              />
-            ))
-          )}
+            </Card> : filteredTicketsWithStatus.map(ticket => <JiraTicketCard key={ticket.id} ticket={ticket} onOpenDetail={handleOpenTicketDetail} onEditTicket={handleEditTicket} onDeleteTicket={handleDeleteTicket} userCanEdit={canEdit} userCanDelete={canDelete} />)}
         </div>
 
         {/* Modals */}
-        <TicketDetailModal
-          sla={selectedTicket}
-          isOpen={modalOpen}
-          onClose={handleCloseModal}
-          onUpdate={handleTicketUpdate}
-          setSelectedSLA={handleUpdateSelectedTicket}
-        />
+        <TicketDetailModal sla={selectedTicket} isOpen={modalOpen} onClose={handleCloseModal} onUpdate={handleTicketUpdate} setSelectedSLA={handleUpdateSelectedTicket} />
 
-        <TicketEditModal
-          ticket={selectedTicketForEdit}
-          isOpen={editModalOpen}
-          onClose={handleCloseEditModal}
-          onUpdate={handleTicketUpdate}
-        />
+        <TicketEditModal ticket={selectedTicketForEdit} isOpen={editModalOpen} onClose={handleCloseEditModal} onUpdate={handleTicketUpdate} />
 
-        <TicketDeleteModal
-          ticket={selectedTicketForDelete}
-          isOpen={deleteModalOpen}
-          onClose={handleCloseDeleteModal}
-          onDelete={handleTicketUpdate}
-        />
+        <TicketDeleteModal ticket={selectedTicketForDelete} isOpen={deleteModalOpen} onClose={handleCloseDeleteModal} onDelete={handleTicketUpdate} />
       </div>
-    </div>
-  );
+    </div>;
 }
