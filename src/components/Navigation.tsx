@@ -49,7 +49,7 @@ export default function Navigation() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, profile, isSuperAdmin, canEdit, signOut } = useAuth();
-  const { systemName, systemLogo } = useSystemSettings();
+  const { systemName, systemLogo, loading } = useSystemSettings();
   
   const isActive = (path: string) => location.pathname === path;
   
@@ -176,7 +176,9 @@ export default function Navigation() {
               />
             )}
             <div>
-              <h1 className="text-xl font-bold text-gradient">{systemName}</h1>
+              <h1 className="text-xl font-bold text-gradient transition-opacity duration-300">
+                {loading ? 'Carregando...' : (systemName || 'Cakto')}
+              </h1>
               <p className="text-xs text-muted-foreground hidden sm:block">
                 Sistema Tickets
               </p>

@@ -39,46 +39,48 @@ function App() {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/integrations" element={
-                <ProtectedRoute>
-                  <Integrations />
-                </ProtectedRoute>
-              } />
-              <Route path="/inbox" element={
-                <ProtectedRoute>
-                  <Inbox />
-                </ProtectedRoute>
-              } />
-              <Route path="/kanban" element={
-                <ProtectedRoute>
-                  <Kanban />
-                </ProtectedRoute>
-              } />
-              <Route path="/documentation" element={
-                <ProtectedRoute>
-                  <Documentation />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin" element={
-                <ProtectedRoute requireSuperAdmin>
-                  <Admin />
-                </ProtectedRoute>
-              } />
-              <Route path="/customization" element={
-                <ProtectedRoute requireSuperAdmin>
-                  <Customization />
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <div className="animate-fade-in">
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/integrations" element={
+                  <ProtectedRoute>
+                    <Integrations />
+                  </ProtectedRoute>
+                } />
+                <Route path="/inbox" element={
+                  <ProtectedRoute>
+                    <Inbox />
+                  </ProtectedRoute>
+                } />
+                <Route path="/kanban" element={
+                  <ProtectedRoute>
+                    <Kanban />
+                  </ProtectedRoute>
+                } />
+                <Route path="/documentation" element={
+                  <ProtectedRoute>
+                    <Documentation />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin" element={
+                  <ProtectedRoute requireSuperAdmin>
+                    <Admin />
+                  </ProtectedRoute>
+                } />
+                <Route path="/customization" element={
+                  <ProtectedRoute requireSuperAdmin>
+                    <Customization />
+                  </ProtectedRoute>
+                } />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </div>
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>
