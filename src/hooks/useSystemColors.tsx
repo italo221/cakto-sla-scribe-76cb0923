@@ -10,7 +10,7 @@ interface ColorData {
 export const useSystemColors = () => {
   const loadAndApplySystemColors = async () => {
     try {
-      console.log('🎨 Carregando cores do sistema...');
+      if (import.meta.env.DEV) console.log('🎨 Carregando cores do sistema...');
       
       // Carregar cor primária
       const { data: primaryData, error: primaryError } = await supabase
@@ -22,7 +22,7 @@ export const useSystemColors = () => {
       if (!primaryError && primaryData) {
         const primaryColor = primaryData.setting_value as unknown as ColorData;
         document.documentElement.style.setProperty('--primary', primaryColor.hsl);
-        console.log('✅ Cor primária aplicada:', primaryColor.hsl);
+        if (import.meta.env.DEV) console.log('✅ Cor primária aplicada:', primaryColor.hsl);
       }
 
       // Carregar cor secundária
@@ -35,7 +35,7 @@ export const useSystemColors = () => {
       if (!secondaryError && secondaryData) {
         const secondaryColor = secondaryData.setting_value as unknown as ColorData;
         document.documentElement.style.setProperty('--secondary', secondaryColor.hsl);
-        console.log('✅ Cor secundária aplicada:', secondaryColor.hsl);
+        if (import.meta.env.DEV) console.log('✅ Cor secundária aplicada:', secondaryColor.hsl);
       }
 
     } catch (error) {

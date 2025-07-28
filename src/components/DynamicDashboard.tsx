@@ -225,7 +225,7 @@ export default function DynamicDashboard() {
         }
       }
     } catch (error) {
-      console.log('Nenhuma preferência salva encontrada');
+      if (import.meta.env.DEV) console.log('Nenhuma preferência salva encontrada');
     }
   };
 

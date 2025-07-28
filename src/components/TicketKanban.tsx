@@ -244,7 +244,7 @@ export default function TicketKanban({ tickets, onOpenDetail, onEditTicket, onTi
     const ticket = tickets.find(t => t.id === ticketId);
 
     if (!ticket || ticket.status === newStatus) {
-      console.log("🚫 Status igual");
+      if (import.meta.env.DEV) console.log("🚫 Status igual");
       setActiveId(null);
       setDraggedTicket(null);
       return;

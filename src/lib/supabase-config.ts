@@ -10,8 +10,8 @@ export interface SupabaseConfig {
 
 export function getSupabaseConfig(): SupabaseConfig {
   // Verificar se estamos em ambiente Lovable com Supabase integrado
-  const integratedUrl = "https://hnqsgjblwuffgpksfyyh.supabase.co";
-  const integratedKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucXNnamJsd3VmZmdwa3NmeXloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NTE4MzUsImV4cCI6MjA2ODAyNzgzNX0.zQEBVwXDClAfZDvefRBKCRKF_ux-GEfzd1QV5iOaxyE";
+  const integratedUrl = import.meta.env.VITE_SUPABASE_URL || (window as any).__SUPABASE_URL__;
+  const integratedKey = import.meta.env.VITE_SUPABASE_ANON_KEY || (window as any).__SUPABASE_ANON_KEY__;
 
   // Verificar se há configurações customizadas (para projetos clonados)
   const customUrl = (window as any).__SUPABASE_URL__ || 
