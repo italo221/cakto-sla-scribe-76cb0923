@@ -1261,13 +1261,15 @@ export default function TicketChat() {
               Voltar ao menu
             </Button>
           </div>
-          <AITicketCreator onTicketCreated={() => {
-            setUseAI(false);
-            toast({
-              title: "Sucesso!",
-              description: "Ticket criado com sucesso via IA.",
-            });
-          }} />
+          <div className="bg-card dark:bg-card rounded-lg border border-border">
+            <AITicketCreator onTicketCreated={() => {
+              setUseAI(false);
+              toast({
+                title: "Sucesso!",
+                description: "Ticket criado com sucesso via IA.",
+              });
+            }} />
+          </div>
         </div>
       </div>
     );
@@ -1283,7 +1285,7 @@ export default function TicketChat() {
           <p className="text-muted-foreground mt-2">Interface conversacional para abertura de tickets</p>
         </div>
 
-        <Card className="h-[700px] flex flex-col">
+        <Card className="h-[700px] flex flex-col bg-card dark:bg-card">
           <CardContent className="flex-1 flex flex-col p-0">
             <ScrollArea className="flex-1 p-6">
               <div className="space-y-4">
@@ -1326,10 +1328,6 @@ export default function TicketChat() {
                           </Button>
                         </>
                       )}
-                      <Button onClick={handleStartQuery} variant="secondary" size="lg" className="w-full px-8">
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        Consultar Tickets & Métricas
-                      </Button>
                     </div>
                   </div>
                 )}
