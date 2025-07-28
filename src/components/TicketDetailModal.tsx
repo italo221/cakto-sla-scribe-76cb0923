@@ -93,7 +93,9 @@ export default function SLADetailModal({
     isSuperAdmin
   } = useAuth();
   const {
-    getSetorValidationMessage
+    getSetorValidationMessage,
+    canStartOrResolveTicket,
+    getStartResolveValidationMessage
   } = usePermissions();
   const [comments, setComments] = useState<Comment[]>([]);
   const [actionLogs, setActionLogs] = useState<ActionLog[]>([]);
@@ -325,6 +327,19 @@ export default function SLADetailModal({
         variant: "destructive"
       });
       return;
+    }
+
+    // Verificar se pode iniciar ou resolver o ticket
+    if ((newStatus === 'em_andamento' || newStatus === 'resolvido') && !canStartOrResolveTicket(sla)) {
+      const message = getStartResolveValidationMessage(sla);
+      if (message) {
+        toast({
+          title: "Ação não permitida",
+          description: message,
+          variant: "destructive",
+        });
+        return;
+      }
     }
     setStatusLoading(newStatus); // Set which specific status is loading
     try {

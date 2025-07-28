@@ -3,9 +3,12 @@ import { AlertTriangle } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 
 export default function SetorValidationAlert() {
-  const { getSetorValidationMessage } = usePermissions();
+  const { getSetorValidationMessage, loading } = usePermissions();
+  
+  // Não mostrar o aviso enquanto estiver carregando para evitar "piscar"
+  if (loading) return null;
+  
   const validationMessage = getSetorValidationMessage();
-
   if (!validationMessage) return null;
 
   return (

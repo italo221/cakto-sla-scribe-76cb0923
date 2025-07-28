@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { validateStatusChange, type TicketStatusType } from "@/hooks/useTicketStatus";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Ticket {
   id: string;
@@ -204,6 +205,7 @@ export default function TicketKanban({ tickets, onOpenDetail, onEditTicket, onTi
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedTicket, setDraggedTicket] = useState<Ticket | null>(null);
   const { toast } = useToast();
+  const { canStartOrResolveTicket, getStartResolveValidationMessage } = usePermissions();
 
   const userCanEdit = userRole === 'operador' || userRole === 'admin';
 
@@ -260,6 +262,21 @@ export default function TicketKanban({ tickets, onOpenDetail, onEditTicket, onTi
       setActiveId(null);
       setDraggedTicket(null);
       return;
+    }
+
+    // Verificar se pode iniciar ou resolver o ticket
+    if ((newStatus === 'em_andamento' || newStatus === 'resolvido') && !canStartOrResolveTicket(ticket)) {
+      const message = getStartResolveValidationMessage(ticket);
+      if (message) {
+        toast({
+          title: "Ação não permitida",
+          description: message,
+          variant: "destructive",
+        });
+        setActiveId(null);
+        setDraggedTicket(null);
+        return;
+      }
     }
 
     try {

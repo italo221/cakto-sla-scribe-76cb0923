@@ -21,6 +21,8 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useToast } from "@/hooks/use-toast";
 
 interface Ticket {
   id: string;
@@ -120,9 +122,25 @@ export default function JiraTicketCard({
   const statusConfig = getStatusConfig(ticket.status, isExpired);
   const priorityConfig = getPriorityConfig(ticket.nivel_criticidade);
   const StatusIcon = statusConfig.icon;
+  const { canStartOrResolveTicket, getStartResolveValidationMessage } = usePermissions();
+  const { toast } = useToast();
 
   const handleStatusUpdate = (e: React.MouseEvent, newStatus: string) => {
     e.stopPropagation();
+    
+    // Verificar se pode iniciar ou resolver o ticket
+    if ((newStatus === 'em_andamento' || newStatus === 'resolvido') && !canStartOrResolveTicket(ticket)) {
+      const message = getStartResolveValidationMessage(ticket);
+      if (message) {
+        toast({
+          title: "Ação não permitida",
+          description: message,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     if (onUpdateStatus) {
       onUpdateStatus(ticket.id, newStatus);
     }

@@ -75,11 +75,34 @@ export const usePermissions = () => {
     return false;
   };
 
-  const canDeleteTicket = (ticket: any) => {
-    // Apenas Super Admin e líderes de setor podem excluir
+  const canStartOrResolveTicket = (ticket: any) => {
+    // Super Admin pode iniciar/resolver qualquer ticket
     if (isSuperAdmin) return true;
 
-    // Operadores NÃO podem excluir tickets (nem os próprios)
+    // Verificar se o usuário pertence ao setor responsável pelo ticket
+    const belongsToResponsibleTeam = () => {
+      // Verificar por setor_id se disponível
+      if (ticket.setor_id) {
+        return userSetores.some(us => us.setor_id === ticket.setor_id);
+      }
+
+      // Verificar por nome do setor (fallback)
+      if (ticket.time_responsavel) {
+        return userSetores.some(us => us.setor?.nome === ticket.time_responsavel);
+      }
+
+      return false;
+    };
+
+    return belongsToResponsibleTeam();
+  };
+
+  const canDeleteTicket = (ticket: any) => {
+    // Apenas Super Admin pode excluir tickets
+    if (isSuperAdmin) return true;
+
+    // Apenas líderes do setor podem excluir tickets do seu setor
+    // Operadores e membros NÃO podem excluir tickets (nem os próprios)
     if (profile?.role === 'operador') return false;
 
     // Líder do setor pode excluir tickets do seu setor
@@ -110,6 +133,20 @@ export const usePermissions = () => {
     return null;
   };
 
+  const getStartResolveValidationMessage = (ticket: any) => {
+    if (!canStartOrResolveTicket(ticket)) {
+      return "⛔ Você não pode iniciar ou resolver este ticket, pois não pertence ao time responsável.";
+    }
+    return null;
+  };
+
+  const getDeleteValidationMessage = (ticket: any) => {
+    if (!canDeleteTicket(ticket) && !isSuperAdmin) {
+      return "⛔ Apenas o líder do setor pode excluir tickets.";
+    }
+    return null;
+  };
+
   return {
     userSetores,
     loading,
@@ -117,9 +154,12 @@ export const usePermissions = () => {
     isLeaderOfSetorByName,
     canEditTicket,
     canDeleteTicket,
+    canStartOrResolveTicket,
     hasAnySetor,
     canCreateTicket,
     getSetorValidationMessage,
+    getStartResolveValidationMessage,
+    getDeleteValidationMessage,
     refreshUserSetores: fetchUserSetores
   };
 };
