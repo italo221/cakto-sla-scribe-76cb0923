@@ -389,22 +389,26 @@ export default function Inbox() {
       });
     }
 
-    // Filtro por setor - priorizar setor_id quando existir, igual à contagem
+    // Filtro por setor - usar mesma lógica da contagem
     if (setorFilter !== 'all') {
       filtered = filtered.filter(ticket => {
         const setorSelecionado = setores.find(s => s.id === setorFilter);
         if (!setorSelecionado) return false;
 
-        // Se tem setor_id, usar apenas ele (não considerar time_responsavel)
-        if (ticket.setor_id) {
-          return ticket.setor_id === setorFilter;
-        }
-
-        // Fallback apenas quando não há setor_id definido
         const timeResponsavel = ticket.time_responsavel?.trim();
         const nomeSetor = setorSelecionado.nome?.trim();
         
-        return timeResponsavel === nomeSetor;
+        // Se time_responsavel corresponde ao nome do setor, usar isso (prioritário)
+        if (timeResponsavel === nomeSetor) {
+          return true;
+        }
+        
+        // Fallback: se não há time_responsavel ou não corresponde, usar setor_id
+        if (!timeResponsavel && ticket.setor_id === setorFilter) {
+          return true;
+        }
+        
+        return false;
       });
     }
     return filtered;
@@ -434,21 +438,25 @@ export default function Inbox() {
     return counts;
   }, [ticketsWithStatus]);
 
-  // Contagem de tickets por setor - priorizar setor_id quando existir
+  // Contagem de tickets por setor - priorizar time_responsavel se existir, senão setor_id
   const setorCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     setores.forEach(setor => {
       counts[setor.id] = ticketsWithStatus.filter(ticket => {
-        // Se tem setor_id, usar apenas ele (não considerar time_responsavel)
-        if (ticket.setor_id) {
-          return ticket.setor_id === setor.id;
-        }
-        
-        // Fallback apenas quando não há setor_id definido
         const timeResponsavel = ticket.time_responsavel?.trim();
         const nomeSetor = setor.nome?.trim();
         
-        return timeResponsavel === nomeSetor;
+        // Se time_responsavel corresponde ao nome do setor, usar isso (prioritário)
+        if (timeResponsavel === nomeSetor) {
+          return true;
+        }
+        
+        // Fallback: se não há time_responsavel ou não corresponde, usar setor_id
+        if (!timeResponsavel && ticket.setor_id === setor.id) {
+          return true;
+        }
+        
+        return false;
       }).length;
     });
     return counts;
