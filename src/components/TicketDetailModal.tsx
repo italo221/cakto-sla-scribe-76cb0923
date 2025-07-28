@@ -617,7 +617,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
               </Button>
             )}
             
-            {sla.status === 'em_andamento' && (
+            {sla.status === 'em_andamento' && user?.email !== sla.solicitante && (
               <Button 
                 variant="default" 
                 onClick={() => handleChangeStatus('resolvido')}
@@ -636,6 +636,14 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                   </>
                 )}
               </Button>
+            )}
+            
+            {/* Aviso para quem criou o ticket */}
+            {sla.status === 'em_andamento' && user?.email === sla.solicitante && (
+              <div className="px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md text-sm text-amber-800 dark:text-amber-200">
+                <AlertCircle className="h-4 w-4 inline mr-2" />
+                Quem criou o ticket não pode resolvê-lo. Aguarde o time responsável.
+              </div>
             )}
             
             {sla.status === 'resolvido' && (

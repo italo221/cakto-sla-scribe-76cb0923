@@ -386,7 +386,9 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
               </SelectTrigger>
               <SelectContent className="bg-popover border border-border z-50">
                 {tipoTicketOptions.map(tipo => (
-                  <SelectItem key={tipo.value} value={tipo.value}>{tipo.label}</SelectItem>
+                  <SelectItem key={tipo.value} value={tipo.value} className="py-2">
+                    {tipo.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>

@@ -389,13 +389,18 @@ export default function Inbox() {
       });
     }
 
-    // Filtro por setor - FONTE DA VERDADE: time_responsavel (campo obrigatório)
+    // Filtro por setor - Usar AMBOS time_responsavel E setor_id para maior compatibilidade
     if (setorFilter !== 'all') {
       filtered = filtered.filter(ticket => {
         const setorSelecionado = setores.find(s => s.id === setorFilter);
         if (!setorSelecionado) return false;
 
-        // Comparação estrita: time_responsavel deve ser exatamente igual ao nome do setor
+        // Verificar por setor_id primeiro (mais confiável)
+        if (ticket.setor_id === setorFilter) {
+          return true;
+        }
+
+        // Fallback: verificar por time_responsavel
         const timeResponsavel = ticket.time_responsavel?.trim();
         const nomeSetor = setorSelecionado.nome?.trim();
         return timeResponsavel === nomeSetor;
