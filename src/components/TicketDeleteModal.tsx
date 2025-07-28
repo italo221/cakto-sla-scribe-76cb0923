@@ -23,12 +23,25 @@ interface TicketDeleteModalProps {
 
 export default function TicketDeleteModal({ ticket, isOpen, onClose, onDelete }: TicketDeleteModalProps) {
   const { user } = useAuth();
-  const { canDeleteTicket } = usePermissions();
+  const { canDeleteTicket, getSetorValidationMessage } = usePermissions();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
-    if (!ticket || !canDeleteTicket(ticket)) return;
+    if (!ticket) return;
+    
+    // Verificar validações de setor
+    const setorValidationMessage = getSetorValidationMessage();
+    if (setorValidationMessage) {
+      toast({
+        title: "Acesso negado",
+        description: setorValidationMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!canDeleteTicket(ticket)) return;
 
     setLoading(true);
     try {

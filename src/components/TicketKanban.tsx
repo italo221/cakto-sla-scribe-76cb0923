@@ -119,7 +119,7 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
       {...attributes}
       {...(userCanEdit ? listeners : {})}
       className={cn(
-        "mb-2 cursor-pointer transition-all duration-300 group bg-white animate-fade-in",
+        "cursor-pointer transition-all duration-300 group bg-white animate-fade-in",
         "border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md",
         // Usar cores do statusInfo
         statusInfo.bgColor,
@@ -129,10 +129,12 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, userCanEdit }: KanbanCar
         ticket.nivel_criticidade === 'P1' && "border-l-4 border-l-orange-500",
         ticket.nivel_criticidade === 'P2' && "border-l-4 border-l-yellow-500",
         ticket.nivel_criticidade === 'P3' && "border-l-4 border-l-blue-500",
-        // Estados de drag - animações suaves
-        isDragging && "opacity-80 rotate-1 scale-105 shadow-2xl z-50",
-        isSortableDragging && "shadow-xl scale-105 rotate-1",
-        !userCanEdit && "cursor-default"
+        // Estados de drag - animações mais fluidas
+        isDragging && "opacity-90 rotate-2 scale-105 shadow-2xl z-50 ring-2 ring-blue-300",
+        isSortableDragging && "shadow-xl scale-105 rotate-2 border-blue-400",
+        !userCanEdit && "cursor-default",
+        // Hover effect melhorado para drag
+        userCanEdit && "hover:scale-102 hover:shadow-lg hover:rotate-1"
       )}
       onClick={() => onOpenDetail(ticket)}
     >
@@ -261,10 +263,10 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit
   return (
     <div ref={setNodeRef} className="flex-1 min-w-72 max-w-sm">
       <div className={cn(
-        "rounded-lg border h-full transition-all duration-300 ease-in-out",
+        "rounded-lg border h-full transition-all duration-300 ease-in-out relative",
         getColumnColor(status),
         // Destaque suave quando hover durante drag
-        isOver && userCanEdit && "border-blue-400 bg-blue-100 shadow-lg scale-102 transform",
+        isOver && userCanEdit && "border-blue-400 bg-blue-50 shadow-lg scale-[1.02] transform ring-2 ring-blue-200",
         // Animação de entrada
         "animate-fade-in"
       )}>
@@ -281,22 +283,43 @@ function KanbanColumn({ title, status, tickets, color, onOpenDetail, userCanEdit
           </div>
         </div>
         
+        {/* Indicador visual de drop zone quando arrastrando */}
+        {isOver && userCanEdit && (
+          <div className="absolute inset-0 bg-blue-100 bg-opacity-50 border-2 border-dashed border-blue-400 rounded-lg flex items-center justify-center z-10 pointer-events-none">
+            <div className="bg-blue-500 text-white px-3 py-1 rounded-md text-sm font-medium shadow-lg">
+              Solte aqui para mover
+            </div>
+          </div>
+        )}
+        
         {/* Conteúdo da coluna */}
-        <div className="p-3 h-[calc(100vh-280px)] overflow-y-auto">
+        <div className={cn(
+          "p-3 h-[calc(100vh-280px)] overflow-y-auto transition-all duration-300",
+          isOver && userCanEdit && "transform scale-98 opacity-90"
+        )}>
           <SortableContext items={tickets.map(t => t.id)} strategy={verticalListSortingStrategy}>
-            {tickets.map((ticket) => (
-              <KanbanCard
-                key={ticket.id}
-                ticket={ticket}
-                onOpenDetail={onOpenDetail}
-                userCanEdit={userCanEdit}
-              />
-            ))}
+            <div className="space-y-2">
+              {tickets.map((ticket) => (
+                <KanbanCard
+                  key={ticket.id}
+                  ticket={ticket}
+                  onOpenDetail={onOpenDetail}
+                  userCanEdit={userCanEdit}
+                />
+              ))}
+            </div>
           </SortableContext>
           {tickets.length === 0 && (
-            <div className="text-center py-8 text-gray-400">
-              <div className="text-2xl mb-2">📋</div>
-              <p className="text-sm">Nenhum ticket</p>
+            <div className={cn(
+              "text-center py-8 transition-all duration-300",
+              isOver && userCanEdit ? "text-blue-500 scale-105" : "text-gray-400"
+            )}>
+              <div className="text-2xl mb-2">
+                {isOver && userCanEdit ? "⬇️" : "📋"}
+              </div>
+              <p className="text-sm">
+                {isOver && userCanEdit ? "Solte o ticket aqui" : "Nenhum ticket"}
+              </p>
             </div>
           )}
         </div>
@@ -467,7 +490,7 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
       </div>
 
       <DndContext
-        collisionDetection={rectIntersection}
+        collisionDetection={pointerWithin}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
@@ -486,12 +509,15 @@ export default function TicketKanban({ tickets, onOpenDetail, onTicketUpdate, us
           ))}
         </div>
 
-        <DragOverlay dropAnimation={{
-          duration: 400,
-          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-        }}>
+        <DragOverlay 
+          dropAnimation={{
+            duration: 500,
+            easing: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+          }}
+          style={{ transformOrigin: '0 0' }}
+        >
           {draggedTicket ? (
-            <div className="rotate-2 scale-110 opacity-95 shadow-2xl">
+            <div className="rotate-3 scale-110 opacity-95 shadow-2xl ring-2 ring-blue-400">
               <KanbanCard
                 ticket={draggedTicket}
                 isDragging

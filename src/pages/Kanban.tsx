@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import TicketKanban from "@/components/TicketKanban";
 import TicketDetailModal from "@/components/TicketDetailModal";
+import SetorValidationAlert from "@/components/SetorValidationAlert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,6 +96,9 @@ export default function KanbanPage() {
       <Navigation />
       
       <div className="container mx-auto p-6 space-y-6">
+        {/* Alerta de validação de setor */}
+        <SetorValidationAlert />
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">

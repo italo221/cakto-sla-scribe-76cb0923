@@ -34,7 +34,7 @@ interface TicketEditModalProps {
 
 export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: TicketEditModalProps) {
   const { user } = useAuth();
-  const { canEditTicket } = usePermissions();
+  const { canEditTicket, getSetorValidationMessage } = usePermissions();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -67,6 +67,18 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Verificar validações de setor
+    const setorValidationMessage = getSetorValidationMessage();
+    if (setorValidationMessage) {
+      toast({
+        title: "Acesso negado",
+        description: setorValidationMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!ticket || !canEditTicket(ticket)) return;
 
     setLoading(true);
@@ -77,10 +89,10 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         tipo_ticket: formData.tipo_ticket,
         nivel_criticidade: formData.nivel_criticidade,
         time_responsavel: formData.time_responsavel,
-        solicitante: formData.solicitante.trim(),
+        // Não incluir solicitante na atualização - não pode ser alterado
         status: formData.status,
         observacoes: formData.observacoes.trim() || null,
-        tags: formData.tags.trim() ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0) : null,
+        // Remover tags da atualização
         updated_at: new Date().toISOString()
       };
 
@@ -148,8 +160,9 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
               <Input
                 id="solicitante"
                 value={formData.solicitante}
-                onChange={(e) => setFormData({ ...formData, solicitante: e.target.value })}
-                required
+                disabled
+                className="bg-muted text-muted-foreground"
+                title="O solicitante não pode ser alterado"
               />
             </div>
           </div>
@@ -174,10 +187,10 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="bug">Bug</SelectItem>
-                  <SelectItem value="feature">Feature</SelectItem>
-                  <SelectItem value="suporte">Suporte</SelectItem>
-                  <SelectItem value="melhoria">Melhoria</SelectItem>
-                  <SelectItem value="solicitacao">Solicitação</SelectItem>
+                  <SelectItem value="sugestao_melhoria">Feature</SelectItem>
+                  <SelectItem value="sugestao_melhoria">Suporte</SelectItem>
+                  <SelectItem value="sugestao_melhoria">Melhoria</SelectItem>
+                  <SelectItem value="sugestao_melhoria">Solicitação</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -231,15 +244,6 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="tags">Tags (separadas por vírgula)</Label>
-            <Input
-              id="tags"
-              value={formData.tags}
-              onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-              placeholder="ex: urgent, customer, bug"
-            />
-          </div>
 
           <div>
             <Label htmlFor="observacoes">Observações</Label>

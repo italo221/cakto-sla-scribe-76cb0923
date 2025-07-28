@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import CommentEditModal from "@/components/CommentEditModal";
 import CommentDeleteModal from "@/components/CommentDeleteModal";
 import { 
@@ -116,6 +117,7 @@ interface ActionLog {
 
 export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSelectedSLA }: SLADetailModalProps) {
   const { user, isAdmin, setores: userSetores, canEdit, isSuperAdmin } = useAuth();
+  const { getSetorValidationMessage } = usePermissions();
   const [comments, setComments] = useState<Comment[]>([]);
   const [actionLogs, setActionLogs] = useState<ActionLog[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -246,6 +248,17 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
   const handleAddComment = async () => {
     if (!sla || !newComment.trim() || !user) return;
 
+    // Verificar validações de setor
+    const setorValidationMessage = getSetorValidationMessage();
+    if (setorValidationMessage) {
+      toast({
+        title: "Acesso negado",
+        description: setorValidationMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Verificar permissões de comentários baseado no role
     if (!canEdit && !isSuperAdmin) {
       toast({
@@ -340,6 +353,17 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
 
   const handleChangeStatus = async (newStatus: string) => {
     if (!sla) return;
+
+    // Verificar validações de setor
+    const setorValidationMessage = getSetorValidationMessage();
+    if (setorValidationMessage) {
+      toast({
+        title: "Acesso negado",
+        description: setorValidationMessage,
+        variant: "destructive",
+      });
+      return;
+    }
 
     setStatusLoading(newStatus); // Set which specific status is loading
     try {

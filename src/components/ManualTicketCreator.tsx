@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
+import SetorValidationAlert from "@/components/SetorValidationAlert";
 import { Send, CheckCircle, RefreshCw, FileText } from "lucide-react";
 
 interface ManualTicketCreatorProps {
@@ -71,6 +73,7 @@ const perguntasPorSetor = {
 
 export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCreatorProps) {
   const { user } = useAuth();
+  const { canCreateTicket, getSetorValidationMessage } = usePermissions();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'complete'>('form');
@@ -142,6 +145,17 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
   };
 
   const handleSubmit = async () => {
+    // Verificar validações de setor
+    const setorValidationMessage = getSetorValidationMessage();
+    if (setorValidationMessage) {
+      toast({
+        title: "Acesso negado",
+        description: setorValidationMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!validateForm()) {
       toast({
         title: "Campos obrigatórios",
@@ -175,7 +189,7 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
           time_responsavel: formData.setor, // Setor selecionado = responsável
           solicitante: user.email || 'Usuário logado', // Criador = solicitante
           descricao: formData.descricao,
-          tipo_ticket: formData.tipo_ticket,
+          tipo_ticket: formData.tipo_ticket || 'sugestao_melhoria',
           nivel_criticidade: criticidade,
           pontuacao_total: pontos,
           pontuacao_financeiro: Math.floor(pontos * 0.3),
@@ -267,6 +281,8 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Alerta de validação de setor */}
+        <SetorValidationAlert />
         <div className="space-y-4">
           {/* Setor */}
           <div>

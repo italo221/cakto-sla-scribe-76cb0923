@@ -95,6 +95,21 @@ export const usePermissions = () => {
     return false;
   };
 
+  const hasAnySetor = () => {
+    return isSuperAdmin || userSetores.length > 0;
+  };
+
+  const canCreateTicket = () => {
+    return hasAnySetor();
+  };
+
+  const getSetorValidationMessage = () => {
+    if (!hasAnySetor()) {
+      return "Você precisa ser atribuído a um setor/time antes de criar ou editar tickets. Contate um administrador.";
+    }
+    return null;
+  };
+
   return {
     userSetores,
     loading,
@@ -102,6 +117,9 @@ export const usePermissions = () => {
     isLeaderOfSetorByName,
     canEditTicket,
     canDeleteTicket,
+    hasAnySetor,
+    canCreateTicket,
+    getSetorValidationMessage,
     refreshUserSetores: fetchUserSetores
   };
 };

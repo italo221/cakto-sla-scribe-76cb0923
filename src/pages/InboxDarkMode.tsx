@@ -15,6 +15,7 @@ import Navigation from "@/components/Navigation";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import TicketEditModal from "@/components/TicketEditModal";
 import TicketDeleteModal from "@/components/TicketDeleteModal";
+import SetorValidationAlert from "@/components/SetorValidationAlert";
 import SupabaseStatus from "@/components/SupabaseStatus";
 import { TicketCountdown } from "@/components/TicketCountdown";
 import { useTicketCountdown } from "@/hooks/useTicketCountdown";
@@ -603,6 +604,9 @@ export default function Inbox() {
       <Navigation />
       
       <div className="container mx-auto p-6 space-y-6">
+        {/* Alerta de validação de setor */}
+        <SetorValidationAlert />
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">
