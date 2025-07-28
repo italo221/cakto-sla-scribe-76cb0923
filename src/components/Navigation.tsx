@@ -22,6 +22,8 @@ import {
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 interface NavItem {
   path: string;
@@ -29,14 +31,15 @@ interface NavItem {
   icon: any;
   adminOnly?: boolean;
   requireCreatePermission?: boolean;
+  hideForViewer?: boolean;
 }
 
 const navItems: NavItem[] = [
   { path: "/", label: "Criar Ticket", icon: Home, requireCreatePermission: true },
   { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
-  { path: "/inbox", label: "Caixa de Entrada", icon: Inbox },
-  { path: "/kanban", label: "Kanban", icon: Columns3 },
-  { path: "/integrations", label: "Integrações", icon: Settings },
+  { path: "/inbox", label: "Caixa de Entrada", icon: Inbox, hideForViewer: true },
+  { path: "/kanban", label: "Kanban", icon: Columns3, hideForViewer: true },
+  { path: "/integrations", label: "Integrações", icon: Settings, adminOnly: true },
   { path: "/customization", label: "Personalização", icon: Palette, adminOnly: true },
   { path: "/admin", label: "Admin", icon: Shield, adminOnly: true },
   { path: "/documentation", label: "Documentação", icon: BookOpen }
@@ -46,9 +49,62 @@ export default function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [systemName, setSystemName] = useState('Manhattan');
+  const [systemLogo, setSystemLogo] = useState<string | null>(null);
   const { user, profile, isSuperAdmin, canEdit, signOut } = useAuth();
+
+  // Carregar configurações do sistema
+  useEffect(() => {
+    const loadSystemSettings = async () => {
+      try {
+        const { data: nameData } = await supabase
+          .from('system_settings')
+          .select('setting_value')
+          .eq('setting_key', 'system_name')
+          .single();
+
+        const { data: logoData } = await supabase
+          .from('system_settings')
+          .select('setting_value')
+          .eq('setting_key', 'system_logo')
+          .single();
+
+        if (nameData?.setting_value) {
+          setSystemName(nameData.setting_value as string);
+        }
+
+        if (logoData?.setting_value) {
+          setSystemLogo(logoData.setting_value as string);
+        }
+      } catch (error) {
+        // Se não conseguir carregar, usar valores padrão
+        console.log('Usando configurações padrão do sistema');
+      }
+    };
+
+    loadSystemSettings();
+
+    // Subscrever a mudanças nas configurações do sistema
+    const subscription = supabase
+      .channel('system_settings_changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'system_settings'
+      }, () => {
+        loadSystemSettings();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
   
   const isActive = (path: string) => location.pathname === path;
+  
+  // Verificar se é viewer
+  const isViewer = profile?.role === 'viewer';
   
   // Filtrar itens de navegação baseado no role do usuário
   const filteredNavItems = navItems.filter(item => {
@@ -57,6 +113,10 @@ export default function Navigation() {
     }
     // Verificar permissão de criação para o item "Criar Ticket"
     if (item.requireCreatePermission && !canEdit && !isSuperAdmin) {
+      return false;
+    }
+    // Ocultar itens específicos para viewer
+    if (item.hideForViewer && isViewer) {
       return false;
     }
     return true;
@@ -155,8 +215,15 @@ export default function Navigation() {
         <div className="flex items-center justify-between py-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 hover-scale">
+            {systemLogo && (
+              <img 
+                src={systemLogo} 
+                alt="Logo do sistema" 
+                className="h-8 w-8 object-contain" 
+              />
+            )}
             <div>
-              <h1 className="text-xl font-bold text-gradient">Manhattan</h1>
+              <h1 className="text-xl font-bold text-gradient">{systemName}</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">
                 Sistema Tickets
               </p>
@@ -189,8 +256,15 @@ export default function Navigation() {
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                 <div className="flex flex-col gap-4 mt-8">
                   <div className="flex items-center gap-3 pb-4 border-b">
+                    {systemLogo && (
+                      <img 
+                        src={systemLogo} 
+                        alt="Logo do sistema" 
+                        className="h-8 w-8 object-contain" 
+                      />
+                    )}
                     <div>
-                      <h2 className="font-semibold">Manhattan</h2>
+                      <h2 className="font-semibold">{systemName}</h2>
                       <p className="text-sm text-muted-foreground">Sistema Tickets</p>
                     </div>
                   </div>

@@ -246,14 +246,27 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
   const handleAddComment = async () => {
     if (!sla || !newComment.trim() || !user) return;
 
+    // Verificar permissões de comentários baseado no role
+    if (!canEdit && !isSuperAdmin) {
+      toast({
+        title: "Erro",
+        description: "Você não tem permissão para comentar em tickets.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setCommentLoading(true);
     setUploadingFiles(true);
     
     try {
       let comentarioSetorId;
       
-      if (isAdmin) {
-        // Se for admin e o SLA não tem setor_id definido, usar o primeiro setor do admin
+      if (isSuperAdmin) {
+        // Super admin pode comentar em qualquer ticket
+        comentarioSetorId = sla.setor_id || (userSetores.length > 0 ? userSetores[0].setor_id : null);
+      } else if (canEdit) {
+        // Operador pode comentar em qualquer ticket
         comentarioSetorId = sla.setor_id || (userSetores.length > 0 ? userSetores[0].setor_id : null);
       } else {
         const setorDoUsuario = userSetores.find(us => us.setor_id === sla.setor_id);
