@@ -208,7 +208,7 @@ export default function Navigation() {
                   <span className="sr-only">Abrir menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <SheetContent side="right" className="w-[280px] sm:w-[350px] md:w-[400px] max-w-[90vw]">
                 <div className="flex flex-col gap-4 mt-8">
                   <div className="flex items-center gap-3 pb-4 border-b">
                     {systemLogo && (

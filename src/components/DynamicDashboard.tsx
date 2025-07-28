@@ -472,17 +472,17 @@ export default function DynamicDashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
       {/* Header with controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">Dashboard Dinâmico</h2>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Dashboard Dinâmico</h2>
           <p className="text-muted-foreground">Configure e visualize suas métricas principais</p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-32 sm:w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -518,7 +518,7 @@ export default function DynamicDashboard() {
             </p>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {widgets.map((widget) => (
                 <div key={widget.id} className="flex items-center space-x-2">
                   <Checkbox
@@ -526,13 +526,13 @@ export default function DynamicDashboard() {
                     checked={widget.visible}
                     onCheckedChange={() => toggleWidget(widget.id)}
                   />
-                  <Label htmlFor={widget.id} className="flex items-center gap-2 cursor-pointer">
-                    <widget.icon className="w-4 h-4" />
-                    {widget.name}
+                  <Label htmlFor={widget.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                    <widget.icon className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{widget.name}</span>
                     {widget.visible ? (
-                      <Eye className="w-3 h-3 text-green-500" />
+                      <Eye className="w-3 h-3 text-green-500 shrink-0" />
                     ) : (
-                      <EyeOff className="w-3 h-3 text-gray-400" />
+                      <EyeOff className="w-3 h-3 text-gray-400 shrink-0" />
                     )}
                   </Label>
                 </div>
@@ -551,10 +551,10 @@ export default function DynamicDashboard() {
 
       {/* Dashboard Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {[...Array(4)].map((_, i) => (
             <Card key={i} className="bg-card">
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="animate-pulse space-y-3">
                   <div className="h-4 bg-muted rounded w-3/4"></div>
                   <div className="h-8 bg-muted rounded w-1/2"></div>
@@ -565,7 +565,7 @@ export default function DynamicDashboard() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {visibleWidgets.map((widget) => {
             if (widget.type === 'kpi') {
               return renderKPICard(widget);

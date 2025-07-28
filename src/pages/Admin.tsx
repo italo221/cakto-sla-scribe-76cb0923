@@ -653,7 +653,7 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
+      <div className="container mx-auto py-4 sm:py-6 lg:py-8 px-2 sm:px-4 max-w-6xl">
         {!isSupabaseConfigured && (
           <div className="mb-6">
             <SupabaseStatus />
@@ -1003,7 +1003,7 @@ const SetorCard = ({ setor, onSetorUpdate }: { setor: Setor; onSetorUpdate: () =
         {/* Modal de detalhes do setor */}
         {selectedSetorDetail && (
           <Dialog open={!!selectedSetorDetail} onOpenChange={() => setSelectedSetorDetail(null)}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[80vh] overflow-y-auto">
               <SetorDetailPanel
                 setor={selectedSetorDetail}
                 onClose={() => setSelectedSetorDetail(null)}

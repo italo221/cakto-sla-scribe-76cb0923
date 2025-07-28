@@ -164,10 +164,10 @@ function DroppableColumn({ id, title, tickets, onOpenDetail, onEditTicket, userC
   const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
-    <div className="flex flex-col h-full min-h-[400px]">
-      <div className="flex items-center justify-between mb-4 p-3 bg-muted/50 rounded-lg">
-        <h3 className="font-medium text-sm text-foreground">{title}</h3>
-        <Badge variant="default" className="text-xs bg-primary text-primary-foreground">
+    <div className="flex flex-col h-full min-h-[350px] sm:min-h-[400px]">
+      <div className="flex items-center justify-between mb-4 p-2 sm:p-3 bg-muted/50 rounded-lg">
+        <h3 className="font-medium text-xs sm:text-sm text-foreground truncate">{title}</h3>
+        <Badge variant="default" className="text-xs bg-primary text-primary-foreground shrink-0">
           {tickets.length}
         </Badge>
       </div>
@@ -175,14 +175,14 @@ function DroppableColumn({ id, title, tickets, onOpenDetail, onEditTicket, userC
       <div
         ref={setNodeRef}
         className={cn(
-          "flex-1 p-2 rounded-lg border-2 border-dashed transition-colors min-h-[300px]",
+          "flex-1 p-1 sm:p-2 rounded-lg border-2 border-dashed transition-colors min-h-[250px] sm:min-h-[300px]",
           isOver 
             ? "border-primary bg-primary/5" 
             : "border-border bg-transparent"
         )}
       >
         <SortableContext items={tickets.map(t => t.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3 max-h-full overflow-y-auto">
             {tickets.map(ticket => (
               <KanbanCard
                 key={ticket.id}
@@ -294,19 +294,22 @@ export default function TicketKanban({ tickets, onOpenDetail, onEditTicket, onTi
       onDragEnd={handleDragEnd}
       collisionDetection={pointerWithin}
     >
-      <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-full">
-          {columns.map(column => (
-            <DroppableColumn
-              key={column.id}
-              id={column.id}
-              title={column.title}
-              tickets={column.tickets}
-              onOpenDetail={onOpenDetail}
-              onEditTicket={onEditTicket}
-              userCanEdit={userCanEdit}
-            />
-          ))}
+      <div className="p-2 sm:p-4 lg:p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 h-full overflow-x-auto">
+          <div className="flex lg:contents gap-3 sm:gap-4 lg:gap-6 min-w-max lg:min-w-0">
+            {columns.map(column => (
+              <div key={column.id} className="min-w-[280px] lg:min-w-0 flex-1">
+                <DroppableColumn
+                  id={column.id}
+                  title={column.title}
+                  tickets={column.tickets}
+                  onOpenDetail={onOpenDetail}
+                  onEditTicket={onEditTicket}
+                  userCanEdit={userCanEdit}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

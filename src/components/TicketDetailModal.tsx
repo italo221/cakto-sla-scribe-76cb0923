@@ -501,22 +501,22 @@ export default function SLADetailModal({
   };
   if (!sla) return null;
   return <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-4">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold mx-0 px-0 my-0">
               {sla.ticket_number || `#${sla.id.slice(0, 8)}`} - {sla.titulo}
             </DialogTitle>
-            <div className="flex items-center justify-between w-full max-w-[200px]">
+            <div className="flex items-center justify-end w-full">
               {(canEdit || isSuperAdmin) && <Button variant="outline" size="sm" onClick={() => {
               onClose();
               // Abrir modal de edição
               window.dispatchEvent(new CustomEvent('openEditModal', {
                 detail: sla
               }));
-            }} className="gap-2 mx-[99px]">
+            }} className="gap-2">
                   <Edit3 className="h-4 w-4" />
-                  Editar
+                  <span className="hidden sm:inline">Editar</span>
                 </Button>}
               
             </div>
@@ -525,13 +525,13 @@ export default function SLADetailModal({
 
         <div className="space-y-6 mt-6">
           {/* Ações de Status e Transferência */}
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="flex flex-wrap gap-2 mb-6 max-w-full overflow-x-auto">
             {/* Botão de Transferência */}
             {(isAdmin || userSetores.some(us => us.setor_id === sla.setor_id)) && <Button variant="outline" onClick={() => setShowTransferForm(!showTransferForm)} className="gap-2 hover:bg-muted hover:shadow-sm transition-colors">
                 <ArrowRightLeft className="h-4 w-4" />
                 Transferir Setor
               </Button>}
-            {sla.status === 'aberto' && <Button variant="default" onClick={() => handleChangeStatus('em_andamento')} disabled={statusLoading !== null} className="gap-2 min-w-[120px]">
+            {sla.status === 'aberto' && <Button variant="default" onClick={() => handleChangeStatus('em_andamento')} disabled={statusLoading !== null} className="gap-2 min-w-[100px] sm:min-w-[120px] text-xs sm:text-sm">
                 {statusLoading === 'em_andamento' ? <>
                     <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
                     Iniciando...
@@ -541,7 +541,7 @@ export default function SLADetailModal({
                   </>}
               </Button>}
             
-            {sla.status === 'em_andamento' && user?.email !== sla.solicitante && <Button variant="default" onClick={() => handleChangeStatus('resolvido')} disabled={statusLoading !== null} className="gap-2 min-w-[120px]">
+            {sla.status === 'em_andamento' && user?.email !== sla.solicitante && <Button variant="default" onClick={() => handleChangeStatus('resolvido')} disabled={statusLoading !== null} className="gap-2 min-w-[100px] sm:min-w-[120px] text-xs sm:text-sm">
                 {statusLoading === 'resolvido' ? <>
                     <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
                     Resolvendo...
@@ -558,7 +558,7 @@ export default function SLADetailModal({
               </div>}
             
             {sla.status === 'resolvido' && <>
-                <Button variant="default" onClick={() => handleChangeStatus('fechado')} disabled={statusLoading !== null} className="gap-2 min-w-[120px]">
+                <Button variant="default" onClick={() => handleChangeStatus('fechado')} disabled={statusLoading !== null} className="gap-2 min-w-[100px] sm:min-w-[120px] text-xs sm:text-sm">
                   {statusLoading === 'fechado' ? <>
                       <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
                       Fechando...
@@ -567,7 +567,7 @@ export default function SLADetailModal({
                       Fechar SLA
                     </>}
                 </Button>
-                <Button variant="outline" onClick={() => handleChangeStatus('em_andamento')} disabled={statusLoading !== null} className="gap-2 min-w-[120px]">
+                <Button variant="outline" onClick={() => handleChangeStatus('em_andamento')} disabled={statusLoading !== null} className="gap-2 min-w-[100px] sm:min-w-[120px] text-xs sm:text-sm">
                   {statusLoading === 'em_andamento' ? <>
                       <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
                       Reabrindo...
@@ -839,7 +839,7 @@ export default function SLADetailModal({
               <CardTitle className="text-lg">Informações Básicas</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Solicitante</label>
                   <div className="flex items-center gap-2 mt-1">
