@@ -35,19 +35,49 @@ const impactoOptions = [
 ];
 
 const tipoTicketOptions = [
-  'Solicitação de tarefa',
-  'Reporte de problema', 
-  'Dúvida técnica',
-  'Feedback/sugestão',
-  'Atualização de projeto'
+  { label: 'Solicitação de tarefa', value: 'sugestao_melhoria' },
+  { label: 'Reporte de problema', value: 'bug' }, 
+  { label: 'Dúvida técnica', value: 'sugestao_melhoria' },
+  { label: 'Feedback/sugestão', value: 'sugestao_melhoria' },
+  { label: 'Atualização de projeto', value: 'sugestao_melhoria' }
 ];
 
 const perguntasPorSetor = {
-  Marketing: ['Qual plataforma está envolvida?', 'Há alguma campanha ativa relacionada?'],
-  Financeiro: ['Há impacto monetário direto?', 'Existe algum vencimento relacionado?'],
-  'Recursos Humanos': ['Impacta folha de pagamento, admissão ou desligamento?'],
-  Operações: ['Há atraso logístico?', 'Existe erro de cadastro?'],
-  default: ['Qual a urgência?', 'Algum risco de retrabalho?']
+  Marketing: [
+    'Qual plataforma está envolvida? (Instagram, Facebook, Google Ads, etc.)',
+    'Há alguma campanha ativa relacionada? Se sim, qual?'
+  ],
+  Financeiro: [
+    'Há impacto monetário direto? Se sim, qual valor aproximado?',
+    'Existe algum vencimento relacionado? Qual data?'
+  ],
+  'Recursos Humanos': [
+    'Impacta folha de pagamento, admissão ou desligamento?'
+  ],
+  Operações: [
+    'Há atraso logístico? Qual processo está afetado?',
+    'Existe erro de cadastro? Em qual sistema?'
+  ],
+  Tecnologia: [
+    'Qual sistema ou ferramenta está envolvida?',
+    'É um bug ou uma nova funcionalidade?'
+  ],
+  Comercial: [
+    'Está relacionado a qual cliente ou prospect?',
+    'Há impacto nas vendas ou negociações em andamento?'
+  ],
+  Compliance: [
+    'Qual regulamentação está envolvida?',
+    'Há risco de multa ou penalidade?'
+  ],
+  Suporte: [
+    'Quantos usuários estão afetados?',
+    'Qual o nível de severidade do problema?'
+  ],
+  default: [
+    'Qual a urgência desta demanda?',
+    'Há risco de retrabalho se não for tratado agora?'
+  ]
 };
 
 export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCreatorProps) {
@@ -129,7 +159,7 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
           time_responsavel: formData.setor,
           solicitante: user.email || 'Usuário logado',
           descricao: formData.descricao,
-          tipo_ticket: formData.tipo_ticket,
+          tipo_ticket: formData.tipo_ticket, // Agora usa o valor correto mapeado
           nivel_criticidade: criticidade,
           pontuacao_total: pontos,
           pontuacao_financeiro: Math.floor(pontos * 0.3),
@@ -340,7 +370,7 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
               </SelectTrigger>
               <SelectContent className="bg-popover border border-border z-50">
                 {tipoTicketOptions.map(tipo => (
-                  <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                  <SelectItem key={tipo.value} value={tipo.value}>{tipo.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
