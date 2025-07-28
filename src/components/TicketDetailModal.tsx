@@ -542,6 +542,15 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
               {sla.ticket_number || `#${sla.id.slice(0, 8)}`} - {sla.titulo}
             </DialogTitle>
             <div className="flex items-center gap-2">
+              <TicketCountdown 
+                dataCriacao={sla.data_criacao}
+                criticidade={sla.nivel_criticidade}
+                status={sla.status}
+              />
+              <div className={`transition-all duration-300 ${statusLoading ? 'animate-pulse' : ''}`}>
+                {getStatusBadge(sla.status)}
+              </div>
+              {getCriticalityBadge(sla.nivel_criticidade)}
               {(canEdit || isSuperAdmin) && (
                 <Button
                   variant="outline"
@@ -557,17 +566,20 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                   Editar
                 </Button>
               )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="gap-2"
-              >
-                <X className="h-4 w-4" />
-                Sair
-              </Button>
             </div>
           </div>
+          
+          {/* Tags logo abaixo do título */}
+          {sla.tags && sla.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {sla.tags.map((tag: string, index: number) => (
+                <Badge key={index} variant="outline" className="text-xs">
+                  <Tag className="h-3 w-3 mr-1" />
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
         </DialogHeader>
 
         <div className="space-y-6 mt-6">

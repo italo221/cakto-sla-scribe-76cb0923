@@ -404,7 +404,7 @@ export default function Inbox() {
     return filtered;
   }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, smartSearch]);
 
-  // Cálculo de contagens dos cards - contando TODOS os tickets sem separar atrasados
+  // Cálculo de contagens dos cards baseadas na mesma lógica dos filtros
   const cardCounts = useMemo(() => {
     const counts = {
       aberto: 0,
@@ -413,32 +413,18 @@ export default function Inbox() {
       fechado: 0,
       atrasado: 0
     };
-    
     ticketsWithStatus.forEach(ticket => {
-      const status = ticket.status?.toString()?.trim()?.toLowerCase();
-      
-      // Contar tickets atrasados (separadamente)
+      // Contar tickets atrasados
       if (ticket.statusInfo.isExpired) {
         counts.atrasado++;
       }
-      
-      // Contar TODOS os tickets por status (incluindo atrasados)
-      switch (status) {
-        case 'aberto':
-          counts.aberto++;
-          break;
-        case 'em_andamento':
-          counts.em_andamento++;
-          break;
-        case 'resolvido':
-          counts.resolvido++;
-          break;
-        case 'fechado':
-          counts.fechado++;
-          break;
+
+      // Contar por status (apenas tickets NÃO atrasados para os status normais)
+      if (!ticket.statusInfo.isExpired) {
+        const status = ticket.status?.toString()?.trim()?.toLowerCase();
+        if (status === 'aberto') counts.aberto++;else if (status === 'em_andamento') counts.em_andamento++;else if (status === 'resolvido') counts.resolvido++;else if (status === 'fechado') counts.fechado++;
       }
     });
-    
     return counts;
   }, [ticketsWithStatus]);
 

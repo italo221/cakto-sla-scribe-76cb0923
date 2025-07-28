@@ -62,19 +62,6 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         observacoes: ticket.observacoes || '',
         tags: ticket.tags ? ticket.tags.join(', ') : ''
       });
-    } else if (!isOpen) {
-      // Limpar formulário quando modal fechar
-      setFormData({
-        titulo: '',
-        descricao: '',
-        tipo_ticket: '',
-        nivel_criticidade: '',
-        time_responsavel: '',
-        solicitante: '',
-        status: '',
-        observacoes: '',
-        tags: ''
-      });
     }
   }, [ticket, isOpen]);
 
@@ -200,10 +187,10 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="bug">Bug</SelectItem>
-                  <SelectItem value="feature">Feature</SelectItem>
-                  <SelectItem value="suporte">Suporte</SelectItem>
-                  <SelectItem value="melhoria">Melhoria</SelectItem>
-                  <SelectItem value="solicitacao">Solicitação</SelectItem>
+                  <SelectItem value="sugestao_melhoria">Feature</SelectItem>
+                  <SelectItem value="sugestao_melhoria">Suporte</SelectItem>
+                  <SelectItem value="sugestao_melhoria">Melhoria</SelectItem>
+                  <SelectItem value="sugestao_melhoria">Solicitação</SelectItem>
                 </SelectContent>
               </Select>
             </div>
