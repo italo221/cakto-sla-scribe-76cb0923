@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { FormattedText } from "@/components/ui/formatted-text";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -655,7 +657,12 @@ export default function SLADetailModal({
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-3 min-w-0">
-                          <Textarea placeholder="Escreva um comentário..." value={newComment} onChange={e => setNewComment(e.target.value)} className="min-h-[60px] max-h-[100px] resize-none border-0 bg-background shadow-sm focus:ring-2 focus:ring-primary/20" />
+                          <RichTextEditor 
+                            value={newComment} 
+                            onChange={setNewComment} 
+                            placeholder="Escreva um comentário..." 
+                            className="min-h-[60px] max-h-[100px] resize-none border-0 bg-background shadow-sm focus:ring-2 focus:ring-primary/20" 
+                          />
                           {/* Área de anexos */}
                           {attachments && attachments.length > 0 && <div className="space-y-2">
                               <label className="text-xs font-medium text-muted-foreground">Anexos selecionados:</label>
@@ -791,8 +798,8 @@ export default function SLADetailModal({
                                        </Button>
                                      </div> : null}
                                  </div>
-                                <div className="space-y-2">
-                                  <p className="text-sm leading-relaxed break-words">{comment.comentario}</p>
+                                 <div className="space-y-2">
+                                   <FormattedText text={comment.comentario} className="text-sm leading-relaxed break-words" />
                                   
                                   {/* Botão de anexos integrado */}
                                   {comment.anexos && comment.anexos.length > 0 && <div className="flex flex-wrap gap-2 mt-2">
