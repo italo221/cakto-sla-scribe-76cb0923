@@ -156,6 +156,13 @@ All colors MUST be HSL.
     --input: 217.2 32.6% 17.5%;
     --ring: 142 76% 42%;
 
+    /* Chat specific - Dark mode */
+    --chat-background: 217.2 32.6% 15.5%;
+    --chat-user: 142 76% 42%;
+    --chat-user-foreground: 0 0% 100%;
+    --chat-assistant: 217.2 32.6% 17.5%;
+    --chat-assistant-foreground: 210 40% 98%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 142 76% 42%;
