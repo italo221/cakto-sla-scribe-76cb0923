@@ -196,28 +196,237 @@ const Documentation = () => {
                       Como começar a usar o Sistema Manhattan
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-green-900 mb-2">✅ Documentação Atualizada</h4>
-                      <p className="text-sm text-green-800">
-                        A documentação foi completamente atualizada para refletir todas as mudanças 
-                        da versão 2.0 do sistema, incluindo Kanban funcional, permissões por setor 
-                        e interface modernizada.
-                      </p>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-lg flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5 text-success" />
+                        1. Configuração Inicial
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 bg-muted/30 rounded-lg">
+                          <h5 className="font-medium mb-2">🔗 Conectar Supabase</h5>
+                          <ul className="text-sm space-y-1 text-muted-foreground">
+                            <li>• Criar projeto no Supabase</li>
+                            <li>• Obter URL e API Key</li>
+                            <li>• Configurar integração</li>
+                          </ul>
+                        </div>
+                        <div className="p-4 bg-muted/30 rounded-lg">
+                          <h5 className="font-medium mb-2">👤 Primeiro Usuário</h5>
+                          <ul className="text-sm space-y-1 text-muted-foreground">
+                            <li>• Acessar /auth</li>
+                            <li>• Cadastrar Super Admin</li>
+                            <li>• Fazer login inicial</li>
+                          </ul>
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className="text-center py-8">
-                      <p className="text-lg text-muted-foreground">
-                        Documentação detalhada em desenvolvimento. <br />
-                        Consulte o README.md para informações completas.
+
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-lg flex items-center gap-2">
+                        <Settings className="h-5 w-5 text-blue-500" />
+                        2. Configurações Básicas
+                      </h4>
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-medium">1</div>
+                          <div>
+                            <p className="font-medium">Criar Setores</p>
+                            <p className="text-sm text-muted-foreground">Acesse /admin → Setores para criar departamentos</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-medium">2</div>
+                          <div>
+                            <p className="font-medium">Gerenciar Usuários</p>
+                            <p className="text-sm text-muted-foreground">Atribuir usuários aos setores e definir líderes</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-medium">3</div>
+                          <div>
+                            <p className="font-medium">Personalizar Sistema</p>
+                            <p className="text-sm text-muted-foreground">Configurar cores, logo e nome do sistema</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-blue-900 mb-2">💡 Dica Importante</h4>
+                      <p className="text-sm text-blue-800">
+                        <strong>Usuários devem estar atribuídos a um setor</strong> antes de poder criar ou editar tickets. 
+                        Configure isto no painel administrativo primeiro.
                       </p>
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
 
-              {/* Outras seções simplificadas */}
-              {sections.slice(2).map((section) => (
+              {/* Gestão de Tickets */}
+              <TabsContent value="tickets" className="space-y-6 animate-fade-in">
+                <Card className="card-elevated">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-2xl">
+                      <MessageSquare className="h-6 w-6 text-orange-600" />
+                      Gestão de Tickets
+                    </CardTitle>
+                    <CardDescription>
+                      Como criar, editar e gerenciar tickets no sistema
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-lg">📝 Criação de Tickets</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                          <h5 className="font-medium text-green-900 mb-2">Campos Obrigatórios</h5>
+                          <ul className="text-sm text-green-800 space-y-1">
+                            <li>• Título do ticket</li>
+                            <li>• Descrição detalhada</li>
+                            <li>• Tipo de ticket</li>
+                            <li>• Prioridade (P0-P3)</li>
+                            <li>• Time responsável</li>
+                          </ul>
+                        </div>
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <h5 className="font-medium text-blue-900 mb-2">Tipos de Ticket</h5>
+                          <ul className="text-sm text-blue-800 space-y-1">
+                            <li>• Bug/Problema</li>
+                            <li>• Feature/Melhoria</li>
+                            <li>• Suporte Técnico</li>
+                            <li>• Solicitação</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-lg">🔄 Fluxo de Status</h4>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {['Aberto', 'Em Andamento', 'Resolvido', 'Fechado'].map((status, index) => (
+                          <div key={status} className="flex items-center gap-2">
+                            <div className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
+                              {status}
+                            </div>
+                            {index < 3 && <ArrowRight className="h-4 w-4 text-muted-foreground" />}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h5 className="font-medium text-yellow-900 mb-2">⏰ Prazos Automáticos</h5>
+                        <p className="text-sm text-yellow-800">
+                          P0: 4 horas • P1: 24 horas • P2: 3 dias • P3: 7 dias
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Kanban Board */}
+              <TabsContent value="kanban" className="space-y-6 animate-fade-in">
+                <Card className="card-elevated">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-2xl">
+                      <BarChart3 className="h-6 w-6 text-pink-600" />
+                      Kanban Board
+                    </CardTitle>
+                    <CardDescription>
+                      Visualização e organização de tickets em colunas
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-lg">🎯 Funcionalidades</h4>
+                        <div className="space-y-3">
+                          {[
+                            "Drag & drop entre colunas",
+                            "Edição rápida de tickets",
+                            "Visualização por status",
+                            "Interface responsiva",
+                            "Atualização em tempo real"
+                          ].map((feature, index) => (
+                            <div key={index} className="flex items-center gap-3">
+                              <CheckCircle className="h-4 w-4 text-success flex-shrink-0" />
+                              <span className="text-sm">{feature}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-lg">📋 Colunas</h4>
+                        <div className="space-y-2">
+                          {[
+                            { name: "Aberto", color: "bg-red-100 text-red-800" },
+                            { name: "Em Andamento", color: "bg-blue-100 text-blue-800" },
+                            { name: "Resolvido", color: "bg-yellow-100 text-yellow-800" },
+                            { name: "Fechado", color: "bg-green-100 text-green-800" }
+                          ].map((col, index) => (
+                            <div key={index} className={`p-2 rounded-lg ${col.color} text-sm font-medium`}>
+                              {col.name}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Permissões */}
+              <TabsContent value="permissions" className="space-y-6 animate-fade-in">
+                <Card className="card-elevated">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-2xl">
+                      <Shield className="h-6 w-6 text-red-600" />
+                      Sistema de Permissões
+                    </CardTitle>
+                    <CardDescription>
+                      Controle granular de acesso por perfis e setores
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-lg">👥 Perfis de Usuário</h4>
+                        <div className="space-y-3">
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <h5 className="font-medium text-red-900">Super Admin</h5>
+                            <p className="text-sm text-red-800">Acesso total ao sistema</p>
+                          </div>
+                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h5 className="font-medium text-blue-900">Líder de Setor</h5>
+                            <p className="text-sm text-blue-800">Gerencia tickets do setor</p>
+                          </div>
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <h5 className="font-medium text-green-900">Operador</h5>
+                            <p className="text-sm text-green-800">Cria e edita próprios tickets</p>
+                          </div>
+                          <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                            <h5 className="font-medium text-gray-900">Viewer</h5>
+                            <p className="text-sm text-gray-800">Apenas visualização</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-lg">🏢 Setores</h4>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <h5 className="font-medium text-blue-900 mb-2">Regra Principal</h5>
+                          <p className="text-sm text-blue-800">
+                            Usuários devem estar atribuídos a um setor antes de 
+                            criar ou editar tickets. Apenas 1 líder por setor é permitido.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Demais seções com conteúdo reduzido */}
+              {sections.slice(5).map((section) => (
                 <TabsContent key={section.id} value={section.id} className="space-y-6 animate-fade-in">
                   <Card className="card-elevated">
                     <CardHeader>
@@ -229,7 +438,7 @@ const Documentation = () => {
                     <CardContent>
                       <div className="text-center py-8">
                         <p className="text-lg text-muted-foreground">
-                          Seção em atualização. Consulte o README.md para informações detalhadas sobre {section.label.toLowerCase()}.
+                          Seção em desenvolvimento. Consulte o README.md para informações detalhadas.
                         </p>
                       </div>
                     </CardContent>
