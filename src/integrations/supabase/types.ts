@@ -835,6 +835,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      delete_ticket_cascade: {
+        Args: { ticket_id: string }
+        Returns: boolean
+      }
       generate_ticket_number: {
         Args: Record<PropertyKey, never>
         Returns: string

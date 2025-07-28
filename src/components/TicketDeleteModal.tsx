@@ -45,26 +45,14 @@ export default function TicketDeleteModal({ ticket, isOpen, onClose, onDelete }:
 
     setLoading(true);
     try {
-      // Deletar comentários primeiro (devido às foreign keys)
-      await supabase
-        .from('sla_comentarios_internos')
-        .delete()
-        .eq('sla_id', ticket.id);
+      // Usar função do banco que tem permissão para deletar todos os registros relacionados
+      const { data, error } = await supabase.rpc('delete_ticket_cascade', {
+        ticket_id: ticket.id
+      });
 
-      // Deletar logs de ação
-      await supabase
-        .from('sla_action_logs')
-        .delete()
-        .eq('sla_id', ticket.id);
-
-      // Deletar o ticket - os sla_logs são protegidos por RLS e não podem ser deletados diretamente
-      // A constraint será violada se houver logs, então primeiro vamos tentar sem deletar logs
-      const { error } = await supabase
-        .from('sla_demandas')
-        .delete()
-        .eq('id', ticket.id);
-
-      if (error) throw error;
+      if (error || !data) {
+        throw new Error(error?.message || 'Falha ao excluir o ticket');
+      }
 
       toast({
         title: "Ticket excluído",
