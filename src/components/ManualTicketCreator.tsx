@@ -296,7 +296,13 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
               </SelectTrigger>
               <SelectContent className="bg-popover border border-border z-50">
                 {setores.map(setor => (
-                  <SelectItem key={setor.id} value={setor.nome}>{setor.nome}</SelectItem>
+                  <SelectItem 
+                    key={setor.id} 
+                    value={setor.nome}
+                    className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                  >
+                    {setor.nome}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -350,7 +356,11 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
               </SelectTrigger>
               <SelectContent className="bg-popover border border-border z-50">
                 {impactoOptions.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
+                  <SelectItem 
+                    key={option.value} 
+                    value={option.value}
+                    className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                  >
                     {option.label}
                   </SelectItem>
                 ))}
@@ -386,7 +396,11 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
               </SelectTrigger>
               <SelectContent className="bg-popover border border-border z-50">
                 {tipoTicketOptions.map(tipo => (
-                  <SelectItem key={tipo.value} value={tipo.value} className="py-2">
+                  <SelectItem 
+                    key={tipo.value} 
+                    value={tipo.value}
+                    className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                  >
                     {tipo.label}
                   </SelectItem>
                 ))}

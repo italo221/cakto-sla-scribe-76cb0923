@@ -389,7 +389,7 @@ export default function Inbox() {
       });
     }
 
-    // Filtro por setor - Usar AMBOS time_responsavel E setor_id para maior compatibilidade
+    // Filtro por setor - Usar AMBOS setor_id E time_responsavel para máxima compatibilidade
     if (setorFilter !== 'all') {
       filtered = filtered.filter(ticket => {
         const setorSelecionado = setores.find(s => s.id === setorFilter);
@@ -400,10 +400,21 @@ export default function Inbox() {
           return true;
         }
 
-        // Fallback: verificar por time_responsavel
+        // Fallback: verificar por time_responsavel com várias possibilidades
         const timeResponsavel = ticket.time_responsavel?.trim();
         const nomeSetor = setorSelecionado.nome?.trim();
-        return timeResponsavel === nomeSetor;
+        
+        // Comparação exata
+        if (timeResponsavel === nomeSetor) return true;
+        
+        // Comparação case-insensitive
+        if (timeResponsavel?.toLowerCase() === nomeSetor?.toLowerCase()) return true;
+        
+        // Casos especiais de inconsistência conhecidos
+        if (nomeSetor === 'TI SUPORTE' && timeResponsavel === 'TI Suporte') return true;
+        if (nomeSetor === 'Suporte' && timeResponsavel === 'TI Suporte') return true;
+        
+        return false;
       });
     }
     return filtered;
@@ -433,15 +444,26 @@ export default function Inbox() {
     return counts;
   }, [ticketsWithStatus]);
 
-  // Contagem de tickets por setor baseada em time_responsavel
+  // Contagem de tickets por setor baseada em setor_id e time_responsavel
   const setorCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     setores.forEach(setor => {
       counts[setor.id] = ticketsWithStatus.filter(ticket => {
-        // Usar apenas time_responsavel como fonte da verdade
+        // Verificar por setor_id primeiro
+        if (ticket.setor_id === setor.id) return true;
+        
+        // Fallback para time_responsavel com comparações flexíveis
         const timeResponsavel = ticket.time_responsavel?.trim();
         const nomeSetor = setor.nome?.trim();
-        return timeResponsavel === nomeSetor;
+        
+        if (timeResponsavel === nomeSetor) return true;
+        if (timeResponsavel?.toLowerCase() === nomeSetor?.toLowerCase()) return true;
+        
+        // Casos especiais
+        if (nomeSetor === 'TI SUPORTE' && timeResponsavel === 'TI Suporte') return true;
+        if (nomeSetor === 'Suporte' && timeResponsavel === 'TI Suporte') return true;
+        
+        return false;
       }).length;
     });
     return counts;
