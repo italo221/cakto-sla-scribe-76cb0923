@@ -68,6 +68,12 @@ export default function TicketDeleteModal({ ticket, isOpen, onClose, onDelete }:
         .delete()
         .eq('sla_id', ticket.id);
 
+      // Deletar logs gerais (sla_logs)
+      await supabase
+        .from('sla_logs')
+        .delete()
+        .eq('id_demanda', ticket.id);
+
       // Deletar o ticket
       const { error } = await supabase
         .from('sla_demandas')
