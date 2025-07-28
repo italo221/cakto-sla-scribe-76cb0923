@@ -540,7 +540,7 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
             <DialogTitle className="text-xl font-bold">
               {sla.ticket_number || `#${sla.id.slice(0, 8)}`} - {sla.titulo}
             </DialogTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between w-full max-w-[200px]">
               {(canEdit || isSuperAdmin) && (
                 <Button
                   variant="outline"
@@ -556,6 +556,14 @@ export default function SLADetailModal({ sla, isOpen, onClose, onUpdate, setSele
                   Editar
                 </Button>
               )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="h-8 w-8 p-0 ml-auto"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </DialogHeader>
