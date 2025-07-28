@@ -1,4 +1,5 @@
 import { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Copy, FileText, MessageCircle, Calculator, Upload, X, File, Image, CheckCircle, Sparkles } from "lucide-react";
-import AITicketCreator from "@/components/AITicketCreator";
+
 import ManualTicketCreator from "@/components/ManualTicketCreator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -106,12 +107,21 @@ const criteriaQuestions = {
   operacional: "Está travando outras áreas?"
 };
 
-type Step = 'welcome' | 'titulo' | 'tipo' | 'time' | 'descricao' | 'criteria' | 'observacoes' | 'complete' | 'validation-error' | 'update-mode' | 'query-mode';
+type Step = 'welcome' | 'create-ticket' | 'titulo' | 'tipo' | 'time' | 'descricao' | 'criteria' | 'observacoes' | 'complete' | 'validation-error' | 'update-mode' | 'query-mode';
 
 export default function TicketChat() {
   const { user, isAdmin, canEdit, isSuperAdmin } = useAuth();
-  const [useAI, setUseAI] = useState(false);
   const [step, setStep] = useState<Step>('welcome');
+  
+  // Verificar se deve ir direto para criação de ticket
+  React.useEffect(() => {
+    const state = (window.history.state && window.history.state.usr) || {};
+    if (state.action === 'create-ticket') {
+      setStep('create-ticket');
+      // Limpar o state para não interferir em futuras navegações
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
   const [currentCriteria, setCurrentCriteria] = useState<string>('financeiro');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -1243,39 +1253,6 @@ export default function TicketChat() {
     handleInput(value);
   };
 
-  // Mostrar criador com IA se selecionado
-  if (useAI) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-chat-background">
-        <div className="container mx-auto max-w-4xl p-4">
-          <div className="mb-6 text-center">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              Criação Inteligente de Ticket
-            </h1>
-            <p className="text-muted-foreground mt-2">IA para preenchimento automático</p>
-            <Button 
-              onClick={() => { setUseAI(false); setStep('welcome'); }} 
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-            >
-              Voltar ao menu
-            </Button>
-          </div>
-          <div className="bg-card dark:bg-card rounded-lg border border-border">
-            <AITicketCreator onTicketCreated={() => {
-              setUseAI(false);
-              setStep('welcome');
-              toast({
-                title: "Sucesso!",
-                description: "Ticket criado com sucesso via IA.",
-              });
-            }} />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Mostrar criador manual se step for 'titulo'
   if (step === 'titulo' as any) {
@@ -1353,13 +1330,9 @@ export default function TicketChat() {
                     <div className="space-y-3">
                       {canCreateTickets && (
                         <>
-                          <Button onClick={() => setUseAI(true)} size="lg" className="w-full px-8 gap-2">
-                            <Sparkles className="h-4 w-4" />
-                            Criar Ticket com IA
-                          </Button>
-                           <Button onClick={() => setStep('titulo')} variant="outline" size="lg" className="w-full px-8">
-                            <FileText className="mr-2 h-4 w-4" />
-                            Criar Ticket Manual
+                          <Button onClick={() => setStep('create-ticket')} size="lg" className="w-full px-8 gap-2">
+                            <FileText className="h-4 w-4" />
+                            Criar Ticket
                           </Button>
                         </>
                       )}

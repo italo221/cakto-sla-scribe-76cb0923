@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Send, CheckCircle, RefreshCw } from "lucide-react";
+import { Send, CheckCircle, RefreshCw, FileText } from "lucide-react";
 
 interface ManualTicketCreatorProps {
   onTicketCreated?: () => void;
@@ -192,10 +192,10 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
 
   if (step === 'complete') {
     return (
-      <Card className="w-full max-w-2xl mx-auto bg-card dark:bg-card">
+      <Card className="w-full max-w-2xl mx-auto bg-card dark:bg-card border border-border">
         <CardContent className="p-8 text-center">
-          <CheckCircle className="h-16 w-16 text-success mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-success mb-2">
+          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+          <h3 className="text-2xl font-bold text-green-500 mb-2">
             Ticket Criado com Sucesso!
           </h3>
           <p className="text-muted-foreground mb-6">
@@ -212,10 +212,11 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto bg-card dark:bg-card">
+    <Card className="w-full max-w-2xl mx-auto bg-card dark:bg-card border border-border">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          Criação Manual de Ticket
+          <FileText className="h-5 w-5" />
+          Criar Ticket
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -347,9 +348,9 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
           </div>
         </div>
         
-        <div className="bg-info-light dark:bg-info/10 p-4 rounded-lg border border-info/20">
-          <h4 className="font-medium text-info-foreground dark:text-info mb-2">Informações importantes:</h4>
-          <ul className="text-sm text-info-foreground dark:text-info/80 space-y-1">
+        <div className="bg-muted/50 dark:bg-muted/30 p-4 rounded-lg border border-muted">
+          <h4 className="font-medium text-foreground mb-2">Informações importantes:</h4>
+          <ul className="text-sm text-muted-foreground space-y-1">
             <li>• A criticidade será calculada automaticamente baseada no impacto selecionado</li>
             <li>• O setor selecionado será responsável pelo atendimento</li>
             <li>• Campos marcados com * são obrigatórios</li>
