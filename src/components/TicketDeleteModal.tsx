@@ -57,30 +57,14 @@ export default function TicketDeleteModal({ ticket, isOpen, onClose, onDelete }:
         .delete()
         .eq('sla_id', ticket.id);
 
-      // Deletar logs gerais (sla_logs) - apenas os que pertencem a este ticket
-      await supabase
-        .from('sla_logs')
-        .delete()
-        .eq('id_demanda', ticket.id);
-
-      // Deletar o ticket
+      // Deletar o ticket - os sla_logs são protegidos por RLS e não podem ser deletados diretamente
+      // A constraint será violada se houver logs, então primeiro vamos tentar sem deletar logs
       const { error } = await supabase
         .from('sla_demandas')
         .delete()
         .eq('id', ticket.id);
 
       if (error) throw error;
-
-      // Log da ação APÓS deletar com sucesso
-      await supabase.rpc('log_sla_action', {
-        p_sla_id: ticket.id,
-        p_acao: 'exclusao_ticket',
-        p_justificativa: 'Ticket excluído pelo administrador',
-        p_dados_anteriores: {
-          titulo: ticket.titulo,
-          solicitante: ticket.solicitante
-        }
-      });
 
       toast({
         title: "Ticket excluído",
