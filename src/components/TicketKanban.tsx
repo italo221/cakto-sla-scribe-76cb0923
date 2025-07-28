@@ -294,11 +294,12 @@ export default function TicketKanban({ tickets, onOpenDetail, onEditTicket, onTi
       onDragEnd={handleDragEnd}
       collisionDetection={pointerWithin}
     >
-      <div className="p-2 sm:p-4 lg:p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 h-full overflow-x-auto">
-          <div className="flex lg:contents gap-3 sm:gap-4 lg:gap-6 min-w-max lg:min-w-0">
+      <div className="p-6">
+        {/* Mobile: Horizontal scroll */}
+        <div className="block lg:hidden">
+          <div className="flex gap-4 overflow-x-auto pb-4">
             {columns.map(column => (
-              <div key={column.id} className="min-w-[280px] lg:min-w-0 flex-1">
+              <div key={column.id} className="min-w-[280px] flex-shrink-0">
                 <DroppableColumn
                   id={column.id}
                   title={column.title}
@@ -310,6 +311,21 @@ export default function TicketKanban({ tickets, onOpenDetail, onEditTicket, onTi
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Desktop: Grid layout */}
+        <div className="hidden lg:grid lg:grid-cols-4 lg:gap-6">
+          {columns.map(column => (
+            <DroppableColumn
+              key={column.id}
+              id={column.id}
+              title={column.title}
+              tickets={column.tickets}
+              onOpenDetail={onOpenDetail}
+              onEditTicket={onEditTicket}
+              userCanEdit={userCanEdit}
+            />
+          ))}
         </div>
       </div>
 
