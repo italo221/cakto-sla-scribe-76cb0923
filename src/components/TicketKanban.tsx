@@ -65,6 +65,9 @@ function KanbanCard({
   userCanEdit
 }: KanbanCardProps) {
   const [isDragActive, setIsDragActive] = useState(false);
+  const [dragTimeout, setDragTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isDragEnabled, setIsDragEnabled] = useState(false);
+  
   const {
     attributes,
     listeners,
@@ -74,12 +77,14 @@ function KanbanCard({
     isDragging: isSortableDragging
   } = useSortable({
     id: ticket.id,
-    disabled: !userCanEdit
+    disabled: !isDragEnabled || !userCanEdit
   });
+  
   const style = {
     transform: CSS.Transform.toString(transform),
     transition
   };
+  
   const isExpired = () => {
     const timeConfig = {
       'P0': 4 * 60 * 60 * 1000,
@@ -92,6 +97,7 @@ function KanbanCard({
     const deadline = startTime + timeLimit;
     return Date.now() > deadline && ticket.status !== 'resolvido' && ticket.status !== 'fechado';
   };
+  
   const getCriticalityColor = (criticality: string) => {
     const colors = {
       'P0': 'bg-destructive text-destructive-foreground',
@@ -113,35 +119,72 @@ function KanbanCard({
     userRole: userCanEdit ? 'super_admin' : 'viewer'
   });
 
-  // Handlers para clique vs drag melhorados
+  // Handlers para clique vs drag com delay de 200ms
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!userCanEdit) return;
-    setIsDragActive(true);
+    
+    // Definir timeout para ativar drag após 200ms
+    const timeout = setTimeout(() => {
+      setIsDragEnabled(true);
+      setIsDragActive(true);
+    }, 200);
+    
+    setDragTimeout(timeout);
   };
+  
   const handleMouseUp = () => {
+    // Limpar timeout se soltar antes de 200ms
+    if (dragTimeout) {
+      clearTimeout(dragTimeout);
+      setDragTimeout(null);
+    }
     setIsDragActive(false);
+    setIsDragEnabled(false);
   };
+  
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isDragActive && !isSortableDragging) {
+    // Só abrir se não estiver dragging e não foi um drag ativo
+    if (!isDragActive && !isSortableDragging && !dragTimeout) {
       onOpenDetail(ticket);
     }
   };
+  
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onEditTicket) {
       onEditTicket(ticket);
     }
   };
-  return <Card ref={setNodeRef} style={style} {...attributes} {...userCanEdit ? listeners : {}} className={cn("transition-all duration-300 group bg-white animate-fade-in relative cursor-pointer", "border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md",
-  // Usar cores do statusInfo
-  statusInfo.bgColor, statusInfo.borderColor,
-  // Destaque sutil para criticidade
-  ticket.nivel_criticidade === 'P0' && "border-l-4 border-l-red-500", ticket.nivel_criticidade === 'P1' && "border-l-4 border-l-orange-500", ticket.nivel_criticidade === 'P2' && "border-l-4 border-l-yellow-500", ticket.nivel_criticidade === 'P3' && "border-l-4 border-l-blue-500",
-  // Estados de drag - animações mais fluidas
-  isDragging && "opacity-90 rotate-2 scale-105 shadow-2xl z-50 ring-2 ring-blue-300", isSortableDragging && "shadow-xl scale-105 rotate-2 border-blue-400",
-  // Hover effect melhorado
-  userCanEdit && "hover:scale-102 hover:shadow-lg")} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onClick={handleClick}>
+
+  return (
+    <Card 
+      ref={setNodeRef} 
+      style={style} 
+      {...attributes} 
+      {...(isDragEnabled && userCanEdit ? listeners : {})}
+      className={cn(
+        "transition-all duration-300 group bg-white animate-fade-in relative cursor-pointer",
+        "border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md",
+        // Usar cores do statusInfo
+        statusInfo.bgColor,
+        statusInfo.borderColor,
+        // Destaque sutil para criticidade
+        ticket.nivel_criticidade === 'P0' && "border-l-4 border-l-red-500",
+        ticket.nivel_criticidade === 'P1' && "border-l-4 border-l-orange-500",
+        ticket.nivel_criticidade === 'P2' && "border-l-4 border-l-yellow-500",
+        ticket.nivel_criticidade === 'P3' && "border-l-4 border-l-blue-500",
+        // Estados de drag - animações mais fluidas
+        isDragging && "opacity-90 rotate-2 scale-105 shadow-2xl z-50 ring-2 ring-blue-300",
+        isSortableDragging && "shadow-xl scale-105 rotate-2 border-blue-400",
+        // Hover effect melhorado
+        userCanEdit && "hover:scale-102 hover:shadow-lg"
+      )}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onClick={handleClick}
+    >
       <CardContent className="p-3 space-y-2">
         {/* Header compacto */}
         <div className="flex items-center justify-between">
@@ -151,14 +194,22 @@ function KanbanCard({
           <div className="flex items-center gap-1">
             {/* Badge de status com lógica centralizada */}
             {(() => {
-            const StatusIcon = statusInfo.icon;
-            return <Badge className={`${statusInfo.bgColor} ${statusInfo.textColor} ${statusInfo.borderColor} flex items-center gap-1 text-xs px-2 py-1`}>
+              const StatusIcon = statusInfo.icon;
+              return (
+                <Badge className={`${statusInfo.bgColor} ${statusInfo.textColor} ${statusInfo.borderColor} flex items-center gap-1 text-xs px-2 py-1`}>
                   <StatusIcon size={10} />
                   {statusInfo.displayStatus}
-                </Badge>;
-          })()}
+                </Badge>
+              );
+            })()}
             {/* Criticidade */}
-            <span className={cn("text-xs px-1.5 py-0.5 rounded text-white font-medium", ticket.nivel_criticidade === 'P0' && "bg-red-500", ticket.nivel_criticidade === 'P1' && "bg-orange-500", ticket.nivel_criticidade === 'P2' && "bg-yellow-500", ticket.nivel_criticidade === 'P3' && "bg-blue-500")}>
+            <span className={cn(
+              "text-xs px-1.5 py-0.5 rounded text-white font-medium",
+              ticket.nivel_criticidade === 'P0' && "bg-red-500",
+              ticket.nivel_criticidade === 'P1' && "bg-orange-500",
+              ticket.nivel_criticidade === 'P2' && "bg-yellow-500",
+              ticket.nivel_criticidade === 'P3' && "bg-blue-500"
+            )}>
               {ticket.nivel_criticidade}
             </span>
           </div>
@@ -170,14 +221,20 @@ function KanbanCard({
         </h4>
 
         {/* Tags minimalistas */}
-        {ticket.tags && ticket.tags.length > 0 && <div className="flex gap-1 flex-wrap">
-            {ticket.tags.slice(0, 2).map((tag: string, index: number) => <span key={index} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+        {ticket.tags && ticket.tags.length > 0 && (
+          <div className="flex gap-1 flex-wrap">
+            {ticket.tags.slice(0, 2).map((tag: string, index: number) => (
+              <span key={index} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
                 {tag}
-              </span>)}
-            {ticket.tags.length > 2 && <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded">
+              </span>
+            ))}
+            {ticket.tags.length > 2 && (
+              <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded">
                 +{ticket.tags.length - 2}
-              </span>}
-          </div>}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Info compacta */}
         <div className="space-y-1.5 text-xs text-gray-500">
@@ -203,21 +260,26 @@ function KanbanCard({
         {/* Footer minimalista */}
         <div className="flex items-center justify-between pt-1 border-t border-gray-100">
           <span className="text-xs text-gray-400">
-            {format(new Date(ticket.data_criacao), "dd/MM", {
-            locale: ptBR
-          })}
+            {format(new Date(ticket.data_criacao), "dd/MM", { locale: ptBR })}
           </span>
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 font-medium">
               {ticket.pontuacao_total}pts
             </span>
-            {userCanEdit && onEditTicket && <button onClick={handleEditClick} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" title="Editar ticket">
+            {userCanEdit && onEditTicket && (
+              <button 
+                onClick={handleEditClick}
+                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                title="Editar ticket"
+              >
                 Editar
-              </button>}
+              </button>
+            )}
           </div>
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 }
 
 // Componente da coluna do Kanban
