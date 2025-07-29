@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,8 +54,6 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
 
   useEffect(() => {
     if (ticket && isOpen) {
-      console.log('🐛 DEBUG - Ticket recebido:', ticket);
-      
       // Função helper para garantir string vazia em vez de null/undefined
       const safeString = (value: any) => value ? String(value).trim() : '';
       
@@ -70,15 +68,8 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         observacoes: safeString(ticket.observacoes)
       };
       
-      console.log('🐛 DEBUG - FormData criado:', newFormData);
-      
       setFormData(newFormData);
       setSelectedTags(Array.isArray(ticket.tags) ? ticket.tags : []);
-      
-      // Forçar re-render dos selects após um delay
-      setTimeout(() => {
-        console.log('🐛 DEBUG - FormData após delay:', newFormData);
-      }, 100);
     } else if (!ticket) {
       // Reset form quando não há ticket
       setFormData({
@@ -175,6 +166,9 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
       <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Ticket</DialogTitle>
+          <DialogDescription>
+            Edite as informações do ticket abaixo. Os campos obrigatórios estão marcados com *.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -225,6 +219,7 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
                   <SelectItem value="suporte">Suporte</SelectItem>
                   <SelectItem value="melhoria">Melhoria</SelectItem>
                   <SelectItem value="solicitacao">Solicitação</SelectItem>
+                  <SelectItem value="solicitacao_tarefa">Solicitação/Tarefa</SelectItem>
                 </SelectContent>
               </Select>
             </div>
