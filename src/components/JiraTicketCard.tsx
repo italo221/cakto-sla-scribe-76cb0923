@@ -2,12 +2,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, Clock, Target, Building, Play, Pause, CheckCircle2, AlertTriangle, Circle, Activity, CheckCircle, X, Edit3, Trash2, Tag } from "lucide-react";
+import { User, Clock, Target, Building, Play, Pause, CheckCircle2, AlertTriangle, Circle, Activity, CheckCircle, X, Edit3, Trash2, Tag, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 interface Ticket {
   id: string;
   ticket_number: string;
@@ -119,6 +121,50 @@ export default function JiraTicketCard({
   const {
     toast
   } = useToast();
+
+  // Estado para contador de comentários
+  const [commentsCount, setCommentsCount] = useState<number>(0);
+
+  // Carregar comentários e atualizar em tempo real
+  useEffect(() => {
+    const loadCommentsCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('sla_comentarios_internos')
+          .select('*', { count: 'exact', head: true })
+          .eq('sla_id', ticket.id);
+        
+        if (error) throw error;
+        setCommentsCount(count || 0);
+      } catch (error) {
+        console.error('Erro ao carregar contagem de comentários:', error);
+      }
+    };
+
+    loadCommentsCount();
+
+    // Subscription para atualizações em tempo real
+    const channel = supabase
+      .channel(`comments-${ticket.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sla_comentarios_internos',
+          filter: `sla_id=eq.${ticket.id}`
+        },
+        () => {
+          loadCommentsCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [ticket.id]);
+
   const handleStatusUpdate = (e: React.MouseEvent, newStatus: string) => {
     e.stopPropagation();
 
@@ -230,6 +276,13 @@ export default function JiraTicketCard({
               <Target className="h-3 w-3" />
               <span className={cn("font-medium", (ticket.nivel_criticidade === 'P0' || ticket.nivel_criticidade === 'P1') && "text-red-600")}>
                 {ticket.pontuacao_total}pts
+              </span>
+            </div>
+            {/* Contador de comentários discreto */}
+            <div className="flex items-center gap-1">
+              <MessageSquare className="h-3 w-3" />
+              <span className="font-medium">
+                {commentsCount}
               </span>
             </div>
           </div>
