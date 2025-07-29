@@ -66,6 +66,19 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         observacoes: ticket.observacoes || ''
       });
       setSelectedTags(ticket.tags || []);
+    } else {
+      // Reset form quando não há ticket
+      setFormData({
+        titulo: '',
+        descricao: '',
+        tipo_ticket: '',
+        nivel_criticidade: '',
+        time_responsavel: '',
+        solicitante: '',
+        status: '',
+        observacoes: ''
+      });
+      setSelectedTags([]);
     }
   }, [ticket]);
 
