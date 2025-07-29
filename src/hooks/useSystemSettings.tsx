@@ -9,13 +9,15 @@ interface SystemSettings {
 // Cache global dos settings para sincronização instantânea
 let settingsCache: SystemSettings | null = null;
 let lastFetchTime = 0;
-const CACHE_DURATION = 30 * 1000; // Reduzido para 30 segundos para maior responsividade
+const CACHE_DURATION = 30 * 1000; // 30 segundos
+let isInitialLoading = true; // Flag para controlar carregamento inicial
 
 export const useSystemSettings = () => {
-  const [systemName, setSystemName] = useState('Manhattan');
+  const [systemName, setSystemName] = useState(''); // Iniciar vazio para evitar flicker
   const [systemLogo, setSystemLogo] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Começar com loading true
   const subscriptionRef = useRef<any>(null);
+  const [isReady, setIsReady] = useState(false); // Estado para indicar quando está pronto
 
   const fetchSystemSettings = async (forceRefresh = false) => {
     const now = Date.now();
@@ -24,10 +26,15 @@ export const useSystemSettings = () => {
     if (!forceRefresh && settingsCache && (now - lastFetchTime) < CACHE_DURATION) {
       setSystemName(settingsCache.systemName);
       setSystemLogo(settingsCache.systemLogo);
+      setIsReady(true);
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
+    // Só mostrar loading se for o carregamento inicial
+    if (isInitialLoading) {
+      setLoading(true);
+    }
     
     try {
       // Buscar configurações de forma mais eficiente
@@ -53,11 +60,18 @@ export const useSystemSettings = () => {
       };
       lastFetchTime = now;
 
-      // Atualizar estado
+      // Atualizar estado de forma sincronizada para evitar flicker
       setSystemName(nameValue);
       setSystemLogo(logoValue);
+      setIsReady(true);
+      isInitialLoading = false;
     } catch (error) {
       console.error('Erro ao carregar configurações do sistema:', error);
+      // Em caso de erro, usar valores padrão
+      setSystemName('Manhattan');
+      setSystemLogo(null);
+      setIsReady(true);
+      isInitialLoading = false;
     } finally {
       setLoading(false);
     }
@@ -91,6 +105,7 @@ export const useSystemSettings = () => {
             if (settingsCache) {
               settingsCache.systemName = newName;
             }
+            setIsReady(true);
             if (import.meta.env.DEV) console.log('🔥 Nome do sistema atualizado em tempo real:', newName);
           }
           
@@ -101,6 +116,7 @@ export const useSystemSettings = () => {
             if (settingsCache) {
               settingsCache.systemLogo = newLogo;
             }
+            setIsReady(true);
             if (import.meta.env.DEV) console.log('🔥 Logo do sistema atualizada em tempo real');
           }
         }
@@ -130,11 +146,13 @@ export const useSystemSettings = () => {
   };
 
   useEffect(() => {
-    // Se já temos cache, usar imediatamente
+    // Se já temos cache, usar imediatamente para evitar flicker
     if (settingsCache) {
       setSystemName(settingsCache.systemName);
       setSystemLogo(settingsCache.systemLogo);
+      setIsReady(true);
       setLoading(false);
+      isInitialLoading = false;
     } else {
       fetchSystemSettings();
     }
@@ -154,6 +172,7 @@ export const useSystemSettings = () => {
     systemName,
     systemLogo,
     loading,
+    isReady, // Novo campo para indicar quando os dados estão prontos
     updateSystemName,
     updateSystemLogo,
     refreshSettings: () => fetchSystemSettings(true),
