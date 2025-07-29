@@ -29,8 +29,7 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  // Carregar cores do sistema na inicialização
-  useSystemColors();
+  // Sistema de configurações globais agora está no SystemConfigProvider
   
   return (
     <QueryClientProvider client={queryClient}>

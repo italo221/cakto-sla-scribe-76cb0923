@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Palette, Save, RotateCcw, Sparkles, AlertTriangle, Upload, Image, Type, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { useSystemConfig } from "@/contexts/SystemConfigContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Navigation from "@/components/Navigation";
@@ -29,7 +29,7 @@ interface ColorCombination {
 
 export default function WhitelabelCustomization() {
   const { user, profile } = useAuth();
-  const { systemName, systemLogo, updateSystemName, updateSystemLogo, clearCache } = useSystemSettings();
+  const { systemName, systemLogo, updateSystemName, updateSystemLogo, updateColors, clearCache } = useSystemConfig();
   const [currentColor, setCurrentColor] = useState<ColorData>({ hsl: '142 76% 36%', hex: '#16a34a', name: 'Verde Padrão' });
   const [currentSecondaryColor, setCurrentSecondaryColor] = useState<ColorData>({ hsl: '262 83% 58%', hex: '#8b5cf6', name: 'Roxo Padrão' });
   const [previewColor, setPreviewColor] = useState<ColorData>({ hsl: '', hex: '', name: '' });
@@ -267,7 +267,7 @@ export default function WhitelabelCustomization() {
             })
         );
         
-        // Atualizar estado imediatamente
+        // Atualizar contexto global imediatamente  
         updateSystemName(newSystemName);
       }
 
@@ -305,8 +305,8 @@ export default function WhitelabelCustomization() {
             })
         );
         
-        // Atualizar estado imediatamente
-        updateSystemLogo(logoUrl);
+        // Atualizar contexto global imediatamente
+        if (logoUrl) updateSystemLogo(logoUrl);
       }
 
       // Executar todas as operações em paralelo
@@ -332,14 +332,15 @@ export default function WhitelabelCustomization() {
           .then(() => loadColorCombinations());
       }
 
-      // Atualizar estados locais
+      // Atualizar estados locais e contexto global
       setCurrentColor(previewColor);
       setCurrentSecondaryColor(previewSecondaryColor);
+      updateColors(previewColor, previewSecondaryColor);
       setHasChanges(false);
       setLogoFile(null);
       
-      // Limpar cache para sincronização
-      clearCache();
+      // Não precisamos mais limpar cache - o contexto global gerencia tudo
+      // clearCache();
       
       toast.success("Configurações salvas com sucesso!", {
         description: "As mudanças foram aplicadas instantaneamente para todos os usuários."

@@ -23,7 +23,7 @@ import {
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { useSystemConfig } from "@/contexts/SystemConfigContext";
 import UserProfileSettings from "@/components/UserProfileSettings";
 
 interface NavItem {
@@ -52,7 +52,7 @@ export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
   const { user, profile, isSuperAdmin, canEdit, signOut } = useAuth();
-  const { systemName, systemLogo, loading, isReady } = useSystemSettings();
+  const { systemName, systemLogo, isInitialized } = useSystemConfig();
   
   const isActive = (path: string) => location.pathname === path;
   
@@ -187,11 +187,11 @@ export default function Navigation() {
                 />
               )}
               <div>
-                {!isReady ? (
+                {!isInitialized ? (
                   <div className="w-20 h-6 bg-muted animate-pulse rounded"></div>
                 ) : (
                   <h1 className="text-xl font-bold text-gradient">
-                    {systemName || 'Manhattan'}
+                    {systemName}
                   </h1>
                 )}
                 <p className="text-xs text-muted-foreground hidden sm:block">
@@ -234,10 +234,10 @@ export default function Navigation() {
                         />
                       )}
                       <div>
-                        {!isReady ? (
+                        {!isInitialized ? (
                           <div className="w-24 h-5 bg-muted animate-pulse rounded"></div>
                         ) : (
-                          <h2 className="font-semibold">{systemName || 'Manhattan'}</h2>
+                          <h2 className="font-semibold">{systemName}</h2>
                         )}
                         <p className="text-sm text-muted-foreground">Sistema Tickets</p>
                       </div>
