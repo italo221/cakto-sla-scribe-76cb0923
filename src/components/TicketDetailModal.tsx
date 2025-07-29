@@ -15,7 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import CommentEditModal from "@/components/CommentEditModal";
 import CommentDeleteModal from "@/components/CommentDeleteModal";
-import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit3, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown } from "lucide-react";
+import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit3, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown, Calculator } from "lucide-react";
 import LazyCommentsList from "./LazyCommentsList";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -367,6 +367,151 @@ export default function SLADetailModal({
     }
   };
 
+  const handleChangeStatus = async (newStatus: string) => {
+    if (!sla) return;
+
+    const setorValidationMessage = getSetorValidationMessage();
+    if (setorValidationMessage) {
+      toast({
+        title: "Acesso negado",
+        description: setorValidationMessage,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if ((newStatus === 'em_andamento' || newStatus === 'resolvido') && !canStartOrResolveTicket(sla)) {
+      const message = getStartResolveValidationMessage(sla);
+      if (message) {
+        toast({
+          title: "Ação não permitida",
+          description: message,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    setStatusLoading(newStatus);
+    
+    try {
+      const oldStatus = sla.status;
+      const updatedSLA = { ...sla, status: newStatus };
+      setSelectedSLA?.(updatedSLA);
+
+      const { error } = await supabase
+        .from('sla_demandas')
+        .update({ status: newStatus })
+        .eq('id', sla.id);
+
+      if (error) throw error;
+
+      await supabase.rpc('log_sla_action', {
+        p_sla_id: sla.id,
+        p_acao: `mudanca_status_${oldStatus}_para_${newStatus}`,
+        p_justificativa: `Status alterado de "${oldStatus}" para "${newStatus}"`,
+        p_dados_anteriores: { status: oldStatus },
+        p_dados_novos: { status: newStatus }
+      });
+
+      toast({
+        title: "Status alterado",
+        description: `SLA ${newStatus === 'fechado' ? 'fechado' : 'alterado'} com sucesso.`
+      });
+
+      onUpdate();
+      loadActionLogs();
+    } catch (error: any) {
+      setSelectedSLA?.(sla);
+      toast({
+        title: "Erro ao alterar status",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setStatusLoading(null);
+    }
+  };
+
+  const handleTransferSetor = async () => {
+    if (!sla || !selectedSetor) return;
+    setTransferLoading(true);
+    
+    try {
+      const setorOrigem = setores.find(s => s.id === sla.setor_id);
+      const setorDestino = setores.find(s => s.id === selectedSetor);
+      
+      const { error } = await supabase
+        .from('sla_demandas')
+        .update({ setor_id: selectedSetor })
+        .eq('id', sla.id);
+
+      if (error) throw error;
+
+      await supabase.rpc('log_sla_action', {
+        p_sla_id: sla.id,
+        p_acao: 'transferencia_setor',
+        p_setor_origem_id: sla.setor_id,
+        p_setor_destino_id: selectedSetor,
+        p_justificativa: `Transferido de "${setorOrigem?.nome}" para "${setorDestino?.nome}"`
+      });
+
+      toast({
+        title: "SLA transferido",
+        description: `Transferido para ${setorDestino?.nome} com sucesso.`
+      });
+
+      setShowTransferForm(false);
+      setSelectedSetor('');
+      onUpdate();
+      loadActionLogs();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao transferir SLA",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setTransferLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      'aberto': { color: 'bg-red-100 text-red-800 border-red-200', icon: AlertCircle },
+      'em_andamento': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock },
+      'resolvido': { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle },
+      'fechado': { color: 'bg-gray-100 text-gray-800 border-gray-200', icon: X }
+    };
+    
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.aberto;
+    const Icon = config.icon;
+    
+    return (
+      <Badge className={`${config.color} flex items-center gap-1`}>
+        <Icon size={12} />
+        {status.replace('_', ' ')}
+      </Badge>
+    );
+  };
+
+  const getCriticalityBadge = (criticality: string) => {
+    const criticalityConfig = {
+      'P0': { color: 'bg-red-500 text-white', label: 'Crítico' },
+      'P1': { color: 'bg-orange-500 text-white', label: 'Alto' },
+      'P2': { color: 'bg-yellow-500 text-white', label: 'Médio' },
+      'P3': { color: 'bg-blue-500 text-white', label: 'Baixo' }
+    };
+    
+    const config = criticalityConfig[criticality as keyof typeof criticalityConfig] || criticalityConfig.P3;
+    
+    return (
+      <Badge className={`${config.color} font-semibold`}>
+        {criticality} - {config.label}
+      </Badge>
+    );
+  };
+
   if (!sla) return null;
 
   return (
@@ -400,6 +545,286 @@ export default function SLADetailModal({
           </DialogHeader>
 
           <div className="space-y-6 mt-6">
+            {/* Informações principais do SLA */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Status e Ações */}
+              <Card className="lg:col-span-1">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Target className="h-5 w-5 text-primary" />
+                    Status & Ações
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Status Atual</label>
+                    {getStatusBadge(sla.status)}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Criticidade</label>
+                    {getCriticalityBadge(sla.nivel_criticidade)}
+                  </div>
+
+                  {/* Botões de Ação de Status */}
+                  {(canEdit || isSuperAdmin) && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">Ações Rápidas</label>
+                      <div className="flex flex-wrap gap-2">
+                        {sla.status === 'aberto' && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleChangeStatus('em_andamento')}
+                            disabled={statusLoading === 'em_andamento'}
+                            className="gap-2"
+                          >
+                            <Play className="h-3 w-3" />
+                            {statusLoading === 'em_andamento' ? 'Iniciando...' : 'Iniciar'}
+                          </Button>
+                        )}
+                        
+                        {sla.status === 'em_andamento' && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => handleChangeStatus('resolvido')}
+                              disabled={statusLoading === 'resolvido'}
+                              className="gap-2"
+                            >
+                              <CheckCircle className="h-3 w-3" />
+                              {statusLoading === 'resolvido' ? 'Resolvendo...' : 'Resolver'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleChangeStatus('aberto')}
+                              disabled={statusLoading === 'aberto'}
+                              className="gap-2"
+                            >
+                              <Pause className="h-3 w-3" />
+                              {statusLoading === 'aberto' ? 'Pausando...' : 'Pausar'}
+                            </Button>
+                          </>
+                        )}
+                        
+                        {sla.status === 'resolvido' && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => handleChangeStatus('fechado')}
+                              disabled={statusLoading === 'fechado'}
+                              className="gap-2"
+                            >
+                              <X className="h-3 w-3" />
+                              {statusLoading === 'fechado' ? 'Fechando...' : 'Fechar'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleChangeStatus('em_andamento')}
+                              disabled={statusLoading === 'em_andamento'}
+                              className="gap-2"
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              {statusLoading === 'em_andamento' ? 'Reabrindo...' : 'Reabrir'}
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Transferir Setor */}
+                  {(canEdit || isSuperAdmin) && (
+                    <div className="space-y-2">
+                      {!showTransferForm ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowTransferForm(true)}
+                          className="w-full gap-2"
+                        >
+                          <ArrowRightLeft className="h-3 w-3" />
+                          Transferir Setor
+                        </Button>
+                      ) : (
+                        <div className="space-y-2">
+                          <Select value={selectedSetor} onValueChange={setSelectedSetor}>
+                            <SelectTrigger className="h-8">
+                              <SelectValue placeholder="Selecionar setor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {setores.map(setor => (
+                                <SelectItem key={setor.id} value={setor.id}>
+                                  {setor.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={handleTransferSetor}
+                              disabled={!selectedSetor || transferLoading}
+                              className="flex-1"
+                            >
+                              {transferLoading ? 'Transferindo...' : 'Confirmar'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setShowTransferForm(false);
+                                setSelectedSetor('');
+                              }}
+                              className="flex-1"
+                            >
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Pontuações */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Calculator className="h-5 w-5 text-blue-600" />
+                    Pontuações SLA
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {sla.pontuacao_total}
+                      </div>
+                      <div className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                        Total
+                      </div>
+                    </div>
+                    
+                    <div className="text-center p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                      <div className="text-xl font-bold text-green-600 dark:text-green-400">
+                        {sla.pontuacao_financeiro}
+                      </div>
+                      <div className="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wide">
+                        Financeiro
+                      </div>
+                    </div>
+                    
+                    <div className="text-center p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                      <div className="text-xl font-bold text-purple-600 dark:text-purple-400">
+                        {sla.pontuacao_cliente}
+                      </div>
+                      <div className="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">
+                        Cliente
+                      </div>
+                    </div>
+                    
+                    <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                      <div className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                        {sla.pontuacao_reputacao}
+                      </div>
+                      <div className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wide">
+                        Reputação
+                      </div>
+                    </div>
+                    
+                    <div className="text-center p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
+                      <div className="text-xl font-bold text-red-600 dark:text-red-400">
+                        {sla.pontuacao_urgencia}
+                      </div>
+                      <div className="text-xs font-medium text-red-600 dark:text-red-400 uppercase tracking-wide">
+                        Urgência
+                      </div>
+                    </div>
+                    
+                    <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                      <div className="text-xl font-bold text-yellow-600 dark:text-yellow-400">
+                        {sla.pontuacao_operacional}
+                      </div>
+                      <div className="text-xs font-medium text-yellow-600 dark:text-yellow-400 uppercase tracking-wide">
+                        Operacional
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Informações Básicas */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Informações Básicas</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Solicitante</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <User className="h-4 w-4" />
+                      <span>{sla.solicitante}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Time Responsável</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Building className="h-4 w-4" />
+                      <span>{sla.time_responsavel}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Calendar className="h-4 w-4" />
+                      <span>{format(new Date(sla.data_criacao), "dd/MM/yyyy 'às' HH:mm", {
+                        locale: ptBR
+                      })}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Responsável Interno</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <User className="h-4 w-4" />
+                      <span>{sla.responsavel_interno || 'Não atribuído'}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Descrição</label>
+                  <p className="mt-1 text-sm">{sla.descricao}</p>
+                </div>
+                
+                {sla.observacoes && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Observações</label>
+                    <p className="mt-1 text-sm">{sla.observacoes}</p>
+                  </div>
+                )}
+
+                {sla.tags && sla.tags.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Tags</label>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {sla.tags.map((tag, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Tabs de Discussão e Histórico */}
             <div className="flex gap-4 border-b mb-6">
               <Button 
@@ -592,61 +1017,6 @@ export default function SLADetailModal({
                 </Card>
               )}
             </div>
-
-            {/* Informações Básicas */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Informações Básicas</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Solicitante</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <User className="h-4 w-4" />
-                      <span>{sla.solicitante}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Time Responsável</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Building className="h-4 w-4" />
-                      <span>{sla.time_responsavel}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Calendar className="h-4 w-4" />
-                      <span>{format(new Date(sla.data_criacao), "dd/MM/yyyy 'às' HH:mm", {
-                        locale: ptBR
-                      })}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Responsável Interno</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <User className="h-4 w-4" />
-                      <span>{sla.responsavel_interno || 'Não atribuído'}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Descrição</label>
-                  <p className="mt-1 text-sm">{sla.descricao}</p>
-                </div>
-                
-                {sla.observacoes && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Observações</label>
-                    <p className="mt-1 text-sm">{sla.observacoes}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
         </DialogContent>
       </Dialog>
