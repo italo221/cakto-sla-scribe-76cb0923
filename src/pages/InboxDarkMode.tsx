@@ -65,6 +65,7 @@ export default function Inbox() {
     error,
     stats,
     lastFetch,
+    fetchTickets: loadTickets,
     reloadTickets,
     searchTickets
   } = useOptimizedTickets({
