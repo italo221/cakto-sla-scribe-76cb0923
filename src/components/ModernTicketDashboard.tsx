@@ -1595,32 +1595,65 @@ export default function ModernSLADashboard() {
               <CardContent className="p-6">
                 {loading ? (
                   <Skeleton className="h-64 w-full" />
+                ) : getPriorityData().length === 0 ? (
+                  <div className="h-64 flex items-center justify-center">
+                    <div className="text-center space-y-2">
+                      <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground/50" />
+                      <p className="text-sm text-muted-foreground">Nenhum ticket encontrado</p>
+                      <p className="text-xs text-muted-foreground">Dados aparecerão quando houver tickets no período selecionado</p>
+                    </div>
+                  </div>
                 ) : (
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={getPriorityData()}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={100}
-                          paddingAngle={2}
-                          dataKey="value"
-                        >
-                          {getPriorityData().map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          contentStyle={{
-                            backgroundColor: 'hsl(var(--popover))',
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: '8px'
-                          }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
+                  <div className="h-64 flex items-center">
+                    <div className="w-2/3">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={getPriorityData()}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={100}
+                            paddingAngle={3}
+                            dataKey="value"
+                          >
+                            {getPriorityData().map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            contentStyle={{
+                              backgroundColor: 'hsl(var(--popover))',
+                              border: '1px solid hsl(var(--border))',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            }}
+                            formatter={(value, name) => [value, `${name} tickets`]}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="w-1/3 pl-4 space-y-3">
+                      {getPriorityData().map((entry, index) => (
+                        <div key={entry.name} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: entry.color }}
+                            />
+                            <span className="text-sm font-medium text-foreground">
+                              {entry.name}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-bold text-foreground">{entry.value}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {((entry.value / slaData.length) * 100).toFixed(1)}%
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </CardContent>
