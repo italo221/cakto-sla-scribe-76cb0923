@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Upload, User, Lock, Phone, Image } from 'lucide-react';
+import { Eye, EyeOff, Upload, User, Lock, Phone, Image, CheckCircle } from 'lucide-react';
 
 interface UserProfileSettingsProps {
   open: boolean;
@@ -106,7 +106,7 @@ export default function UserProfileSettings({ open, onOpenChange }: UserProfileS
       if (updateError) {
         if (updateError.message.includes('Invalid login credentials') || 
             updateError.message.includes('password')) {
-          toast.error('⛔ A senha atual está incorreta. Tente novamente.');
+          toast.error('A senha atual está incorreta. Tente novamente.');
         } else {
           throw updateError;
         }
@@ -120,7 +120,7 @@ export default function UserProfileSettings({ open, onOpenChange }: UserProfileS
         confirmPassword: ''
       });
 
-      toast.success('🔒 Senha alterada com sucesso!');
+      toast.success('Senha alterada com sucesso!');
     } catch (error: any) {
       console.error('Erro ao alterar senha:', error);
       toast.error('Erro ao alterar senha: ' + error.message);
@@ -248,7 +248,10 @@ export default function UserProfileSettings({ open, onOpenChange }: UserProfileS
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="nome">📛 Nome Completo</Label>
+                  <Label htmlFor="nome" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Nome Completo
+                  </Label>
                   <Input
                     id="nome"
                     value={profileData.nome_completo}
@@ -258,7 +261,10 @@ export default function UserProfileSettings({ open, onOpenChange }: UserProfileS
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="telefone">📞 Telefone</Label>
+                  <Label htmlFor="telefone" className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    Telefone
+                  </Label>
                   <Input
                     id="telefone"
                     value={profileData.telefone}
@@ -293,7 +299,10 @@ export default function UserProfileSettings({ open, onOpenChange }: UserProfileS
           <TabsContent value="password" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>🔒 Alterar Senha</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  Alterar Senha
+                </CardTitle>
                 <CardDescription>
                   Para sua segurança, confirme sua senha atual antes de definir uma nova
                 </CardDescription>

@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { User, Save, Upload, Shield } from 'lucide-react';
+import { User, Save, Upload, Shield, Crown, Settings, Eye, CheckCircle, XCircle } from 'lucide-react';
 
 interface AdminUserEditorProps {
   open: boolean;
@@ -114,7 +114,7 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
         if (emailError) throw emailError;
       }
 
-      toast.success('🎉 Usuário atualizado com sucesso!');
+      toast.success('Usuário atualizado com sucesso!');
       onUserUpdated();
       onOpenChange(false);
     } catch (error: any) {
@@ -272,8 +272,14 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ativo">✅ Ativo</SelectItem>
-                      <SelectItem value="inativo">❌ Inativo</SelectItem>
+                      <SelectItem value="ativo" className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4" />
+                        Ativo
+                      </SelectItem>
+                      <SelectItem value="inativo" className="flex items-center gap-2">
+                        <XCircle className="h-4 w-4" />
+                        Inativo
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -303,8 +309,14 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="administrador_master">👑 Administrador Master</SelectItem>
-                      <SelectItem value="colaborador_setor">👤 Colaborador de Setor</SelectItem>
+                      <SelectItem value="administrador_master" className="flex items-center gap-2">
+                        <Crown className="h-4 w-4" />
+                        Administrador Master
+                      </SelectItem>
+                      <SelectItem value="colaborador_setor" className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Colaborador de Setor
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -321,9 +333,18 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="super_admin">🛡️ Super Admin</SelectItem>
-                      <SelectItem value="operador">⚙️ Operador</SelectItem>
-                      <SelectItem value="viewer">👁️ Viewer</SelectItem>
+                      <SelectItem value="super_admin" className="flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        Super Admin
+                      </SelectItem>
+                      <SelectItem value="operador" className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        Operador
+                      </SelectItem>
+                      <SelectItem value="viewer" className="flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        Viewer
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
