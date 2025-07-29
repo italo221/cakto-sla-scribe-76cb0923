@@ -53,7 +53,15 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
   });
 
   useEffect(() => {
+    console.log('📝 TicketEditModal - useEffect executado', {
+      ticket,
+      isOpen,
+      hasTicket: !!ticket
+    });
+    
     if (ticket && isOpen) {
+      console.log('📝 Ticket recebido para edição:', ticket);
+      
       const newFormData = {
         titulo: ticket.titulo || '',
         descricao: ticket.descricao || '',
@@ -65,9 +73,13 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         observacoes: ticket.observacoes || ''
       };
       
+      console.log('📝 FormData que será definido:', newFormData);
+      console.log('📝 Tags que serão definidas:', ticket.tags);
+      
       setFormData(newFormData);
       setSelectedTags(ticket.tags || []);
     } else if (!ticket) {
+      console.log('📝 Resetando formulário - sem ticket');
       // Reset form quando não há ticket
       setFormData({
         titulo: '',
