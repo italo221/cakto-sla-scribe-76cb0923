@@ -230,7 +230,7 @@ export default function AdminUserEditor({
 
                 <div className="space-y-2">
                   <Label htmlFor="admin-status" className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
+                    
                     Status
                   </Label>
                   <Select value={formData.ativo ? 'ativo' : 'inativo'} onValueChange={value => setFormData(prev => ({
