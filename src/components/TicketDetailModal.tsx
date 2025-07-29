@@ -999,7 +999,8 @@ export default function SLADetailModal({
                               </div>
                             </div>)}
                       </div>}
-                  </ScrollArea>
+                    </ScrollArea>
+                  </CardContent>
                 </Card>
               </> : (
                 <Card className="flex-1 flex flex-col min-h-[400px] max-h-[400px]">
