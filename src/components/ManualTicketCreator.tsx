@@ -4,9 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TagInput } from "@/components/ui/tag-input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useTags } from "@/hooks/useTags";
 import { supabase } from "@/integrations/supabase/client";
 import SetorValidationAlert from "@/components/SetorValidationAlert";
 import { Send, CheckCircle, RefreshCw, FileText } from "lucide-react";
@@ -74,11 +76,13 @@ const perguntasPorSetor = {
 export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCreatorProps) {
   const { user } = useAuth();
   const { canCreateTicket, getSetorValidationMessage } = usePermissions();
+  const { allTags, addTagToHistory } = useTags();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'complete'>('form');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [setores, setSetores] = useState<{id: string, nome: string}[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
   const [formData, setFormData] = useState({
     setor: '',
@@ -199,8 +203,12 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
           pontuacao_operacional: Math.floor(pontos * 0.1),
           observacoes: observacoes,
           status: 'aberto',
-          setor_id: setores.find(s => s.nome === formData.setor)?.id // Adicionar setor_id
+          setor_id: setores.find(s => s.nome === formData.setor)?.id, // Adicionar setor_id
+          tags: selectedTags.length > 0 ? selectedTags : null
         });
+
+      // Adicionar novas tags ao histórico
+      selectedTags.forEach(tag => addTagToHistory(tag));
 
       if (error) throw error;
 
@@ -239,6 +247,7 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
       nivel_criticidade: 'P3',
       pontuacao_total: 0
     });
+    setSelectedTags([]);
     setErrors({});
   };
 
@@ -407,6 +416,21 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
               </SelectContent>
             </Select>
             {errors.tipo_ticket && <p className="text-sm text-destructive">{errors.tipo_ticket}</p>}
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="text-sm font-medium">Tags</label>
+            <TagInput
+              tags={selectedTags}
+              onTagsChange={setSelectedTags}
+              suggestions={allTags}
+              placeholder="Digite uma tag e pressione Enter"
+              maxTags={5}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Adicione tags para facilitar a organização e busca do ticket
+            </p>
           </div>
         </div>
         

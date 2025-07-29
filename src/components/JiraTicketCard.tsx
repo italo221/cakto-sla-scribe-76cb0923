@@ -16,7 +16,8 @@ import {
   CheckCircle,
   X,
   Edit3,
-  Trash2
+  Trash2,
+  Tag
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -202,14 +203,16 @@ export default function JiraTicketCard({
         {ticket.tags && ticket.tags.length > 0 && (
           <div className="flex gap-1 flex-wrap">
             {ticket.tags.slice(0, 3).map((tag: string, index: number) => (
-              <span key={index} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-sm">
+              <div key={index} className="flex items-center gap-1 text-xs px-2 py-0.5 bg-muted/50 text-muted-foreground rounded-sm border border-border/50">
+                <Tag className="h-2.5 w-2.5" />
                 {tag}
-              </span>
+              </div>
             ))}
             {ticket.tags.length > 3 && (
-              <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-sm">
+              <div className="flex items-center gap-1 text-xs px-2 py-0.5 bg-muted/30 text-muted-foreground rounded-sm border border-border/30">
+                <Tag className="h-2.5 w-2.5" />
                 +{ticket.tags.length - 3}
-              </span>
+              </div>
             )}
           </div>
         )}

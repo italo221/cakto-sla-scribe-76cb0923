@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { TagInput } from "@/components/ui/tag-input";
 import { useToast } from "@/hooks/use-toast";
+import { useTags } from "@/hooks/useTags";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -35,8 +37,10 @@ interface TicketEditModalProps {
 export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: TicketEditModalProps) {
   const { user } = useAuth();
   const { canEditTicket, getSetorValidationMessage } = usePermissions();
+  const { allTags, addTagToHistory } = useTags();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
@@ -45,8 +49,7 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
     time_responsavel: '',
     solicitante: '',
     status: '',
-    observacoes: '',
-    tags: ''
+    observacoes: ''
   });
 
   useEffect(() => {
@@ -59,9 +62,9 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         time_responsavel: ticket.time_responsavel || '',
         solicitante: ticket.solicitante || '',
         status: ticket.status || '',
-        observacoes: ticket.observacoes || '',
-        tags: ticket.tags ? ticket.tags.join(', ') : ''
+        observacoes: ticket.observacoes || ''
       });
+      setSelectedTags(ticket.tags || []);
     }
   }, [ticket, isOpen]);
 
@@ -92,9 +95,12 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         // Não incluir solicitante na atualização - não pode ser alterado
         status: formData.status,
         observacoes: formData.observacoes.trim() || null,
-        // Remover tags da atualização
+        tags: selectedTags.length > 0 ? selectedTags : null,
         updated_at: new Date().toISOString()
       };
+
+      // Adicionar novas tags ao histórico
+      selectedTags.forEach(tag => addTagToHistory(tag));
 
       const { error } = await supabase
         .from('sla_demandas')
@@ -255,6 +261,21 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
               onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
               rows={3}
             />
+          </div>
+
+          {/* Tags */}
+          <div>
+            <Label>Tags</Label>
+            <TagInput
+              tags={selectedTags}
+              onTagsChange={setSelectedTags}
+              suggestions={allTags}
+              placeholder="Digite uma tag e pressione Enter"
+              maxTags={5}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Adicione tags para facilitar a organização e busca do ticket
+            </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

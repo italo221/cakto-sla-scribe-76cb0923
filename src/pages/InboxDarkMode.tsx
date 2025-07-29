@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import TicketKanban from "@/components/TicketKanban";
 import JiraTicketCard from "@/components/JiraTicketCard";
 import { useAuth } from "@/hooks/useAuth";
+import { useTags } from "@/hooks/useTags";
 import { useToast } from "@/hooks/use-toast";
 interface Ticket {
   id: string;
@@ -62,6 +63,7 @@ export default function Inbox() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'aberto' | 'em_andamento' | 'resolvido' | 'fechado' | 'atrasado' | 'critico'>('all');
   const [setorFilter, setSetorFilter] = useState('all');
+  const [tagFilter, setTagFilter] = useState('todas');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -74,6 +76,7 @@ export default function Inbox() {
     canEdit,
     isSuperAdmin
   } = useAuth();
+  const { allTags } = useTags();
   const [userRole, setUserRole] = useState<string>('viewer');
   const {
     toast
@@ -397,6 +400,7 @@ export default function Inbox() {
 
         const timeResponsavel = ticket.time_responsavel?.trim();
         const nomeSetor = setorSelecionado.nome?.trim();
+
         
         // Se time_responsavel corresponde ao nome do setor, usar isso (prioritário)
         if (timeResponsavel === nomeSetor) {
@@ -411,6 +415,12 @@ export default function Inbox() {
         return false;
       });
     }
+
+    // Filtro por tag (separado dos outros filtros)
+    if (tagFilter !== 'todas') {
+      filtered = filtered.filter(ticket => ticket.tags && ticket.tags.includes(tagFilter));
+    }
+
     return filtered;
   }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, smartSearch]);
 
@@ -619,6 +629,21 @@ export default function Inbox() {
                   {setores.map(setor => <SelectItem key={setor.id} value={setor.id}>
                       {setor.nome} ({setorCounts[setor.id] || 0})
                     </SelectItem>)}
+                </SelectContent>
+              </Select>
+
+              {/* Filtro por tag */}
+              <Select value={tagFilter} onValueChange={setTagFilter}>
+                <SelectTrigger className="w-[140px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
+                  <SelectValue placeholder="Tags" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border border-border max-h-60 overflow-y-auto">
+                  <SelectItem value="todas">Todas Tags</SelectItem>
+                  {allTags.map(tag => (
+                    <SelectItem key={tag} value={tag}>
+                      {tag}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
