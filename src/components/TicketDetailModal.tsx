@@ -15,11 +15,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import CommentEditModal from "@/components/CommentEditModal";
 import CommentDeleteModal from "@/components/CommentDeleteModal";
-import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit3, Smile, Paperclip, Download, Trash2, ExternalLink } from "lucide-react";
+import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit3, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
 interface SLA {
   id: string;
   ticket_number: string;
@@ -43,6 +44,7 @@ interface SLA {
   prazo_interno?: string;
   prioridade_operacional?: string;
 }
+
 interface Comment {
   id: string;
   comentario: string;
@@ -57,18 +59,21 @@ interface Comment {
     tipo: string;
   }>;
 }
+
 interface Setor {
   id: string;
   nome: string;
   descricao: string;
 }
+
 interface SLADetailModalProps {
   sla: SLA | null;
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
-  setSelectedSLA?: (sla: SLA) => void; // Add this to update parent state immediately
+  setSelectedSLA?: (sla: SLA) => void;
 }
+
 interface ActionLog {
   id: string;
   acao: string;
@@ -80,6 +85,7 @@ interface ActionLog {
   dados_anteriores?: any;
   dados_novos?: any;
 }
+
 export default function SLADetailModal({
   sla,
   isOpen,
@@ -116,9 +122,14 @@ export default function SLADetailModal({
   const [selectedCommentForDelete, setSelectedCommentForDelete] = useState<Comment | null>(null);
   const [editCommentModalOpen, setEditCommentModalOpen] = useState(false);
   const [deleteCommentModalOpen, setDeleteCommentModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
+  const [highlightedCommentId, setHighlightedCommentId] = useState<string | null>(null);
   const {
     toast
   } = useToast();
+
   useEffect(() => {
     if (sla && isOpen && user) {
       loadComments();
@@ -126,6 +137,59 @@ export default function SLADetailModal({
       loadSetores();
     }
   }, [sla, isOpen, user]);
+
+  // Search functionality
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setSearchResults([]);
+      setCurrentSearchIndex(0);
+      setHighlightedCommentId(null);
+      return;
+    }
+
+    const matchingComments = comments.filter(comment => 
+      comment.comentario.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      comment.autor_nome.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    setSearchResults(matchingComments.map(c => c.id));
+    setCurrentSearchIndex(0);
+    
+    if (matchingComments.length > 0) {
+      setHighlightedCommentId(matchingComments[0].id);
+      // Scroll to first result
+      setTimeout(() => {
+        const element = document.getElementById(`comment-${matchingComments[0].id}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
+  }, [searchTerm, comments]);
+
+  const navigateSearchResults = (direction: 'next' | 'prev') => {
+    if (searchResults.length === 0) return;
+
+    let newIndex;
+    if (direction === 'next') {
+      newIndex = currentSearchIndex < searchResults.length - 1 ? currentSearchIndex + 1 : 0;
+    } else {
+      newIndex = currentSearchIndex > 0 ? currentSearchIndex - 1 : searchResults.length - 1;
+    }
+
+    setCurrentSearchIndex(newIndex);
+    const commentId = searchResults[newIndex];
+    setHighlightedCommentId(commentId);
+
+    // Scroll to the comment
+    setTimeout(() => {
+      const element = document.getElementById(`comment-${commentId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  };
+
   const loadComments = async () => {
     if (!sla) return;
     try {
@@ -151,6 +215,7 @@ export default function SLADetailModal({
       console.error('Erro ao carregar comentários:', error);
     }
   };
+
   const loadActionLogs = async () => {
     if (!sla) return;
     try {
@@ -166,6 +231,7 @@ export default function SLADetailModal({
       console.error('Erro ao carregar logs de ação:', error);
     }
   };
+
   const loadSetores = async () => {
     try {
       const {
@@ -178,6 +244,7 @@ export default function SLADetailModal({
       console.error('Erro ao carregar setores:', error);
     }
   };
+
   const uploadAttachments = async (comentarioId: string) => {
     if (!attachments || attachments.length === 0) {
       return [];
@@ -220,6 +287,7 @@ export default function SLADetailModal({
     }
     return uploadedFiles;
   };
+
   const handleAddComment = async () => {
     if (!sla || !newComment.trim() || !user) return;
 
@@ -317,6 +385,7 @@ export default function SLADetailModal({
       setUploadingFiles(false);
     }
   };
+
   const handleChangeStatus = async (newStatus: string) => {
     if (!sla) return;
 
@@ -388,6 +457,7 @@ export default function SLADetailModal({
       setStatusLoading(null);
     }
   };
+
   const handleTransferSetor = async () => {
     if (!sla || !selectedSetor) return;
     setTransferLoading(true);
@@ -425,9 +495,11 @@ export default function SLADetailModal({
       setTransferLoading(false);
     }
   };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAttachments(e.target.files);
   };
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -435,6 +507,7 @@ export default function SLADetailModal({
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
+
   const downloadAttachment = async (filePath: string, fileName: string) => {
     try {
       // Para buckets privados, usar URL assinada para download
@@ -466,6 +539,7 @@ export default function SLADetailModal({
       });
     }
   };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'aberto': {
@@ -492,6 +566,7 @@ export default function SLADetailModal({
         {status.replace('_', ' ')}
       </Badge>;
   };
+
   const getCriticalityBadge = (criticality: string) => {
     const criticalityConfig = {
       'P0': {
@@ -516,7 +591,9 @@ export default function SLADetailModal({
         {criticality} - {config.label}
       </Badge>;
   };
+
   if (!sla) return null;
+
   return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-4">
@@ -541,6 +618,58 @@ export default function SLADetailModal({
         </DialogHeader>
 
         <div className="space-y-6 mt-6">
+          {/* Informações Básicas em Azul */}
+          <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+            <CardHeader>
+              <CardTitle className="text-blue-900 dark:text-blue-100 flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Resumo do SLA
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-blue-700 dark:text-blue-300">Status</label>
+                  <div className="mt-1">{getStatusBadge(sla.status)}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-blue-700 dark:text-blue-300">Criticidade</label>
+                  <div className="mt-1">{getCriticalityBadge(sla.nivel_criticidade)}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-blue-700 dark:text-blue-300">Pontuação Total</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Target className="h-4 w-4 text-blue-600" />
+                    <span className="font-semibold text-blue-900 dark:text-blue-100">{sla.pontuacao_total}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 pt-2 border-t border-blue-200 dark:border-blue-700">
+                <div className="text-center">
+                  <div className="text-xs text-blue-600 dark:text-blue-400">Financeiro</div>
+                  <div className="font-semibold text-blue-900 dark:text-blue-100">{sla.pontuacao_financeiro}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-blue-600 dark:text-blue-400">Cliente</div>
+                  <div className="font-semibold text-blue-900 dark:text-blue-100">{sla.pontuacao_cliente}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-blue-600 dark:text-blue-400">Reputação</div>
+                  <div className="font-semibold text-blue-900 dark:text-blue-100">{sla.pontuacao_reputacao}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-blue-600 dark:text-blue-400">Urgência</div>
+                  <div className="font-semibold text-blue-900 dark:text-blue-100">{sla.pontuacao_urgencia}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-blue-600 dark:text-blue-400">Operacional</div>
+                  <div className="font-semibold text-blue-900 dark:text-blue-100">{sla.pontuacao_operacional}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Ações de Status e Transferência */}
           <div className="flex flex-wrap gap-2 mb-6 max-w-full overflow-x-auto">
             {/* Botão de Transferência */}
@@ -646,7 +775,50 @@ export default function SLADetailModal({
 
           {/* Conteúdo das Tabs */}
           <div className="mb-6">
-            {activeTab === 'comments' ? <Card className="flex-1 flex flex-col min-h-[400px] max-h-[400px]">
+            {activeTab === 'comments' ? <>
+                {/* Campo de busca discreto */}
+                <div className="mb-4 p-3 bg-muted/20 border border-dashed rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1 relative">
+                      <Input
+                        placeholder="Buscar nos comentários..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="h-8 text-sm border-0 bg-background/80 focus:ring-1 focus:ring-primary/30"
+                      />
+                    </div>
+                    {searchResults.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {currentSearchIndex + 1} de {searchResults.length}
+                        </span>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigateSearchResults('prev')}
+                            disabled={searchResults.length <= 1}
+                            className="h-6 w-6 p-0"
+                          >
+                            <ChevronUp className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigateSearchResults('next')}
+                            disabled={searchResults.length <= 1}
+                            className="h-6 w-6 p-0"
+                          >
+                            <ChevronDown className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <Card className="flex-1 flex flex-col min-h-[400px] max-h-[400px]">
                 <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
                   {/* Área de Novo Comentário */}
                   {user && <div className="p-4 border-b bg-muted/10 flex-shrink-0">
@@ -767,7 +939,14 @@ export default function SLADetailModal({
                         {comments.length === 0 ? <div className="text-center text-muted-foreground py-6">
                             <MessageSquare className="h-6 w-6 mx-auto mb-2 opacity-30" />
                             <p className="text-sm">Seja o primeiro a comentar neste SLA</p>
-                          </div> : comments.map(comment => <div key={comment.id} className="flex gap-3 group animate-fade-in">
+                          </div> : comments.map(comment => <div 
+                            key={comment.id} 
+                            id={`comment-${comment.id}`}
+                            className={`flex gap-3 group animate-fade-in transition-all duration-300 ${
+                              highlightedCommentId === comment.id 
+                                ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 -m-3' 
+                                : ''
+                            }`}>
                               <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
                                 <AvatarFallback className="text-xs">
                                   {comment.autor_nome.substring(0, 2).toUpperCase()}
@@ -821,39 +1000,47 @@ export default function SLADetailModal({
                             </div>)}
                       </div>}
                   </ScrollArea>
-                </CardContent>
-              </Card> : <Card className="flex-1 flex flex-col min-h-[400px] max-h-[400px]">
-                <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
-                  <ScrollArea className="flex-1 p-4 overflow-y-auto">
-                    {actionLogs.length === 0 ? <div className="text-center text-muted-foreground py-8">
-                        <History className="h-8 w-8 mx-auto mb-3 opacity-30" />
-                        <h3 className="font-medium mb-2">Nenhuma ação registrada</h3>
-                        <p className="text-sm">As ações realizadas neste SLA aparecerão aqui</p>
-                      </div> : <div className="space-y-4">
-                        {actionLogs.map(log => <div key={log.id} className="flex gap-3 pb-3 border-b border-border/30 last:border-0 animate-fade-in">
-                            <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-sm">{log.acao}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  por {log.autor_email}
-                                </span>
+                </Card>
+              </> : (
+                <Card className="flex-1 flex flex-col min-h-[400px] max-h-[400px]">
+                  <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
+                    <ScrollArea className="flex-1 p-4 overflow-y-auto">
+                      {actionLogs.length === 0 ? (
+                        <div className="text-center text-muted-foreground py-8">
+                          <History className="h-8 w-8 mx-auto mb-3 opacity-30" />
+                          <h3 className="font-medium mb-2">Nenhuma ação registrada</h3>
+                          <p className="text-sm">As ações realizadas neste SLA aparecerão aqui</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {actionLogs.map(log => (
+                            <div key={log.id} className="flex gap-3 pb-3 border-b border-border/30 last:border-0 animate-fade-in">
+                              <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-medium text-sm">{log.acao}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    por {log.autor_email}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mb-1">
+                                  {format(new Date(log.timestamp), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                                </p>
+                                {log.justificativa && (
+                                  <p className="text-sm mt-1 text-muted-foreground italic">
+                                    "{log.justificativa}"
+                                  </p>
+                                )}
                               </div>
-                              <p className="text-xs text-muted-foreground mb-1">
-                                {format(new Date(log.timestamp), "dd/MM/yyyy 'às' HH:mm", {
-                          locale: ptBR
-                        })}
-                              </p>
-                              {log.justificativa && <p className="text-sm mt-1 text-muted-foreground italic">
-                                  "{log.justificativa}"
-                                </p>}
                             </div>
-                          </div>)}
-                      </div>}
-                  </ScrollArea>
-                </CardContent>
-              </Card>}
-          </div>
+                          ))}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
 
           {/* Informações Básicas */}
           <Card>
@@ -922,4 +1109,3 @@ export default function SLADetailModal({
     }} onDelete={loadComments} />
     </Dialog>;
 }
-;
