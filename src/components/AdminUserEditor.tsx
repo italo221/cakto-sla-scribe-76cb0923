@@ -38,7 +38,6 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
     nome_completo: '',
     email: '',
     telefone: '',
-    user_type: 'colaborador_setor' as 'administrador_master' | 'colaborador_setor',
     role: 'viewer' as 'super_admin' | 'operador' | 'viewer',
     ativo: true,
     avatar_url: ''
@@ -68,7 +67,6 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
         nome_completo: data.nome_completo,
         email: data.email,
         telefone: data.telefone || '',
-        user_type: data.user_type,
         role: data.role,
         ativo: data.ativo,
         avatar_url: data.avatar_url || ''
@@ -92,7 +90,6 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
         .update({
           nome_completo: formData.nome_completo,
           telefone: formData.telefone,
-          user_type: formData.user_type,
           role: formData.role,
           ativo: formData.ativo,
           avatar_url: formData.avatar_url,
@@ -263,7 +260,10 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="admin-status">Status</Label>
+                  <Label htmlFor="admin-status" className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    Status
+                  </Label>
                   <Select
                     value={formData.ativo ? 'ativo' : 'inativo'}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, ativo: value === 'ativo' }))}
@@ -298,31 +298,10 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="admin-user-type">Tipo de Usuário</Label>
-                  <Select
-                    value={formData.user_type}
-                    onValueChange={(value: 'administrador_master' | 'colaborador_setor') => 
-                      setFormData(prev => ({ ...prev, user_type: value }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="administrador_master" className="flex items-center gap-2">
-                        <Crown className="h-4 w-4" />
-                        Administrador Master
-                      </SelectItem>
-                      <SelectItem value="colaborador_setor" className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        Colaborador de Setor
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="admin-role">Role</Label>
+                  <Label htmlFor="admin-role" className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Role
+                  </Label>
                   <Select
                     value={formData.role}
                     onValueChange={(value: 'super_admin' | 'operador' | 'viewer') => 
@@ -333,17 +312,23 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="super_admin" className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        Super Admin
+                      <SelectItem value="super_admin">
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          Super Admin
+                        </div>
                       </SelectItem>
-                      <SelectItem value="operador" className="flex items-center gap-2">
-                        <Settings className="h-4 w-4" />
-                        Operador
+                      <SelectItem value="operador">
+                        <div className="flex items-center gap-2">
+                          <Settings className="h-4 w-4" />
+                          Operador
+                        </div>
                       </SelectItem>
-                      <SelectItem value="viewer" className="flex items-center gap-2">
-                        <Eye className="h-4 w-4" />
-                        Viewer
+                      <SelectItem value="viewer">
+                        <div className="flex items-center gap-2">
+                          <Eye className="h-4 w-4" />
+                          Viewer
+                        </div>
                       </SelectItem>
                     </SelectContent>
                   </Select>
