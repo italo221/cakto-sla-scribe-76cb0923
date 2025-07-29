@@ -345,11 +345,7 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
               placeholder="Descreva detalhadamente o problema ou solicitação"
               rows={4}
               className={errors.descricao ? 'border-destructive' : ''}
-              maxLength={500}
             />
-            <p className="text-xs text-muted-foreground">
-              {getCharacterCount(formData.descricao, 500)}
-            </p>
             {errors.descricao && <p className="text-sm text-destructive">{errors.descricao}</p>}
           </div>
 
