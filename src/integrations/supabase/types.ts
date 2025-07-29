@@ -246,36 +246,42 @@ export type Database = {
       profiles: {
         Row: {
           ativo: boolean
+          avatar_url: string | null
           cargo_id: string | null
           created_at: string
           email: string
           id: string
           nome_completo: string
           role: Database["public"]["Enums"]["user_role"]
+          telefone: string | null
           updated_at: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
         }
         Insert: {
           ativo?: boolean
+          avatar_url?: string | null
           cargo_id?: string | null
           created_at?: string
           email: string
           id?: string
           nome_completo: string
           role?: Database["public"]["Enums"]["user_role"]
+          telefone?: string | null
           updated_at?: string
           user_id: string
           user_type?: Database["public"]["Enums"]["user_type"]
         }
         Update: {
           ativo?: boolean
+          avatar_url?: string | null
           cargo_id?: string | null
           created_at?: string
           email?: string
           id?: string
           nome_completo?: string
           role?: Database["public"]["Enums"]["user_role"]
+          telefone?: string | null
           updated_at?: string
           user_id?: string
           user_type?: Database["public"]["Enums"]["user_type"]

@@ -16,6 +16,7 @@ import { Users, Building2, UserPlus, Building, Shield, Trash2, Edit, Check, X, A
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import AdminUserEditor from "@/components/AdminUserEditor";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Navigation from "@/components/Navigation";
 import SupabaseStatus from "@/components/SupabaseStatus";
@@ -52,6 +53,8 @@ const Admin = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [setorDialogOpen, setSetorDialogOpen] = useState(false);
   const [userDialogOpen, setUserDialogOpen] = useState(false);
+  const [adminUserEditorOpen, setAdminUserEditorOpen] = useState(false);
+  const [selectedUserForEdit, setSelectedUserForEdit] = useState<string | null>(null);
   const [creatingUser, setCreatingUser] = useState(false);
 
   // Form states
@@ -181,6 +184,13 @@ const Admin = () => {
             </Badge>}
           <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)} disabled={isEditing}>
             <Edit className="h-3 w-3" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => {
+            setSelectedUserForEdit(user.user_id);
+            setAdminUserEditorOpen(true);
+          }}>
+            <Shield className="h-3 w-3" />
+            {isMobile ? '' : 'Admin'}
           </Button>
           <Button variant={user.ativo ? "destructive" : "default"} size="sm" onClick={handleToggleActive}>
             {user.ativo ? <>
@@ -825,6 +835,14 @@ const Admin = () => {
               <SetorDetailPanel setor={selectedSetorDetail} onClose={() => setSelectedSetorDetail(null)} />
             </DialogContent>
           </Dialog>}
+
+        {/* Admin User Editor Modal */}
+        <AdminUserEditor 
+          open={adminUserEditorOpen}
+          onOpenChange={setAdminUserEditorOpen}
+          userId={selectedUserForEdit}
+          onUserUpdated={fetchData}
+        />
       </div>
     </div>;
 };

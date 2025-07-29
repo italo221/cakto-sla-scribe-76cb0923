@@ -98,23 +98,20 @@ export default function UserProfileSettings({ open, onOpenChange }: UserProfileS
 
     setLoading(true);
     try {
-      // Verificar senha atual tentando fazer login
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email!,
-        password: passwordData.currentPassword
-      });
-
-      if (signInError) {
-        toast.error('⛔ A senha atual está incorreta. Tente novamente.');
-        return;
-      }
-
-      // Atualizar senha
+      // Atualizar senha - o Supabase vai verificar a senha atual automaticamente
       const { error: updateError } = await supabase.auth.updateUser({
         password: passwordData.newPassword
       });
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        if (updateError.message.includes('Invalid login credentials') || 
+            updateError.message.includes('password')) {
+          toast.error('⛔ A senha atual está incorreta. Tente novamente.');
+        } else {
+          throw updateError;
+        }
+        return;
+      }
 
       // Limpar formulário
       setPasswordData({
