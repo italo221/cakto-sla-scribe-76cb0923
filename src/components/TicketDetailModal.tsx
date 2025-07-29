@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import CommentEditModal from "@/components/CommentEditModal";
 import CommentDeleteModal from "@/components/CommentDeleteModal";
-import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit3, Smile, Paperclip, Download, Trash2, ExternalLink } from "lucide-react";
+import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit3, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -116,6 +116,12 @@ export default function SLADetailModal({
   const [selectedCommentForDelete, setSelectedCommentForDelete] = useState<Comment | null>(null);
   const [editCommentModalOpen, setEditCommentModalOpen] = useState(false);
   const [deleteCommentModalOpen, setDeleteCommentModalOpen] = useState(false);
+  
+  // Estados para sistema de busca de comentários
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [currentResultIndex, setCurrentResultIndex] = useState(0);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const {
     toast
   } = useToast();
@@ -516,6 +522,67 @@ export default function SLADetailModal({
         {criticality} - {config.label}
       </Badge>;
   };
+
+  // Funções do sistema de busca de comentários
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    
+    if (!term.trim()) {
+      setSearchResults([]);
+      setCurrentResultIndex(0);
+      return;
+    }
+
+    // Buscar em comentários e na descrição inicial
+    const results: string[] = [];
+    
+    // Buscar na descrição inicial
+    if (sla.descricao.toLowerCase().includes(term.toLowerCase()) || 
+        (sla.observacoes && sla.observacoes.toLowerCase().includes(term.toLowerCase()))) {
+      results.push('initial-description');
+    }
+
+    // Buscar nos comentários
+    comments.forEach(comment => {
+      if (comment.comentario.toLowerCase().includes(term.toLowerCase()) || 
+          comment.autor_nome.toLowerCase().includes(term.toLowerCase())) {
+        results.push(comment.id);
+      }
+    });
+
+    setSearchResults(results);
+    setCurrentResultIndex(0);
+
+    // Rolar para o primeiro resultado
+    if (results.length > 0) {
+      scrollToComment(results[0]);
+    }
+  };
+
+  const scrollToComment = (commentId: string) => {
+    const element = document.getElementById(`comment-${commentId}`);
+    if (element && scrollAreaRef.current) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  const navigateResults = (direction: 'next' | 'prev') => {
+    if (searchResults.length === 0) return;
+
+    let newIndex;
+    if (direction === 'next') {
+      newIndex = (currentResultIndex + 1) % searchResults.length;
+    } else {
+      newIndex = currentResultIndex === 0 ? searchResults.length - 1 : currentResultIndex - 1;
+    }
+
+    setCurrentResultIndex(newIndex);
+    scrollToComment(searchResults[newIndex]);
+  };
+
+  const isHighlighted = (commentId: string) => {
+    return searchTerm && searchResults.includes(commentId);
+  };
   if (!sla) return null;
   return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
@@ -644,6 +711,58 @@ export default function SLADetailModal({
             </Button>
           </div>
 
+          {/* Campo de Busca - apenas na aba de comentários */}
+          {activeTab === 'comments' && (
+            <div className="mb-4 bg-muted/5 border border-border/50 rounded-lg p-3">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 relative">
+                  <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar nos comentários..."
+                    value={searchTerm}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="pl-10 h-9 border-border/30 bg-background/50"
+                  />
+                  {searchTerm && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                      onClick={() => handleSearch('')}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                {searchResults.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {currentResultIndex + 1} de {searchResults.length}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => navigateResults('prev')}
+                      disabled={searchResults.length <= 1}
+                    >
+                      <ChevronUp className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => navigateResults('next')}
+                      disabled={searchResults.length <= 1}
+                    >
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Conteúdo das Tabs */}
           <div className="mb-6">
             {activeTab === 'comments' ? <Card className="flex-1 flex flex-col min-h-[400px] max-h-[400px]">
@@ -713,14 +832,19 @@ export default function SLADetailModal({
                     </div>}
 
                   {/* Lista de Comentários */}
-                  <ScrollArea className="flex-1 p-4 overflow-y-auto">
+                  <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 overflow-y-auto">
                     {!user ? <div className="text-center text-muted-foreground py-8">
                         <MessageSquare className="h-8 w-8 mx-auto mb-3 opacity-30" />
                         <h3 className="font-medium mb-2">Faça login para ver comentários</h3>
                         <p className="text-sm">Você precisa estar logado para visualizar discussões</p>
                       </div> : <div className="space-y-4 pb-4">
                         {/* Comentário inicial - Descrição do SLA */}
-                        <div className="mb-6 pb-4 border-b-2 border-dashed border-border/50">
+                        <div 
+                          id="comment-initial-description" 
+                          className={`mb-6 pb-4 border-b-2 border-dashed border-border/50 transition-all duration-300 ${
+                            isHighlighted('initial-description') ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 rounded-lg p-3' : ''
+                          }`}
+                        >
                           <div className="flex gap-3">
                             <Avatar className="h-8 w-8 flex-shrink-0">
                               <AvatarFallback className="text-xs bg-blue-500 text-white">
@@ -767,7 +891,13 @@ export default function SLADetailModal({
                         {comments.length === 0 ? <div className="text-center text-muted-foreground py-6">
                             <MessageSquare className="h-6 w-6 mx-auto mb-2 opacity-30" />
                             <p className="text-sm">Seja o primeiro a comentar neste SLA</p>
-                          </div> : comments.map(comment => <div key={comment.id} className="flex gap-3 group animate-fade-in">
+                          </div> : comments.map(comment => <div 
+                            key={comment.id} 
+                            id={`comment-${comment.id}`}
+                            className={`flex gap-3 group animate-fade-in transition-all duration-300 ${
+                              isHighlighted(comment.id) ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3' : ''
+                            }`}
+                          >
                               <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
                                 <AvatarFallback className="text-xs">
                                   {comment.autor_nome.substring(0, 2).toUpperCase()}
