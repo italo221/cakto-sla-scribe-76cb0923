@@ -416,9 +416,15 @@ export default function Inbox() {
       });
     }
 
-    // Filtro por tag (separado dos outros filtros)
+    // Filtro por tag (separado e independente dos outros filtros)
     if (tagFilter !== 'todas') {
-      filtered = filtered.filter(ticket => ticket.tags && ticket.tags.includes(tagFilter));
+      console.log('Aplicando filtro de tag:', tagFilter);
+      filtered = filtered.filter(ticket => {
+        const hasTag = ticket.tags && Array.isArray(ticket.tags) && ticket.tags.includes(tagFilter);
+        console.log(`Ticket ${ticket.id} (${ticket.titulo}) tem tags:`, ticket.tags, 'inclui tag?', hasTag);
+        return hasTag;
+      });
+      console.log('Tickets após filtro de tag:', filtered.length);
     }
 
     return filtered;

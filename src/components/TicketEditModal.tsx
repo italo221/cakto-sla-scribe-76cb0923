@@ -53,18 +53,8 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
   });
 
   useEffect(() => {
-    console.log('Modal abriu ou ticket mudou:', { isOpen, ticket: ticket?.id, titulo: ticket?.titulo });
-    
     if (ticket && isOpen) {
-      console.log('Dados do ticket para preencher:', {
-        titulo: ticket.titulo,
-        tipo_ticket: ticket.tipo_ticket,
-        nivel_criticidade: ticket.nivel_criticidade,
-        status: ticket.status,
-        time_responsavel: ticket.time_responsavel
-      });
-      
-      setFormData({
+      const newFormData = {
         titulo: ticket.titulo || '',
         descricao: ticket.descricao || '',
         tipo_ticket: ticket.tipo_ticket || '',
@@ -73,10 +63,10 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         solicitante: ticket.solicitante || '',
         status: ticket.status || '',
         observacoes: ticket.observacoes || ''
-      });
-      setSelectedTags(ticket.tags || []);
+      };
       
-      console.log('FormData após preenchimento:', formData);
+      setFormData(newFormData);
+      setSelectedTags(ticket.tags || []);
     } else if (!ticket) {
       // Reset form quando não há ticket
       setFormData({
