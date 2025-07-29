@@ -1604,17 +1604,20 @@ export default function ModernSLADashboard() {
                     </div>
                   </div>
                 ) : (
-                  <div className="h-64 flex items-center">
-                    <div className="w-2/3">
-                      <ResponsiveContainer width="100%" height="100%">
+                  <div className="h-80 flex flex-col items-center justify-center space-y-6">
+                    {/* Gráfico de Pizza Centralizado */}
+                    <div className="relative">
+                      <ResponsiveContainer width={280} height={280}>
                         <PieChart>
                           <Pie
                             data={getPriorityData()}
                             cx="50%"
                             cy="50%"
-                            innerRadius={50}
-                            outerRadius={100}
-                            paddingAngle={3}
+                            labelLine={false}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                            outerRadius={120}
+                            innerRadius={40}
+                            paddingAngle={4}
                             dataKey="value"
                           >
                             {getPriorityData().map((entry, index) => (
@@ -1626,30 +1629,36 @@ export default function ModernSLADashboard() {
                               backgroundColor: 'hsl(var(--popover))',
                               border: '1px solid hsl(var(--border))',
                               borderRadius: '8px',
-                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                              color: 'hsl(var(--popover-foreground))'
                             }}
-                            formatter={(value, name) => [value, `${name} tickets`]}
+                            formatter={(value: number, name: string) => [
+                              `${value} tickets (${slaData.length > 0 ? ((value / slaData.length) * 100).toFixed(1) : 0}%)`, 
+                              name
+                            ]}
                           />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <div className="w-1/3 pl-4 space-y-3">
+                    
+                    {/* Legenda Centralizada */}
+                    <div className="flex flex-wrap justify-center gap-4 max-w-md">
                       {getPriorityData().map((entry, index) => (
-                        <div key={entry.name} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full" 
-                              style={{ backgroundColor: entry.color }}
-                            />
+                        <div key={entry.name} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border/50">
+                          <div 
+                            className="w-3 h-3 rounded-full shadow-sm" 
+                            style={{ backgroundColor: entry.color }}
+                          />
+                          <div className="flex items-center gap-1.5">
                             <span className="text-sm font-medium text-foreground">
                               {entry.name}
                             </span>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm font-bold text-foreground">{entry.value}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {((entry.value / slaData.length) * 100).toFixed(1)}%
-                            </div>
+                            <span className="text-sm font-bold text-foreground">
+                              {entry.value}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              ({((entry.value / slaData.length) * 100).toFixed(1)}%)
+                            </span>
                           </div>
                         </div>
                       ))}
