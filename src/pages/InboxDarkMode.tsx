@@ -418,16 +418,31 @@ export default function Inbox() {
 
     // Filtro por tag (separado e independente dos outros filtros)
     if (tagFilter !== 'todas') {
+      console.log('=== FILTRO POR TAG DEBUG ===');
+      console.log('Tag selecionada:', tagFilter);
+      console.log('Total de tickets antes do filtro:', filtered.length);
+      
       filtered = filtered.filter(ticket => {
         // Garantir que tags seja sempre um array válido
         const ticketTags = Array.isArray(ticket.tags) ? ticket.tags : [];
+        console.log(`Ticket ${ticket.titulo}:`, {
+          tags: ticketTags,
+          tagFilter: tagFilter,
+          ticketId: ticket.id
+        });
+        
         // Busca case-insensitive e com trim para evitar problemas de espaço
         const hasTag = ticketTags.some(tag => 
           tag && typeof tag === 'string' && 
           tag.trim().toLowerCase() === tagFilter.trim().toLowerCase()
         );
+        
+        console.log(`  -> Has tag "${tagFilter}":`, hasTag);
         return hasTag;
       });
+      
+      console.log('Total de tickets após filtro:', filtered.length);
+      console.log('=== FIM DEBUG ===');
     }
 
     return filtered;
