@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -18,21 +18,16 @@ export const usePermissions = () => {
   const [userSetores, setUserSetores] = useState<UserSetor[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Otimização: usar cache para evitar múltiplas chamadas
-  const fetchUserSetores = useCallback(async (force = false) => {
-    if (!user) {
-      setUserSetores([]);
-      setLoading(false);
-      return;
+  useEffect(() => {
+    if (user) {
+      fetchUserSetores();
     }
+  }, [user]);
 
-    // Verificar se já temos dados em cache e não é um refresh forçado
-    if (userSetores.length > 0 && !force) {
-      return;
-    }
+  const fetchUserSetores = async () => {
+    if (!user) return;
 
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('user_setores')
         .select(`
@@ -45,17 +40,10 @@ export const usePermissions = () => {
       setUserSetores(data || []);
     } catch (error) {
       console.error('Erro ao buscar setores do usuário:', error);
-      setUserSetores([]);
     } finally {
       setLoading(false);
     }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      fetchUserSetores();
-    }
-  }, [user, fetchUserSetores]);
+  };
 
   const isLeaderOfSetor = (setorId: string) => {
     return userSetores.some(us => us.setor_id === setorId && us.is_leader);
@@ -172,6 +160,6 @@ export const usePermissions = () => {
     getSetorValidationMessage,
     getStartResolveValidationMessage,
     getDeleteValidationMessage,
-    refreshUserSetores: () => fetchUserSetores(true)
+    refreshUserSetores: fetchUserSetores
   };
 };
