@@ -127,7 +127,12 @@ export default function DynamicDashboard() {
         if (t.status === 'resolvido' || t.status === 'fechado') return false;
         const createdAt = new Date(t.data_criacao);
         const hoursOld = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-        const slaHours = t.nivel_criticidade === 'P0' ? 4 : t.nivel_criticidade === 'P1' ? 24 : 72;
+        const slaHours = {
+          'P0': 4,   // Crítico: 4 horas
+          'P1': 24,  // Alto: 24 horas
+          'P2': 72,  // Médio: 72 horas
+          'P3': 168  // Baixo: 168 horas
+        }[t.nivel_criticidade] || 24;
         return hoursOld > slaHours;
       }).length || 0;
 
@@ -136,18 +141,25 @@ export default function DynamicDashboard() {
         if (t.status !== 'resolvido' && t.status !== 'fechado') return false;
         
         const createdAt = new Date(t.data_criacao);
-        const slaHours = t.nivel_criticidade === 'P0' ? 4 : t.nivel_criticidade === 'P1' ? 24 : 72;
+        
+        // Usar padrões SLA corretos por prioridade (horas)
+        const slaHours = {
+          'P0': 4,   // Crítico: 4 horas
+          'P1': 24,  // Alto: 24 horas
+          'P2': 72,  // Médio: 72 horas
+          'P3': 168  // Baixo: 168 horas
+        }[t.nivel_criticidade] || 24;
+        
         const slaDeadline = new Date(createdAt.getTime() + slaHours * 60 * 60 * 1000);
         
         // Assumindo que o ticket foi resolvido no momento atual (simplificado)
-        // Em um cenário real, você teria um campo de data_resolucao
         return new Date() <= slaDeadline;
       }).length || 0;
 
       // SLA Compliance = tickets resolvidos dentro do prazo / total de tickets resolvidos
-      // Se não há tickets resolvidos, mostra 0% (não 100%)
+      // Se não há tickets resolvidos, mostra 100% (meta alcançada)
       const totalResolvedTickets = resolvedTickets + closedTickets;
-      const slaCompliance = totalResolvedTickets > 0 ? (resolvedTicketsOnTime / totalResolvedTickets) * 100 : 0;
+      const slaCompliance = totalResolvedTickets > 0 ? (resolvedTicketsOnTime / totalResolvedTickets) * 100 : 100;
 
       // Status data
       const statusData = [
@@ -494,14 +506,16 @@ export default function DynamicDashboard() {
             </SelectContent>
           </Select>
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowSettings(!showSettings)}
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Configurar
-          </Button>
+          {isSuperAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSettings(!showSettings)}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Configurar
+            </Button>
+          )}
           
           <Button onClick={loadDashboardData} variant="outline" size="sm" disabled={loading}>
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />

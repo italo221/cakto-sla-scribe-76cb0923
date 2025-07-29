@@ -643,12 +643,12 @@ export default function ModernSLADashboard() {
             }
             
             const dataCriacao = new Date(sla.data_criacao);
-            const horasLimite = {
-              'P0': 24,
-              'P1': 24, 
-              'P2': 72,
-              'P3': 168
-            }[sla.nivel_criticidade] || 24;
+        const horasLimite = {
+          'P0': 4,   // Crítico: 4 horas
+          'P1': 24,  // Alto: 24 horas
+          'P2': 72,  // Médio: 72 horas  
+          'P3': 168  // Baixo: 168 horas
+        }[sla.nivel_criticidade] || 24;
             
             const prazoCalculado = new Date(dataCriacao.getTime() + horasLimite * 60 * 60 * 1000);
             return prazoCalculado < agora;
@@ -665,53 +665,56 @@ export default function ModernSLADashboard() {
       const pausados = currentSlas.filter(sla => sla.status === 'pausado').length;
       
       // Calcular atrasos
-      const agora = new Date();
       const atrasados = currentSlas.filter(sla => {
         if (sla.status === 'resolvido' || sla.status === 'fechado') return false;
         
+        const agoraAtrasados = new Date();
         if (sla.prazo_interno) {
-          return new Date(sla.prazo_interno) < agora;
+          return new Date(sla.prazo_interno) < agoraAtrasados;
         }
         
         const dataCriacao = new Date(sla.data_criacao);
         const horasLimite = {
-          'P0': 24,
-          'P1': 24, 
-          'P2': 72,
-          'P3': 168
+          'P0': 4,   // Crítico: 4 horas
+          'P1': 24,  // Alto: 24 horas
+          'P2': 72,  // Médio: 72 horas
+          'P3': 168  // Baixo: 168 horas
         }[sla.nivel_criticidade] || 24;
         
         const prazoCalculado = new Date(dataCriacao.getTime() + horasLimite * 60 * 60 * 1000);
-        return prazoCalculado < agora;
+        return prazoCalculado < agoraAtrasados;
       }).length;
 
       // Calcular tickets resolvidos dentro do prazo para SLA correto
       const ticketsResolvidosDentroPrazo = currentSlas.filter(sla => {
         if (sla.status !== 'resolvido' && sla.status !== 'fechado') return false;
         
+        const dataCriacao = new Date(sla.data_criacao);
+        
+        const agoraSLA = new Date();
         if (sla.prazo_interno) {
-          // Se foi resolvido antes do prazo interno
-          return new Date() <= new Date(sla.prazo_interno);
+          // Se tem prazo interno, verificar se foi resolvido antes dele
+          const prazoInterno = new Date(sla.prazo_interno);
+          return agoraSLA <= prazoInterno;
         }
         
-        const dataCriacao = new Date(sla.data_criacao);
+        // Usar padrões SLA por prioridade (horas)
         const horasLimite = {
-          'P0': 24,
-          'P1': 24, 
-          'P2': 72,
-          'P3': 168
+          'P0': 4,   // Crítico: 4 horas
+          'P1': 24,  // Alto: 24 horas  
+          'P2': 72,  // Médio: 72 horas
+          'P3': 168  // Baixo: 168 horas (7 dias)
         }[sla.nivel_criticidade] || 24;
         
         const prazoCalculado = new Date(dataCriacao.getTime() + horasLimite * 60 * 60 * 1000);
-        // Assumindo que foi resolvido agora (simplificado)
-        return new Date() <= prazoCalculado;
+        return agoraSLA <= prazoCalculado;
       }).length;
 
       const totalResolvidos = currentSlas.filter(sla => sla.status === 'resolvido' || sla.status === 'fechado').length;
       
       // SLA Compliance = tickets resolvidos dentro do prazo / total de tickets resolvidos
-      // Se não há tickets resolvidos, mostra 0% (não 100%)
-      const cumprimento = totalResolvidos > 0 ? (ticketsResolvidosDentroPrazo / totalResolvidos) * 100 : 0;
+      // Se não há tickets resolvidos, mostra 100% (meta alcançada)
+      const cumprimento = totalResolvidos > 0 ? (ticketsResolvidosDentroPrazo / totalResolvidos) * 100 : 100;
 
       // Métricas do período anterior - aplicar mesma lógica
       const previousTotal = previousSlas.length;

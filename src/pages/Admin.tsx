@@ -192,15 +192,24 @@ const Admin = () => {
             <Shield className="h-3 w-3" />
             {isMobile ? '' : 'Admin'}
           </Button>
-          <Button variant={user.ativo ? "destructive" : "default"} size="sm" onClick={handleToggleActive}>
-            {user.ativo ? <>
-                <UserX className="h-3 w-3 mr-1" />
-                {isMobile ? '' : 'Desativar'}
-              </> : <>
-                <Check className="h-3 w-3 mr-1" />
-                {isMobile ? '' : 'Ativar'}
-              </>}
-          </Button>
+           <Button variant={user.ativo ? "destructive" : "default"} size="sm" onClick={handleToggleActive}>
+             {user.ativo ? <>
+                 <UserX className="h-3 w-3 mr-1" />
+                 {isMobile ? '' : 'Desativar'}
+               </> : <>
+                 <Check className="h-3 w-3 mr-1" />
+                 {isMobile ? '' : 'Ativar'}
+               </>}
+           </Button>
+           <Button 
+             variant="destructive" 
+             size="sm" 
+             onClick={() => handleDeleteUser(user)}
+             title="Excluir usuário permanentemente"
+           >
+             <Trash2 className="h-3 w-3" />
+             {!isMobile && 'Excluir'}
+           </Button>
         </div>
       </div>;
   };
@@ -335,6 +344,50 @@ const Admin = () => {
       });
     } finally {
       setCreatingUser(false);
+    }
+  };
+
+  // Delete user function
+  const handleDeleteUser = async (user: Profile) => {
+    if (!confirm(`Tem certeza de que deseja EXCLUIR PERMANENTEMENTE o usuário ${user.nome_completo}? Esta ação não pode ser desfeita e removerá todos os dados associados.`)) {
+      return;
+    }
+
+    try {
+      // Primeiro, remover todas as associações do usuário
+      await supabase
+        .from('user_setores')
+        .delete()
+        .eq('user_id', user.user_id);
+
+      // Remover perfil
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('user_id', user.user_id);
+
+      if (profileError) throw profileError;
+
+      // Remover usuário do auth (se possível)
+      try {
+        await supabase.auth.admin.deleteUser(user.user_id);
+      } catch (authError) {
+        console.warn('Erro ao remover usuário do auth (pode já estar removido):', authError);
+      }
+
+      toast({
+        title: "Usuário excluído",
+        description: `${user.nome_completo} foi removido permanentemente do sistema.`,
+      });
+      
+      fetchData();
+    } catch (error: any) {
+      console.error('Erro ao excluir usuário:', error);
+      toast({
+        title: "Erro ao excluir usuário",
+        description: error.message || "Houve um problema ao excluir o usuário.",
+        variant: "destructive"
+      });
     }
   };
 

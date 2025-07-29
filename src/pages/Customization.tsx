@@ -275,38 +275,60 @@ export default function WhitelabelCustomization() {
       let logoUrl = logoPreview;
       if (logoFile) {
         setUploadingLogo(true);
-        const fileExt = logoFile.name.split('.').pop();
-        const fileName = `logo-${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('sla-anexos')
-          .upload(`system/${fileName}`, logoFile);
+        try {
+          const fileExt = logoFile.name.split('.').pop();
+          const fileName = `logo-${Date.now()}.${fileExt}`;
+          
+          // Primeiro, fazer upload do arquivo
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('sla-anexos')
+            .upload(`system/${fileName}`, logoFile, {
+              cacheControl: '3600',
+              upsert: false
+            });
 
-        if (uploadError) throw uploadError;
+          if (uploadError) {
+            console.error('Erro no upload:', uploadError);
+            throw new Error(`Erro ao fazer upload da logo: ${uploadError.message}`);
+          }
 
-        // Obter URL pública
-        const { data: urlData } = supabase.storage
-          .from('sla-anexos')
-          .getPublicUrl(`system/${fileName}`);
+          // Obter URL pública
+          const { data: urlData } = supabase.storage
+            .from('sla-anexos')
+            .getPublicUrl(`system/${fileName}`);
 
-        logoUrl = urlData.publicUrl;
+          if (!urlData.publicUrl) {
+            throw new Error('Erro ao obter URL pública da logo');
+          }
+
+          logoUrl = urlData.publicUrl;
+          console.log('Logo uploaded successfully:', logoUrl);
+
+          // Salvar URL da logo
+          saveOperations.push(
+            supabase
+              .from('system_settings')
+              .upsert({
+                setting_key: 'system_logo',
+                setting_value: logoUrl,
+                updated_by: user.id
+              }, {
+                onConflict: 'setting_key'
+              })
+          );
+          
+          // Atualizar contexto global imediatamente
+          updateSystemLogo(logoUrl);
+          
+        } catch (logoError) {
+          console.error('Erro completo no upload da logo:', logoError);
+          setUploadingLogo(false);
+          toast.error("Erro no upload da logo", {
+            description: `Erro: ${logoError instanceof Error ? logoError.message : 'Erro desconhecido'}`
+          });
+          return; // Não continuar se o upload falhou
+        }
         setUploadingLogo(false);
-
-        // Salvar URL da logo
-        saveOperations.push(
-          supabase
-            .from('system_settings')
-            .upsert({
-              setting_key: 'system_logo',
-              setting_value: logoUrl,
-              updated_by: user.id
-            }, {
-              onConflict: 'setting_key'
-            })
-        );
-        
-        // Atualizar contexto global imediatamente
-        if (logoUrl) updateSystemLogo(logoUrl);
       }
 
       // Executar todas as operações em paralelo
