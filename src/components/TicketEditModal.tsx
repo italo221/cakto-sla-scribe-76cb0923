@@ -53,7 +53,8 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
   });
 
   useEffect(() => {
-    if (ticket && isOpen) {
+    if (ticket) {
+      console.log('Carregando dados do ticket:', ticket); // Debug
       setFormData({
         titulo: ticket.titulo || '',
         descricao: ticket.descricao || '',
@@ -66,7 +67,7 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
       });
       setSelectedTags(ticket.tags || []);
     }
-  }, [ticket, isOpen]);
+  }, [ticket]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
