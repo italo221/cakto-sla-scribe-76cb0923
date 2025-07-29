@@ -82,6 +82,11 @@ export default function Inbox() {
     toast
   } = useToast();
 
+  // Debug: monitorar mudanças no tagFilter
+  useEffect(() => {
+    console.log('🏷️ tagFilter mudou para:', tagFilter);
+  }, [tagFilter]);
+
   // Define canDelete based on user permissions
   const canDelete = isSuperAdmin;
   useEffect(() => {
@@ -446,7 +451,7 @@ export default function Inbox() {
     }
 
     return filtered;
-  }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, smartSearch]);
+  }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, tagFilter, smartSearch]);
 
   // Cálculo de contagens dos cards baseadas na mesma lógica dos filtros
   const cardCounts = useMemo(() => {
