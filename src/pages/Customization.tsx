@@ -213,33 +213,45 @@ export default function WhitelabelCustomization() {
     
     setSaving(true);
     try {
+      // Aplicar mudanças imediatamente no CSS para feedback visual instantâneo
+      if (previewColor.hsl) {
+        document.documentElement.style.setProperty('--primary', previewColor.hsl);
+      }
+      if (previewSecondaryColor.hsl) {
+        document.documentElement.style.setProperty('--secondary', previewSecondaryColor.hsl);
+      }
+
       const saveOperations = [];
 
       // Salvar cor primária
-      saveOperations.push(
-        supabase
-          .from('system_settings')
-          .upsert({
-            setting_key: 'primary_color',
-            setting_value: previewColor as any,
-            updated_by: user.id
-          }, {
-            onConflict: 'setting_key'
-          })
-      );
+      if (previewColor.hsl) {
+        saveOperations.push(
+          supabase
+            .from('system_settings')
+            .upsert({
+              setting_key: 'primary_color',
+              setting_value: previewColor as any,
+              updated_by: user.id
+            }, {
+              onConflict: 'setting_key'
+            })
+        );
+      }
 
       // Salvar cor secundária
-      saveOperations.push(
-        supabase
-          .from('system_settings')
-          .upsert({
-            setting_key: 'secondary_color',
-            setting_value: previewSecondaryColor as any,
-            updated_by: user.id
-          }, {
-            onConflict: 'setting_key'
-          })
-      );
+      if (previewSecondaryColor.hsl) {
+        saveOperations.push(
+          supabase
+            .from('system_settings')
+            .upsert({
+              setting_key: 'secondary_color',
+              setting_value: previewSecondaryColor as any,
+              updated_by: user.id
+            }, {
+              onConflict: 'setting_key'
+            })
+        );
+      }
 
       // Salvar nome do sistema se mudou
       if (newSystemName !== systemName) {
@@ -254,6 +266,9 @@ export default function WhitelabelCustomization() {
               onConflict: 'setting_key'
             })
         );
+        
+        // Atualizar estado imediatamente
+        updateSystemName(newSystemName);
       }
 
       // Upload da logo se houver arquivo
@@ -289,9 +304,12 @@ export default function WhitelabelCustomization() {
               onConflict: 'setting_key'
             })
         );
+        
+        // Atualizar estado imediatamente
+        updateSystemLogo(logoUrl);
       }
 
-      // Executar todas as operações
+      // Executar todas as operações em paralelo
       const results = await Promise.all(saveOperations);
       
       // Verificar erros
@@ -299,9 +317,9 @@ export default function WhitelabelCustomization() {
         if (result.error) throw result.error;
       }
 
-      // Adicionar combinação de cores ao histórico
-      if (hasChanges) {
-        const { error: combinationError } = await supabase
+      // Adicionar combinação de cores ao histórico (não bloquear o save principal)
+      if (hasChanges && previewColor.hsl && previewSecondaryColor.hsl) {
+        supabase
           .from('color_combinations')
           .insert({
             primary_color_hsl: previewColor.hsl,
@@ -310,26 +328,21 @@ export default function WhitelabelCustomization() {
             secondary_color_hex: previewSecondaryColor.hex,
             combination_name: `${previewColor.name} + ${previewSecondaryColor.name}`,
             used_by: user.id
-          });
-
-        if (combinationError) throw combinationError;
+          })
+          .then(() => loadColorCombinations());
       }
 
-      // Atualizar estados
+      // Atualizar estados locais
       setCurrentColor(previewColor);
       setCurrentSecondaryColor(previewSecondaryColor);
-      updateSystemName(newSystemName);
-      if (logoUrl) updateSystemLogo(logoUrl);
       setHasChanges(false);
       setLogoFile(null);
       
-      // Limpar cache para forçar recarregamento
+      // Limpar cache para sincronização
       clearCache();
       
-      await loadColorCombinations();
-      
-      toast.success("✅ Configurações salvas com sucesso!", {
-        description: "As mudanças foram aplicadas ao sistema."
+      toast.success("Configurações salvas com sucesso!", {
+        description: "As mudanças foram aplicadas instantaneamente para todos os usuários."
       });
     } catch (error) {
       console.error('Erro ao salvar configurações:', error);

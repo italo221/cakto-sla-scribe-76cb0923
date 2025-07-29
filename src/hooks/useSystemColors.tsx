@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 
 interface ColorData {
@@ -8,32 +8,35 @@ interface ColorData {
 }
 
 export const useSystemColors = () => {
+  const subscriptionRef = useRef<any>(null);
+
   const loadAndApplySystemColors = async () => {
     try {
       if (import.meta.env.DEV) console.log('🎨 Carregando cores do sistema...');
       
-      // Carregar cor primária
-      const { data: primaryData, error: primaryError } = await supabase
+      // Carregar todas as configurações de uma vez
+      const { data: settingsData, error } = await supabase
         .from('system_settings')
-        .select('setting_value')
-        .eq('setting_key', 'primary_color')
-        .single();
+        .select('setting_key, setting_value')
+        .in('setting_key', ['primary_color', 'secondary_color']);
 
-      if (!primaryError && primaryData) {
-        const primaryColor = primaryData.setting_value as unknown as ColorData;
+      if (error) throw error;
+
+      const settings = settingsData?.reduce((acc, item) => {
+        acc[item.setting_key] = item.setting_value;
+        return acc;
+      }, {} as Record<string, any>) || {};
+
+      // Aplicar cor primária
+      if (settings.primary_color) {
+        const primaryColor = settings.primary_color as ColorData;
         document.documentElement.style.setProperty('--primary', primaryColor.hsl);
         if (import.meta.env.DEV) console.log('✅ Cor primária aplicada:', primaryColor.hsl);
       }
 
-      // Carregar cor secundária
-      const { data: secondaryData, error: secondaryError } = await supabase
-        .from('system_settings')
-        .select('setting_value')
-        .eq('setting_key', 'secondary_color')
-        .single();
-
-      if (!secondaryError && secondaryData) {
-        const secondaryColor = secondaryData.setting_value as unknown as ColorData;
+      // Aplicar cor secundária
+      if (settings.secondary_color) {
+        const secondaryColor = settings.secondary_color as ColorData;
         document.documentElement.style.setProperty('--secondary', secondaryColor.hsl);
         if (import.meta.env.DEV) console.log('✅ Cor secundária aplicada:', secondaryColor.hsl);
       }
@@ -43,8 +46,56 @@ export const useSystemColors = () => {
     }
   };
 
+  const setupRealtimeSubscription = () => {
+    // Limpar subscription anterior se existir
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+    }
+
+    // Criar nova subscription para mudanças em tempo real
+    subscriptionRef.current = supabase
+      .channel('system-colors-changes')
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'system_settings',
+          filter: 'setting_key=in.(primary_color,secondary_color)'
+        },
+        (payload) => {
+          if (import.meta.env.DEV) console.log('🔔 Mudança detectada:', payload);
+          
+          const { setting_key, setting_value } = payload.new as any;
+          
+          if (setting_key === 'primary_color' && setting_value) {
+            const colorData = setting_value as ColorData;
+            document.documentElement.style.setProperty('--primary', colorData.hsl);
+            if (import.meta.env.DEV) console.log('🔥 Cor primária atualizada em tempo real:', colorData.hsl);
+          }
+          
+          if (setting_key === 'secondary_color' && setting_value) {
+            const colorData = setting_value as ColorData;
+            document.documentElement.style.setProperty('--secondary', colorData.hsl);
+            if (import.meta.env.DEV) console.log('🔥 Cor secundária atualizada em tempo real:', colorData.hsl);
+          }
+        }
+      )
+      .subscribe();
+  };
+
   useEffect(() => {
+    // Carregar cores iniciais
     loadAndApplySystemColors();
+    
+    // Configurar subscription em tempo real
+    setupRealtimeSubscription();
+
+    // Cleanup
+    return () => {
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+      }
+    };
   }, []);
 
   return { loadAndApplySystemColors };
