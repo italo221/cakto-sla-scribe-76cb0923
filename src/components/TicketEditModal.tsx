@@ -53,33 +53,33 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
   });
 
   useEffect(() => {
-    console.log('📝 TicketEditModal - useEffect executado', {
-      ticket,
-      isOpen,
-      hasTicket: !!ticket
-    });
-    
     if (ticket && isOpen) {
-      console.log('📝 Ticket recebido para edição:', ticket);
+      console.log('🐛 DEBUG - Ticket recebido:', ticket);
+      
+      // Função helper para garantir string vazia em vez de null/undefined
+      const safeString = (value: any) => value ? String(value).trim() : '';
       
       const newFormData = {
-        titulo: ticket.titulo || '',
-        descricao: ticket.descricao || '',
-        tipo_ticket: ticket.tipo_ticket || '',
-        nivel_criticidade: ticket.nivel_criticidade || '',
-        time_responsavel: ticket.time_responsavel || '',
-        solicitante: ticket.solicitante || '',
-        status: ticket.status || '',
-        observacoes: ticket.observacoes || ''
+        titulo: safeString(ticket.titulo),
+        descricao: safeString(ticket.descricao),
+        tipo_ticket: safeString(ticket.tipo_ticket),
+        nivel_criticidade: safeString(ticket.nivel_criticidade),
+        time_responsavel: safeString(ticket.time_responsavel),
+        solicitante: safeString(ticket.solicitante),
+        status: safeString(ticket.status),
+        observacoes: safeString(ticket.observacoes)
       };
       
-      console.log('📝 FormData que será definido:', newFormData);
-      console.log('📝 Tags que serão definidas:', ticket.tags);
+      console.log('🐛 DEBUG - FormData criado:', newFormData);
       
       setFormData(newFormData);
-      setSelectedTags(ticket.tags || []);
+      setSelectedTags(Array.isArray(ticket.tags) ? ticket.tags : []);
+      
+      // Forçar re-render dos selects após um delay
+      setTimeout(() => {
+        console.log('🐛 DEBUG - FormData após delay:', newFormData);
+      }, 100);
     } else if (!ticket) {
-      console.log('📝 Resetando formulário - sem ticket');
       // Reset form quando não há ticket
       setFormData({
         titulo: '',

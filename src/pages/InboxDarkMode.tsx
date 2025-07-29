@@ -550,7 +550,6 @@ export default function Inbox() {
     setModalOpen(true);
   };
   const handleEditTicket = (ticket: Ticket) => {
-    console.log('✏️ handleEditTicket chamado com ticket:', ticket);
     setSelectedTicketForEdit(ticket);
     setEditModalOpen(true);
   };
