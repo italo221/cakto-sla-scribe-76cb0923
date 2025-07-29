@@ -82,11 +82,6 @@ export default function Inbox() {
     toast
   } = useToast();
 
-  // Debug: monitorar mudanças no tagFilter
-  useEffect(() => {
-    console.log('🏷️ tagFilter mudou para:', tagFilter);
-  }, [tagFilter]);
-
   // Define canDelete based on user permissions
   const canDelete = isSuperAdmin;
   useEffect(() => {
@@ -423,18 +418,9 @@ export default function Inbox() {
 
     // Filtro por tag (separado e independente dos outros filtros)
     if (tagFilter !== 'todas') {
-      console.log('=== FILTRO POR TAG DEBUG ===');
-      console.log('Tag selecionada:', tagFilter);
-      console.log('Total de tickets antes do filtro:', filtered.length);
-      
       filtered = filtered.filter(ticket => {
         // Garantir que tags seja sempre um array válido
         const ticketTags = Array.isArray(ticket.tags) ? ticket.tags : [];
-        console.log(`Ticket ${ticket.titulo}:`, {
-          tags: ticketTags,
-          tagFilter: tagFilter,
-          ticketId: ticket.id
-        });
         
         // Busca case-insensitive e com trim para evitar problemas de espaço
         const hasTag = ticketTags.some(tag => 
@@ -442,12 +428,8 @@ export default function Inbox() {
           tag.trim().toLowerCase() === tagFilter.trim().toLowerCase()
         );
         
-        console.log(`  -> Has tag "${tagFilter}":`, hasTag);
         return hasTag;
       });
-      
-      console.log('Total de tickets após filtro:', filtered.length);
-      console.log('=== FIM DEBUG ===');
     }
 
     return filtered;
@@ -662,7 +644,10 @@ export default function Inbox() {
               </Select>
 
               {/* Filtro por tag */}
-              <Select value={tagFilter} onValueChange={setTagFilter}>
+              <Select value={tagFilter} onValueChange={(value) => {
+                console.log('🔄 Tag filter mudando de:', tagFilter, 'para:', value);
+                setTagFilter(value);
+              }}>
                 <SelectTrigger className="w-[140px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
                   <SelectValue placeholder="Tags" />
                 </SelectTrigger>
