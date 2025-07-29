@@ -8,7 +8,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 interface Ticket {
   id: string;
@@ -101,7 +101,7 @@ const getPriorityConfig = (priority: string) => {
   };
   return configs[priority as keyof typeof configs] || configs.P3;
 };
-export default function JiraTicketCard({
+const JiraTicketCard = memo(({
   ticket,
   onOpenDetail,
   onUpdateStatus,
@@ -110,23 +110,25 @@ export default function JiraTicketCard({
   userCanEdit,
   userCanDelete,
   isExpired = false
-}: JiraTicketCardProps) {
-  const statusConfig = getStatusConfig(ticket.status, isExpired);
-  const priorityConfig = getPriorityConfig(ticket.nivel_criticidade);
+}: JiraTicketCardProps) => {
+  const statusConfig = useMemo(() => getStatusConfig(ticket.status, isExpired), [ticket.status, isExpired]);
+  const priorityConfig = useMemo(() => getPriorityConfig(ticket.nivel_criticidade), [ticket.nivel_criticidade]);
   const StatusIcon = statusConfig.icon;
+  
   const {
     canStartOrResolveTicket,
     getStartResolveValidationMessage
   } = usePermissions();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
 
-  // Estado para contador de comentários
+  // Estado para contador de comentários com otimização
   const [commentsCount, setCommentsCount] = useState<number>(0);
 
-  // Carregar comentários e atualizar em tempo real
+  // Carregar comentários de forma otimizada
   useEffect(() => {
+    let isMounted = true;
+    let channel: any = null;
+
     const loadCommentsCount = async () => {
       try {
         const { count, error } = await supabase
@@ -135,7 +137,9 @@ export default function JiraTicketCard({
           .eq('sla_id', ticket.id);
         
         if (error) throw error;
-        setCommentsCount(count || 0);
+        if (isMounted) {
+          setCommentsCount(count || 0);
+        }
       } catch (error) {
         console.error('Erro ao carregar contagem de comentários:', error);
       }
@@ -143,9 +147,9 @@ export default function JiraTicketCard({
 
     loadCommentsCount();
 
-    // Subscription para atualizações em tempo real
-    const channel = supabase
-      .channel(`comments-${ticket.id}`)
+    // Subscription otimizada para atualizações em tempo real
+    channel = supabase
+      .channel(`comments-optimized-${ticket.id}`)
       .on(
         'postgres_changes',
         {
@@ -155,35 +159,48 @@ export default function JiraTicketCard({
           filter: `sla_id=eq.${ticket.id}`
         },
         () => {
-          loadCommentsCount();
+          if (isMounted) {
+            loadCommentsCount();
+          }
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      isMounted = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [ticket.id]);
 
-  const handleStatusUpdate = (e: React.MouseEvent, newStatus: string) => {
-    e.stopPropagation();
+  const handleStatusUpdate = useMemo(() => 
+    (e: React.MouseEvent, newStatus: string) => {
+      e.stopPropagation();
 
-    // Verificar se pode iniciar ou resolver o ticket
-    if ((newStatus === 'em_andamento' || newStatus === 'resolvido') && !canStartOrResolveTicket(ticket)) {
-      const message = getStartResolveValidationMessage(ticket);
-      if (message) {
-        toast({
-          title: "Ação não permitida",
-          description: message,
-          variant: "destructive"
-        });
-        return;
+      // Verificar se pode iniciar ou resolver o ticket
+      if ((newStatus === 'em_andamento' || newStatus === 'resolvido') && !canStartOrResolveTicket(ticket)) {
+        const message = getStartResolveValidationMessage(ticket);
+        if (message) {
+          toast({
+            title: "Ação não permitida",
+            description: message,
+            variant: "destructive"
+          });
+          return;
+        }
       }
-    }
-    if (onUpdateStatus) {
-      onUpdateStatus(ticket.id, newStatus);
-    }
-  };
+      if (onUpdateStatus) {
+        onUpdateStatus(ticket.id, newStatus);
+      }
+    }, [ticket, canStartOrResolveTicket, getStartResolveValidationMessage, toast, onUpdateStatus]
+  );
+
+  // Memoizar formatação de data
+  const formattedDate = useMemo(() => 
+    format(new Date(ticket.data_criacao), "dd/MM 'às' HH:mm", { locale: ptBR }),
+    [ticket.data_criacao]
+  );
   return <Card className={cn("group transition-all duration-200 hover:shadow-lg cursor-pointer border border-border bg-white",
   // Borda lateral para prioridade
   ticket.nivel_criticidade === 'P0' && "border-l-4 border-l-red-500", ticket.nivel_criticidade === 'P1' && "border-l-4 border-l-orange-500", ticket.nivel_criticidade === 'P2' && "border-l-4 border-l-yellow-500", ticket.nivel_criticidade === 'P3' && "border-l-4 border-l-blue-500",
@@ -268,9 +285,7 @@ export default function JiraTicketCard({
           <div className="flex items-center gap-3 text-xs text-gray-500">
             <div className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              <span>{format(new Date(ticket.data_criacao), "dd/MM 'às' HH:mm", {
-                locale: ptBR
-              })}</span>
+              <span>{formattedDate}</span>
             </div>
             <div className="flex items-center gap-1">
               <Target className="h-3 w-3" />
@@ -311,4 +326,8 @@ export default function JiraTicketCard({
         </div>
       </CardContent>
     </Card>;
-}
+});
+
+JiraTicketCard.displayName = 'JiraTicketCard';
+
+export default JiraTicketCard;

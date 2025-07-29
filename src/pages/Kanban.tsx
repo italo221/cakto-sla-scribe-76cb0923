@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { useOptimizedTickets } from "@/hooks/useOptimizedTickets";
 import Navigation from "@/components/Navigation";
 import TicketKanban from "@/components/TicketKanban";
 import TicketDetailModal from "@/components/TicketDetailModal";
@@ -35,8 +35,16 @@ interface Ticket {
 }
 
 export default function KanbanPage() {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Usar hook otimizado
+  const { 
+    tickets, 
+    loading, 
+    reloadTickets 
+  } = useOptimizedTickets({
+    enableRealtime: true,
+    batchSize: 100
+  });
+
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -44,32 +52,6 @@ export default function KanbanPage() {
   
   const { user, canEdit } = useAuth();
   const { toast } = useToast();
-
-  useEffect(() => {
-    loadTickets();
-  }, []);
-
-  const loadTickets = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('sla_demandas')
-        .select('*')
-        .order('data_criacao', { ascending: false });
-
-      if (error) throw error;
-      setTickets(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar tickets:', error);
-      toast({
-        title: "Erro ao carregar tickets",
-        description: "Houve um problema ao carregar os dados.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleOpenTicketDetail = (ticket: Ticket) => {
     setSelectedTicket(ticket);
@@ -82,10 +64,10 @@ export default function KanbanPage() {
   };
 
   const handleTicketUpdate = () => {
-    loadTickets();
+    reloadTickets();
     toast({
-      title: "Ticket atualizado",
-      description: "O status do ticket foi atualizado com sucesso.",
+      title: "Ticket atualizado", 
+      description: "O status do ticket foi atualizado com sucesso."
     });
   };
 
@@ -120,7 +102,7 @@ export default function KanbanPage() {
           </div>
           
           <div className="flex items-center gap-2">
-            <Button onClick={loadTickets} variant="outline" size="sm" disabled={loading}>
+            <Button onClick={reloadTickets} variant="outline" size="sm" disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
@@ -230,7 +212,7 @@ export default function KanbanPage() {
               setModalOpen(false);
               setSelectedTicket(null);
             }}
-            onUpdate={loadTickets}
+            onUpdate={reloadTickets}
           />
         )}
 

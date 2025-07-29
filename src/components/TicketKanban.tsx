@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, memo, useMemo } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, pointerWithin, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -60,7 +60,7 @@ interface KanbanCardProps {
   userCanEdit: boolean;
 }
 
-function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdit }: KanbanCardProps) {
+const KanbanCard = memo(({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdit }: KanbanCardProps) => {
   const [isDragActive, setIsDragActive] = useState(false);
   const pointerEventRef = useRef<any>(null);
   const dragTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -159,9 +159,11 @@ function KanbanCard({ ticket, isDragging, onOpenDetail, onEditTicket, userCanEdi
       </CardContent>
     </Card>
   );
-}
+});
 
-function DroppableColumn({ id, title, tickets, onOpenDetail, onEditTicket, userCanEdit }: DroppableColumnProps) {
+KanbanCard.displayName = 'KanbanCard';
+
+const DroppableColumn = memo(({ id, title, tickets, onOpenDetail, onEditTicket, userCanEdit }: DroppableColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
@@ -199,9 +201,11 @@ function DroppableColumn({ id, title, tickets, onOpenDetail, onEditTicket, userC
       </div>
     </div>
   );
-}
+});
 
-export default function TicketKanban({ tickets, onOpenDetail, onEditTicket, onTicketUpdate, userRole }: TicketKanbanProps) {
+DroppableColumn.displayName = 'DroppableColumn';
+
+const TicketKanban = memo(({ tickets, onOpenDetail, onEditTicket, onTicketUpdate, userRole }: TicketKanbanProps) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedTicket, setDraggedTicket] = useState<Ticket | null>(null);
   const { toast } = useToast();
@@ -359,4 +363,8 @@ export default function TicketKanban({ tickets, onOpenDetail, onEditTicket, onTi
       </DragOverlay>
     </DndContext>
   );
-}
+});
+
+TicketKanban.displayName = 'TicketKanban';
+
+export default TicketKanban;

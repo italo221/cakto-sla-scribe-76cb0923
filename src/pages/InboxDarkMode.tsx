@@ -23,6 +23,8 @@ import { isSupabaseConfigured } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import TicketKanban from "@/components/TicketKanban";
 import JiraTicketCard from "@/components/JiraTicketCard";
+import VirtualizedTicketList from "@/components/VirtualizedTicketList";
+import { useOptimizedTickets } from "@/hooks/useOptimizedTickets";
 import { useAuth } from "@/hooks/useAuth";
 import { useTags } from "@/hooks/useTags";
 import { useToast } from "@/hooks/use-toast";
@@ -55,9 +57,22 @@ interface Setor {
   nome: string;
 }
 export default function Inbox() {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  // Usar hook otimizado para tickets
+  const {
+    tickets: optimizedTickets,
+    ticketsWithStatus: optimizedTicketsWithStatus,
+    loading,
+    error,
+    stats,
+    lastFetch,
+    reloadTickets,
+    searchTickets
+  } = useOptimizedTickets({
+    enableRealtime: true,
+    batchSize: 50
+  });
+
   const [setores, setSetores] = useState<Setor[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -71,6 +86,7 @@ export default function Inbox() {
   const [selectedTicketForEdit, setSelectedTicketForEdit] = useState<Ticket | null>(null);
   const [selectedTicketForDelete, setSelectedTicketForDelete] = useState<Ticket | null>(null);
   const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('detailed');
+  
   const {
     user,
     canEdit,
@@ -78,14 +94,12 @@ export default function Inbox() {
   } = useAuth();
   const { allTags } = useTags();
   const [userRole, setUserRole] = useState<string>('viewer');
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
 
   // Define canDelete based on user permissions
   const canDelete = isSuperAdmin;
+
   useEffect(() => {
-    loadTickets();
     loadSetores();
     loadUserRole();
 
@@ -100,25 +114,29 @@ export default function Inbox() {
       window.removeEventListener('openEditModal', handleOpenEditModal as EventListener);
     };
   }, []);
+
   const loadSetores = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('setores').select('id, nome').eq('ativo', true).order('nome');
+      const { data, error } = await supabase
+        .from('setores')
+        .select('id, nome')
+        .eq('ativo', true)
+        .order('nome');
       if (error) throw error;
       setSetores(data || []);
     } catch (error) {
       console.error('Erro ao carregar setores:', error);
     }
   };
+
   const loadUserRole = async () => {
     if (!user) return;
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('profiles').select('role, user_type').eq('user_id', user.id).single();
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role, user_type')
+        .eq('user_id', user.id)
+        .single();
       if (error) throw error;
 
       // Converter role/user_type para o formato esperado
@@ -134,61 +152,6 @@ export default function Inbox() {
       setUserRole('viewer');
     }
   };
-  const loadTickets = async () => {
-    try {
-      const {
-        data,
-        error
-      } = await supabase.from('sla_demandas').select(`
-          *,
-          setores (
-            id,
-            nome
-          )
-        `);
-      if (error) throw error;
-
-      // Aplicar ordenação inteligente
-      const sortedData = (data || []).sort((a, b) => {
-        // 1. Prioridade por status - Tickets ativos primeiro
-        const statusPriority = {
-          'aberto': 3,
-          'em_andamento': 2,
-          'resolvido': 1,
-          'fechado': 0
-        };
-        const statusDiff = (statusPriority[b.status] || 0) - (statusPriority[a.status] || 0);
-        if (statusDiff !== 0) return statusDiff;
-
-        // 2. Se mesmo status, priorizar por criticidade (P0 > P1 > P2 > P3)
-        const criticalityPriority = {
-          'P0': 4,
-          'P1': 3,
-          'P2': 2,
-          'P3': 1
-        };
-        const criticalityDiff = (criticalityPriority[b.nivel_criticidade] || 0) - (criticalityPriority[a.nivel_criticidade] || 0);
-        if (criticalityDiff !== 0) return criticalityDiff;
-
-        // 3. Se mesma criticidade, priorizar por pontuação total
-        const scoreDiff = (b.pontuacao_total || 0) - (a.pontuacao_total || 0);
-        if (scoreDiff !== 0) return scoreDiff;
-
-        // 4. Por último, para tickets ativos, mais antigos primeiro (urgência)
-        if ((statusPriority[a.status] || 0) >= 2 && (statusPriority[b.status] || 0) >= 2) {
-          return new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime();
-        }
-
-        // 5. Para tickets resolvidos/fechados, mais recentes primeiro
-        return new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime();
-      });
-      setTickets(sortedData);
-    } catch (error) {
-      console.error('Erro ao carregar SLAs:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Função helper para obter o label do status
   const getStatusLabel = (status: string): string => {
@@ -201,97 +164,8 @@ export default function Inbox() {
     return labels[status as keyof typeof labels] || 'Desconhecido';
   };
 
-  // Calcular status info para todos os tickets no nível do componente
-  const ticketsWithStatus = useMemo(() => {
-    return tickets.map(ticket => ({
-      ...ticket,
-      statusInfo: (() => {
-        // Replicar a lógica do useTicketStatus aqui para evitar hooks em loops
-        const userCanEdit = userRole === 'super_admin' || userRole === 'operador';
-
-        // Calcular se está atrasado
-        const isExpired = (() => {
-          if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
-          const timeConfig = {
-            'P0': 4 * 60 * 60 * 1000,
-            // 4 horas
-            'P1': 24 * 60 * 60 * 1000,
-            // 24 horas
-            'P2': 3 * 24 * 60 * 60 * 1000,
-            // 3 dias
-            'P3': 7 * 24 * 60 * 60 * 1000 // 7 dias
-          };
-          const startTime = new Date(ticket.data_criacao).getTime();
-          const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
-          const deadline = startTime + timeLimit;
-          return Date.now() > deadline;
-        })();
-
-        // Se está atrasado, sobrescrever as cores para vermelho
-        if (isExpired) {
-          return {
-            status: ticket.status,
-            isExpired: true,
-            displayStatus: `${getStatusLabel(ticket.status)} (Atrasado)`,
-            color: 'bg-red-500',
-            bgColor: 'bg-red-50 dark:bg-red-900/20',
-            textColor: 'text-red-800 dark:text-red-200',
-            borderColor: 'border-red-200 dark:border-red-800',
-            icon: AlertTriangle,
-            canEdit: userCanEdit
-          };
-        }
-
-        // Status normal com cores ajustadas para modo escuro
-        const statusConfig = {
-          'aberto': {
-            displayStatus: 'Aberto',
-            color: 'bg-slate-400 dark:bg-slate-500',
-            bgColor: 'bg-slate-50 dark:bg-slate-800',
-            textColor: 'text-slate-700 dark:text-slate-100',
-            borderColor: 'border-slate-300 dark:border-slate-600',
-            icon: Circle
-          },
-          'em_andamento': {
-            displayStatus: 'Em Andamento',
-            color: 'bg-blue-500 dark:bg-blue-400',
-            bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-            textColor: 'text-blue-800 dark:text-blue-200',
-            borderColor: 'border-blue-200 dark:border-blue-700',
-            icon: Activity
-          },
-          'resolvido': {
-            displayStatus: 'Resolvido',
-            color: 'bg-green-500 dark:bg-green-400',
-            bgColor: 'bg-green-50 dark:bg-green-900/20',
-            textColor: 'text-green-800 dark:text-green-200',
-            borderColor: 'border-green-200 dark:border-green-700',
-            icon: CheckCircle
-          },
-          'fechado': {
-            displayStatus: 'Fechado',
-            color: 'bg-gray-500 dark:bg-gray-400',
-            bgColor: 'bg-gray-100 dark:bg-gray-800',
-            textColor: 'text-gray-600 dark:text-gray-300',
-            borderColor: 'border-gray-300 dark:border-gray-600',
-            icon: X
-          }
-        };
-        const config = statusConfig[ticket.status as keyof typeof statusConfig] || statusConfig.aberto;
-        return {
-          status: ticket.status,
-          isExpired: false,
-          displayStatus: config.displayStatus,
-          color: config.color,
-          bgColor: config.bgColor,
-          textColor: config.textColor,
-          borderColor: config.borderColor,
-          icon: config.icon,
-          canEdit: userCanEdit
-        };
-      })()
-    }));
-  }, [tickets, userRole]);
+  // Usar tickets otimizados diretamente
+  const ticketsWithStatus = optimizedTicketsWithStatus;
 
   // Busca inteligente com sugestões
   const generateSearchSuggestions = useCallback((term: string) => {
@@ -382,12 +256,11 @@ export default function Inbox() {
         const ticketStatus = ticket.status?.toString()?.trim()?.toLowerCase();
         switch (activeFilter) {
           case 'atrasado':
-            return ticket.statusInfo.isExpired;
+            return ticket.isExpired;
           case 'critico':
             return ticket.nivel_criticidade === 'P0';
           default:
-            // Para outros status, mostrar APENAS tickets com aquele status E que NÃO estejam atrasados
-            return ticketStatus === activeFilter && !ticket.statusInfo.isExpired;
+            return ticketStatus === activeFilter && !ticket.isExpired;
         }
       });
     }
@@ -445,15 +318,15 @@ export default function Inbox() {
       atrasado: 0
     };
     ticketsWithStatus.forEach(ticket => {
-      // Contar tickets atrasados
-      if (ticket.statusInfo.isExpired) {
+      if (ticket.isExpired) {
         counts.atrasado++;
       }
-
-      // Contar por status (apenas tickets NÃO atrasados para os status normais)
-      if (!ticket.statusInfo.isExpired) {
+      if (!ticket.isExpired) {
         const status = ticket.status?.toString()?.trim()?.toLowerCase();
-        if (status === 'aberto') counts.aberto++;else if (status === 'em_andamento') counts.em_andamento++;else if (status === 'resolvido') counts.resolvido++;else if (status === 'fechado') counts.fechado++;
+        if (status === 'aberto') counts.aberto++;
+        else if (status === 'em_andamento') counts.em_andamento++;
+        else if (status === 'resolvido') counts.resolvido++;
+        else if (status === 'fechado') counts.fechado++;
       }
     });
     return counts;
@@ -570,7 +443,7 @@ export default function Inbox() {
     setSelectedTicketForDelete(null);
   };
   const handleTicketUpdate = () => {
-    loadTickets();
+    reloadTickets();
     toast({
       title: "Ticket atualizado",
       description: "O ticket foi atualizado com sucesso."
@@ -606,7 +479,7 @@ export default function Inbox() {
             </p>
           </div>
           
-          <Button onClick={loadTickets} variant="outline" className="gap-2">
+          <Button onClick={reloadTickets} variant="outline" className="gap-2">
             <Activity className="h-4 w-4" />
             Atualizar
           </Button>
@@ -740,7 +613,7 @@ export default function Inbox() {
 
           <div className="flex items-center gap-4 text-sm text-muted-foreground dark:text-muted-foreground">
             <span className="mx-0 px-0 my-[5px] py-0 text-base text-center">
-              {filteredTicketsWithStatus.length} de {tickets.length} tickets
+              {filteredTicketsWithStatus.length} de {optimizedTickets.length} tickets
             </span>
             {(searchTerm || activeFilter !== 'all' || setorFilter !== 'all') && <Button variant="ghost" size="sm" onClick={() => {
             setSearchTerm('');
