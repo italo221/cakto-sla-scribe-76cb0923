@@ -9,14 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { User, Save, Upload, Shield, Crown, Settings, Eye, CheckCircle, XCircle } from 'lucide-react';
-
 interface AdminUserEditorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   userId: string | null;
   onUserUpdated: () => void;
 }
-
 interface UserProfile {
   id: string;
   user_id: string;
@@ -30,8 +28,12 @@ interface UserProfile {
   created_at: string;
   updated_at: string;
 }
-
-export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpdated }: AdminUserEditorProps) {
+export default function AdminUserEditor({
+  open,
+  onOpenChange,
+  userId,
+  onUserUpdated
+}: AdminUserEditorProps) {
   const [loading, setLoading] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [formData, setFormData] = useState({
@@ -42,26 +44,20 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
     ativo: true,
     avatar_url: ''
   });
-
   useEffect(() => {
     if (userId && open) {
       fetchUserProfile();
     }
   }, [userId, open]);
-
   const fetchUserProfile = async () => {
     if (!userId) return;
-
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
+      const {
+        data,
+        error
+      } = await supabase.from('profiles').select('*').eq('user_id', userId).single();
       if (error) throw error;
-
       setUserProfile(data);
       setFormData({
         nome_completo: data.nome_completo,
@@ -78,39 +74,34 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
       setLoading(false);
     }
   };
-
   const handleSave = async () => {
     if (!userProfile) return;
-
     setLoading(true);
     try {
       // Atualizar dados no profiles
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          nome_completo: formData.nome_completo,
-          telefone: formData.telefone,
-          role: formData.role,
-          ativo: formData.ativo,
-          avatar_url: formData.avatar_url,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', userProfile.user_id);
-
+      const {
+        error: profileError
+      } = await supabase.from('profiles').update({
+        nome_completo: formData.nome_completo,
+        telefone: formData.telefone,
+        role: formData.role,
+        ativo: formData.ativo,
+        avatar_url: formData.avatar_url,
+        updated_at: new Date().toISOString()
+      }).eq('user_id', userProfile.user_id);
       if (profileError) throw profileError;
 
       // Se o email mudou, atualizar no auth.users (através de RPC se necessário)
       if (formData.email !== userProfile.email) {
         // Nota: Para alterar email via admin, seria necessário uma função RPC específica
         // Por segurança, vamos apenas atualizar no profiles por enquanto
-        const { error: emailError } = await supabase
-          .from('profiles')
-          .update({ email: formData.email })
-          .eq('user_id', userProfile.user_id);
-
+        const {
+          error: emailError
+        } = await supabase.from('profiles').update({
+          email: formData.email
+        }).eq('user_id', userProfile.user_id);
         if (emailError) throw emailError;
       }
-
       toast.success('Usuário atualizado com sucesso!');
       onUserUpdated();
       onOpenChange(false);
@@ -121,28 +112,27 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
       setLoading(false);
     }
   };
-
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !userProfile) return;
-
     setLoading(true);
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${userProfile.user_id}-${Math.random()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('sla-anexos')
-        .upload(filePath, file);
-
+      const {
+        error: uploadError
+      } = await supabase.storage.from('sla-anexos').upload(filePath, file);
       if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('sla-anexos')
-        .getPublicUrl(filePath);
-
-      setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
+      const {
+        data: {
+          publicUrl
+        }
+      } = supabase.storage.from('sla-anexos').getPublicUrl(filePath);
+      setFormData(prev => ({
+        ...prev,
+        avatar_url: publicUrl
+      }));
       toast.success('Foto de perfil atualizada!');
     } catch (error: any) {
       console.error('Erro ao fazer upload da foto:', error);
@@ -151,27 +141,19 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
       setLoading(false);
     }
   };
-
   const getUserInitials = () => {
-    return formData.nome_completo
-      ? formData.nome_completo.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-      : formData.email.substring(0, 2).toUpperCase();
+    return formData.nome_completo ? formData.nome_completo.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : formData.email.substring(0, 2).toUpperCase();
   };
-
   if (!userProfile && open) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+    return <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
           <div className="flex items-center justify-center p-6">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         </DialogContent>
-      </Dialog>
-    );
+      </Dialog>;
   }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+  return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -206,13 +188,7 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
                       </span>
                     </Button>
                   </Label>
-                  <Input
-                    id="admin-avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleAvatarUpload}
-                  />
+                  <Input id="admin-avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
                 </div>
               </div>
             </CardContent>
@@ -230,33 +206,26 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="admin-nome">Nome Completo</Label>
-                  <Input
-                    id="admin-nome"
-                    value={formData.nome_completo}
-                    onChange={(e) => setFormData(prev => ({ ...prev, nome_completo: e.target.value }))}
-                    placeholder="Nome completo do usuário"
-                  />
+                  <Input id="admin-nome" value={formData.nome_completo} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  nome_completo: e.target.value
+                }))} placeholder="Nome completo do usuário" />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="admin-email">Email</Label>
-                  <Input
-                    id="admin-email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="Email do usuário"
-                  />
+                  <Input id="admin-email" type="email" value={formData.email} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  email: e.target.value
+                }))} placeholder="Email do usuário" />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="admin-telefone">Telefone</Label>
-                  <Input
-                    id="admin-telefone"
-                    value={formData.telefone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, telefone: e.target.value }))}
-                    placeholder="Telefone do usuário"
-                  />
+                  <Input id="admin-telefone" value={formData.telefone} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  telefone: e.target.value
+                }))} placeholder="Telefone do usuário" />
                 </div>
 
                 <div className="space-y-2">
@@ -264,10 +233,10 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
                     <CheckCircle className="h-4 w-4" />
                     Status
                   </Label>
-                  <Select
-                    value={formData.ativo ? 'ativo' : 'inativo'}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, ativo: value === 'ativo' }))}
-                  >
+                  <Select value={formData.ativo ? 'ativo' : 'inativo'} onValueChange={value => setFormData(prev => ({
+                  ...prev,
+                  ativo: value === 'ativo'
+                }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -299,15 +268,13 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="admin-role" className="flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
+                    
                     Role
                   </Label>
-                  <Select
-                    value={formData.role}
-                    onValueChange={(value: 'super_admin' | 'operador' | 'viewer') => 
-                      setFormData(prev => ({ ...prev, role: value }))
-                    }
-                  >
+                  <Select value={formData.role} onValueChange={(value: 'super_admin' | 'operador' | 'viewer') => setFormData(prev => ({
+                  ...prev,
+                  role: value
+                }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -352,21 +319,16 @@ export default function AdminUserEditor({ open, onOpenChange, userId, onUserUpda
               Cancelar
             </Button>
             <Button onClick={handleSave} disabled={loading}>
-              {loading ? (
-                <>
+              {loading ? <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Salvando...
-                </>
-              ) : (
-                <>
+                </> : <>
                   <Save className="h-4 w-4 mr-2" />
                   Salvar Alterações
-                </>
-              )}
+                </>}
             </Button>
           </div>
         </div>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 }
