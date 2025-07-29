@@ -17,12 +17,14 @@ import {
   LogOut,
   User,
   Palette,
-  Columns3
+  Columns3,
+  UserCog
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import UserProfileSettings from "@/components/UserProfileSettings";
 
 interface NavItem {
   path: string;
@@ -48,6 +50,7 @@ export default function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
   const { user, profile, isSuperAdmin, canEdit, signOut } = useAuth();
   const { systemName, systemLogo, loading } = useSystemSettings();
   
@@ -146,11 +149,18 @@ export default function Navigation() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem onClick={() => setProfileSettingsOpen(true)}>
+            <UserCog className="mr-2 h-4 w-4" />
+            Configurações
+          </DropdownMenuItem>
           {isSuperAdmin && (
-            <DropdownMenuItem onClick={() => navigate('/admin')}>
-              <User className="mr-2 h-4 w-4" />
-              Gerenciar Usuários
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/admin')}>
+                <User className="mr-2 h-4 w-4" />
+                Gerenciar Usuários
+              </DropdownMenuItem>
+            </>
           )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSignOut}>
@@ -163,78 +173,86 @@ export default function Navigation() {
   };
 
   return (
-    <Card className="border-b rounded-none sticky top-0 z-50 bg-card/95 backdrop-blur-sm">
-      <div className="container-responsive">
-        <div className="flex items-center justify-between py-4">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 hover-scale">
-            {systemLogo && (
-              <img 
-                src={systemLogo} 
-                alt="Logo do sistema" 
-                className="h-8 w-8 object-contain" 
-              />
-            )}
-            <div>
-              <h1 className="text-xl font-bold text-gradient">
-                {systemName}
-              </h1>
-              <p className="text-xs text-muted-foreground hidden sm:block">
-                Sistema Tickets
-              </p>
-            </div>
-          </Link>
-          
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {filteredNavItems.map((item) => (
-              <NavLink key={item.path} item={item} />
-            ))}
-          </nav>
-
-          {/* Right side */}
-          <div className="flex items-center gap-2">
-            {/* Theme Toggle */}
-            <ThemeToggle />
+    <>
+      <Card className="border-b rounded-none sticky top-0 z-50 bg-card/95 backdrop-blur-sm">
+        <div className="container-responsive">
+          <div className="flex items-center justify-between py-4">
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-2 hover-scale">
+              {systemLogo && (
+                <img 
+                  src={systemLogo} 
+                  alt="Logo do sistema" 
+                  className="h-8 w-8 object-contain" 
+                />
+              )}
+              <div>
+                <h1 className="text-xl font-bold text-gradient">
+                  {systemName}
+                </h1>
+                <p className="text-xs text-muted-foreground hidden sm:block">
+                  Sistema Tickets
+                </p>
+              </div>
+            </Link>
             
-            {/* User Menu */}
-            <UserMenu />
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center gap-1">
+              {filteredNavItems.map((item) => (
+                <NavLink key={item.path} item={item} />
+              ))}
+            </nav>
 
-            {/* Mobile Menu */}
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="lg:hidden">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Abrir menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[280px] sm:w-[350px] md:w-[400px] max-w-[90vw]">
-                <div className="flex flex-col gap-4 mt-8">
-                  <div className="flex items-center gap-3 pb-4 border-b">
-                    {systemLogo && (
-                      <img 
-                        src={systemLogo} 
-                        alt="Logo do sistema" 
-                        className="h-8 w-8 object-contain" 
-                      />
-                    )}
-                    <div>
-                      <h2 className="font-semibold">{systemName}</h2>
-                      <p className="text-sm text-muted-foreground">Sistema Tickets</p>
+            {/* Right side */}
+            <div className="flex items-center gap-2">
+              {/* Theme Toggle */}
+              <ThemeToggle />
+              
+              {/* User Menu */}
+              <UserMenu />
+
+              {/* Mobile Menu */}
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="sm" className="lg:hidden">
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Abrir menu</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[280px] sm:w-[350px] md:w-[400px] max-w-[90vw]">
+                  <div className="flex flex-col gap-4 mt-8">
+                    <div className="flex items-center gap-3 pb-4 border-b">
+                      {systemLogo && (
+                        <img 
+                          src={systemLogo} 
+                          alt="Logo do sistema" 
+                          className="h-8 w-8 object-contain" 
+                        />
+                      )}
+                      <div>
+                        <h2 className="font-semibold">{systemName}</h2>
+                        <p className="text-sm text-muted-foreground">Sistema Tickets</p>
+                      </div>
                     </div>
+                    
+                    <nav className="flex flex-col gap-2">
+                      {filteredNavItems.map((item) => (
+                        <NavLink key={item.path} item={item} mobile />
+                      ))}
+                    </nav>
                   </div>
-                  
-                  <nav className="flex flex-col gap-2">
-                    {filteredNavItems.map((item) => (
-                      <NavLink key={item.path} item={item} mobile />
-                    ))}
-                  </nav>
-                </div>
-              </SheetContent>
-            </Sheet>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+
+      {/* User Profile Settings Modal */}
+      <UserProfileSettings 
+        open={profileSettingsOpen} 
+        onOpenChange={setProfileSettingsOpen} 
+      />
+    </>
   );
 }
