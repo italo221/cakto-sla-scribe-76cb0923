@@ -16,6 +16,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import CommentEditModal from "@/components/CommentEditModal";
 import CommentDeleteModal from "@/components/CommentDeleteModal";
 import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit3, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown } from "lucide-react";
+import TicketAttachments from "@/components/TicketAttachments";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,6 +43,8 @@ interface SLA {
   responsavel_interno?: string;
   prazo_interno?: string;
   prioridade_operacional?: string;
+  link_referencia?: string;
+  anexos?: string;
 }
 interface Comment {
   id: string;
@@ -1046,6 +1049,12 @@ export default function SLADetailModal({
                   <label className="text-sm font-medium text-muted-foreground">Observações</label>
                   <p className="mt-1 text-sm">{sla.observacoes}</p>
                 </div>}
+              
+              {/* Anexos e Link de Referência */}
+              <TicketAttachments 
+                linkReferencia={sla.link_referencia}
+                anexos={sla.anexos}
+              />
             </CardContent>
           </Card>
         </div>

@@ -1,0 +1,170 @@
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useImageCompression } from './useImageCompression';
+
+interface FileUploadOptions {
+  bucket: string;
+  maxSizeMB: number;
+  maxFiles: number;
+  allowedTypes: string[];
+}
+
+interface UploadedFile {
+  id: string;
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
+
+export const useFileUpload = (options: FileUploadOptions) => {
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const { toast } = useToast();
+  const { compressImage } = useImageCompression();
+
+  const validateFile = useCallback((file: File): boolean => {
+    // Verificar tipo
+    if (!options.allowedTypes.includes(file.type)) {
+      toast({
+        title: "Tipo de arquivo não permitido",
+        description: `Tipos aceitos: ${options.allowedTypes.join(', ')}`,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Verificar tamanho
+    const maxSizeBytes = options.maxSizeMB * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      toast({
+        title: "Arquivo muito grande",
+        description: `Tamanho máximo: ${options.maxSizeMB}MB`,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  }, [options.allowedTypes, options.maxSizeMB, toast]);
+
+  const uploadFiles = useCallback(async (files: FileList): Promise<UploadedFile[]> => {
+    if (files.length > options.maxFiles) {
+      toast({
+        title: "Muitos arquivos",
+        description: `Máximo ${options.maxFiles} arquivos por vez`,
+        variant: "destructive",
+      });
+      return [];
+    }
+
+    setUploading(true);
+    setUploadProgress(0);
+    const uploadedFiles: UploadedFile[] = [];
+
+    try {
+      const totalFiles = files.length;
+      
+      for (let i = 0; i < totalFiles; i++) {
+        const file = files[i];
+        
+        if (!validateFile(file)) {
+          continue;
+        }
+
+        let fileToUpload = file;
+
+        // Comprimir imagens
+        if (file.type.startsWith('image/')) {
+          try {
+            fileToUpload = await compressImage(file, {
+              maxSizeMB: options.maxSizeMB,
+              maxWidthOrHeight: 1920,
+              useWebWorker: true
+            });
+          } catch (error) {
+            console.warn('Falha na compressão, usando arquivo original:', error);
+          }
+        }
+
+        // Gerar nome único para o arquivo
+        const timestamp = Date.now();
+        const fileName = `${timestamp}-${file.name}`;
+        
+        // Upload para o Supabase Storage
+        const { data, error } = await supabase.storage
+          .from(options.bucket)
+          .upload(fileName, fileToUpload, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        // Obter URL pública
+        const { data: { publicUrl } } = supabase.storage
+          .from(options.bucket)
+          .getPublicUrl(fileName);
+
+        uploadedFiles.push({
+          id: data.path,
+          name: file.name,
+          url: publicUrl,
+          type: file.type,
+          size: fileToUpload.size
+        });
+
+        // Atualizar progresso
+        setUploadProgress(((i + 1) / totalFiles) * 100);
+      }
+
+      toast({
+        title: "Upload concluído",
+        description: `${uploadedFiles.length} arquivo(s) enviado(s) com sucesso`,
+      });
+
+      return uploadedFiles;
+    } catch (error: any) {
+      toast({
+        title: "Erro no upload",
+        description: error.message || "Falha ao enviar arquivo(s)",
+        variant: "destructive",
+      });
+      return [];
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  }, [options, validateFile, compressImage, toast]);
+
+  const deleteFile = useCallback(async (filePath: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.storage
+        .from(options.bucket)
+        .remove([filePath]);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error: any) {
+      toast({
+        title: "Erro ao remover arquivo",
+        description: error.message,
+        variant: "destructive",
+      });
+      return false;
+    }
+  }, [options.bucket, toast]);
+
+  return {
+    uploadFiles,
+    deleteFile,
+    uploading,
+    uploadProgress
+  };
+};

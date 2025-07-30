@@ -11,6 +11,8 @@ import { useTags } from "@/hooks/useTags";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import FileUploader from "@/components/FileUploader";
+import LinkInput from "@/components/LinkInput";
 import { Loader2, Upload, X } from "lucide-react";
 
 interface Ticket {
@@ -25,6 +27,8 @@ interface Ticket {
   status: string;
   observacoes?: string;
   tags?: string[];
+  link_referencia?: string;
+  anexos?: string;
 }
 
 interface TicketEditModalProps {
@@ -41,6 +45,7 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [anexos, setAnexos] = useState<Array<{id: string, name: string, url: string, type: string, size: number}>>([]);
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
@@ -49,7 +54,8 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
     time_responsavel: '',
     solicitante: '',
     status: '',
-    observacoes: ''
+    observacoes: '',
+    link_referencia: ''
   });
 
   useEffect(() => {
@@ -65,11 +71,20 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         time_responsavel: safeString(ticket.time_responsavel),
         solicitante: safeString(ticket.solicitante),
         status: safeString(ticket.status),
-        observacoes: safeString(ticket.observacoes)
+        observacoes: safeString(ticket.observacoes),
+        link_referencia: safeString(ticket.link_referencia)
       };
       
       setFormData(newFormData);
       setSelectedTags(Array.isArray(ticket.tags) ? ticket.tags : []);
+      
+      // Carregar anexos
+      try {
+        const anexosData = ticket.anexos ? JSON.parse(ticket.anexos) : [];
+        setAnexos(Array.isArray(anexosData) ? anexosData : []);
+      } catch {
+        setAnexos([]);
+      }
     } else if (!ticket) {
       // Reset form quando não há ticket
       setFormData({
@@ -80,9 +95,11 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         time_responsavel: '',
         solicitante: '',
         status: '',
-        observacoes: ''
+        observacoes: '',
+        link_referencia: ''
       });
       setSelectedTags([]);
+      setAnexos([]);
     }
   }, [ticket, isOpen]);
 
@@ -114,6 +131,8 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         status: formData.status,
         observacoes: formData.observacoes.trim() || null,
         tags: selectedTags.length > 0 ? selectedTags : null,
+        link_referencia: formData.link_referencia.trim() || null,
+        anexos: anexos.length > 0 ? JSON.stringify(anexos) : null,
         updated_at: new Date().toISOString()
       };
 
@@ -282,6 +301,27 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
               value={formData.observacoes}
               onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
               rows={3}
+            />
+          </div>
+
+          {/* Link de referência */}
+          <div>
+            <Label>Link de referência (opcional)</Label>
+            <LinkInput
+              value={formData.link_referencia}
+              onChange={(value) => setFormData({ ...formData, link_referencia: value })}
+              placeholder="https://exemplo.com/pagina-relacionada"
+            />
+          </div>
+
+          {/* Anexos */}
+          <div>
+            <Label>Anexos</Label>
+            <FileUploader
+              files={anexos}
+              onFilesChange={setAnexos}
+              maxFiles={3}
+              maxSizeMB={10}
             />
           </div>
 

@@ -11,6 +11,8 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useTags } from "@/hooks/useTags";
 import { supabase } from "@/integrations/supabase/client";
 import SetorValidationAlert from "@/components/SetorValidationAlert";
+import FileUploader from "@/components/FileUploader";
+import LinkInput from "@/components/LinkInput";
 import { Send, CheckCircle, RefreshCw, FileText } from "lucide-react";
 
 interface ManualTicketCreatorProps {
@@ -95,8 +97,10 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
     pergunta_especifica_2: '',
     time_responsavel: '',
     nivel_criticidade: 'P3',
-    pontuacao_total: 0
+    pontuacao_total: 0,
+    link_referencia: ''
   });
+  const [anexos, setAnexos] = useState<Array<{id: string, name: string, url: string, type: string, size: number}>>([]);
 
   // Buscar setores do banco
   useEffect(() => {
@@ -204,7 +208,9 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
           observacoes: observacoes,
           status: 'aberto',
           setor_id: setores.find(s => s.nome === formData.setor)?.id, // Adicionar setor_id
-          tags: selectedTags.length > 0 ? selectedTags : null
+          tags: selectedTags.length > 0 ? selectedTags : null,
+          link_referencia: formData.link_referencia.trim() || null,
+          anexos: anexos.length > 0 ? JSON.stringify(anexos) : null
         });
 
       // Adicionar novas tags ao histórico
@@ -245,9 +251,11 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
       pergunta_especifica_2: '',
       time_responsavel: '',
       nivel_criticidade: 'P3',
-      pontuacao_total: 0
+      pontuacao_total: 0,
+      link_referencia: ''
     });
     setSelectedTags([]);
+    setAnexos([]);
     setErrors({});
   };
 
@@ -412,6 +420,33 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
               </SelectContent>
             </Select>
             {errors.tipo_ticket && <p className="text-sm text-destructive">{errors.tipo_ticket}</p>}
+          </div>
+
+          {/* Link de referência */}
+          <div>
+            <label className="text-sm font-medium">Link de referência (opcional)</label>
+            <LinkInput
+              value={formData.link_referencia}
+              onChange={(value) => setFormData({...formData, link_referencia: value})}
+              placeholder="https://exemplo.com/pagina-relacionada"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Link para página relacionada ao problema ou solicitação
+            </p>
+          </div>
+
+          {/* Anexos */}
+          <div>
+            <label className="text-sm font-medium">Anexos (opcional)</label>
+            <FileUploader
+              files={anexos}
+              onFilesChange={setAnexos}
+              maxFiles={3}
+              maxSizeMB={10}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Imagens (PNG, JPG, WebP) e vídeos (MP4, WebM) • Máximo 3 arquivos de 10MB cada
+            </p>
           </div>
 
           {/* Tags */}
