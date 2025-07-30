@@ -174,7 +174,7 @@ export default function Navigation() {
 
   return (
     <>
-      <Card className="border-b rounded-none sticky top-0 z-50 bg-card/95 backdrop-blur-sm">
+      <Card className="border-b rounded-none sticky top-0 z-50 bg-card/80 backdrop-blur-md supports-[backdrop-filter]:bg-card/60 border-border/40">
         <div className="container-responsive">
           <div className="flex items-center justify-between py-4">
             {/* Logo */}
