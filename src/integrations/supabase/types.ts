@@ -526,10 +526,12 @@ export type Database = {
       }
       sla_demandas: {
         Row: {
+          anexos: Json | null
           arquivos: Json | null
           data_criacao: string
           descricao: string
           id: string
+          link_referencia: string | null
           nivel_criticidade: string
           observacoes: string | null
           pontuacao_cliente: number
@@ -554,10 +556,12 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          anexos?: Json | null
           arquivos?: Json | null
           data_criacao?: string
           descricao: string
           id?: string
+          link_referencia?: string | null
           nivel_criticidade: string
           observacoes?: string | null
           pontuacao_cliente: number
@@ -582,10 +586,12 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          anexos?: Json | null
           arquivos?: Json | null
           data_criacao?: string
           descricao?: string
           id?: string
+          link_referencia?: string | null
           nivel_criticidade?: string
           observacoes?: string | null
           pontuacao_cliente?: number
