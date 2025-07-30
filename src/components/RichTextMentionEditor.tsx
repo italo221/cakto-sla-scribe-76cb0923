@@ -66,48 +66,92 @@ export default function RichTextMentionEditor({
   const handleTextChange = (newValue: string) => {
     onChange(newValue);
     
-    // Detectar @ no final do texto
-    const textContent = newValue.replace(/<[^>]*>/g, ''); // Remove HTML tags
+    // Trabalhar com o HTML completo para preservar menções anteriores
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = newValue;
+    const textContent = tempDiv.textContent || tempDiv.innerText || '';
+    
     const lastAtIndex = textContent.lastIndexOf('@');
     
     if (lastAtIndex !== -1) {
       const afterAt = textContent.substring(lastAtIndex + 1);
       
-      // Se não há espaços ou quebras de linha após @
+      // Se não há espaços ou quebras de linha após @ e não é uma menção já formatada
       if (!afterAt.includes(' ') && !afterAt.includes('\n') && afterAt.length <= 50) {
-        setLastAtPosition(lastAtIndex);
-        setMentionQuery(afterAt);
-        setShowMentions(true);
-        setSelectedIndex(0);
+        // Verificar se não é uma menção já existente (dentro de um span)
+        const beforeAt = textContent.substring(0, lastAtIndex);
+        const htmlBeforeAt = newValue.substring(0, newValue.lastIndexOf('@'));
         
-        // Calcular posição aproximada do dropdown
-        if (editorRef.current) {
-          const rect = editorRef.current.getBoundingClientRect();
-          setMentionPosition({
-            top: rect.bottom + 5,
-            left: rect.left + 10
-          });
+        // Se não está dentro de uma tag de menção existente
+        if (!htmlBeforeAt.includes('<span style=') || htmlBeforeAt.lastIndexOf('</span>') > htmlBeforeAt.lastIndexOf('<span style=')) {
+          setLastAtPosition(lastAtIndex);
+          setMentionQuery(afterAt);
+          setShowMentions(true);
+          setSelectedIndex(0);
+          
+          // Calcular posição aproximada do dropdown
+          if (editorRef.current) {
+            const rect = editorRef.current.getBoundingClientRect();
+            setMentionPosition({
+              top: rect.bottom + 5,
+              left: rect.left + 10
+            });
+          }
+          
+          searchUsers(afterAt);
+          return;
         }
-        
-        searchUsers(afterAt);
-      } else {
-        setShowMentions(false);
       }
-    } else {
-      setShowMentions(false);
     }
+    
+    setShowMentions(false);
   };
 
   // Selecionar usuário da lista
   const selectUser = (selectedUser: User) => {
     if (lastAtPosition === -1) return;
     
-    const textContent = value.replace(/<[^>]*>/g, '');
-    const beforeAt = textContent.substring(0, lastAtPosition);
-    const afterQuery = textContent.substring(lastAtPosition + 1 + mentionQuery.length);
+    // Trabalhar com o HTML original para preservar formatação e menções anteriores
+    const htmlContent = value;
+    
+    // Encontrar a posição do @ no HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    const textContent = tempDiv.textContent || tempDiv.innerText || '';
+    
+    // Encontrar onde está o @ no HTML original
+    let htmlPosition = 0;
+    let textPosition = 0;
+    let foundAtPosition = -1;
+    
+    for (let i = 0; i < htmlContent.length && textPosition <= lastAtPosition; i++) {
+      if (htmlContent[i] === '<') {
+        // Pular tag HTML
+        while (i < htmlContent.length && htmlContent[i] !== '>') {
+          i++;
+        }
+      } else {
+        if (textPosition === lastAtPosition) {
+          foundAtPosition = i;
+          break;
+        }
+        textPosition++;
+      }
+    }
+    
+    if (foundAtPosition === -1) {
+      // Fallback: usar posição aproximada
+      foundAtPosition = htmlContent.lastIndexOf('@');
+    }
+    
+    // Substituir @query pela menção formatada
+    const beforeAt = htmlContent.substring(0, foundAtPosition);
+    const afterAt = htmlContent.substring(foundAtPosition);
+    const queryEndIndex = afterAt.indexOf('@') === 0 ? 1 + mentionQuery.length : mentionQuery.length;
+    const afterQuery = afterAt.substring(queryEndIndex);
     
     // Criar menção com span destacado
-    const mentionSpan = `<span style="background-color: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); padding: 2px 6px; border-radius: 4px; font-weight: 500;">@${selectedUser.nome_completo}</span>`;
+    const mentionSpan = `<span style="background-color: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); padding: 2px 6px; border-radius: 4px; font-weight: 500; margin: 0 1px;">@${selectedUser.nome_completo}</span>`;
     
     const newValue = beforeAt + mentionSpan + ' ' + afterQuery;
     onChange(newValue);
