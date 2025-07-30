@@ -165,7 +165,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       supabase.removeChannel(realtimeChannelRef.current);
     }
 
-    // Configurar novo canal com throttling
+    // Configurar novo canal com throttling reduzido para transferências
     let updateTimeout: NodeJS.Timeout | null = null;
     
     const channel = supabase
@@ -178,14 +178,20 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
           table: 'sla_demandas'
         },
         (payload) => {
-          // Debounce updates para evitar múltiplas refetches
+          // Para transferências de setor (mudança de setor_id), atualizar imediatamente
+          const isTransfer = payload.eventType === 'UPDATE' && 
+            payload.old?.setor_id !== payload.new?.setor_id;
+          
           if (updateTimeout) clearTimeout(updateTimeout);
+          
+          // Reduzir debounce para transferências para atualização mais rápida
+          const debounceTime = isTransfer ? 200 : 1000;
           
           updateTimeout = setTimeout(() => {
             // Invalidar cache e recarregar
             ticketCache.clear();
             fetchTickets(true);
-          }, 1000); // 1 segundo de debounce
+          }, debounceTime);
         }
       )
       .subscribe();

@@ -419,6 +419,15 @@ export default function SLADetailModal({
       });
       setShowTransferForm(false);
       setSelectedSetor('');
+      
+      // Atualizar o ticket local imediatamente para refletir a mudança
+      if (setSelectedSLA) {
+        setSelectedSLA({
+          ...sla,
+          setor_id: selectedSetor
+        });
+      }
+      
       onUpdate();
       loadActionLogs();
     } catch (error: any) {
