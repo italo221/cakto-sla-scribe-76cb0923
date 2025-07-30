@@ -106,6 +106,7 @@ export default function SLADetailModal({
     canStartOrResolveTicket,
     getStartResolveValidationMessage
   } = usePermissions();
+  const [currentSLA, setCurrentSLA] = useState<SLA | null>(sla);
   const [comments, setComments] = useState<Comment[]>([]);
   const [actionLogs, setActionLogs] = useState<ActionLog[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -132,20 +133,56 @@ export default function SLADetailModal({
   const {
     toast
   } = useToast();
+  // Atualizar currentSLA quando sla prop mudar
   useEffect(() => {
-    if (sla && isOpen && user) {
+    setCurrentSLA(sla);
+  }, [sla]);
+
+  useEffect(() => {
+    if (currentSLA && isOpen && user) {
       loadComments();
       loadActionLogs();
       loadSetores();
+      
+      // Configurar atualização em tempo real para o ticket
+      const channel = supabase
+        .channel('ticket-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'sla_demandas',
+            filter: `id=eq.${currentSLA.id}`
+          },
+          (payload) => {
+            console.log('Ticket atualizado em tempo real:', payload);
+            const updatedTicket = payload.new as SLA;
+            setCurrentSLA(updatedTicket);
+            
+            // Atualizar também o estado no componente pai se disponível
+            if (setSelectedSLA) {
+              setSelectedSLA(updatedTicket);
+            }
+            
+            // Trigger onUpdate para atualizar listas
+            onUpdate();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
-  }, [sla, isOpen, user]);
+  }, [currentSLA, isOpen, user, setSelectedSLA, onUpdate]);
   const loadComments = async () => {
-    if (!sla) return;
+    if (!currentSLA) return;
     try {
       const {
         data,
         error
-      } = await supabase.from('sla_comentarios_internos').select('*').eq('sla_id', sla.id).order('created_at', {
+      } = await supabase.from('sla_comentarios_internos').select('*').eq('sla_id', currentSLA.id).order('created_at', {
         ascending: false
       });
       if (error) throw error;
@@ -165,12 +202,12 @@ export default function SLADetailModal({
     }
   };
   const loadActionLogs = async () => {
-    if (!sla) return;
+    if (!currentSLA) return;
     try {
       const {
         data,
         error
-      } = await supabase.from('sla_action_logs').select('*').eq('sla_id', sla.id).order('timestamp', {
+      } = await supabase.from('sla_action_logs').select('*').eq('sla_id', currentSLA.id).order('timestamp', {
         ascending: false
       });
       if (error) throw error;
@@ -206,7 +243,7 @@ export default function SLADetailModal({
 
       const fileExt = sanitizedFileName.split('.').pop();
       const fileName = `${comentarioId}/${Date.now()}_${sanitizedFileName}`;
-      const filePath = `${sla.id}/${fileName}`;
+      const filePath = `${currentSLA.id}/${fileName}`;
       const {
         error: uploadError
       } = await supabase.storage.from('sla-anexos').upload(filePath, file);
@@ -234,7 +271,7 @@ export default function SLADetailModal({
     return uploadedFiles;
   };
   const handleAddComment = async () => {
-    if (!sla || !newComment.trim() || !user) return;
+    if (!currentSLA || !newComment.trim() || !user) return;
 
     // Verificar validações de setor
     const setorValidationMessage = getSetorValidationMessage();
@@ -262,12 +299,12 @@ export default function SLADetailModal({
       let comentarioSetorId;
       if (isSuperAdmin) {
         // Super admin pode comentar em qualquer ticket
-        comentarioSetorId = sla.setor_id || (userSetores.length > 0 ? userSetores[0].setor_id : null);
+        comentarioSetorId = currentSLA.setor_id || (userSetores.length > 0 ? userSetores[0].setor_id : null);
       } else if (canEdit) {
         // Operador pode comentar em qualquer ticket
-        comentarioSetorId = sla.setor_id || (userSetores.length > 0 ? userSetores[0].setor_id : null);
+        comentarioSetorId = currentSLA.setor_id || (userSetores.length > 0 ? userSetores[0].setor_id : null);
       } else {
-        const setorDoUsuario = userSetores.find(us => us.setor_id === sla.setor_id);
+        const setorDoUsuario = userSetores.find(us => us.setor_id === currentSLA.setor_id);
         if (setorDoUsuario) {
           comentarioSetorId = setorDoUsuario.setor_id;
         } else if (userSetores.length > 0) {
@@ -291,7 +328,7 @@ export default function SLADetailModal({
         data: commentData,
         error: commentError
       } = await supabase.from('sla_comentarios_internos').insert({
-        sla_id: sla.id,
+        sla_id: currentSLA.id,
         setor_id: comentarioSetorId,
         autor_id: user.id,
         autor_nome: user.user_metadata?.nome_completo || user.email || 'Usuário',
@@ -329,8 +366,8 @@ export default function SLADetailModal({
               await notifyUserMention(
                 mentionedUser.user_id,
                 authorName,
-                sla.id,
-                sla.titulo,
+                currentSLA.id,
+                currentSLA.titulo,
                 commentData.id
               );
             }
@@ -359,7 +396,7 @@ export default function SLADetailModal({
     }
   };
   const handleChangeStatus = async (newStatus: string) => {
-    if (!sla) return;
+    if (!currentSLA) return;
 
     // Verificar validações de setor
     const setorValidationMessage = getSetorValidationMessage();
@@ -373,8 +410,8 @@ export default function SLADetailModal({
     }
 
     // Verificar se pode iniciar ou resolver o ticket
-    if ((newStatus === 'em_andamento' || newStatus === 'resolvido') && !canStartOrResolveTicket(sla)) {
-      const message = getStartResolveValidationMessage(sla);
+    if ((newStatus === 'em_andamento' || newStatus === 'resolvido') && !canStartOrResolveTicket(currentSLA)) {
+      const message = getStartResolveValidationMessage(currentSLA);
       if (message) {
         toast({
           title: "Ação não permitida",
@@ -386,22 +423,23 @@ export default function SLADetailModal({
     }
     setStatusLoading(newStatus); // Set which specific status is loading
     try {
-      const oldStatus = sla.status;
+      const oldStatus = currentSLA.status;
 
       // Update UI immediately for better UX
       const updatedSLA = {
-        ...sla,
+        ...currentSLA,
         status: newStatus
       };
+      setCurrentSLA(updatedSLA);
       setSelectedSLA?.(updatedSLA);
       const {
         error
       } = await supabase.from('sla_demandas').update({
         status: newStatus
-      }).eq('id', sla.id);
+      }).eq('id', currentSLA.id);
       if (error) throw error;
       await supabase.rpc('log_sla_action', {
-        p_sla_id: sla.id,
+        p_sla_id: currentSLA.id,
         p_acao: `mudanca_status_${oldStatus}_para_${newStatus}`,
         p_justificativa: `Status alterado de "${oldStatus}" para "${newStatus}"`,
         p_dados_anteriores: {
@@ -419,7 +457,8 @@ export default function SLADetailModal({
       loadActionLogs();
     } catch (error: any) {
       // Revert UI change on error
-      setSelectedSLA?.(sla);
+      setCurrentSLA(currentSLA);
+      setSelectedSLA?.(currentSLA);
       toast({
         title: "Erro ao alterar status",
         description: error.message,
@@ -430,22 +469,22 @@ export default function SLADetailModal({
     }
   };
   const handleTransferSetor = async () => {
-    if (!sla || !selectedSetor) return;
+    if (!currentSLA || !selectedSetor) return;
     setTransferLoading(true);
     try {
-      const setorOrigem = setores.find(s => s.id === sla.setor_id);
+      const setorOrigem = setores.find(s => s.id === currentSLA.setor_id);
       const setorDestino = setores.find(s => s.id === selectedSetor);
       const {
         error
       } = await supabase.from('sla_demandas').update({
         setor_id: selectedSetor,
         time_responsavel: setorDestino?.nome || ''
-      }).eq('id', sla.id);
+      }).eq('id', currentSLA.id);
       if (error) throw error;
       await supabase.rpc('log_sla_action', {
-        p_sla_id: sla.id,
+        p_sla_id: currentSLA.id,
         p_acao: 'transferencia_setor',
-        p_setor_origem_id: sla.setor_id,
+        p_setor_origem_id: currentSLA.setor_id,
         p_setor_destino_id: selectedSetor,
         p_justificativa: `Transferido de "${setorOrigem?.nome}" para "${setorDestino?.nome}"`
       });
@@ -457,12 +496,14 @@ export default function SLADetailModal({
       setSelectedSetor('');
       
       // Atualizar o ticket local imediatamente para refletir a mudança
+      const updatedSLA = {
+        ...currentSLA,
+        setor_id: selectedSetor,
+        time_responsavel: setorDestino?.nome || ''
+      };
+      setCurrentSLA(updatedSLA);
       if (setSelectedSLA) {
-        setSelectedSLA({
-          ...sla,
-          setor_id: selectedSetor,
-          time_responsavel: setorDestino?.nome || ''
-        });
+        setSelectedSLA(updatedSLA);
       }
       
       onUpdate();
@@ -583,8 +624,8 @@ export default function SLADetailModal({
     const results: string[] = [];
     
     // Buscar na descrição inicial
-    if (sla.descricao.toLowerCase().includes(term.toLowerCase()) || 
-        (sla.observacoes && sla.observacoes.toLowerCase().includes(term.toLowerCase()))) {
+    if (currentSLA.descricao.toLowerCase().includes(term.toLowerCase()) || 
+        (currentSLA.observacoes && currentSLA.observacoes.toLowerCase().includes(term.toLowerCase()))) {
       results.push('initial-description');
     }
 
@@ -629,20 +670,20 @@ export default function SLADetailModal({
   const isHighlighted = (commentId: string) => {
     return searchTerm && searchResults.includes(commentId);
   };
-  if (!sla) return null;
+  if (!currentSLA) return null;
   return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-4">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold mx-0 px-0 my-0">
-              {sla.ticket_number || `#${sla.id.slice(0, 8)}`} - {sla.titulo}
+              {currentSLA.ticket_number || `#${currentSLA.id.slice(0, 8)}`} - {currentSLA.titulo}
             </DialogTitle>
             <div className="flex items-center justify-end w-full">
               {(canEdit || isSuperAdmin) && <Button variant="outline" size="sm" onClick={() => {
               onClose();
               // Abrir modal de edição
               window.dispatchEvent(new CustomEvent('openEditModal', {
-                detail: sla
+                detail: currentSLA
               }));
             }} className="gap-2">
                   <Edit3 className="h-4 w-4" />
@@ -720,7 +761,7 @@ export default function SLADetailModal({
                         <SelectValue placeholder="Selecione um setor" />
                       </SelectTrigger>
                       <SelectContent>
-                        {setores.filter(setor => setor.id !== sla.setor_id).map(setor => <SelectItem key={setor.id} value={setor.id}>
+                        {setores.filter(setor => setor.id !== currentSLA.setor_id).map(setor => <SelectItem key={setor.id} value={setor.id}>
                               {setor.nome}
                             </SelectItem>)}
                       </SelectContent>
@@ -900,13 +941,13 @@ export default function SLADetailModal({
                             <div className="flex-1 space-y-2">
                               <div className="flex items-center gap-2">
                                 <div className="flex items-center gap-1">
-                                  <span className="font-medium text-sm">{sla.solicitante}</span>
+                                  <span className="font-medium text-sm">{currentSLA.solicitante}</span>
                                   <Badge variant="outline" className="text-xs">
                                     Solicitante
                                   </Badge>
                                 </div>
                                 <span className="text-xs text-muted-foreground">
-                                  {format(new Date(sla.data_criacao), "dd/MM/yyyy 'às' HH:mm", {
+                                  {format(new Date(currentSLA.data_criacao), "dd/MM/yyyy 'às' HH:mm", {
                               locale: ptBR
                             })}
                                 </span>
@@ -920,12 +961,12 @@ export default function SLADetailModal({
                                   </span>
                                 </div>
                                 <p className="text-sm leading-relaxed text-blue-800 dark:text-blue-200 whitespace-pre-wrap">
-                                  {sla.descricao}
+                                  {currentSLA.descricao}
                                 </p>
-                                {sla.observacoes && <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                                {currentSLA.observacoes && <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
                                     <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">Observações:</p>
                                     <p className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap">
-                                      {sla.observacoes}
+                                      {currentSLA.observacoes}
                                     </p>
                                   </div>}
                               </div>
@@ -1042,21 +1083,21 @@ export default function SLADetailModal({
                   <label className="text-sm font-medium text-muted-foreground">Solicitante</label>
                   <div className="flex items-center gap-2 mt-1">
                     <User className="h-4 w-4" />
-                    <span>{sla.solicitante}</span>
+                    <span>{currentSLA.solicitante}</span>
                   </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Time Responsável</label>
                   <div className="flex items-center gap-2 mt-1">
                     <Building className="h-4 w-4" />
-                    <span>{sla.time_responsavel}</span>
+                    <span>{currentSLA.time_responsavel}</span>
                   </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
                   <div className="flex items-center gap-2 mt-1">
                     <Calendar className="h-4 w-4" />
-                    <span>{format(new Date(sla.data_criacao), "dd/MM/yyyy 'às' HH:mm", {
+                    <span>{format(new Date(currentSLA.data_criacao), "dd/MM/yyyy 'às' HH:mm", {
                       locale: ptBR
                     })}</span>
                   </div>
@@ -1065,7 +1106,7 @@ export default function SLADetailModal({
                   <label className="text-sm font-medium text-muted-foreground">Responsável Interno</label>
                   <div className="flex items-center gap-2 mt-1">
                     <User className="h-4 w-4" />
-                    <span>{sla.responsavel_interno || 'Não atribuído'}</span>
+                    <span>{currentSLA.responsavel_interno || 'Não atribuído'}</span>
                   </div>
                 </div>
               </div>
@@ -1074,22 +1115,22 @@ export default function SLADetailModal({
               
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Descrição</label>
-                <p className="mt-1 text-sm">{sla.descricao}</p>
+                <p className="mt-1 text-sm">{currentSLA.descricao}</p>
               </div>
               
-              {sla.observacoes && <div>
+              {currentSLA.observacoes && <div>
                   <label className="text-sm font-medium text-muted-foreground">Observações</label>
-                  <p className="mt-1 text-sm">{sla.observacoes}</p>
+                  <p className="mt-1 text-sm">{currentSLA.observacoes}</p>
                 </div>}
               
               {/* Anexos e Link de Referência */}
-              {(sla.link_referencia || sla.anexos) && (
+              {(currentSLA.link_referencia || currentSLA.anexos) && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Anexos e Links</label>
                   <div className="mt-2">
                     <TicketAttachments 
-                      linkReferencia={sla.link_referencia}
-                      anexos={sla.anexos}
+                      linkReferencia={currentSLA.link_referencia}
+                      anexos={currentSLA.anexos}
                     />
                   </div>
                 </div>
