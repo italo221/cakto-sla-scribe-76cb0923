@@ -39,6 +39,7 @@ import {
   Tooltip,
   Legend
 } from "recharts";
+import { GlassTooltip } from "@/components/ui/glass-tooltip";
 
 interface DashboardWidget {
   id: string;
@@ -362,25 +363,32 @@ export default function DynamicDashboard() {
             <CardContent>
               <ResponsiveContainer width="100%" height={isMobile ? 250 : 350}>
                 <RechartsPieChart>
-                  <Pie
-                    data={dashboardData.statusData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={isMobile ? 80 : 120}
-                    innerRadius={isMobile ? 40 : 60}
-                    paddingAngle={5}
-                    label={isMobile ? false : ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
-                    labelLine={false}
-                  >
-                    {dashboardData.statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
+                   <Pie
+                     data={dashboardData.statusData}
+                     dataKey="value"
+                     nameKey="name"
+                     cx="50%"
+                     cy="50%"
+                     outerRadius={isMobile ? 80 : 120}
+                     innerRadius={isMobile ? 40 : 60}
+                     paddingAngle={5}
+                     label={isMobile ? false : ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
+                     labelLine={false}
+                     animationBegin={0}
+                     animationDuration={800}
+                   >
+                     {dashboardData.statusData.map((entry, index) => (
+                       <Cell 
+                         key={`cell-${index}`} 
+                         fill={entry.color}
+                         className="transition-all duration-300 ease-out hover:brightness-110 hover:scale-105 cursor-pointer"
+                         style={{ transformOrigin: "center" }}
+                       />
+                     ))}
+                   </Pie>
                   <Tooltip 
-                    formatter={(value, name) => [`${value} tickets`, name]}
-                    labelFormatter={(label) => `Status: ${label}`}
+                    content={<GlassTooltip />}
+                    animationDuration={200}
                   />
                   <Legend 
                     verticalAlign="bottom" 
@@ -422,35 +430,33 @@ export default function DynamicDashboard() {
                     tickLine={false}
                     axisLine={false}
                   />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      color: 'hsl(var(--foreground))',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-                    }}
-                    cursor={{
-                      fill: 'hsl(var(--muted))',
-                      fillOpacity: 0.1
-                    }}
-                    formatter={(value, name, props) => [
-                      `${value} tickets`,
-                      `${props.payload.name.split(' - ')[1] || 'Prioridade'}`
-                    ]}
-                    labelFormatter={(label) => `Criticidade: ${label}`}
-                  />
+                   <Tooltip 
+                     content={<GlassTooltip />}
+                     cursor={{
+                       fill: 'hsl(var(--primary))',
+                       fillOpacity: 0.1,
+                       strokeWidth: 2,
+                       stroke: 'hsl(var(--primary))'
+                     }}
+                     animationDuration={200}
+                   />
                   <Legend 
                     formatter={(value) => <span className="text-sm font-medium text-foreground">Quantidade de Tickets</span>}
                   />
-                  <Bar 
-                    dataKey="value" 
-                    radius={[4, 4, 0, 0]}
-                  >
-                    {dashboardData.priorityData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
+                   <Bar 
+                     dataKey="value" 
+                     radius={[4, 4, 0, 0]}
+                     animationBegin={0}
+                     animationDuration={800}
+                   >
+                     {dashboardData.priorityData.map((entry, index) => (
+                       <Cell 
+                         key={`cell-${index}`} 
+                         fill={entry.color}
+                         className="transition-all duration-300 ease-out hover:brightness-110 cursor-pointer"
+                       />
+                     ))}
+                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -467,15 +473,40 @@ export default function DynamicDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={dashboardData.teamData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="tickets" fill="#3b82f6" />
-                </BarChart>
-              </ResponsiveContainer>
+               <ResponsiveContainer width="100%" height={300}>
+                 <BarChart data={dashboardData.teamData}>
+                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                   <XAxis 
+                     dataKey="name" 
+                     stroke="hsl(var(--foreground))"
+                     fontSize={12}
+                     tickLine={false}
+                     axisLine={false}
+                   />
+                   <YAxis 
+                     stroke="hsl(var(--foreground))"
+                     fontSize={12}
+                     tickLine={false}
+                     axisLine={false}
+                   />
+                   <Tooltip 
+                     content={<GlassTooltip />}
+                     cursor={{
+                       fill: 'hsl(var(--primary))',
+                       fillOpacity: 0.1
+                     }}
+                     animationDuration={200}
+                   />
+                   <Bar 
+                     dataKey="tickets" 
+                     fill="#3b82f6"
+                     radius={[4, 4, 0, 0]}
+                     animationBegin={0}
+                     animationDuration={800}
+                     className="transition-all duration-300 ease-out hover:brightness-110"
+                   />
+                 </BarChart>
+               </ResponsiveContainer>
             </CardContent>
           </Card>
         );
