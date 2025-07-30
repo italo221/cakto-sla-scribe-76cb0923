@@ -209,7 +209,7 @@ const TicketKanban = memo(({ tickets, onOpenDetail, onEditTicket, onTicketUpdate
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedTicket, setDraggedTicket] = useState<Ticket | null>(null);
   const { toast } = useToast();
-  const { canStartOrResolveTicket, getStartResolveValidationMessage } = usePermissions();
+  const { canStartOrResolveTicket, getStartResolveValidationMessage, canCloseTicket, getCloseValidationMessage } = usePermissions();
 
   const userCanEdit = userRole === 'operador' || userRole === 'admin';
 
@@ -271,6 +271,21 @@ const TicketKanban = memo(({ tickets, onOpenDetail, onEditTicket, onTicketUpdate
     // Verificar se pode iniciar ou resolver o ticket
     if ((newStatus === 'em_andamento' || newStatus === 'resolvido') && !canStartOrResolveTicket(ticket)) {
       const message = getStartResolveValidationMessage(ticket);
+      if (message) {
+        toast({
+          title: "Ação não permitida",
+          description: message,
+          variant: "destructive",
+        });
+        setActiveId(null);
+        setDraggedTicket(null);
+        return;
+      }
+    }
+
+    // Verificar se pode fechar o ticket (apenas quem criou pode fechar)
+    if (newStatus === 'fechado' && !canCloseTicket(ticket)) {
+      const message = getCloseValidationMessage(ticket);
       if (message) {
         toast({
           title: "Ação não permitida",

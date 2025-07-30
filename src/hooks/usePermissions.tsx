@@ -118,6 +118,27 @@ export const usePermissions = () => {
     return false;
   };
 
+  const canCloseTicket = (ticket: any) => {
+    // Super Admin pode fechar qualquer ticket
+    if (isSuperAdmin) return true;
+
+    // Líderes do setor podem fechar tickets do seu setor
+    if (ticket.setor_id && isLeaderOfSetor(ticket.setor_id)) {
+      return true;
+    }
+
+    if (ticket.time_responsavel && isLeaderOfSetorByName(ticket.time_responsavel)) {
+      return true;
+    }
+
+    // Apenas quem criou o ticket pode fechá-lo (de RESOLVIDO para FECHADO)
+    if (ticket.status === 'resolvido' && ticket.solicitante === user?.email) {
+      return true;
+    }
+
+    return false;
+  };
+
   const hasAnySetor = () => {
     return isSuperAdmin || userSetores.length > 0;
   };
@@ -147,6 +168,13 @@ export const usePermissions = () => {
     return null;
   };
 
+  const getCloseValidationMessage = (ticket: any) => {
+    if (!canCloseTicket(ticket)) {
+      return "⛔ Apenas quem criou o ticket pode fechá-lo.";
+    }
+    return null;
+  };
+
   return {
     userSetores,
     loading,
@@ -155,11 +183,13 @@ export const usePermissions = () => {
     canEditTicket,
     canDeleteTicket,
     canStartOrResolveTicket,
+    canCloseTicket,
     hasAnySetor,
     canCreateTicket,
     getSetorValidationMessage,
     getStartResolveValidationMessage,
     getDeleteValidationMessage,
+    getCloseValidationMessage,
     refreshUserSetores: fetchUserSetores
   };
 };

@@ -11,11 +11,11 @@ interface Ticket {
 }
 
 export const useTicketPermissions = () => {
-  const { canStartOrResolveTicket, getStartResolveValidationMessage, canDeleteTicket, getDeleteValidationMessage } = usePermissions();
+  const { canStartOrResolveTicket, getStartResolveValidationMessage, canDeleteTicket, getDeleteValidationMessage, canCloseTicket, getCloseValidationMessage } = usePermissions();
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const validateTicketAction = (ticket: Ticket, action: 'start' | 'resolve' | 'delete'): boolean => {
+  const validateTicketAction = (ticket: Ticket, action: 'start' | 'resolve' | 'delete' | 'close'): boolean => {
     switch (action) {
       case 'start':
       case 'resolve':
@@ -45,18 +45,34 @@ export const useTicketPermissions = () => {
           return false;
         }
         break;
+
+      case 'close':
+        if (!canCloseTicket(ticket)) {
+          const message = getCloseValidationMessage(ticket);
+          if (message) {
+            toast({
+              title: "Ação não permitida",
+              description: message,
+              variant: "destructive",
+            });
+          }
+          return false;
+        }
+        break;
     }
     
     return true;
   };
 
-  const canPerformAction = (ticket: Ticket, action: 'start' | 'resolve' | 'delete'): boolean => {
+  const canPerformAction = (ticket: Ticket, action: 'start' | 'resolve' | 'delete' | 'close'): boolean => {
     switch (action) {
       case 'start':
       case 'resolve':
         return canStartOrResolveTicket(ticket);
       case 'delete':
         return canDeleteTicket(ticket);
+      case 'close':
+        return canCloseTicket(ticket);
       default:
         return false;
     }
@@ -66,6 +82,7 @@ export const useTicketPermissions = () => {
     validateTicketAction,
     canPerformAction,
     canStartOrResolveTicket,
-    canDeleteTicket
+    canDeleteTicket,
+    canCloseTicket
   };
 };
