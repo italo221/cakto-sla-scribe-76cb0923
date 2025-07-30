@@ -1051,10 +1051,17 @@ export default function SLADetailModal({
                 </div>}
               
               {/* Anexos e Link de Referência */}
-              <TicketAttachments 
-                linkReferencia={sla.link_referencia}
-                anexos={sla.anexos}
-              />
+              {(sla.link_referencia || sla.anexos) && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Anexos e Links</label>
+                  <div className="mt-2">
+                    <TicketAttachments 
+                      linkReferencia={sla.link_referencia}
+                      anexos={sla.anexos}
+                    />
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
