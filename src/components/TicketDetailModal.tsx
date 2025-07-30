@@ -403,7 +403,8 @@ export default function SLADetailModal({
       const {
         error
       } = await supabase.from('sla_demandas').update({
-        setor_id: selectedSetor
+        setor_id: selectedSetor,
+        time_responsavel: setorDestino?.nome || ''
       }).eq('id', sla.id);
       if (error) throw error;
       await supabase.rpc('log_sla_action', {
@@ -424,7 +425,8 @@ export default function SLADetailModal({
       if (setSelectedSLA) {
         setSelectedSLA({
           ...sla,
-          setor_id: selectedSetor
+          setor_id: selectedSetor,
+          time_responsavel: setorDestino?.nome || ''
         });
       }
       
