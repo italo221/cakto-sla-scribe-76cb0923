@@ -25,6 +25,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSystemConfig } from "@/contexts/SystemConfigContext";
 import UserProfileSettings from "@/components/UserProfileSettings";
+import NotificationCenter from "@/components/NotificationCenter";
 
 interface NavItem {
   path: string;
@@ -210,6 +211,9 @@ export default function Navigation() {
 
                 {/* Right side */}
                 <div className="flex items-center gap-2">
+                  {/* Notifications */}
+                  {user && <NotificationCenter />}
+                  
                   {/* Theme Toggle */}
                   <ThemeToggle />
                   

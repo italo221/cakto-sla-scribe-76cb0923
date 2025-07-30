@@ -21,6 +21,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { extractMentions, findMentionedUsers, notifyUserMention } from "@/utils/notificationService";
 interface SLA {
   id: string;
   ticket_number: string;
@@ -308,6 +309,31 @@ export default function SLADetailModal({
           throw updateError;
         }
       }
+      
+      // Detectar menções e criar notificações
+      const mentions = extractMentions(newComment);
+      if (mentions.length > 0) {
+        try {
+          const mentionedUsers = await findMentionedUsers(mentions);
+          const authorName = user.user_metadata?.nome_completo || user.email || 'Usuário';
+          
+          for (const mentionedUser of mentionedUsers) {
+            // Não notificar o próprio autor
+            if (mentionedUser.user_id !== user.id) {
+              await notifyUserMention(
+                mentionedUser.user_id,
+                authorName,
+                sla.id,
+                sla.titulo,
+                commentData.id
+              );
+            }
+          }
+        } catch (error) {
+          console.error('Erro ao processar menções:', error);
+        }
+      }
+      
       toast({
         title: "Comentário publicado",
         description: `Comentário adicionado${anexosUpload.length > 0 ? ` com ${anexosUpload.length} anexo(s)` : ''}.`
