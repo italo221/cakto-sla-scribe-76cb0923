@@ -132,7 +132,7 @@ export default function FileUploader({
           {uploading ? 'Enviando arquivos...' : 'Arraste arquivos aqui ou clique para selecionar'}
         </p>
         <p className="text-xs text-muted-foreground">
-          Máximo {maxFiles} arquivos • {maxSizeMB}MB cada • Imagens: PNG, JPG, WebP • Vídeos: MP4, WebM
+          Máximo {maxFiles} arquivos • Imagens: {maxSizeMB}MB • Vídeos: sem limite • PNG, JPG, WebP, MP4, WebM
         </p>
         
         {uploading && (
