@@ -445,7 +445,7 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
               maxSizeMB={10}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Imagens (PNG, JPG, WebP) e vídeos (MP4, WebM) • Máximo 3 arquivos de 10MB cada
+              Imagens (PNG, JPG, WebP) até 10MB e vídeos (MP4, WebM) até 25MB • Máximo 3 arquivos
             </p>
           </div>
 

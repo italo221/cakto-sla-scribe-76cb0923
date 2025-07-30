@@ -35,12 +35,22 @@ export const useFileUpload = (options: FileUploadOptions) => {
       return false;
     }
 
-    // Verificar tamanho
-    const maxSizeBytes = options.maxSizeMB * 1024 * 1024;
+    // Verificar tamanho baseado no tipo
+    let maxSizeBytes: number;
+    let sizeLabel: string;
+    
+    if (file.type.startsWith('video/')) {
+      maxSizeBytes = 25 * 1024 * 1024; // 25MB para vídeos
+      sizeLabel = "25MB";
+    } else {
+      maxSizeBytes = options.maxSizeMB * 1024 * 1024; // 10MB para imagens
+      sizeLabel = `${options.maxSizeMB}MB`;
+    }
+    
     if (file.size > maxSizeBytes) {
       toast({
         title: "Arquivo muito grande",
-        description: `Tamanho máximo: ${options.maxSizeMB}MB`,
+        description: `Tamanho máximo para ${file.type.startsWith('video/') ? 'vídeos' : 'imagens'}: ${sizeLabel}`,
         variant: "destructive",
       });
       return false;
