@@ -22,6 +22,7 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { extractMentions, findMentionedUsers, notifyUserMention } from "@/utils/notificationService";
+import { extractCleanTextWithMentions } from "@/utils/textFormatting";
 import RichTextMentionEditor from "@/components/RichTextMentionEditor";
 import HighlightedText from "@/components/HighlightedText";
 interface SLA {
@@ -282,6 +283,9 @@ export default function SLADetailModal({
         return;
       }
 
+      // Extrair texto limpo sem HTML antes de salvar
+      const cleanComment = extractCleanTextWithMentions(newComment.trim());
+
       // Primeiro criar o comentário
       const {
         data: commentData,
@@ -291,7 +295,7 @@ export default function SLADetailModal({
         setor_id: comentarioSetorId,
         autor_id: user.id,
         autor_nome: user.user_metadata?.nome_completo || user.email || 'Usuário',
-        comentario: newComment.trim()
+        comentario: cleanComment
       }).select().single();
       if (commentError) throw commentError;
 
@@ -312,8 +316,8 @@ export default function SLADetailModal({
         }
       }
       
-      // Detectar menções e criar notificações
-      const mentions = extractMentions(newComment);
+      // Detectar menções e criar notificações usando o texto limpo
+      const mentions = extractMentions(cleanComment);
       if (mentions.length > 0) {
         try {
           const mentionedUsers = await findMentionedUsers(mentions);
