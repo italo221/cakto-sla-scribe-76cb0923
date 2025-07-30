@@ -80,6 +80,8 @@ export default function Inbox() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'aberto' | 'em_andamento' | 'resolvido' | 'fechado' | 'atrasado' | 'critico'>('all');
   const [setorFilter, setSetorFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('todas');
+  const [dateSort, setDateSort] = useState<'newest' | 'oldest' | 'none'>('none');
+  const [criticalitySort, setCriticalitySort] = useState<'highest' | 'lowest' | 'none'>('none');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -306,8 +308,27 @@ export default function Inbox() {
       });
     }
 
+    // Aplicar ordenação por data
+    if (dateSort !== 'none') {
+      filtered = [...filtered].sort((a, b) => {
+        const dateA = new Date(a.data_criacao).getTime();
+        const dateB = new Date(b.data_criacao).getTime();
+        return dateSort === 'newest' ? dateB - dateA : dateA - dateB;
+      });
+    }
+
+    // Aplicar ordenação por criticidade
+    if (criticalitySort !== 'none') {
+      filtered = [...filtered].sort((a, b) => {
+        const criticalityOrder = { 'P0': 4, 'P1': 3, 'P2': 2, 'P3': 1 };
+        const criticalityA = criticalityOrder[a.nivel_criticidade as keyof typeof criticalityOrder] || 0;
+        const criticalityB = criticalityOrder[b.nivel_criticidade as keyof typeof criticalityOrder] || 0;
+        return criticalitySort === 'highest' ? criticalityB - criticalityA : criticalityA - criticalityB;
+      });
+    }
+
     return filtered;
-  }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, tagFilter, smartSearch]);
+  }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, tagFilter, dateSort, criticalitySort, smartSearch]);
 
   // Cálculo de contagens dos cards baseadas na mesma lógica dos filtros
   const cardCounts = useMemo(() => {
@@ -504,7 +525,7 @@ export default function Inbox() {
                   </div>)}
               </div>}
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Select value={setorFilter} onValueChange={setSetorFilter}>
                 <SelectTrigger className="w-[160px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
                   <SelectValue placeholder="Setor" />
@@ -532,6 +553,30 @@ export default function Inbox() {
                       {tag}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+
+              {/* Filtro por Data */}
+              <Select value={dateSort} onValueChange={(value: 'newest' | 'oldest' | 'none') => setDateSort(value)}>
+                <SelectTrigger className="w-[160px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
+                  <SelectValue placeholder="Ordenar por Data" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border border-border">
+                  <SelectItem value="none">Sem ordenação</SelectItem>
+                  <SelectItem value="newest">Mais recentes</SelectItem>
+                  <SelectItem value="oldest">Mais antigos</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Filtro por Criticidade */}
+              <Select value={criticalitySort} onValueChange={(value: 'highest' | 'lowest' | 'none') => setCriticalitySort(value)}>
+                <SelectTrigger className="w-[170px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
+                  <SelectValue placeholder="Ordenar por Criticidade" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border border-border">
+                  <SelectItem value="none">Sem ordenação</SelectItem>
+                  <SelectItem value="highest">Mais críticos</SelectItem>
+                  <SelectItem value="lowest">Menos críticos</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -616,10 +661,13 @@ export default function Inbox() {
             <span className="mx-0 px-0 my-[5px] py-0 text-base text-center">
               {filteredTicketsWithStatus.length} de {optimizedTickets.length} tickets
             </span>
-            {(searchTerm || activeFilter !== 'all' || setorFilter !== 'all') && <Button variant="ghost" size="sm" onClick={() => {
+            {(searchTerm || activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'none') && <Button variant="ghost" size="sm" onClick={() => {
             setSearchTerm('');
             setActiveFilter('all');
             setSetorFilter('all');
+            setTagFilter('todas');
+            setDateSort('none');
+            setCriticalitySort('none');
             setShowSuggestions(false);
           }} className="text-xs">
                 Limpar filtros
@@ -636,10 +684,10 @@ export default function Inbox() {
               <CardContent className="p-8 text-center">
                 <InboxIcon className="h-12 w-12 text-muted-foreground dark:text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground dark:text-foreground mb-2">
-                  {searchTerm || activeFilter !== 'all' || setorFilter !== 'all' ? 'Nenhum ticket encontrado' : 'Nenhum ticket cadastrado'}
+                 {searchTerm || activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'none' ? 'Nenhum ticket encontrado' : 'Nenhum ticket cadastrado'}
                 </h3>
                 <p className="text-muted-foreground dark:text-muted-foreground">
-                  {searchTerm || activeFilter !== 'all' || setorFilter !== 'all' ? 'Tente ajustar os filtros de busca.' : 'Quando houver tickets, eles aparecerão aqui.'}
+                  {searchTerm || activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'none' ? 'Tente ajustar os filtros de busca.' : 'Quando houver tickets, eles aparecerão aqui.'}
                 </p>
               </CardContent>
             </Card> : filteredTicketsWithStatus.map(ticket => <JiraTicketCard key={ticket.id} ticket={ticket} onOpenDetail={handleOpenTicketDetail} onEditTicket={handleEditTicket} onDeleteTicket={handleDeleteTicket} userCanEdit={canEdit} userCanDelete={canDelete} />)}
