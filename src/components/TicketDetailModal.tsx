@@ -624,8 +624,8 @@ export default function SLADetailModal({
     const results: string[] = [];
     
     // Buscar na descrição inicial
-    if (currentSLA.descricao.toLowerCase().includes(term.toLowerCase()) || 
-        (currentSLA.observacoes && currentSLA.observacoes.toLowerCase().includes(term.toLowerCase()))) {
+    if (currentSLA && (currentSLA.descricao.toLowerCase().includes(term.toLowerCase()) || 
+        (currentSLA.observacoes && currentSLA.observacoes.toLowerCase().includes(term.toLowerCase())))) {
       results.push('initial-description');
     }
 
@@ -670,21 +670,23 @@ export default function SLADetailModal({
   const isHighlighted = (commentId: string) => {
     return searchTerm && searchResults.includes(commentId);
   };
-  if (!currentSLA) return null;
+  if (!currentSLA || !isOpen) return null;
   return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-4">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold mx-0 px-0 my-0">
-              {currentSLA.ticket_number || `#${currentSLA.id.slice(0, 8)}`} - {currentSLA.titulo}
+              {currentSLA ? `${currentSLA.ticket_number || `#${currentSLA.id.slice(0, 8)}`} - ${currentSLA.titulo}` : 'Carregando...'}
             </DialogTitle>
             <div className="flex items-center justify-end w-full">
               {(canEdit || isSuperAdmin) && <Button variant="outline" size="sm" onClick={() => {
               onClose();
               // Abrir modal de edição
-              window.dispatchEvent(new CustomEvent('openEditModal', {
-                detail: currentSLA
-              }));
+              if (currentSLA) {
+                window.dispatchEvent(new CustomEvent('openEditModal', {
+                  detail: currentSLA
+                }));
+              }
             }} className="gap-2">
                   <Edit3 className="h-4 w-4" />
                   <span className="hidden sm:inline">Editar</span>
@@ -698,11 +700,11 @@ export default function SLADetailModal({
           {/* Ações de Status e Transferência */}
           <div className="flex flex-wrap gap-2 mb-6 max-w-full overflow-x-auto">
             {/* Botão de Transferência */}
-            {(isAdmin || userSetores.some(us => us.setor_id === sla.setor_id)) && <Button variant="outline" onClick={() => setShowTransferForm(!showTransferForm)} className="gap-2 hover:bg-muted hover:shadow-sm transition-colors">
+            {currentSLA && (isAdmin || userSetores.some(us => us.setor_id === currentSLA.setor_id)) && <Button variant="outline" onClick={() => setShowTransferForm(!showTransferForm)} className="gap-2 hover:bg-muted hover:shadow-sm transition-colors">
                 <ArrowRightLeft className="h-4 w-4" />
                 Transferir Setor
               </Button>}
-            {sla.status === 'aberto' && <Button variant="default" onClick={() => handleChangeStatus('em_andamento')} disabled={statusLoading !== null} className="gap-2 min-w-[100px] sm:min-w-[120px] text-xs sm:text-sm">
+            {currentSLA && currentSLA.status === 'aberto' && <Button variant="default" onClick={() => handleChangeStatus('em_andamento')} disabled={statusLoading !== null} className="gap-2 min-w-[100px] sm:min-w-[120px] text-xs sm:text-sm">
                 {statusLoading === 'em_andamento' ? <>
                     <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
                     Iniciando...
@@ -712,7 +714,7 @@ export default function SLADetailModal({
                   </>}
               </Button>}
             
-            {sla.status === 'em_andamento' && user?.email !== sla.solicitante && <Button variant="default" onClick={() => handleChangeStatus('resolvido')} disabled={statusLoading !== null} className="gap-2 min-w-[100px] sm:min-w-[120px] text-xs sm:text-sm">
+            {currentSLA && currentSLA.status === 'em_andamento' && user?.email !== currentSLA.solicitante && <Button variant="default" onClick={() => handleChangeStatus('resolvido')} disabled={statusLoading !== null} className="gap-2 min-w-[100px] sm:min-w-[120px] text-xs sm:text-sm">
                 {statusLoading === 'resolvido' ? <>
                     <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
                     Resolvendo...
@@ -723,12 +725,12 @@ export default function SLADetailModal({
               </Button>}
             
             {/* Aviso para quem criou o ticket */}
-            {sla.status === 'em_andamento' && user?.email === sla.solicitante && <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md text-sm text-amber-800 dark:text-amber-200 px-[14px] mx-[5px] my-0 py-[6px]">
+            {currentSLA && currentSLA.status === 'em_andamento' && user?.email === currentSLA.solicitante && <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md text-sm text-amber-800 dark:text-amber-200 px-[14px] mx-[5px] my-0 py-[6px]">
                 <AlertCircle className="h-4 w-4 inline mr-2" />
                 Quem criou o ticket não pode resolvê-lo. Aguarde o time responsável.
               </div>}
             
-            {sla.status === 'resolvido' && <>
+            {currentSLA && currentSLA.status === 'resolvido' && <>
                 <Button variant="default" onClick={() => handleChangeStatus('fechado')} disabled={statusLoading !== null} className="gap-2 min-w-[100px] sm:min-w-[120px] text-xs sm:text-sm">
                   {statusLoading === 'fechado' ? <>
                       <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
@@ -761,7 +763,7 @@ export default function SLADetailModal({
                         <SelectValue placeholder="Selecione um setor" />
                       </SelectTrigger>
                       <SelectContent>
-                        {setores.filter(setor => setor.id !== currentSLA.setor_id).map(setor => <SelectItem key={setor.id} value={setor.id}>
+                        {currentSLA && setores.filter(setor => setor.id !== currentSLA.setor_id).map(setor => <SelectItem key={setor.id} value={setor.id}>
                               {setor.nome}
                             </SelectItem>)}
                       </SelectContent>
@@ -941,15 +943,15 @@ export default function SLADetailModal({
                             <div className="flex-1 space-y-2">
                               <div className="flex items-center gap-2">
                                 <div className="flex items-center gap-1">
-                                  <span className="font-medium text-sm">{currentSLA.solicitante}</span>
+                                  <span className="font-medium text-sm">{currentSLA ? currentSLA.solicitante : 'Carregando...'}</span>
                                   <Badge variant="outline" className="text-xs">
                                     Solicitante
                                   </Badge>
                                 </div>
                                 <span className="text-xs text-muted-foreground">
-                                  {format(new Date(currentSLA.data_criacao), "dd/MM/yyyy 'às' HH:mm", {
+                                  {currentSLA ? format(new Date(currentSLA.data_criacao), "dd/MM/yyyy 'às' HH:mm", {
                               locale: ptBR
-                            })}
+                            }) : 'Carregando...'}
                                 </span>
                               </div>
                               
@@ -961,9 +963,9 @@ export default function SLADetailModal({
                                   </span>
                                 </div>
                                 <p className="text-sm leading-relaxed text-blue-800 dark:text-blue-200 whitespace-pre-wrap">
-                                  {currentSLA.descricao}
+                                  {currentSLA ? currentSLA.descricao : 'Carregando...'}
                                 </p>
-                                {currentSLA.observacoes && <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                                {currentSLA && currentSLA.observacoes && <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
                                     <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">Observações:</p>
                                     <p className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap">
                                       {currentSLA.observacoes}
@@ -1083,30 +1085,30 @@ export default function SLADetailModal({
                   <label className="text-sm font-medium text-muted-foreground">Solicitante</label>
                   <div className="flex items-center gap-2 mt-1">
                     <User className="h-4 w-4" />
-                    <span>{currentSLA.solicitante}</span>
+                    <span>{currentSLA ? currentSLA.solicitante : 'Carregando...'}</span>
                   </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Time Responsável</label>
                   <div className="flex items-center gap-2 mt-1">
                     <Building className="h-4 w-4" />
-                    <span>{currentSLA.time_responsavel}</span>
+                    <span>{currentSLA ? currentSLA.time_responsavel : 'Carregando...'}</span>
                   </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
                   <div className="flex items-center gap-2 mt-1">
                     <Calendar className="h-4 w-4" />
-                    <span>{format(new Date(currentSLA.data_criacao), "dd/MM/yyyy 'às' HH:mm", {
+                    <span>{currentSLA ? format(new Date(currentSLA.data_criacao), "dd/MM/yyyy 'às' HH:mm", {
                       locale: ptBR
-                    })}</span>
+                    }) : 'Carregando...'}</span>
                   </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Responsável Interno</label>
                   <div className="flex items-center gap-2 mt-1">
                     <User className="h-4 w-4" />
-                    <span>{currentSLA.responsavel_interno || 'Não atribuído'}</span>
+                    <span>{currentSLA ? (currentSLA.responsavel_interno || 'Não atribuído') : 'Carregando...'}</span>
                   </div>
                 </div>
               </div>
@@ -1115,16 +1117,16 @@ export default function SLADetailModal({
               
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Descrição</label>
-                <p className="mt-1 text-sm">{currentSLA.descricao}</p>
+                <p className="mt-1 text-sm">{currentSLA ? currentSLA.descricao : 'Carregando...'}</p>
               </div>
               
-              {currentSLA.observacoes && <div>
+              {currentSLA && currentSLA.observacoes && <div>
                   <label className="text-sm font-medium text-muted-foreground">Observações</label>
                   <p className="mt-1 text-sm">{currentSLA.observacoes}</p>
                 </div>}
               
               {/* Anexos e Link de Referência */}
-              {(currentSLA.link_referencia || currentSLA.anexos) && (
+              {currentSLA && (currentSLA.link_referencia || currentSLA.anexos) && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Anexos e Links</label>
                   <div className="mt-2">
