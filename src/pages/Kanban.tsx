@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useOptimizedTickets } from "@/hooks/useOptimizedTickets";
 import Navigation from "@/components/Navigation";
 import TicketKanban from "@/components/TicketKanban";
@@ -8,9 +8,13 @@ import SetorValidationAlert from "@/components/SetorValidationAlert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCw, Kanban as KanbanIcon, TrendingUp, Clock, AlertTriangle } from "lucide-react";
+import { useTags } from "@/hooks/useTags";
+import { supabase } from "@/integrations/supabase/client";
+import { RefreshCw, Kanban as KanbanIcon, TrendingUp, Clock, AlertTriangle, Search, Filter, Building2 } from "lucide-react";
 
 interface Ticket {
   id: string;
@@ -34,6 +38,11 @@ interface Ticket {
   setor_id?: string;
 }
 
+interface Setor {
+  id: string;
+  nome: string;
+}
+
 export default function KanbanPage() {
   // Usar hook otimizado
   const { 
@@ -50,8 +59,16 @@ export default function KanbanPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedTicketForEdit, setSelectedTicketForEdit] = useState<Ticket | null>(null);
   
+  // Estados do filtro do Kanban
+  const [setores, setSetores] = useState<Setor[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [setorFilter, setSetorFilter] = useState('all');
+  const [tagFilter, setTagFilter] = useState('todas');
+  const [criticalityFilter, setCriticalityFilter] = useState('all');
+  
   const { user, canEdit } = useAuth();
   const { toast } = useToast();
+  const { allTags } = useTags();
 
   const handleOpenTicketDetail = (ticket: Ticket) => {
     setSelectedTicket(ticket);
@@ -71,14 +88,89 @@ export default function KanbanPage() {
     });
   };
 
-  // Cálculo de estatísticas
+  // Carregar setores
+  useEffect(() => {
+    loadSetores();
+  }, []);
+
+  const loadSetores = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('setores')
+        .select('id, nome')
+        .eq('ativo', true)
+        .order('nome');
+      if (error) throw error;
+      setSetores(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar setores:', error);
+    }
+  };
+
+  // Filtrar tickets para o Kanban
+  const filteredTickets = useMemo(() => {
+    let filtered = tickets;
+
+    // Busca por termo
+    if (searchTerm) {
+      const lowerTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter(ticket => 
+        ticket.titulo.toLowerCase().includes(lowerTerm) ||
+        ticket.solicitante.toLowerCase().includes(lowerTerm) ||
+        ticket.time_responsavel.toLowerCase().includes(lowerTerm) ||
+        ticket.ticket_number?.toLowerCase().includes(lowerTerm) ||
+        ticket.descricao.toLowerCase().includes(lowerTerm)
+      );
+    }
+
+    // Filtro por setor
+    if (setorFilter !== 'all') {
+      filtered = filtered.filter(ticket => {
+        const setorSelecionado = setores.find(s => s.id === setorFilter);
+        if (!setorSelecionado) return false;
+
+        const timeResponsavel = ticket.time_responsavel?.trim();
+        const nomeSetor = setorSelecionado.nome?.trim();
+        
+        if (timeResponsavel === nomeSetor) {
+          return true;
+        }
+        
+        if (!timeResponsavel && ticket.setor_id === setorFilter) {
+          return true;
+        }
+        
+        return false;
+      });
+    }
+
+    // Filtro por tag
+    if (tagFilter !== 'todas') {
+      filtered = filtered.filter(ticket => {
+        const ticketTags = Array.isArray(ticket.tags) ? ticket.tags : [];
+        return ticketTags.some(tag => 
+          tag && typeof tag === 'string' && 
+          tag.trim().toLowerCase() === tagFilter.trim().toLowerCase()
+        );
+      });
+    }
+
+    // Filtro por criticidade
+    if (criticalityFilter !== 'all') {
+      filtered = filtered.filter(ticket => ticket.nivel_criticidade === criticalityFilter);
+    }
+
+    return filtered;
+  }, [tickets, searchTerm, setorFilter, tagFilter, criticalityFilter, setores]);
+
+  // Cálculo de estatísticas baseado nos tickets filtrados
   const stats = {
-    total: tickets.length,
-    abertos: tickets.filter(t => t.status === 'aberto').length,
-    emAndamento: tickets.filter(t => t.status === 'em_andamento').length,
-    resolvidos: tickets.filter(t => t.status === 'resolvido').length,
-    fechados: tickets.filter(t => t.status === 'fechado').length,
-    criticos: tickets.filter(t => t.nivel_criticidade === 'P0').length,
+    total: filteredTickets.length,
+    abertos: filteredTickets.filter(t => t.status === 'aberto').length,
+    emAndamento: filteredTickets.filter(t => t.status === 'em_andamento').length,
+    resolvidos: filteredTickets.filter(t => t.status === 'resolvido').length,
+    fechados: filteredTickets.filter(t => t.status === 'fechado').length,
+    criticos: filteredTickets.filter(t => t.nivel_criticidade === 'P0').length,
   };
 
   return (
@@ -90,23 +182,112 @@ export default function KanbanPage() {
         <SetorValidationAlert />
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-              <KanbanIcon className="h-8 w-8 text-primary" />
-              Kanban Board
-            </h1>
-            <p className="text-muted-foreground">
-              Visualize e gerencie o fluxo de trabalho dos tickets
-            </p>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+                <KanbanIcon className="h-8 w-8 text-primary" />
+                Kanban Board
+              </h1>
+              <p className="text-muted-foreground">
+                Visualize e gerencie o fluxo de trabalho dos tickets
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button onClick={reloadTickets} variant="outline" size="sm" disabled={loading}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+            </div>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <Button onClick={reloadTickets} variant="outline" size="sm" disabled={loading}>
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Atualizar
-            </Button>
-          </div>
+
+          {/* Filtros do Kanban */}
+          <Card className="bg-card">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Filtros do Kanban</span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Busca */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Buscar</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Título, solicitante, número..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                {/* Filtro por Setor */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Setor</label>
+                  <Select value={setorFilter} onValueChange={setSetorFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os setores" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os setores</SelectItem>
+                      {setores.map(setor => (
+                        <SelectItem key={setor.id} value={setor.id}>
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4" />
+                            {setor.nome}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Filtro por Tag */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Tag</label>
+                  <Select value={tagFilter} onValueChange={setTagFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas as tags" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todas">Todas as tags</SelectItem>
+                      {allTags.map(tag => (
+                        <SelectItem key={tag} value={tag}>
+                          {tag}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Filtro por Criticidade */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Prioridade</label>
+                  <Select value={criticalityFilter} onValueChange={setCriticalityFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas as prioridades" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="P0">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4 text-red-500" />
+                          P0 - Crítico
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="P1">P1 - Alto</SelectItem>
+                      <SelectItem value="P2">P2 - Médio</SelectItem>
+                      <SelectItem value="P3">P3 - Baixo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Stats Cards */}
@@ -193,7 +374,7 @@ export default function KanbanPage() {
               </div>
             ) : (
               <TicketKanban 
-                tickets={tickets} 
+                tickets={filteredTickets} 
                 onOpenDetail={handleOpenTicketDetail}
                 onEditTicket={handleEditTicket}
                 onTicketUpdate={handleTicketUpdate}
