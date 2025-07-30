@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,21 +12,19 @@ interface User {
   email: string;
 }
 
-interface MentionEditorProps {
+interface RichTextMentionEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
-  onKeyDown?: (e: React.KeyboardEvent) => void;
 }
 
-export default function MentionEditor({ 
+export default function RichTextMentionEditor({ 
   value, 
   onChange, 
   placeholder = "Escreva um comentário...",
-  className = "",
-  onKeyDown
-}: MentionEditorProps) {
+  className = ""
+}: RichTextMentionEditorProps) {
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   const [mentionUsers, setMentionUsers] = useState<User[]>([]);
@@ -34,7 +32,7 @@ export default function MentionEditor({
   const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
   const [lastAtPosition, setLastAtPosition] = useState(-1);
   
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const mentionListRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
 
@@ -64,35 +62,29 @@ export default function MentionEditor({
     }
   }, [user?.id]);
 
-  // Detectar @ e mostrar lista de usuários
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = e.target.value;
-    const cursorPosition = e.target.selectionStart;
-    
+  // Detectar @ no texto
+  const handleTextChange = (newValue: string) => {
     onChange(newValue);
     
-    // Encontrar a última posição do @
-    const textBeforeCursor = newValue.substring(0, cursorPosition);
-    const atIndex = textBeforeCursor.lastIndexOf('@');
+    // Detectar @ no final do texto
+    const textContent = newValue.replace(/<[^>]*>/g, ''); // Remove HTML tags
+    const lastAtIndex = textContent.lastIndexOf('@');
     
-    if (atIndex !== -1) {
-      const afterAt = textBeforeCursor.substring(atIndex + 1);
-      // Verificar se não há espaços após @ (mention ainda está sendo digitada)
-      if (!afterAt.includes(' ') && !afterAt.includes('\n')) {
-        setLastAtPosition(atIndex);
+    if (lastAtIndex !== -1) {
+      const afterAt = textContent.substring(lastAtIndex + 1);
+      
+      // Se não há espaços ou quebras de linha após @
+      if (!afterAt.includes(' ') && !afterAt.includes('\n') && afterAt.length <= 50) {
+        setLastAtPosition(lastAtIndex);
         setMentionQuery(afterAt);
         setShowMentions(true);
         setSelectedIndex(0);
         
-        // Calcular posição do dropdown
-        if (textareaRef.current) {
-          const textarea = textareaRef.current;
-          const rect = textarea.getBoundingClientRect();
-          const lineHeight = 20; // altura aproximada da linha
-          const lines = textBeforeCursor.split('\n').length;
-          
+        // Calcular posição aproximada do dropdown
+        if (editorRef.current) {
+          const rect = editorRef.current.getBoundingClientRect();
           setMentionPosition({
-            top: rect.top + (lines * lineHeight) + 25,
+            top: rect.bottom + 5,
             left: rect.left + 10
           });
         }
@@ -108,34 +100,25 @@ export default function MentionEditor({
 
   // Selecionar usuário da lista
   const selectUser = (selectedUser: User) => {
-    if (!textareaRef.current || lastAtPosition === -1) return;
+    if (lastAtPosition === -1) return;
     
-    const textarea = textareaRef.current;
-    const currentValue = textarea.value;
-    const cursorPosition = textarea.selectionStart;
+    const textContent = value.replace(/<[^>]*>/g, '');
+    const beforeAt = textContent.substring(0, lastAtPosition);
+    const afterQuery = textContent.substring(lastAtPosition + 1 + mentionQuery.length);
     
-    // Substituir @query pelo @nome_usuario
-    const beforeAt = currentValue.substring(0, lastAtPosition);
-    const afterCursor = currentValue.substring(cursorPosition);
-    const mentionText = `@${selectedUser.nome_completo}`;
+    // Criar menção com span destacado
+    const mentionSpan = `<span style="background-color: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); padding: 2px 6px; border-radius: 4px; font-weight: 500;">@${selectedUser.nome_completo}</span>`;
     
-    const newValue = beforeAt + mentionText + ' ' + afterCursor;
+    const newValue = beforeAt + mentionSpan + ' ' + afterQuery;
     onChange(newValue);
-    
-    // Reposicionar cursor
-    const newCursorPosition = beforeAt.length + mentionText.length + 1;
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-    }, 0);
     
     setShowMentions(false);
     setMentionQuery('');
     setLastAtPosition(-1);
   };
 
-  // Navegação por teclado na lista de mentions
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  // Navegação por teclado
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (showMentions && mentionUsers.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -143,43 +126,45 @@ export default function MentionEditor({
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedIndex(prev => prev === 0 ? mentionUsers.length - 1 : prev - 1);
-      } else if (e.key === 'Enter' && !e.shiftKey) {
+      } else if (e.key === 'Enter') {
         e.preventDefault();
         if (mentionUsers[selectedIndex]) {
           selectUser(mentionUsers[selectedIndex]);
         }
-        return;
       } else if (e.key === 'Escape') {
         setShowMentions(false);
       }
     }
-    
-    onKeyDown?.(e);
   };
 
-  // Fechar dropdown ao clicar fora
+  // Event listeners
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (mentionListRef.current && !mentionListRef.current.contains(event.target as Node) &&
-          textareaRef.current && !textareaRef.current.contains(event.target as Node)) {
+          editorRef.current && !editorRef.current.contains(event.target as Node)) {
         setShowMentions(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showMentions, mentionUsers, selectedIndex, lastAtPosition, mentionQuery]);
 
   return (
     <div className="relative">
-      <Textarea
-        ref={textareaRef}
-        value={value}
-        onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        className={className}
-      />
+      <div ref={editorRef}>
+        <RichTextEditor
+          value={value}
+          onChange={handleTextChange}
+          placeholder={placeholder}
+          className={className}
+        />
+      </div>
       
       {/* Dropdown de mentions */}
       {showMentions && mentionUsers.length > 0 && (
@@ -193,6 +178,9 @@ export default function MentionEditor({
         >
           <ScrollArea className="max-h-48">
             <div className="p-1">
+              <div className="px-3 py-2 text-xs text-muted-foreground border-b">
+                Digite para buscar ou selecione:
+              </div>
               {mentionUsers.map((mentionUser, index) => (
                 <div
                   key={mentionUser.id}

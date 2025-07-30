@@ -22,7 +22,7 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { extractMentions, findMentionedUsers, notifyUserMention } from "@/utils/notificationService";
-import MentionEditor from "@/components/MentionEditor";
+import RichTextMentionEditor from "@/components/RichTextMentionEditor";
 import HighlightedText from "@/components/HighlightedText";
 interface SLA {
   id: string;
@@ -818,17 +818,11 @@ export default function SLADetailModal({
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-3 min-w-0">
-                          <MentionEditor 
+                          <RichTextMentionEditor 
                             value={newComment} 
                             onChange={setNewComment} 
                             placeholder="Escreva um comentário... Use @ para mencionar usuários" 
                             className="min-h-[60px] max-h-[100px] resize-none border-0 bg-background shadow-sm focus:ring-2 focus:ring-primary/20"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && !e.shiftKey && newComment.trim()) {
-                                e.preventDefault();
-                                handleAddComment();
-                              }
-                            }}
                           />
                           {/* Área de anexos */}
                           {attachments && attachments.length > 0 && <div className="space-y-2">
