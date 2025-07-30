@@ -22,6 +22,8 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { extractMentions, findMentionedUsers, notifyUserMention } from "@/utils/notificationService";
+import MentionEditor from "@/components/MentionEditor";
+import HighlightedText from "@/components/HighlightedText";
 interface SLA {
   id: string;
   ticket_number: string;
@@ -816,11 +818,17 @@ export default function SLADetailModal({
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-3 min-w-0">
-                          <RichTextEditor 
+                          <MentionEditor 
                             value={newComment} 
                             onChange={setNewComment} 
-                            placeholder="Escreva um comentário..." 
-                            className="min-h-[60px] max-h-[100px] resize-none border-0 bg-background shadow-sm focus:ring-2 focus:ring-primary/20" 
+                            placeholder="Escreva um comentário... Use @ para mencionar usuários" 
+                            className="min-h-[60px] max-h-[100px] resize-none border-0 bg-background shadow-sm focus:ring-2 focus:ring-primary/20"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey && newComment.trim()) {
+                                e.preventDefault();
+                                handleAddComment();
+                              }
+                            }}
                           />
                           {/* Área de anexos */}
                           {attachments && attachments.length > 0 && <div className="space-y-2">
@@ -969,7 +977,7 @@ export default function SLADetailModal({
                                      </div> : null}
                                  </div>
                                  <div className="space-y-2">
-                                   <FormattedText text={comment.comentario} className="text-sm leading-relaxed break-words" />
+                                   <HighlightedText text={comment.comentario} className="text-sm leading-relaxed break-words" />
                                   
                                   {/* Botão de anexos integrado */}
                                   {comment.anexos && comment.anexos.length > 0 && <div className="flex flex-wrap gap-2 mt-2">
