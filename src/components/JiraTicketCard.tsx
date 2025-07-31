@@ -201,7 +201,7 @@ const JiraTicketCard = memo(({
     format(new Date(ticket.data_criacao), "dd/MM 'às' HH:mm", { locale: ptBR }),
     [ticket.data_criacao]
   );
-  return <Card className={cn("group transition-all duration-200 hover:shadow-lg cursor-pointer border border-border bg-white",
+  return <Card className={cn("group macos-card border border-border bg-white",
   // Borda lateral para prioridade
   ticket.nivel_criticidade === 'P0' && "border-l-4 border-l-red-500", ticket.nivel_criticidade === 'P1' && "border-l-4 border-l-orange-500", ticket.nivel_criticidade === 'P2' && "border-l-4 border-l-yellow-500", ticket.nivel_criticidade === 'P3' && "border-l-4 border-l-blue-500",
   // Destaque sutil para tickets atrasados

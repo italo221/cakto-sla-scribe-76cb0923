@@ -139,11 +139,10 @@ const KanbanCard = memo(({ ticket, isDragging, onOpenDetail, onEditTicket, userC
       style={style}
       {...attributes}
       className={cn(
-        "transition-all duration-300 group bg-card animate-fade-in relative cursor-pointer",
-        "border border-border rounded-lg hover:border-muted-foreground hover:shadow-md",
+        "group bg-card animate-fade-in relative cursor-pointer macos-card-kanban",
+        "border border-border",
         isDragging && "opacity-90 rotate-2 scale-105 shadow-2xl z-50 ring-2 ring-primary",
-        isSortableDragging && "shadow-xl scale-105 rotate-2 border-primary",
-        userCanEdit && "hover:scale-102 hover:shadow-lg"
+        isSortableDragging && "shadow-xl scale-105 rotate-2 border-primary"
       )}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
