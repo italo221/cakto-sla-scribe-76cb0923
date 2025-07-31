@@ -43,14 +43,18 @@ export async function notifyUserMention(
   ticketTitle: string,
   commentId?: string
 ) {
-  await createNotification({
-    userId: mentionedUserId,
-    ticketId,
-    commentId,
-    type: 'mention',
-    title: `${mentionerName} mencionou você`,
-    message: `Você foi mencionado em um comentário no ticket: ${ticketTitle}`
-  });
+  try {
+    await createNotification({
+      userId: mentionedUserId,
+      ticketId,
+      commentId,
+      type: 'mention',
+      title: `${mentionerName} mencionou você`,
+      message: `Você foi mencionado em um comentário no ticket: ${ticketTitle}`
+    });
+  } catch (error) {
+    console.error('Erro ao criar notificação de menção:', error);
+  }
 }
 
 export async function notifyTicketComment(
@@ -60,14 +64,18 @@ export async function notifyTicketComment(
   ticketTitle: string,
   commentId: string
 ) {
-  await createNotification({
-    userId,
-    ticketId,
-    commentId,
-    type: 'comment',
-    title: 'Novo comentário',
-    message: `${commenterName} comentou no ticket: ${ticketTitle}`
-  });
+  try {
+    await createNotification({
+      userId,
+      ticketId,
+      commentId,
+      type: 'comment',
+      title: 'Novo comentário',
+      message: `${commenterName} comentou no ticket: ${ticketTitle}`
+    });
+  } catch (error) {
+    console.error('Erro ao criar notificação de comentário:', error);
+  }
 }
 
 export async function notifyTicketUpdate(
@@ -77,13 +85,17 @@ export async function notifyTicketUpdate(
   ticketTitle: string,
   updateType: string
 ) {
-  await createNotification({
-    userId,
-    ticketId,
-    type: 'ticket_update',
-    title: 'Ticket atualizado',
-    message: `${updaterName} ${updateType} o ticket: ${ticketTitle}`
-  });
+  try {
+    await createNotification({
+      userId,
+      ticketId,
+      type: 'ticket_update',
+      title: 'Ticket atualizado',
+      message: `${updaterName} ${updateType} o ticket: ${ticketTitle}`
+    });
+  } catch (error) {
+    console.error('Erro ao criar notificação de atualização:', error);
+  }
 }
 
 // Função para detectar menções em texto (formato @usuario ou @nome)

@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import CommentEditModal from "@/components/CommentEditModal";
+import CommentReactions from "@/components/CommentReactions";
 import CommentDeleteModal from "@/components/CommentDeleteModal";
 import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit3, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown } from "lucide-react";
 import TicketAttachments from "@/components/TicketAttachments";
@@ -352,26 +353,29 @@ export default function SLADetailModal({
           throw updateError;
         }
       }
-      
-      // Detectar menções e criar notificações usando o texto limpo
-      const mentions = extractMentions(cleanComment);
-      if (mentions.length > 0) {
-        try {
+
+      // Processar menções e enviar notificações
+      try {
+        const mentions = extractMentions(cleanComment);
+        if (mentions.length > 0) {
           const mentionedUsers = await findMentionedUsers(mentions);
-          const authorName = user.user_metadata?.nome_completo || user.email || 'Usuário';
+          const mentionerName = user.user_metadata?.nome_completo || user.email || 'Usuário';
           
           for (const mentionedUser of mentionedUsers) {
-            // Não notificar o próprio autor
-            if (mentionedUser.user_id !== user.id) {
+            if (mentionedUser.user_id !== user.id) { // Não notificar a si mesmo
               await notifyUserMention(
                 mentionedUser.user_id,
-                authorName,
+                mentionerName,
                 currentSLA.id,
                 currentSLA.titulo,
                 commentData.id
               );
             }
           }
+        }
+      } catch (error) {
+        console.error('Erro ao processar menções:', error);
+      }
         } catch (error) {
           console.error('Erro ao processar menções:', error);
         }
@@ -395,6 +399,7 @@ export default function SLADetailModal({
       setUploadingFiles(false);
     }
   };
+
   const handleChangeStatus = async (newStatus: string) => {
     if (!currentSLA) return;
 
@@ -1018,24 +1023,30 @@ export default function SLADetailModal({
                                      </div> : null}
                                  </div>
                                  <div className="space-y-2">
-                                   <HighlightedText text={comment.comentario} className="text-sm leading-relaxed break-words" />
-                                  
-                                  {/* Botão de anexos integrado */}
-                                  {comment.anexos && comment.anexos.length > 0 && <div className="flex flex-wrap gap-2 mt-2">
-                                      {comment.anexos.map((anexo, index) => <Button key={index} variant="outline" size="sm" className="h-auto p-2 flex items-center gap-2 bg-muted/10 hover:bg-muted/30 border-dashed" onClick={() => downloadAttachment(anexo.url, anexo.nome)}>
-                                          <Paperclip className="h-3 w-3 text-muted-foreground" />
-                                          <div className="flex flex-col items-start">
-                                            <span className="text-xs font-medium truncate max-w-[120px]">
-                                              {anexo.nome}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                              {formatFileSize(anexo.tamanho)}
-                                            </span>
-                                          </div>
-                                          <Download className="h-3 w-3 ml-1 opacity-70" />
-                                        </Button>)}
-                                    </div>}
-                                </div>
+                                    <HighlightedText text={comment.comentario} className="text-sm leading-relaxed break-words" />
+                                   
+                                   {/* Botão de anexos integrado */}
+                                   {comment.anexos && comment.anexos.length > 0 && <div className="flex flex-wrap gap-2 mt-2">
+                                       {comment.anexos.map((anexo, index) => <Button key={index} variant="outline" size="sm" className="h-auto p-2 flex items-center gap-2 bg-muted/10 hover:bg-muted/30 border-dashed" onClick={() => downloadAttachment(anexo.url, anexo.nome)}>
+                                           <Paperclip className="h-3 w-3 text-muted-foreground" />
+                                           <div className="flex flex-col items-start">
+                                             <span className="text-xs font-medium truncate max-w-[120px]">
+                                               {anexo.nome}
+                                             </span>
+                                             <span className="text-xs text-muted-foreground">
+                                               {formatFileSize(anexo.tamanho)}
+                                             </span>
+                                           </div>
+                                           <Download className="h-3 w-3 ml-1 opacity-70" />
+                                         </Button>)}
+                                     </div>}
+                                   
+                                   {/* Reações do comentário */}
+                                   <CommentReactions 
+                                     commentId={comment.id} 
+                                     className="mt-2" 
+                                   />
+                                 </div>
                               </div>
                             </div>)}
                       </div>}
