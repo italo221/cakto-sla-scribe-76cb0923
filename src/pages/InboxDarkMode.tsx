@@ -561,7 +561,7 @@ export default function Inbox() {
                 <SelectTrigger className="w-[160px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
                   <SelectValue placeholder="Ordenar por Data" />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border">
+                <SelectContent className="glass-dropdown z-50">
                   <SelectItem value="none">Sem ordenação</SelectItem>
                   <SelectItem value="newest">Mais recentes</SelectItem>
                   <SelectItem value="oldest">Mais antigos</SelectItem>
@@ -573,7 +573,7 @@ export default function Inbox() {
                 <SelectTrigger className="w-[170px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
                   <SelectValue placeholder="Ordenar por Criticidade" />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border">
+                <SelectContent className="glass-dropdown z-50">
                   <SelectItem value="none">Sem ordenação</SelectItem>
                   <SelectItem value="highest">Mais críticos</SelectItem>
                   <SelectItem value="lowest">Menos críticos</SelectItem>
