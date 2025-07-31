@@ -150,7 +150,7 @@ const KanbanCard = memo(({ ticket, isDragging, onOpenDetail, onEditTicket, userC
       onMouseLeave={handleMouseUp}
       onClick={handleClick}
     >
-      <CardContent className="p-3 space-y-3">
+      <CardContent className="p-3 space-y-3 macos-card">
         {/* Header com número e prioridade P0 */}
         <div className="flex items-center justify-between">
           <Badge variant="default" className="text-xs font-mono bg-primary text-primary-foreground">
