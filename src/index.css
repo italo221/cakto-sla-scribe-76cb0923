@@ -247,6 +247,22 @@ All colors MUST be HSL.
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
+  /* Glassmorphism for dropdowns and filters */
+  .glass-dropdown {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  .dark .glass-dropdown {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+
   /* Chart animations */
   .recharts-pie-sector {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

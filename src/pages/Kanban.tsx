@@ -232,7 +232,7 @@ export default function KanbanPage() {
                     <SelectTrigger>
                       <SelectValue placeholder="Todos os setores" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="glass-dropdown z-50">
                       <SelectItem value="all">Todos os setores</SelectItem>
                       {setores.map(setor => (
                         <SelectItem key={setor.id} value={setor.id}>
@@ -253,7 +253,7 @@ export default function KanbanPage() {
                     <SelectTrigger>
                       <SelectValue placeholder="Todas as tags" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="glass-dropdown z-50">
                       <SelectItem value="todas">Todas as tags</SelectItem>
                       {allTags.map(tag => (
                         <SelectItem key={tag} value={tag}>
@@ -271,7 +271,7 @@ export default function KanbanPage() {
                     <SelectTrigger>
                       <SelectValue placeholder="Todas as prioridades" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="glass-dropdown z-50">
                       <SelectItem value="all">Todas</SelectItem>
                       <SelectItem value="P0">
                         <div className="flex items-center gap-2">
