@@ -494,6 +494,22 @@ All colors MUST be HSL.
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
+  /* Glassmorphism para dropdowns de filtros (mesmo efeito da navbar) */
+  .dropdown-filter {
+    background: rgba(255, 255, 255, 0.15) !important; /* fundo translúcido */
+    backdrop-filter: blur(8px) !important; /* blur idêntico ao da navbar */
+    -webkit-backdrop-filter: blur(8px) !important; /* compatibilidade Safari */
+    border: 1px solid rgba(255, 255, 255, 0.3) !important; /* borda leve */
+    border-radius: 8px !important; /* cantos arredondados sutis */
+  }
+
+  .dark .dropdown-filter {
+    background: rgba(0, 0, 0, 0.25) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
   /* macOS-style Card Effects */
   .macos-card {
     transition: all 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
