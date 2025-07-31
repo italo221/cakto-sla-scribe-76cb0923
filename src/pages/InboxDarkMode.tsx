@@ -25,6 +25,7 @@ import TicketKanban from "@/components/TicketKanban";
 import JiraTicketCard from "@/components/JiraTicketCard";
 import VirtualizedTicketList from "@/components/VirtualizedTicketList";
 import { useOptimizedTickets } from "@/hooks/useOptimizedTickets";
+import { useTicketStats } from "@/hooks/useTicketStats";
 import { useAuth } from "@/hooks/useAuth";
 import { useTags } from "@/hooks/useTags";
 import { useToast } from "@/hooks/use-toast";
@@ -63,7 +64,6 @@ export default function Inbox() {
     ticketsWithStatus: optimizedTicketsWithStatus,
     loading,
     error,
-    stats,
     lastFetch,
     fetchTickets: loadTickets,
     reloadTickets,
@@ -72,6 +72,9 @@ export default function Inbox() {
     enableRealtime: true,
     batchSize: 50
   });
+
+  // Usar hook centralizado para estatísticas sincronizadas  
+  const { stats } = useTicketStats();
 
   const [setores, setSetores] = useState<Setor[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -330,30 +333,6 @@ export default function Inbox() {
     return filtered;
   }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, tagFilter, dateSort, criticalitySort, smartSearch]);
 
-  // Cálculo de contagens dos cards baseadas na mesma lógica dos filtros
-  const cardCounts = useMemo(() => {
-    const counts = {
-      aberto: 0,
-      em_andamento: 0,
-      resolvido: 0,
-      fechado: 0,
-      atrasado: 0
-    };
-    ticketsWithStatus.forEach(ticket => {
-      if (ticket.isExpired) {
-        counts.atrasado++;
-      }
-      if (!ticket.isExpired) {
-        const status = ticket.status?.toString()?.trim()?.toLowerCase();
-        if (status === 'aberto') counts.aberto++;
-        else if (status === 'em_andamento') counts.em_andamento++;
-        else if (status === 'resolvido') counts.resolvido++;
-        else if (status === 'fechado') counts.fechado++;
-      }
-    });
-    return counts;
-  }, [ticketsWithStatus]);
-
   // Contagem de tickets por setor - priorizar time_responsavel se existir, senão setor_id
   const setorCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -583,14 +562,14 @@ export default function Inbox() {
           </div>
         </div>
 
-        {/* Status Cards - Sistema de filtro unificado */}
+        {/* Status Cards - Sistema de filtro unificado usando dados centralizados */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'aberto' ? 'ring-2 ring-slate-500 border-l-slate-500 bg-slate-50 dark:bg-slate-800' : 'border-l-slate-400 hover:border-l-slate-500')} onClick={() => setActiveFilter(activeFilter === 'aberto' ? 'all' : 'aberto')}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <Circle className="h-6 w-6 text-slate-400 dark:text-slate-300" />
               </div>
-              <div className="text-2xl font-bold text-slate-700 dark:text-slate-100">{cardCounts.aberto}</div>
+              <div className="text-2xl font-bold text-slate-700 dark:text-slate-100">{stats.abertos}</div>
               <div className="text-sm text-slate-600 dark:text-slate-300">Abertos</div>
             </CardContent>
           </Card>
@@ -600,7 +579,7 @@ export default function Inbox() {
               <div className="flex justify-center mb-2">
                 <Activity className="h-6 w-6 text-blue-500 dark:text-blue-400" />
               </div>
-              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{cardCounts.em_andamento}</div>
+              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{stats.em_andamento}</div>
               <div className="text-sm text-blue-600 dark:text-blue-400">Em Andamento</div>
             </CardContent>
           </Card>
@@ -610,7 +589,7 @@ export default function Inbox() {
               <div className="flex justify-center mb-2">
                 <CheckCircle className="h-6 w-6 text-green-500 dark:text-green-400" />
               </div>
-              <div className="text-2xl font-bold text-green-700 dark:text-green-300">{cardCounts.resolvido}</div>
+              <div className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.resolvidos}</div>
               <div className="text-sm text-green-600 dark:text-green-400">Resolvidos</div>
             </CardContent>
           </Card>
@@ -620,7 +599,7 @@ export default function Inbox() {
               <div className="flex justify-center mb-2">
                 <X className="h-6 w-6 text-gray-500 dark:text-gray-400" />
               </div>
-              <div className="text-2xl font-bold text-gray-700 dark:text-gray-300">{cardCounts.fechado}</div>
+              <div className="text-2xl font-bold text-gray-700 dark:text-gray-300">{stats.fechados}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Fechados</div>
             </CardContent>
           </Card>
@@ -630,7 +609,7 @@ export default function Inbox() {
               <div className="flex justify-center mb-2">
                 <AlertTriangle className="h-6 w-6 text-red-500 dark:text-red-400" />
               </div>
-              <div className="text-2xl font-bold text-red-700 dark:text-red-300">{cardCounts.atrasado}</div>
+              <div className="text-2xl font-bold text-red-700 dark:text-red-300">{stats.atrasados}</div>
               <div className="text-sm text-red-600 dark:text-red-400">Atrasados</div>
             </CardContent>
           </Card>
@@ -641,7 +620,7 @@ export default function Inbox() {
                 <Flag className="h-6 w-6 text-red-600 dark:text-red-500" />
               </div>
               <div className="text-2xl font-bold text-red-800 dark:text-red-300">
-                {ticketsWithStatus.filter(t => t.nivel_criticidade === 'P0').length}
+                {stats.criticos}
               </div>
               <div className="text-sm text-red-700 dark:text-red-400">Críticos</div>
             </CardContent>

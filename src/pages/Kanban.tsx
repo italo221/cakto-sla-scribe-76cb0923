@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useOptimizedTickets } from "@/hooks/useOptimizedTickets";
+import { useTicketStats } from "@/hooks/useTicketStats";
 import Navigation from "@/components/Navigation";
 import TicketKanban from "@/components/TicketKanban";
 import TicketDetailModal from "@/components/TicketDetailModal";
@@ -44,7 +45,7 @@ interface Setor {
 }
 
 export default function KanbanPage() {
-  // Usar hook otimizado
+  // Usar hook otimizado para tickets
   const { 
     tickets, 
     loading, 
@@ -53,6 +54,9 @@ export default function KanbanPage() {
     enableRealtime: true,
     batchSize: 100
   });
+
+  // Usar hook centralizado para estatísticas sincronizadas
+  const { stats } = useTicketStats();
 
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -162,16 +166,6 @@ export default function KanbanPage() {
 
     return filtered;
   }, [tickets, searchTerm, setorFilter, tagFilter, criticalityFilter, setores]);
-
-  // Cálculo de estatísticas baseado nos tickets filtrados
-  const stats = {
-    total: filteredTickets.length,
-    abertos: filteredTickets.filter(t => t.status === 'aberto').length,
-    emAndamento: filteredTickets.filter(t => t.status === 'em_andamento').length,
-    resolvidos: filteredTickets.filter(t => t.status === 'resolvido').length,
-    fechados: filteredTickets.filter(t => t.status === 'fechado').length,
-    criticos: filteredTickets.filter(t => t.nivel_criticidade === 'P0').length,
-  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -290,7 +284,7 @@ export default function KanbanPage() {
           </Card>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats Cards - Usando dados centralizados */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           <Card className="bg-card hover:bg-card-hover transition-colors">
             <CardContent className="p-4">
@@ -321,7 +315,7 @@ export default function KanbanPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Em Andamento</p>
-                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.emAndamento}</p>
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.em_andamento}</p>
                 </div>
                 <RefreshCw className="h-5 w-5 text-blue-500" />
               </div>
@@ -360,6 +354,18 @@ export default function KanbanPage() {
                   <p className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.criticos}</p>
                 </div>
                 <AlertTriangle className="h-5 w-5 text-red-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card hover:bg-card-hover transition-colors">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Atrasados</p>
+                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.atrasados}</p>
+                </div>
+                <AlertTriangle className="h-5 w-5 text-orange-500" />
               </div>
             </CardContent>
           </Card>
