@@ -280,10 +280,21 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
             Seu ticket foi registrado e nossa equipe foi notificada. 
             Você receberá atualizações sobre o progresso.
           </p>
-          <Button onClick={resetForm} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Criar Outro Ticket
-          </Button>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={resetForm} variant="outline" className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Criar Outro Ticket
+            </Button>
+            <Button 
+              onClick={() => {
+                window.location.href = '/inbox';
+              }} 
+              className="gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              Ver Ticket Criado
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );

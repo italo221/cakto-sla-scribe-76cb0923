@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from './button';
-import { Bold, Italic, List, Link, Code, FileCode, Type, MoreHorizontal } from 'lucide-react';
+import { Bold, Italic, List, Link, Code, Smile, Type, MoreHorizontal, Underline, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 interface RichTextEditorProps {
   value: string;
@@ -64,30 +65,26 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   };
 
-  const insertCodeBlock = () => {
+  const insertEmoji = (emoji: string) => {
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
-      const selectedText = range.toString();
+      const textNode = document.createTextNode(emoji);
+      range.insertNode(textNode);
       
-      const codeElement = document.createElement('pre');
-      codeElement.style.backgroundColor = 'var(--muted)';
-      codeElement.style.padding = '0.75rem';
-      codeElement.style.borderRadius = '0.5rem';
-      codeElement.style.fontFamily = 'monospace';
-      codeElement.style.fontSize = '0.875rem';
-      codeElement.style.margin = '0.5rem 0';
-      codeElement.style.overflow = 'auto';
-      
-      const code = document.createElement('code');
-      code.textContent = selectedText || 'código aqui';
-      codeElement.appendChild(code);
-      
-      range.deleteContents();
-      range.insertNode(codeElement);
-      
+      // Mover cursor para depois do emoji
+      range.setStartAfter(textNode);
+      range.collapse(true);
       selection.removeAllRanges();
+      selection.addRange(range);
+      
       handleInput();
+    } else {
+      // Se não há seleção, inserir no final
+      if (editorRef.current) {
+        editorRef.current.innerHTML += emoji;
+        handleInput();
+      }
     }
   };
 
@@ -116,10 +113,16 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const formatButtons = [
     { icon: Bold, label: 'Negrito', action: () => execCommand('bold') },
     { icon: Italic, label: 'Itálico', action: () => execCommand('italic') },
-    { icon: List, label: 'Lista', action: insertList },
+    { icon: Underline, label: 'Sublinhado', action: () => execCommand('underline') },
+    { icon: List, label: 'Lista com marcadores', action: insertList },
     { icon: Link, label: 'Link', action: insertLink },
     { icon: Code, label: 'Código inline', action: insertInlineCode },
-    { icon: FileCode, label: 'Bloco de código', action: insertCodeBlock },
+  ];
+
+  const emojis = [
+    '😀', '😊', '😂', '🤔', '😍', '😎', '😭', '😱', '😡', '😴',
+    '👍', '👎', '👌', '🙌', '👏', '🔥', '💪', '❤️', '💯', '⭐',
+    '✅', '❌', '⚠️', '💡', '🚀', '🎉', '📝', '📅', '💼', '🔧'
   ];
 
   const textSizeButtons = [
@@ -168,7 +171,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             isMobile ? "flex flex-col gap-1 w-full" : "flex flex-wrap gap-1"
           )}
         >
-          <div className={cn(isMobile ? "flex gap-1 justify-center" : "flex gap-1")}>
+          <div className={cn(isMobile ? "flex gap-1 justify-center flex-wrap" : "flex gap-1")}>
             {formatButtons.map((button, index) => (
               <Button
                 key={index}
@@ -185,6 +188,39 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 <button.icon className={cn(isMobile ? "h-5 w-5" : "h-4 w-4")} />
               </Button>
             ))}
+            
+            {/* Botão de Emoji */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "p-0",
+                    isMobile ? "h-10 w-10" : "h-8 w-8"
+                  )}
+                  onMouseDown={(e) => e.preventDefault()}
+                  title="Inserir emoji"
+                >
+                  <Smile className={cn(isMobile ? "h-5 w-5" : "h-4 w-4")} />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-2" align="start">
+                <div className="grid grid-cols-10 gap-1">
+                  {emojis.map((emoji, index) => (
+                    <Button
+                      key={index}
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-base hover:bg-accent"
+                      onClick={() => insertEmoji(emoji)}
+                    >
+                      {emoji}
+                    </Button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
           
           {!isMobile && <div className="w-px h-6 bg-border mx-1" />}
