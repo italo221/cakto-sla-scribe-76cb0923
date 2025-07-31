@@ -530,7 +530,7 @@ export default function Inbox() {
                 <SelectTrigger className="w-[160px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
                   <SelectValue placeholder="Setor" />
                 </SelectTrigger>
-                <SelectContent className="glass-dropdown z-50">
+                <SelectContent className="bg-popover border border-border">
                   <SelectItem value="all">Todos Setores</SelectItem>
                   {setores.map(setor => <SelectItem key={setor.id} value={setor.id}>
                       {setor.nome} ({setorCounts[setor.id] || 0})
@@ -546,7 +546,7 @@ export default function Inbox() {
                 <SelectTrigger className="w-[140px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
                   <SelectValue placeholder="Tags" />
                 </SelectTrigger>
-                <SelectContent className="glass-dropdown z-50 max-h-60 overflow-y-auto">
+                <SelectContent className="bg-popover border border-border max-h-60 overflow-y-auto">
                   <SelectItem value="todas">Todas Tags</SelectItem>
                   {allTags.map(tag => (
                     <SelectItem key={tag} value={tag}>
@@ -561,7 +561,7 @@ export default function Inbox() {
                 <SelectTrigger className="w-[160px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
                   <SelectValue placeholder="Ordenar por Data" />
                 </SelectTrigger>
-                <SelectContent className="glass-dropdown z-50">
+                <SelectContent className="bg-popover border border-border">
                   <SelectItem value="none">Sem ordenação</SelectItem>
                   <SelectItem value="newest">Mais recentes</SelectItem>
                   <SelectItem value="oldest">Mais antigos</SelectItem>
@@ -573,7 +573,7 @@ export default function Inbox() {
                 <SelectTrigger className="w-[170px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
                   <SelectValue placeholder="Ordenar por Criticidade" />
                 </SelectTrigger>
-                <SelectContent className="glass-dropdown z-50">
+                <SelectContent className="bg-popover border border-border">
                   <SelectItem value="none">Sem ordenação</SelectItem>
                   <SelectItem value="highest">Mais críticos</SelectItem>
                   <SelectItem value="lowest">Menos críticos</SelectItem>
