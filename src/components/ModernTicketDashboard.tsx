@@ -1356,7 +1356,7 @@ export default function ModernSLADashboard() {
                     {/* Gráfico de Pizza Centralizado */}
                     <div className="relative">
                       <ResponsiveContainer width={280} height={280}>
-                        <PieChart className="px-0 py-[25px] mx-[8px] my-0">
+                        <PieChart className="px-0 py-[25px] mx-[8px] my-0 macos-card">
                           <Pie data={getPriorityData()} cx="50%" cy="50%" labelLine={false} label={({
                         name,
                         percent
