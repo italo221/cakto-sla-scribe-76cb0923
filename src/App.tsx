@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { useSystemColors } from "@/hooks/useSystemColors";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { PageTransition } from "@/components/PageTransition";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Integrations from "./pages/Integrations";
@@ -38,60 +39,48 @@ function App() {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<div className="animate-fade-in"><Index /></div>} />
-              <Route path="/auth" element={<div className="animate-fade-in"><Auth /></div>} />
-              <Route path="/dashboard" element={
-                <div className="animate-fade-in">
+            <PageTransition>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <Dashboard />
                   </ProtectedRoute>
-                </div>
-              } />
-              <Route path="/integrations" element={
-                <div className="animate-fade-in">
+                } />
+                <Route path="/integrations" element={
                   <ProtectedRoute>
                     <Integrations />
                   </ProtectedRoute>
-                </div>
-              } />
-              <Route path="/inbox" element={
-                <div className="animate-fade-in">
+                } />
+                <Route path="/inbox" element={
                   <ProtectedRoute>
                     <Inbox />
                   </ProtectedRoute>
-                </div>
-              } />
-              <Route path="/kanban" element={
-                <div className="animate-fade-in">
+                } />
+                <Route path="/kanban" element={
                   <ProtectedRoute>
                     <Kanban />
                   </ProtectedRoute>
-                </div>
-              } />
-              <Route path="/documentation" element={
-                <div className="animate-fade-in">
+                } />
+                <Route path="/documentation" element={
                   <ProtectedRoute>
                     <Documentation />
                   </ProtectedRoute>
-                </div>
-              } />
-              <Route path="/admin" element={
-                <div className="animate-fade-in">
+                } />
+                <Route path="/admin" element={
                   <ProtectedRoute requireSuperAdmin>
                     <Admin />
                   </ProtectedRoute>
-                </div>
-              } />
-              <Route path="/customization" element={
-                <div className="animate-fade-in">
+                } />
+                <Route path="/customization" element={
                   <ProtectedRoute requireSuperAdmin>
                     <Customization />
                   </ProtectedRoute>
-                </div>
-              } />
-              <Route path="*" element={<div className="animate-fade-in"><NotFound /></div>} />
-            </Routes>
+                } />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </PageTransition>
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

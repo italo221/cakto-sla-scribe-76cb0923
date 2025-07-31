@@ -189,8 +189,20 @@ All colors MUST be HSL.
     @apply font-semibold tracking-tight;
   }
 
-  /* Smooth scrolling */
+  /* macOS-style smooth scrolling with momentum */
   html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+
+  body {
+    overflow-x: hidden;
+    scroll-padding-top: 2rem;
+  }
+
+  /* macOS-style momentum scrolling */
+  * {
+    -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
   }
 
@@ -533,5 +545,110 @@ All colors MUST be HSL.
   .macos-card-kanban:active {
     transform: scale(1.01) translateY(0px);
     transition-duration: 100ms;
+  }
+
+  /* macOS-style minimal scrollbars */
+  .macos-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+
+  .macos-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .macos-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+  }
+
+  .macos-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .macos-scrollbar:hover::-webkit-scrollbar-thumb {
+    opacity: 1;
+  }
+
+  .macos-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .dark .macos-scrollbar {
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  }
+
+  .dark .macos-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .dark .macos-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  /* Page transition animations */
+  .page-enter {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  .page-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 200ms ease-out, transform 200ms ease-out;
+  }
+
+  .page-exit {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .page-exit-active {
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 150ms ease-in, transform 150ms ease-in;
+  }
+
+  /* Content fade-in for loading states */
+  .content-fade-in {
+    animation: contentFadeIn 300ms ease-out;
+  }
+
+  @keyframes contentFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Shimmer loading effect */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted-foreground) / 0.1) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
   }
 }
