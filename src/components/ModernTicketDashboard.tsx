@@ -138,7 +138,7 @@ const ModernKPICard = ({
         </CardContent>
       </Card>;
   }
-  return <Card className="relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 group">
+  return <Card className="relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 group macos-card">
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
@@ -185,8 +185,8 @@ const ModernProgressBar = ({
     if (val >= 80) return 'hsl(48 96% 53%)'; // yellow
     return 'hsl(0 84% 60%)'; // red
   };
-  return <Card className="border-0 shadow-md">
-      <CardContent className="p-6">
+  return <Card className="border-0 shadow-md macos-card">
+        <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-foreground">{label}</h3>
           <Target className="w-5 h-5 text-muted-foreground" />
@@ -239,7 +239,7 @@ const ModernTeamCard = ({
         </CardContent>
       </Card>;
   }
-  return <Card className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer group">
+  return <Card className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer group macos-card">
       <CardContent className="p-4">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg transition-transform group-hover:scale-110" style={{
