@@ -430,15 +430,9 @@ export default function SLADetailModal({
 
                   {/* Lista de Comentários */}
                   <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 overflow-y-auto">
-                    {comments.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-6">
-                        <MessageSquare className="h-6 w-6 mx-auto mb-2 opacity-30" />
-                        <p className="text-sm">Seja o primeiro a comentar neste SLA</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4 pb-4">
-                        {/* Comentário inicial - Descrição do SLA */}
-                        <div className="flex gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="space-y-4 pb-4">
+                      {/* Comentário inicial - Descrição do SLA - SEMPRE EXIBIDO */}
+                      <div className="flex gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                           <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
                             <AvatarFallback className="text-xs bg-blue-600 text-white">
                               {currentSLA.solicitante.substring(0, 2).toUpperCase()}
@@ -477,70 +471,76 @@ export default function SLADetailModal({
                           </div>
                         </div>
 
-                        {/* Comentários da discussão */}
-                        {comments.map(comment => (
-                          <div key={comment.id} className="flex gap-3 group">
-                            <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
-                              <AvatarFallback className="text-xs">
-                                {comment.autor_nome.substring(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium text-sm">{comment.autor_nome}</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {format(new Date(comment.created_at), "dd/MM 'às' HH:mm", {
-                                      locale: ptBR
-                                    })}
-                                  </span>
-                                </div>
-                                {(canEdit && user?.id === comment.autor_id) || isSuperAdmin ? (
-                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {canEdit && user?.id === comment.autor_id && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 px-2 text-xs"
-                                        onClick={() => {
-                                          setSelectedCommentForEdit(comment);
-                                          setEditCommentModalOpen(true);
-                                        }}
-                                      >
-                                        <Edit3 className="h-3 w-3" />
-                                      </Button>
-                                    )}
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-6 px-2 text-xs text-destructive hover:text-destructive"
-                                      onClick={() => {
-                                        setSelectedCommentForDelete(comment);
-                                        setDeleteCommentModalOpen(true);
-                                      }}
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                ) : null}
-                              </div>
-                              <div className="space-y-2">
-                                <FormattedText 
-                                  text={comment.comentario} 
-                                  className="text-sm leading-relaxed break-words" 
-                                />
-                                
-                                {/* Reações do comentário */}
-                                <CommentReactions 
-                                  commentId={comment.id} 
-                                  className="mt-2" 
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                       {/* Comentários da discussão */}
+                       {comments.length > 0 ? (
+                         comments.map(comment => (
+                           <div key={comment.id} className="flex gap-3 group">
+                             <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
+                               <AvatarFallback className="text-xs">
+                                 {comment.autor_nome.substring(0, 2).toUpperCase()}
+                               </AvatarFallback>
+                             </Avatar>
+                             <div className="flex-1 min-w-0">
+                               <div className="flex items-center justify-between mb-1">
+                                 <div className="flex items-center gap-2">
+                                   <span className="font-medium text-sm">{comment.autor_nome}</span>
+                                   <span className="text-xs text-muted-foreground">
+                                     {format(new Date(comment.created_at), "dd/MM 'às' HH:mm", {
+                                       locale: ptBR
+                                     })}
+                                   </span>
+                                 </div>
+                                 {(canEdit && user?.id === comment.autor_id) || isSuperAdmin ? (
+                                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                     {canEdit && user?.id === comment.autor_id && (
+                                       <Button
+                                         variant="ghost"
+                                         size="sm"
+                                         className="h-6 px-2 text-xs"
+                                         onClick={() => {
+                                           setSelectedCommentForEdit(comment);
+                                           setEditCommentModalOpen(true);
+                                         }}
+                                       >
+                                         <Edit3 className="h-3 w-3" />
+                                       </Button>
+                                     )}
+                                     <Button
+                                       variant="ghost"
+                                       size="sm"
+                                       className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                                       onClick={() => {
+                                         setSelectedCommentForDelete(comment);
+                                         setDeleteCommentModalOpen(true);
+                                       }}
+                                     >
+                                       <Trash2 className="h-3 w-3" />
+                                     </Button>
+                                   </div>
+                                 ) : null}
+                               </div>
+                               <div className="space-y-2">
+                                 <FormattedText 
+                                   text={comment.comentario} 
+                                   className="text-sm leading-relaxed break-words" 
+                                 />
+                                 
+                                 {/* Reações do comentário */}
+                                 <CommentReactions 
+                                   commentId={comment.id} 
+                                   className="mt-2" 
+                                 />
+                               </div>
+                             </div>
+                           </div>
+                         ))
+                       ) : (
+                         <div className="text-center text-muted-foreground py-6 border-t border-border/30 mt-4">
+                           <MessageSquare className="h-6 w-6 mx-auto mb-2 opacity-30" />
+                           <p className="text-sm">Seja o primeiro a comentar neste SLA</p>
+                         </div>
+                       )}
+                     </div>
                   </ScrollArea>
                 </CardContent>
               </Card>
