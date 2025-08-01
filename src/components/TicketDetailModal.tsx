@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import CommentEditModal from "@/components/CommentEditModal";
@@ -105,6 +106,7 @@ export default function SLADetailModal({
 }: SLADetailModalProps) {
   const {
     user,
+    profile,
     isAdmin,
     canEdit,
     isSuperAdmin
@@ -150,8 +152,8 @@ export default function SLADetailModal({
       loadActionLogs();
       loadSetores();
       
-      // Configurar listener em tempo real para comentários
-      const channel = supabase
+      // Configurar listeners em tempo real para comentários e atualizações do ticket
+      const commentsChannel = supabase
         .channel('comment-updates')
         .on(
           'postgres_changes',
@@ -167,8 +169,49 @@ export default function SLADetailModal({
         )
         .subscribe();
 
+      const ticketsChannel = supabase
+        .channel('ticket-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'sla_demandas',
+            filter: `id=eq.${currentSLA.id}`
+          },
+          (payload) => {
+            // Atualizar dados do ticket em tempo real
+            if (payload.new) {
+              const updatedSLA = { ...currentSLA, ...payload.new };
+              setCurrentSLA(updatedSLA);
+              if (setSelectedSLA) {
+                setSelectedSLA(updatedSLA);
+              }
+            }
+          }
+        )
+        .subscribe();
+
+      const logsChannel = supabase
+        .channel('logs-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'sla_action_logs',
+            filter: `sla_id=eq.${currentSLA.id}`
+          },
+          () => {
+            loadActionLogs();
+          }
+        )
+        .subscribe();
+
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(commentsChannel);
+        supabase.removeChannel(ticketsChannel);
+        supabase.removeChannel(logsChannel);
       };
     }
   }, [currentSLA, isOpen]);
@@ -226,6 +269,76 @@ export default function SLADetailModal({
       setSetores(data || []);
     } catch (error) {
       console.error('Erro ao carregar setores:', error);
+    }
+  };
+
+  const handleTransferTicket = async (novoSetor: Setor) => {
+    if (!currentSLA || !user) return;
+
+    setTransferLoading(true);
+    try {
+      // Buscar setor atual
+      const setorAtual = setores.find(s => s.id === currentSLA.setor_id);
+      
+      // Log da transferência usando a função do banco
+      const { error: logError } = await supabase
+        .rpc('log_sla_action', {
+          p_sla_id: currentSLA.id,
+          p_acao: 'transferencia_setor',
+          p_setor_origem_id: currentSLA.setor_id,
+          p_setor_destino_id: novoSetor.id,
+          p_justificativa: `Transferido de "${setorAtual?.nome || 'Setor Desconhecido'}" para "${novoSetor.nome}"`
+        });
+
+      if (logError) {
+        console.error('Erro ao criar log da transferência:', logError);
+        // Continuar mesmo se o log falhar
+      }
+
+      // Atualizar o ticket
+      const { error: updateError } = await supabase
+        .from('sla_demandas')
+        .update({
+          setor_id: novoSetor.id,
+          time_responsavel: novoSetor.nome,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentSLA.id);
+
+      if (updateError) throw updateError;
+
+      // Atualizar estado local
+      const updatedSLA = {
+        ...currentSLA,
+        setor_id: novoSetor.id,
+        time_responsavel: novoSetor.nome
+      };
+      
+      setCurrentSLA(updatedSLA);
+      if (setSelectedSLA) {
+        setSelectedSLA(updatedSLA);
+      }
+
+      // Recarregar logs para mostrar a transferência
+      loadActionLogs();
+
+      toast({
+        title: "Ticket transferido",
+        description: `Ticket transferido para ${novoSetor.nome} com sucesso.`
+      });
+
+      // Notificar componente pai para atualização
+      if (onUpdate) onUpdate();
+
+    } catch (error: any) {
+      console.error('Erro ao transferir ticket:', error);
+      toast({
+        title: "Erro ao transferir ticket",
+        description: error.message || "Ocorreu um erro inesperado.",
+        variant: "destructive"
+      });
+    } finally {
+      setTransferLoading(false);
     }
   };
 
@@ -378,6 +491,37 @@ export default function SLADetailModal({
             <DialogTitle className="text-xl font-bold">
               {currentSLA.ticket_number || `#${currentSLA.id.slice(0, 8)}`} - {currentSLA.titulo}
             </DialogTitle>
+            
+            {/* Botão de Transferir Setor */}
+            {(profile?.role === 'super_admin' || profile?.role === 'operador') && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <ArrowRightLeft className="h-4 w-4" />
+                    Transferir Setor
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-2 py-1.5 text-sm font-medium">
+                    Transferir para:
+                  </div>
+                  <DropdownMenuSeparator />
+                  {setores
+                    .filter(setor => setor.id !== currentSLA.setor_id)
+                    .map(setor => (
+                      <DropdownMenuItem
+                        key={setor.id}
+                        onClick={() => handleTransferTicket(setor)}
+                        className="cursor-pointer"
+                      >
+                        <Building className="h-4 w-4 mr-2" />
+                        {setor.nome}
+                      </DropdownMenuItem>
+                    ))
+                  }
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2">
