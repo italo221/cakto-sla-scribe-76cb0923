@@ -18,8 +18,9 @@ import { useTicketPermissions } from "@/hooks/useTicketPermissions";
 import CommentEditModal from "@/components/CommentEditModal";
 import CommentReactions from "@/components/CommentReactions";
 import CommentDeleteModal from "@/components/CommentDeleteModal";
-import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit3, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown } from "lucide-react";
+import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit2, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown } from "lucide-react";
 import TicketAttachments from "@/components/TicketAttachments";
+import TicketEditModal from "@/components/TicketEditModal";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -118,7 +119,8 @@ export default function SLADetailModal({
     getStartResolveValidationMessage,
     canStartOrResolveTicket,
     canDeleteTicket,
-    canCloseTicket
+    canCloseTicket,
+    canEditTicket
   } = usePermissions();
   
   const { validateTicketAction, canPerformAction } = useTicketPermissions();
@@ -132,6 +134,7 @@ export default function SLADetailModal({
   const [transferLoading, setTransferLoading] = useState(false);
   const [commentLoading, setCommentLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'comments' | 'history'>('comments');
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [attachments, setAttachments] = useState<FileList | null>(null);
@@ -627,7 +630,20 @@ export default function SLADetailModal({
               {currentSLA.ticket_number || `#${currentSLA.id.slice(0, 8)}`} - {currentSLA.titulo}
             </DialogTitle>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              {/* Botão de Editar */}
+              {canEditTicket(currentSLA as any) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => setShowEditModal(true)}
+                >
+                  <Edit2 className="h-4 w-4" />
+                  Editar
+                </Button>
+              )}
+
               {/* Botões de Status */}
               {currentSLA.status !== 'fechado' && (() => {
                 const buttonConfig = getStatusButtonConfig(currentSLA.status);
@@ -842,7 +858,7 @@ export default function SLADetailModal({
                                            setEditCommentModalOpen(true);
                                          }}
                                        >
-                                         <Edit3 className="h-3 w-3" />
+                                         <Edit2 className="h-3 w-3" />
                                        </Button>
                                      )}
                                      <Button
@@ -1018,6 +1034,20 @@ export default function SLADetailModal({
           setSelectedCommentForDelete(null);
         }} 
         onDelete={loadComments} 
+      />
+
+      {/* Modal de edição de ticket */}
+      <TicketEditModal
+        ticket={currentSLA as any}
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onUpdate={() => {
+          // Recarregar dados do ticket atual
+          if (currentSLA && onUpdate) {
+            onUpdate();
+          }
+          setShowEditModal(false);
+        }}
       />
     </Dialog>
   );
