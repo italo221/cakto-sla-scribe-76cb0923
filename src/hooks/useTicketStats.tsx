@@ -41,23 +41,21 @@ export const useTicketStats = () => {
         counts.criticos++;
       }
       
-      // Contagem por status - excluir atrasados da contagem normal de status
-      if (!ticket.isExpired) {
-        const status = ticket.status?.toString()?.trim()?.toLowerCase();
-        switch (status) {
-          case 'aberto':
-            counts.abertos++;
-            break;
-          case 'em_andamento':
-            counts.em_andamento++;
-            break;
-          case 'resolvido':
-            counts.resolvidos++;
-            break;
-          case 'fechado':
-            counts.fechados++;
-            break;
-        }
+      // Contagem por status - INCLUIR todos os tickets (mesmo atrasados)
+      const status = ticket.status?.toString()?.trim()?.toLowerCase();
+      switch (status) {
+        case 'aberto':
+          counts.abertos++;
+          break;
+        case 'em_andamento':
+          counts.em_andamento++;
+          break;
+        case 'resolvido':
+          counts.resolvidos++;
+          break;
+        case 'fechado':
+          counts.fechados++;
+          break;
       }
     });
 
