@@ -6,18 +6,25 @@ interface FormattedTextProps {
 }
 
 export const FormattedText: React.FC<FormattedTextProps> = ({ text, className = '' }) => {
-  // Preservar formatação das menções que já estão formatadas 
+  // Se o texto já contém HTML formatado, usar como está
+  if (text.includes('<span') && text.includes('background-color')) {
+    return (
+      <div 
+        className={`prose prose-sm max-w-none dark:prose-invert ${className}`}
+        dangerouslySetInnerHTML={{ __html: text }}
+      />
+    );
+  }
+  
+  // Processar menções em texto simples
   const processedText = text.replace(
-    /<span[^>]*data-user-id="[^"]*"[^>]*>(@[^<]+)<\/span>/g,
-    (match) => match // Manter spans com data-user-id como estão
-  ).replace(
-    /<span style="[^"]*">(@[^<]+)<\/span>/g,
-    '<span class="mention-highlight">$1</span>'
+    /@([a-zA-ZÀ-ÿ0-9_.-]+(?:\s+[a-zA-ZÀ-ÿ0-9_.-]+)*)/g,
+    '<span style="background-color: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); padding: 2px 6px; border-radius: 4px; font-weight: 500; margin: 0 1px; border: 1px solid hsl(var(--primary) / 0.2);">@$1</span>'
   );
   
   return (
     <div 
-      className={`prose prose-sm max-w-none dark:prose-invert ${className} [&_.mention-highlight]:bg-primary/10 [&_.mention-highlight]:text-primary [&_.mention-highlight]:px-2 [&_.mention-highlight]:py-1 [&_.mention-highlight]:rounded [&_.mention-highlight]:font-medium [&_.mention-highlight]:not-prose`}
+      className={`prose prose-sm max-w-none dark:prose-invert ${className}`}
       dangerouslySetInnerHTML={{ __html: processedText }}
     />
   );

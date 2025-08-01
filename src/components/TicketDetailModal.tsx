@@ -545,8 +545,34 @@ export default function SLADetailModal({
 
       // Processar menções e enviar notificações
       try {
+        // Extrair menções do HTML usando tanto texto limpo quanto spans com data-user-id
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = newComment;
+        
+        // Buscar spans com data-user-id para menções específicas
+        const mentionSpans = tempDiv.querySelectorAll('span[data-user-id]');
+        const mentionedUserIds = Array.from(mentionSpans).map(span => span.getAttribute('data-user-id')).filter(Boolean);
+        
+        // Também extrair menções do texto limpo como fallback
         const mentions = extractMentions(cleanComment);
-        if (mentions.length > 0) {
+        
+        // Se tem menções por user ID, usar essas
+        if (mentionedUserIds.length > 0) {
+          const mentionerName = user.user_metadata?.nome_completo || user.email || 'Usuário';
+          
+          for (const mentionedUserId of mentionedUserIds) {
+            if (mentionedUserId !== user.id) {
+              await notifyUserMention(
+                mentionedUserId,
+                mentionerName,
+                currentSLA.id,
+                currentSLA.titulo,
+                commentData.id
+              );
+            }
+          }
+        } else if (mentions.length > 0) {
+          // Fallback para busca por nome
           const mentionedUsers = await findMentionedUsers(mentions);
           const mentionerName = user.user_metadata?.nome_completo || user.email || 'Usuário';
           
