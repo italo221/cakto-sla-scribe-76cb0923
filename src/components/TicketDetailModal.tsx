@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import RichTextMentionEditor from "@/components/RichTextMentionEditor";
 import { FormattedText } from "@/components/ui/formatted-text";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
@@ -232,7 +232,7 @@ export default function SLADetailModal({
         .from('sla_comentarios_internos')
         .select('*')
         .eq('sla_id', currentSLA.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
       
       if (error) throw error;
       
@@ -630,7 +630,7 @@ export default function SLADetailModal({
               {currentSLA.ticket_number || `#${currentSLA.id.slice(0, 8)}`} - {currentSLA.titulo}
             </DialogTitle>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               {/* Botão de Editar */}
               {canEditTicket(currentSLA as any) && (
                 <Button
@@ -748,7 +748,7 @@ export default function SLADetailModal({
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-3">
-                          <RichTextEditor
+                          <RichTextMentionEditor
                             value={newComment}
                             onChange={setNewComment}
                             placeholder="Digite seu comentário... (use @ para mencionar alguém)"
