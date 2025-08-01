@@ -14,6 +14,7 @@ import SetorValidationAlert from "@/components/SetorValidationAlert";
 import FileUploader from "@/components/FileUploader";
 import LinkInput from "@/components/LinkInput";
 import { Send, CheckCircle, RefreshCw, FileText } from "lucide-react";
+import { validateTicketData, sanitizeTicketData } from "@/utils/ticketAuditService";
 
 interface ManualTicketCreatorProps {
   onTicketCreated?: () => void;
@@ -142,11 +143,36 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.setor) newErrors.setor = 'Campo obrigatório';
-    if (!formData.titulo) newErrors.titulo = 'Campo obrigatório';
-    if (!formData.descricao) newErrors.descricao = 'Campo obrigatório';
-    if (!formData.impacto) newErrors.impacto = 'Campo obrigatório';
-    if (!formData.tipo_ticket) newErrors.tipo_ticket = 'Campo obrigatório';
+    // Validações mais rigorosas com trim() para evitar espaços vazios
+    if (!formData.setor || formData.setor.trim() === '') {
+      newErrors.setor = 'Campo obrigatório';
+    }
+    
+    if (!formData.titulo || formData.titulo.trim() === '') {
+      newErrors.titulo = 'Campo obrigatório';
+    } else if (formData.titulo.trim().length < 3) {
+      newErrors.titulo = 'Título deve ter pelo menos 3 caracteres';
+    }
+    
+    if (!formData.descricao || formData.descricao.trim() === '') {
+      newErrors.descricao = 'Campo obrigatório';
+    } else if (formData.descricao.trim().length < 10) {
+      newErrors.descricao = 'Descrição deve ter pelo menos 10 caracteres';
+    }
+    
+    if (!formData.impacto || formData.impacto.trim() === '') {
+      newErrors.impacto = 'Campo obrigatório';
+    }
+    
+    if (!formData.tipo_ticket || formData.tipo_ticket.trim() === '') {
+      newErrors.tipo_ticket = 'Campo obrigatório';
+    }
+    
+    // Validar se o setor selecionado existe na lista
+    const setorExists = setores.some(setor => setor.nome === formData.setor);
+    if (formData.setor && !setorExists) {
+      newErrors.setor = 'Setor selecionado inválido';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -164,6 +190,7 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
       return;
     }
 
+    // VALIDAÇÃO CRÍTICA: Verificar campos obrigatórios antes de prosseguir
     if (!validateForm()) {
       toast({
         title: "Campos obrigatórios",
@@ -184,53 +211,100 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
 
     setLoading(true);
     try {
+      // VALIDAÇÃO DUPLA: Verificar novamente os campos críticos
+      const titulo = formData.titulo.trim();
+      const descricao = formData.descricao.trim();
+      const setor = formData.setor.trim();
+      const solicitante = user.email || user.user_metadata?.email || 'Usuário logado';
+      
+      if (!titulo || !descricao || !setor) {
+        throw new Error('Campos obrigatórios não preenchidos');
+      }
+
+      // Verificar se o setor existe
+      const setorSelecionado = setores.find(s => s.nome === setor);
+      if (!setorSelecionado) {
+        throw new Error('Setor selecionado não encontrado');
+      }
+
       // Calcular criticidade automaticamente baseado no impacto
       const { criticidade, pontos } = calculateCriticality(formData.impacto);
       
       const observacoes = `Criado manualmente - Impacto: ${impactoOptions.find(opt => opt.value === formData.impacto)?.label}${formData.justificativa_impacto ? `\nJustificativa: ${formData.justificativa_impacto}` : ''}`;
       
-      // IMPORTANTE: O setor selecionado é quem deve ser responsável, não o criador
-      const { error } = await supabase
+      // INSERÇÃO COM VALIDAÇÃO MÁXIMA
+      const ticketData = {
+        titulo: titulo, // Título validado e limpo
+        time_responsavel: setor, // Setor selecionado = responsável
+        solicitante: solicitante, // Criador = solicitante
+        descricao: descricao, // Descrição validada e limpa
+        tipo_ticket: formData.tipo_ticket || 'sugestao_melhoria',
+        nivel_criticidade: criticidade,
+        pontuacao_total: pontos,
+        pontuacao_financeiro: Math.floor(pontos * 0.3),
+        pontuacao_cliente: Math.floor(pontos * 0.3),
+        pontuacao_reputacao: Math.floor(pontos * 0.2),
+        pontuacao_urgencia: Math.floor(pontos * 0.1),
+        pontuacao_operacional: Math.floor(pontos * 0.1),
+        observacoes: observacoes,
+        status: 'aberto', // Status obrigatório
+        setor_id: setorSelecionado.id, // ID do setor validado
+        tags: selectedTags.length > 0 ? selectedTags : null,
+        link_referencia: formData.link_referencia.trim() || null,
+        anexos: anexos.length > 0 ? JSON.stringify(anexos) : null
+      };
+
+      // VALIDAÇÃO FINAL com serviço de auditoria
+      const sanitizedData = sanitizeTicketData(ticketData);
+      const validation = validateTicketData(sanitizedData);
+      
+      if (!validation.valid) {
+        throw new Error(`Falha na validação: ${validation.errors.join(', ')}`);
+      }
+
+      console.log('Criando ticket com dados validados:', sanitizedData);
+
+      const { data, error } = await supabase
         .from('sla_demandas')
-        .insert({
-          titulo: formData.titulo,
-          time_responsavel: formData.setor, // Setor selecionado = responsável
-          solicitante: user.email || 'Usuário logado', // Criador = solicitante
-          descricao: formData.descricao,
-          tipo_ticket: formData.tipo_ticket || 'sugestao_melhoria',
-          nivel_criticidade: criticidade,
-          pontuacao_total: pontos,
-          pontuacao_financeiro: Math.floor(pontos * 0.3),
-          pontuacao_cliente: Math.floor(pontos * 0.3),
-          pontuacao_reputacao: Math.floor(pontos * 0.2),
-          pontuacao_urgencia: Math.floor(pontos * 0.1),
-          pontuacao_operacional: Math.floor(pontos * 0.1),
-          observacoes: observacoes,
-          status: 'aberto',
-          setor_id: setores.find(s => s.nome === formData.setor)?.id, // Adicionar setor_id
-          tags: selectedTags.length > 0 ? selectedTags : null,
-          link_referencia: formData.link_referencia.trim() || null,
-          anexos: anexos.length > 0 ? JSON.stringify(anexos) : null
-        });
+        .insert(sanitizedData)
+        .select('id, titulo, ticket_number')
+        .single();
+
+      if (error) {
+        console.error('Erro do Supabase:', error);
+        throw error;
+      }
+
+      console.log('Ticket criado com sucesso:', data);
 
       // Adicionar novas tags ao histórico
       selectedTags.forEach(tag => addTagToHistory(tag));
 
-      if (error) throw error;
-
       setStep('complete');
       toast({
         title: "Ticket criado com sucesso!",
-        description: "Seu ticket foi registrado e está aguardando atendimento.",
+        description: `Ticket ${data?.ticket_number || ''} foi registrado e está aguardando atendimento.`,
       });
       
       onTicketCreated?.();
       
     } catch (error) {
       console.error('Erro ao criar ticket:', error);
+      
+      // Erro mais específico baseado no tipo
+      let errorMessage = "Houve um problema ao salvar o ticket. Tente novamente.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('obrigatório')) {
+          errorMessage = "Todos os campos obrigatórios devem ser preenchidos corretamente.";
+        } else if (error.message.includes('violates')) {
+          errorMessage = "Os dados fornecidos não atendem aos critérios de validação. Verifique os campos.";
+        }
+      }
+      
       toast({
         title: "Erro ao criar ticket",
-        description: "Houve um problema ao salvar o ticket. Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

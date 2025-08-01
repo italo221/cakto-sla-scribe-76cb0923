@@ -875,15 +875,32 @@ export default function TicketChat() {
         time_responsavel: data.time_responsavel.trim()
       });
 
-      // Inserir na tabela sla_demandas
+      // VALIDAÇÃO CRÍTICA: Verificar campos obrigatórios antes da inserção
+      const titulo = data.titulo?.trim();
+      const descricao = data.descricao?.trim();
+      const timeResponsavel = data.time_responsavel?.trim();
+      
+      if (!titulo || titulo.length < 3) {
+        throw new Error('Título é obrigatório e deve ter pelo menos 3 caracteres');
+      }
+      
+      if (!descricao || descricao.length < 10) {
+        throw new Error('Descrição é obrigatória e deve ter pelo menos 10 caracteres');
+      }
+      
+      if (!timeResponsavel) {
+        throw new Error('Time responsável é obrigatório');
+      }
+
+      // Inserir na tabela sla_demandas com dados validados
       const { data: slaResult, error: slaError } = await supabase
         .from('sla_demandas')
         .insert({
-          titulo: data.titulo.trim(),
-          time_responsavel: data.time_responsavel.trim(),
+          titulo: titulo, // Validado
+          time_responsavel: timeResponsavel, // Validado
           solicitante: 'Sistema Autenticado', // Será substituído por auth quando implementada
-          descricao: data.descricao.trim(),
-          tipo_ticket: data.tipo_ticket,
+          descricao: descricao, // Validado
+          tipo_ticket: data.tipo_ticket || 'sugestao_melhoria',
           pontuacao_financeiro: data.pontuacao.financeiro,
           pontuacao_cliente: data.pontuacao.cliente,
           pontuacao_reputacao: data.pontuacao.reputacao,
@@ -892,7 +909,7 @@ export default function TicketChat() {
           pontuacao_total: total,
           nivel_criticidade: criticality,
           observacoes: data.observacoes?.trim() || null,
-          status: 'aberto',
+          status: 'aberto', // Status obrigatório
           tags: tags, // Tags geradas automaticamente
           arquivos: uploadedFiles.length > 0 ? uploadedFiles.map(file => ({
             nome: file.name,
