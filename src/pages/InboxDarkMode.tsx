@@ -453,6 +453,33 @@ export default function Inbox() {
   const handleUpdateSelectedTicket = (updatedTicket: any) => {
     setSelectedTicket(updatedTicket);
   };
+
+  // Função para atualizar status do ticket - vai disparar as notificações automaticamente via trigger
+  const handleUpdateStatus = async (ticketId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('sla_demandas')
+        .update({ status: newStatus })
+        .eq('id', ticketId);
+
+      if (error) throw error;
+
+      // Recarregar tickets para refletir mudança
+      reloadTickets();
+      
+      toast({
+        title: "Status atualizado",
+        description: `Ticket atualizado para: ${newStatus}`,
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o status do ticket.",
+        variant: "destructive"
+      });
+    }
+  };
   if (!isSupabaseConfigured) {
     return <div className="min-h-screen bg-background dark:bg-background">
         <Navigation />
@@ -669,7 +696,7 @@ export default function Inbox() {
                   {searchTerm || activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'none' ? 'Tente ajustar os filtros de busca.' : 'Quando houver tickets, eles aparecerão aqui.'}
                 </p>
               </CardContent>
-            </Card> : filteredTicketsWithStatus.map(ticket => <JiraTicketCard key={ticket.id} ticket={ticket} onOpenDetail={handleOpenTicketDetail} onEditTicket={handleEditTicket} onDeleteTicket={handleDeleteTicket} userCanEdit={canEdit} userCanDelete={canDelete} />)}
+            </Card> : filteredTicketsWithStatus.map(ticket => <JiraTicketCard key={ticket.id} ticket={ticket} onOpenDetail={handleOpenTicketDetail} onUpdateStatus={handleUpdateStatus} onEditTicket={handleEditTicket} onDeleteTicket={handleDeleteTicket} userCanEdit={canEdit} userCanDelete={canDelete} />)}
         </div>
 
         {/* Modals */}

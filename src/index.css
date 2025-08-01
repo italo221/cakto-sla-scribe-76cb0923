@@ -172,6 +172,35 @@ All colors MUST be HSL.
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 142 76% 42%;
   }
+
+  /* Estilo para menções @usuario */
+  .mention-highlight {
+    background-color: hsl(var(--primary) / 0.15);
+    color: hsl(var(--primary));
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    border: 1px solid hsl(var(--primary) / 0.25);
+    display: inline-block;
+    margin: 0 1px;
+    transition: all 0.2s ease;
+  }
+
+  .mention-highlight:hover {
+    background-color: hsl(var(--primary) / 0.25);
+    border-color: hsl(var(--primary) / 0.4);
+    transform: translateY(-1px);
+  }
+
+  .dark .mention-highlight {
+    background-color: hsl(var(--primary) / 0.2);
+    border-color: hsl(var(--primary) / 0.3);
+  }
+
+  .dark .mention-highlight:hover {
+    background-color: hsl(var(--primary) / 0.3);
+    border-color: hsl(var(--primary) / 0.5);
+  }
 }
 
 @layer base {
