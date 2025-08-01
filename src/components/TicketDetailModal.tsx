@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useTicketPermissions } from "@/hooks/useTicketPermissions";
 import CommentEditModal from "@/components/CommentEditModal";
 import CommentReactions from "@/components/CommentReactions";
 import CommentDeleteModal from "@/components/CommentDeleteModal";
@@ -114,8 +115,13 @@ export default function SLADetailModal({
   const {
     userSetores,
     getSetorValidationMessage,
-    getStartResolveValidationMessage
+    getStartResolveValidationMessage,
+    canStartOrResolveTicket,
+    canDeleteTicket,
+    canCloseTicket
   } = usePermissions();
+  
+  const { validateTicketAction, canPerformAction } = useTicketPermissions();
   
   const [currentSLA, setCurrentSLA] = useState<SLA | null>(sla);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -342,6 +348,135 @@ export default function SLADetailModal({
     }
   };
 
+  const handleStatusChange = async (newStatus: string) => {
+    if (!currentSLA || !user) return;
+
+    // Validar ação
+    const action = getActionFromStatus(newStatus);
+    if (!validateTicketAction(currentSLA as any, action)) {
+      return;
+    }
+
+    setStatusLoading(newStatus);
+    try {
+      const statusLabels = {
+        'aberto': 'Aberto',
+        'em_andamento': 'Em Andamento',
+        'resolvido': 'Resolvido',
+        'fechado': 'Fechado'
+      };
+
+      // Log da mudança de status
+      const { error: logError } = await supabase
+        .rpc('log_sla_action', {
+          p_sla_id: currentSLA.id,
+          p_acao: 'mudanca_status',
+          p_justificativa: `Status alterado de "${statusLabels[currentSLA.status as keyof typeof statusLabels]}" para "${statusLabels[newStatus as keyof typeof statusLabels]}"`
+        });
+
+      if (logError) {
+        console.error('Erro ao criar log da mudança de status:', logError);
+      }
+
+      // Atualizar o ticket
+      const { error: updateError } = await supabase
+        .from('sla_demandas')
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentSLA.id);
+
+      if (updateError) throw updateError;
+
+      // Atualizar estado local
+      const updatedSLA = {
+        ...currentSLA,
+        status: newStatus
+      };
+      
+      setCurrentSLA(updatedSLA);
+      if (setSelectedSLA) {
+        setSelectedSLA(updatedSLA);
+      }
+
+      // Recarregar logs para mostrar a mudança
+      loadActionLogs();
+
+      toast({
+        title: "Status atualizado",
+        description: `Ticket atualizado para "${statusLabels[newStatus as keyof typeof statusLabels]}" com sucesso.`
+      });
+
+      // Notificar componente pai para atualização
+      if (onUpdate) onUpdate();
+
+    } catch (error: any) {
+      console.error('Erro ao alterar status:', error);
+      toast({
+        title: "Erro ao alterar status",
+        description: error.message || "Ocorreu um erro inesperado.",
+        variant: "destructive"
+      });
+    } finally {
+      setStatusLoading(null);
+    }
+  };
+
+  const getActionFromStatus = (status: string): 'start' | 'resolve' | 'close' => {
+    switch (status) {
+      case 'em_andamento':
+        return 'start';
+      case 'resolvido':
+        return 'resolve';
+      case 'fechado':
+        return 'close';
+      default:
+        return 'start';
+    }
+  };
+
+  const getNextStatus = (currentStatus: string): string | null => {
+    switch (currentStatus) {
+      case 'aberto':
+        return 'em_andamento';
+      case 'em_andamento':
+        return 'resolvido';
+      case 'resolvido':
+        return 'fechado';
+      default:
+        return null;
+    }
+  };
+
+  const getStatusButtonConfig = (currentStatus: string) => {
+    switch (currentStatus) {
+      case 'aberto':
+        return {
+          label: 'Colocar em Andamento',
+          icon: Play,
+          variant: 'default' as const,
+          nextStatus: 'em_andamento'
+        };
+      case 'em_andamento':
+        return {
+          label: 'Resolver',
+          icon: CheckCircle,
+          variant: 'default' as const,
+          nextStatus: 'resolvido'
+        };
+      case 'resolvido':
+        return {
+          label: 'Fechar',
+          icon: X,
+          variant: 'outline' as const,
+          nextStatus: 'fechado'
+        };
+      default:
+        return null;
+    }
+  };
+
   const handleAddComment = async () => {
     if (!currentSLA || !newComment.trim() || !user) return;
 
@@ -492,36 +627,65 @@ export default function SLADetailModal({
               {currentSLA.ticket_number || `#${currentSLA.id.slice(0, 8)}`} - {currentSLA.titulo}
             </DialogTitle>
             
-            {/* Botão de Transferir Setor */}
-            {(profile?.role === 'super_admin' || profile?.role === 'operador') && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <ArrowRightLeft className="h-4 w-4" />
-                    Transferir Setor
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5 text-sm font-medium">
-                    Transferir para:
-                  </div>
-                  <DropdownMenuSeparator />
-                  {setores
-                    .filter(setor => setor.id !== currentSLA.setor_id)
-                    .map(setor => (
-                      <DropdownMenuItem
-                        key={setor.id}
-                        onClick={() => handleTransferTicket(setor)}
-                        className="cursor-pointer"
-                      >
-                        <Building className="h-4 w-4 mr-2" />
-                        {setor.nome}
-                      </DropdownMenuItem>
-                    ))
-                  }
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Botões de Status */}
+              {currentSLA.status !== 'fechado' && (() => {
+                const buttonConfig = getStatusButtonConfig(currentSLA.status);
+                const canPerform = buttonConfig && canPerformAction(currentSLA as any, getActionFromStatus(buttonConfig.nextStatus));
+                
+                if (buttonConfig && canPerform) {
+                  const Icon = buttonConfig.icon;
+                  return (
+                    <Button
+                      size="sm"
+                      variant={buttonConfig.variant}
+                      className="gap-2"
+                      disabled={statusLoading === buttonConfig.nextStatus}
+                      onClick={() => handleStatusChange(buttonConfig.nextStatus)}
+                    >
+                      {statusLoading === buttonConfig.nextStatus ? (
+                        <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                      ) : (
+                        <Icon className="h-4 w-4" />
+                      )}
+                      {statusLoading === buttonConfig.nextStatus ? 'Processando...' : buttonConfig.label}
+                    </Button>
+                  );
+                }
+                return null;
+              })()}
+
+              {/* Botão de Transferir Setor */}
+              {(profile?.role === 'super_admin' || profile?.role === 'operador') && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <ArrowRightLeft className="h-4 w-4" />
+                      Transferir Setor
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-2 py-1.5 text-sm font-medium">
+                      Transferir para:
+                    </div>
+                    <DropdownMenuSeparator />
+                    {setores
+                      .filter(setor => setor.id !== currentSLA.setor_id)
+                      .map(setor => (
+                        <DropdownMenuItem
+                          key={setor.id}
+                          onClick={() => handleTransferTicket(setor)}
+                          className="cursor-pointer"
+                        >
+                          <Building className="h-4 w-4 mr-2" />
+                          {setor.nome}
+                        </DropdownMenuItem>
+                      ))
+                    }
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
