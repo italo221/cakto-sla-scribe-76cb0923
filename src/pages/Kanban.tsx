@@ -285,18 +285,7 @@ export default function KanbanPage() {
         </div>
 
         {/* Stats Cards - Usando dados centralizados */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <Card className="bg-card hover:bg-card-hover transition-colors">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total</p>
-                  <p className="text-2xl font-bold text-foreground">{stats.total}</p>
-                </div>
-                <TrendingUp className="h-5 w-5 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
 
           <Card className="bg-card hover:bg-card-hover transition-colors">
             <CardContent className="p-4">
