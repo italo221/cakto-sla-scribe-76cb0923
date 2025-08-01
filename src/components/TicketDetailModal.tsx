@@ -630,7 +630,7 @@ export default function SLADetailModal({
               {currentSLA.ticket_number || `#${currentSLA.id.slice(0, 8)}`} - {currentSLA.titulo}
             </DialogTitle>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 mr-4">
               {/* Botão de Editar */}
               {canEditTicket(currentSLA as any) && (
                 <Button

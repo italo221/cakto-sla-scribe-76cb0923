@@ -6,8 +6,11 @@ interface FormattedTextProps {
 }
 
 export const FormattedText: React.FC<FormattedTextProps> = ({ text, className = '' }) => {
-  // Processar menções para destacar apenas o nome mencionado
+  // Preservar formatação das menções que já estão formatadas 
   const processedText = text.replace(
+    /<span[^>]*data-user-id="[^"]*"[^>]*>(@[^<]+)<\/span>/g,
+    (match) => match // Manter spans com data-user-id como estão
+  ).replace(
     /<span style="[^"]*">(@[^<]+)<\/span>/g,
     '<span class="mention-highlight">$1</span>'
   );
