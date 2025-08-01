@@ -99,10 +99,18 @@ export default function MentionEditor({
         
         searchUsers(afterAt);
       } else {
+        // Limpar estado quando há espaços após @
         setShowMentions(false);
+        setMentionQuery('');
+        setLastAtPosition(-1);
+        setSelectedIndex(0);
       }
     } else {
+      // Limpar estado quando não há @
       setShowMentions(false);
+      setMentionQuery('');
+      setLastAtPosition(-1);
+      setSelectedIndex(0);
     }
   };
 
@@ -151,6 +159,9 @@ export default function MentionEditor({
         return;
       } else if (e.key === 'Escape') {
         setShowMentions(false);
+        setMentionQuery('');
+        setLastAtPosition(-1);
+        setSelectedIndex(0);
       }
     }
     

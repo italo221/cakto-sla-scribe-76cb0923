@@ -84,7 +84,7 @@ export default function RichTextMentionEditor({
         const htmlBeforeAt = newValue.substring(0, newValue.lastIndexOf('@'));
         
         // Se não está dentro de uma tag de menção existente
-        if (!htmlBeforeAt.includes('<span style=') || htmlBeforeAt.lastIndexOf('</span>') > htmlBeforeAt.lastIndexOf('<span style=')) {
+        if (!htmlBeforeAt.includes('<span class="mention-highlight"') || htmlBeforeAt.lastIndexOf('</span>') > htmlBeforeAt.lastIndexOf('<span class="mention-highlight"')) {
           setLastAtPosition(lastAtIndex);
           setMentionQuery(afterAt);
           setShowMentions(true);
@@ -105,7 +105,11 @@ export default function RichTextMentionEditor({
       }
     }
     
+    // Limpar estado de menções quando não há @ ou quando a busca foi cancelada
     setShowMentions(false);
+    setMentionQuery('');
+    setLastAtPosition(-1);
+    setSelectedIndex(0);
   };
 
   // Selecionar usuário da lista
@@ -178,6 +182,9 @@ export default function RichTextMentionEditor({
         }
       } else if (e.key === 'Escape') {
         setShowMentions(false);
+        setMentionQuery('');
+        setLastAtPosition(-1);
+        setSelectedIndex(0);
       }
     }
   };
