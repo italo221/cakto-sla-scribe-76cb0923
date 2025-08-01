@@ -114,16 +114,16 @@ export default function MentionEditor({
     const currentValue = textarea.value;
     const cursorPosition = textarea.selectionStart;
     
-    // Substituir @query pelo @nome_usuario
+    // Substituir @query por HTML estruturado com dados do usuário
     const beforeAt = currentValue.substring(0, lastAtPosition);
     const afterCursor = currentValue.substring(cursorPosition);
-    const mentionText = `@${selectedUser.nome_completo}`;
+    const mentionHtml = `<span class="mention-highlight" data-user-id="${selectedUser.user_id}" data-user-name="${selectedUser.nome_completo}">@${selectedUser.nome_completo}</span>`;
     
-    const newValue = beforeAt + mentionText + ' ' + afterCursor;
+    const newValue = beforeAt + mentionHtml + ' ' + afterCursor;
     onChange(newValue);
     
     // Reposicionar cursor
-    const newCursorPosition = beforeAt.length + mentionText.length + 1;
+    const newCursorPosition = beforeAt.length + mentionHtml.length + 1;
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(newCursorPosition, newCursorPosition);

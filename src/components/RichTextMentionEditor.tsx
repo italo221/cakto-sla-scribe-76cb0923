@@ -151,8 +151,8 @@ export default function RichTextMentionEditor({
     const queryEndIndex = afterAt.indexOf('@') === 0 ? 1 + mentionQuery.length : mentionQuery.length;
     const afterQuery = afterAt.substring(queryEndIndex);
     
-    // Criar menção com span destacado usando estilo inline para garantir renderização
-    const mentionSpan = `<span style="background-color: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); padding: 2px 6px; border-radius: 4px; font-weight: 500; margin: 0 1px;" data-user-id="${selectedUser.user_id}" data-user-name="${selectedUser.nome_completo}">@${selectedUser.nome_completo}</span>`;
+    // Criar menção com dados estruturados para trigger detectar
+    const mentionSpan = `<span class="mention-highlight" data-user-id="${selectedUser.user_id}" data-user-name="${selectedUser.nome_completo}">@${selectedUser.nome_completo}</span>`;
     
     const newValue = beforeAt + mentionSpan + ' ' + afterQuery;
     onChange(newValue);
