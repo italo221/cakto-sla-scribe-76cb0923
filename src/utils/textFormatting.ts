@@ -18,10 +18,10 @@ export function extractCleanTextWithMentions(htmlContent: string): string {
     
     // Se tem userId, manter a formatação para preservar a menção
     if (userId && userName) {
-      span.outerHTML = `<span style="background-color: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); padding: 2px 6px; border-radius: 4px; font-weight: 500; margin: 0 1px; border: 1px solid hsl(var(--primary) / 0.2);" data-user-id="${userId}" data-user-name="${userName}">${textContent}</span>`;
+      span.outerHTML = `<span class="mention-highlight" data-user-id="${userId}" data-user-name="${userName}">${textContent}</span>`;
     } else {
       // Se não tem userId, manter pelo menos a formatação visual
-      span.outerHTML = `<span style="background-color: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); padding: 2px 6px; border-radius: 4px; font-weight: 500; margin: 0 1px; border: 1px solid hsl(var(--primary) / 0.2);">${textContent}</span>`;
+      span.outerHTML = `<span class="mention-highlight">${textContent}</span>`;
     }
   });
   
@@ -39,6 +39,6 @@ export function formatMentionsForDisplay(text: string): string {
   const mentionRegex = /@([a-zA-ZÀ-ÿ0-9_.-]+(?:\s+[a-zA-ZÀ-ÿ0-9_.-]+)*)/g;
   
   return text.replace(mentionRegex, (match, username) => {
-    return `<span style="background-color: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); padding: 2px 6px; border-radius: 4px; font-weight: 500; margin: 0 1px; border: 1px solid hsl(var(--primary) / 0.2);">${match}</span>`;
+    return `<span class="mention-highlight">${match}</span>`;
   });
 }
