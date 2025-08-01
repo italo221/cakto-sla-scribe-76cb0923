@@ -467,6 +467,17 @@ export default function SLADetailModal({
                                   </p>
                                 </div>
                               )}
+                              
+                              {/* Anexos e Links na descrição inicial */}
+                              {(currentSLA.link_referencia || currentSLA.anexos) && (
+                                <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                                  <TicketAttachments 
+                                    linkReferencia={currentSLA.link_referencia}
+                                    anexos={currentSLA.anexos}
+                                    className="[&_h4]:text-blue-700 [&_h4]:dark:text-blue-300 [&_h4]:text-xs [&_h4]:font-medium [&_.bg-muted\/50]:bg-blue-100/50 [&_.bg-muted\/50]:dark:bg-blue-900/20 [&_.border]:border-blue-200 [&_.border]:dark:border-blue-700"
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
