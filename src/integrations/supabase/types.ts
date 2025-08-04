@@ -176,6 +176,92 @@ export type Database = {
         }
         Relationships: []
       }
+      link_clicks: {
+        Row: {
+          city: string | null
+          clicked_at: string | null
+          country: string | null
+          id: string
+          ip_address: unknown | null
+          link_id: string | null
+          referrer: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          city?: string | null
+          clicked_at?: string | null
+          country?: string | null
+          id?: string
+          ip_address?: unknown | null
+          link_id?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          city?: string | null
+          clicked_at?: string | null
+          country?: string | null
+          id?: string
+          ip_address?: unknown | null
+          link_id?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_clicks_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "user_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      link_profiles: {
+        Row: {
+          avatar_url: string | null
+          background_image_url: string | null
+          bio: string | null
+          created_at: string | null
+          display_name: string
+          font_family: string | null
+          id: string
+          is_public: boolean | null
+          theme_colors: Json | null
+          updated_at: string | null
+          user_id: string | null
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          background_image_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name: string
+          font_family?: string | null
+          id?: string
+          is_public?: boolean | null
+          theme_colors?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          background_image_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string
+          font_family?: string | null
+          id?: string
+          is_public?: boolean | null
+          theme_colors?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
       logs_permissoes: {
         Row: {
           acao: string
@@ -756,6 +842,36 @@ export type Database = {
         }
         Relationships: []
       }
+      themes: {
+        Row: {
+          colors: Json
+          created_at: string | null
+          display_name: string
+          font_family: string | null
+          id: string
+          is_premium: boolean | null
+          name: string
+        }
+        Insert: {
+          colors: Json
+          created_at?: string | null
+          display_name: string
+          font_family?: string | null
+          id?: string
+          is_premium?: boolean | null
+          name: string
+        }
+        Update: {
+          colors?: Json
+          created_at?: string | null
+          display_name?: string
+          font_family?: string | null
+          id?: string
+          is_premium?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
       user_kyc: {
         Row: {
           created_at: string
@@ -785,6 +901,59 @@ export type Database = {
           verification_level?: string | null
         }
         Relationships: []
+      }
+      user_links: {
+        Row: {
+          badge_text: string | null
+          created_at: string | null
+          icon_url: string | null
+          id: string
+          is_active: boolean | null
+          is_pinned: boolean | null
+          link_type: Database["public"]["Enums"]["link_type"] | null
+          profile_id: string | null
+          sort_order: number | null
+          title: string
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          badge_text?: string | null
+          created_at?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_pinned?: boolean | null
+          link_type?: Database["public"]["Enums"]["link_type"] | null
+          profile_id?: string | null
+          sort_order?: number | null
+          title: string
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          badge_text?: string | null
+          created_at?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_pinned?: boolean | null
+          link_type?: Database["public"]["Enums"]["link_type"] | null
+          profile_id?: string | null
+          sort_order?: number | null
+          title?: string
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_links_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "link_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_profits: {
         Row: {
@@ -961,6 +1130,7 @@ export type Database = {
       }
     }
     Enums: {
+      link_type: "link" | "video" | "form" | "qr"
       prioridade_operacional: "alta" | "media" | "baixa"
       user_role: "super_admin" | "operador" | "viewer"
       user_type: "administrador_master" | "colaborador_setor"
@@ -1091,6 +1261,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      link_type: ["link", "video", "form", "qr"],
       prioridade_operacional: ["alta", "media", "baixa"],
       user_role: ["super_admin", "operador", "viewer"],
       user_type: ["administrador_master", "colaborador_setor"],
