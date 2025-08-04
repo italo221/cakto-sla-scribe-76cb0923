@@ -296,7 +296,9 @@ export default function SLADetailModal({
           p_acao: 'transferencia_setor',
           p_setor_origem_id: currentSLA.setor_id,
           p_setor_destino_id: novoSetor.id,
-          p_justificativa: `Transferido de "${setorAtual?.nome || 'Setor Desconhecido'}" para "${novoSetor.nome}"`
+          p_justificativa: `Transferido de "${setorAtual?.nome || 'Setor Desconhecido'}" para "${novoSetor.nome}"`,
+          p_dados_anteriores: null,
+          p_dados_novos: null
         });
 
       if (logError) {

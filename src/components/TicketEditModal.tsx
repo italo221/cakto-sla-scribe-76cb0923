@@ -151,6 +151,8 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         p_sla_id: ticket.id,
         p_acao: 'edicao_ticket',
         p_justificativa: 'Ticket editado pelo usuário',
+        p_setor_origem_id: null,
+        p_setor_destino_id: null,
         p_dados_anteriores: {
           titulo: ticket.titulo,
           descricao: ticket.descricao,
