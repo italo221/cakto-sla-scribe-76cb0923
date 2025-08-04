@@ -374,7 +374,11 @@ export default function SLADetailModal({
         .rpc('log_sla_action', {
           p_sla_id: currentSLA.id,
           p_acao: 'mudanca_status',
-          p_justificativa: `Status alterado de "${statusLabels[currentSLA.status as keyof typeof statusLabels]}" para "${statusLabels[newStatus as keyof typeof statusLabels]}"`
+          p_justificativa: `Status alterado de "${statusLabels[currentSLA.status as keyof typeof statusLabels]}" para "${statusLabels[newStatus as keyof typeof statusLabels]}"`,
+          p_setor_origem_id: null,
+          p_setor_destino_id: null,
+          p_dados_anteriores: null,
+          p_dados_novos: null
         });
 
       if (logError) {
