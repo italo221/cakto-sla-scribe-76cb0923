@@ -70,7 +70,11 @@ export default function RichTextMentionEditor({
 
   // Detectar @ no texto
   const handleTextChange = (newValue: string) => {
-    console.log('🔍 RichTextMentionEditor - handleTextChange chamado:', { newValue, user: user?.email });
+    console.log('🔍 RichTextMentionEditor - handleTextChange:', { 
+      newValue: newValue.substring(0, 100) + (newValue.length > 100 ? '...' : ''),
+      valueLength: newValue.length,
+      user: user?.email 
+    });
     onChange(newValue);
     
     // Trabalhar com o HTML completo para preservar menções anteriores
@@ -78,22 +82,38 @@ export default function RichTextMentionEditor({
     tempDiv.innerHTML = newValue;
     const textContent = tempDiv.textContent || tempDiv.innerText || '';
     
+    console.log('🔍 TextContent extraído:', { 
+      textContent: textContent.substring(0, 100) + (textContent.length > 100 ? '...' : ''),
+      contentLength: textContent.length
+    });
+    
     const lastAtIndex = textContent.lastIndexOf('@');
-    console.log('🔍 Último @ encontrado na posição:', lastAtIndex, 'texto:', textContent);
+    console.log('🔍 Último @ encontrado na posição:', lastAtIndex);
     
     if (lastAtIndex !== -1) {
       const afterAt = textContent.substring(lastAtIndex + 1);
-      console.log('🔍 Texto após @:', afterAt);
+      console.log('🔍 Texto após @:', { afterAt, length: afterAt.length });
       
-      // Se não há espaços ou quebras de linha após @ e não é uma menção já formatada
-      if (!afterAt.includes(' ') && !afterAt.includes('\n') && afterAt.length <= 50) {
-        // Verificar se não é uma menção já existente (dentro de um span)
-        const beforeAt = textContent.substring(0, lastAtIndex);
+      // Condições mais simples para detectar menção
+      const isValidMention = afterAt.length <= 50 && 
+                           !afterAt.includes('\n') && 
+                           (!afterAt.includes(' ') || afterAt.trim().length > 0);
+      
+      console.log('🔍 Validação de menção:', { isValidMention, afterAt });
+      
+      if (isValidMention) {
+        // Verificar se não é uma menção já existente
         const htmlBeforeAt = newValue.substring(0, newValue.lastIndexOf('@'));
+        const isInsideExistingMention = htmlBeforeAt.includes('<span class="mention-highlight"') && 
+                                       htmlBeforeAt.lastIndexOf('</span>') < htmlBeforeAt.lastIndexOf('<span class="mention-highlight"');
         
-        // Se não está dentro de uma tag de menção existente
-        if (!htmlBeforeAt.includes('<span class="mention-highlight"') || htmlBeforeAt.lastIndexOf('</span>') > htmlBeforeAt.lastIndexOf('<span class="mention-highlight"')) {
-          console.log('🔍 Detectando menção válida, ativando dropdown');
+        console.log('🔍 Verificação de menção existente:', { 
+          isInsideExistingMention,
+          hasSpanBefore: htmlBeforeAt.includes('<span class="mention-highlight"')
+        });
+        
+        if (!isInsideExistingMention) {
+          console.log('🔍 ATIVANDO DROPDOWN - Query será:', afterAt);
           setLastAtPosition(lastAtIndex);
           setMentionQuery(afterAt);
           setShowMentions(true);
@@ -108,6 +128,8 @@ export default function RichTextMentionEditor({
             });
           }
           
+          // Chamar searchUsers com a query
+          console.log('🔍 Chamando searchUsers com query:', afterAt);
           searchUsers(afterAt);
           return;
         }
@@ -115,7 +137,7 @@ export default function RichTextMentionEditor({
     }
     
     // Limpar estado de menções quando não há @ ou quando a busca foi cancelada
-    console.log('🔍 Limpando estado de menções');
+    console.log('🔍 Limpando estado de menções - não há @ válido');
     setShowMentions(false);
     setMentionQuery('');
     setLastAtPosition(-1);
