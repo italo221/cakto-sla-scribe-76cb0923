@@ -41,66 +41,6 @@ export type Database = {
         }
         Relationships: []
       }
-      color_combinations: {
-        Row: {
-          combination_name: string | null
-          id: string
-          primary_color_hex: string
-          primary_color_hsl: string
-          secondary_color_hex: string
-          secondary_color_hsl: string
-          used_at: string
-          used_by: string | null
-        }
-        Insert: {
-          combination_name?: string | null
-          id?: string
-          primary_color_hex: string
-          primary_color_hsl: string
-          secondary_color_hex: string
-          secondary_color_hsl: string
-          used_at?: string
-          used_by?: string | null
-        }
-        Update: {
-          combination_name?: string | null
-          id?: string
-          primary_color_hex?: string
-          primary_color_hsl?: string
-          secondary_color_hex?: string
-          secondary_color_hsl?: string
-          used_at?: string
-          used_by?: string | null
-        }
-        Relationships: []
-      }
-      color_history: {
-        Row: {
-          color_hex: string
-          color_hsl: string
-          color_name: string | null
-          id: string
-          used_at: string
-          used_by: string | null
-        }
-        Insert: {
-          color_hex: string
-          color_hsl: string
-          color_name?: string | null
-          id?: string
-          used_at?: string
-          used_by?: string | null
-        }
-        Update: {
-          color_hex?: string
-          color_hsl?: string
-          color_name?: string | null
-          id?: string
-          used_at?: string
-          used_by?: string | null
-        }
-        Relationships: []
-      }
       comment_reactions: {
         Row: {
           comment_id: string
@@ -176,7 +116,127 @@ export type Database = {
         }
         Relationships: []
       }
-      link_clicks: {
+      lib_color_combinations: {
+        Row: {
+          combination_name: string | null
+          id: string
+          primary_color_hex: string
+          primary_color_hsl: string
+          secondary_color_hex: string
+          secondary_color_hsl: string
+          used_at: string
+          used_by: string | null
+        }
+        Insert: {
+          combination_name?: string | null
+          id?: string
+          primary_color_hex: string
+          primary_color_hsl: string
+          secondary_color_hex: string
+          secondary_color_hsl: string
+          used_at?: string
+          used_by?: string | null
+        }
+        Update: {
+          combination_name?: string | null
+          id?: string
+          primary_color_hex?: string
+          primary_color_hsl?: string
+          secondary_color_hex?: string
+          secondary_color_hsl?: string
+          used_at?: string
+          used_by?: string | null
+        }
+        Relationships: []
+      }
+      lib_color_history: {
+        Row: {
+          color_hex: string
+          color_hsl: string
+          color_name: string | null
+          id: string
+          used_at: string
+          used_by: string | null
+        }
+        Insert: {
+          color_hex: string
+          color_hsl: string
+          color_name?: string | null
+          id?: string
+          used_at?: string
+          used_by?: string | null
+        }
+        Update: {
+          color_hex?: string
+          color_hsl?: string
+          color_name?: string | null
+          id?: string
+          used_at?: string
+          used_by?: string | null
+        }
+        Relationships: []
+      }
+      lib_custom_presets: {
+        Row: {
+          border_color: string | null
+          border_radius: string | null
+          border_style: string | null
+          border_width: string | null
+          button_color: string
+          button_style: string
+          created_at: string
+          font_family: string
+          gradient_angle: number
+          gradient_color: string
+          id: string
+          preset_name: string
+          primary_color: string
+          shadow_enabled: boolean
+          text_color: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          border_color?: string | null
+          border_radius?: string | null
+          border_style?: string | null
+          border_width?: string | null
+          button_color: string
+          button_style?: string
+          created_at?: string
+          font_family?: string
+          gradient_angle?: number
+          gradient_color: string
+          id?: string
+          preset_name: string
+          primary_color: string
+          shadow_enabled?: boolean
+          text_color: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          border_color?: string | null
+          border_radius?: string | null
+          border_style?: string | null
+          border_width?: string | null
+          button_color?: string
+          button_style?: string
+          created_at?: string
+          font_family?: string
+          gradient_angle?: number
+          gradient_color?: string
+          id?: string
+          preset_name?: string
+          primary_color?: string
+          shadow_enabled?: boolean
+          text_color?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      lib_link_clicks: {
         Row: {
           city: string | null
           clicked_at: string | null
@@ -212,21 +272,30 @@ export type Database = {
             foreignKeyName: "link_clicks_link_id_fkey"
             columns: ["link_id"]
             isOneToOne: false
-            referencedRelation: "user_links"
+            referencedRelation: "lib_user_links"
             referencedColumns: ["id"]
           },
         ]
       }
-      link_profiles: {
+      lib_link_profiles: {
         Row: {
           avatar_url: string | null
           background_image_url: string | null
           bio: string | null
+          border_color: string | null
+          border_radius: string | null
+          border_style: string | null
+          border_width: string | null
+          button_alignment: string | null
+          button_corners: string | null
+          button_shadow: string | null
+          button_style: string | null
           created_at: string | null
           display_name: string
           font_family: string | null
           id: string
           is_public: boolean | null
+          show_username_symbol: boolean
           theme_colors: Json | null
           updated_at: string | null
           user_id: string | null
@@ -236,11 +305,20 @@ export type Database = {
           avatar_url?: string | null
           background_image_url?: string | null
           bio?: string | null
+          border_color?: string | null
+          border_radius?: string | null
+          border_style?: string | null
+          border_width?: string | null
+          button_alignment?: string | null
+          button_corners?: string | null
+          button_shadow?: string | null
+          button_style?: string | null
           created_at?: string | null
           display_name: string
           font_family?: string | null
           id?: string
           is_public?: boolean | null
+          show_username_symbol?: boolean
           theme_colors?: Json | null
           updated_at?: string | null
           user_id?: string | null
@@ -250,17 +328,109 @@ export type Database = {
           avatar_url?: string | null
           background_image_url?: string | null
           bio?: string | null
+          border_color?: string | null
+          border_radius?: string | null
+          border_style?: string | null
+          border_width?: string | null
+          button_alignment?: string | null
+          button_corners?: string | null
+          button_shadow?: string | null
+          button_style?: string | null
           created_at?: string | null
           display_name?: string
           font_family?: string | null
           id?: string
           is_public?: boolean | null
+          show_username_symbol?: boolean
           theme_colors?: Json | null
           updated_at?: string | null
           user_id?: string | null
           username?: string
         }
         Relationships: []
+      }
+      lib_themes: {
+        Row: {
+          colors: Json
+          created_at: string | null
+          display_name: string
+          font_family: string | null
+          id: string
+          is_premium: boolean | null
+          name: string
+        }
+        Insert: {
+          colors: Json
+          created_at?: string | null
+          display_name: string
+          font_family?: string | null
+          id?: string
+          is_premium?: boolean | null
+          name: string
+        }
+        Update: {
+          colors?: Json
+          created_at?: string | null
+          display_name?: string
+          font_family?: string | null
+          id?: string
+          is_premium?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
+      lib_user_links: {
+        Row: {
+          badge_text: string | null
+          created_at: string | null
+          icon_url: string | null
+          id: string
+          is_active: boolean | null
+          is_pinned: boolean | null
+          link_type: Database["public"]["Enums"]["link_type"] | null
+          profile_id: string | null
+          sort_order: number | null
+          title: string
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          badge_text?: string | null
+          created_at?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_pinned?: boolean | null
+          link_type?: Database["public"]["Enums"]["link_type"] | null
+          profile_id?: string | null
+          sort_order?: number | null
+          title: string
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          badge_text?: string | null
+          created_at?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_pinned?: boolean | null
+          link_type?: Database["public"]["Enums"]["link_type"] | null
+          profile_id?: string | null
+          sort_order?: number | null
+          title?: string
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_links_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "lib_link_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       logs_permissoes: {
         Row: {
@@ -842,36 +1012,6 @@ export type Database = {
         }
         Relationships: []
       }
-      themes: {
-        Row: {
-          colors: Json
-          created_at: string | null
-          display_name: string
-          font_family: string | null
-          id: string
-          is_premium: boolean | null
-          name: string
-        }
-        Insert: {
-          colors: Json
-          created_at?: string | null
-          display_name: string
-          font_family?: string | null
-          id?: string
-          is_premium?: boolean | null
-          name: string
-        }
-        Update: {
-          colors?: Json
-          created_at?: string | null
-          display_name?: string
-          font_family?: string | null
-          id?: string
-          is_premium?: boolean | null
-          name?: string
-        }
-        Relationships: []
-      }
       user_kyc: {
         Row: {
           created_at: string
@@ -901,59 +1041,6 @@ export type Database = {
           verification_level?: string | null
         }
         Relationships: []
-      }
-      user_links: {
-        Row: {
-          badge_text: string | null
-          created_at: string | null
-          icon_url: string | null
-          id: string
-          is_active: boolean | null
-          is_pinned: boolean | null
-          link_type: Database["public"]["Enums"]["link_type"] | null
-          profile_id: string | null
-          sort_order: number | null
-          title: string
-          updated_at: string | null
-          url: string
-        }
-        Insert: {
-          badge_text?: string | null
-          created_at?: string | null
-          icon_url?: string | null
-          id?: string
-          is_active?: boolean | null
-          is_pinned?: boolean | null
-          link_type?: Database["public"]["Enums"]["link_type"] | null
-          profile_id?: string | null
-          sort_order?: number | null
-          title: string
-          updated_at?: string | null
-          url: string
-        }
-        Update: {
-          badge_text?: string | null
-          created_at?: string | null
-          icon_url?: string | null
-          id?: string
-          is_active?: boolean | null
-          is_pinned?: boolean | null
-          link_type?: Database["public"]["Enums"]["link_type"] | null
-          profile_id?: string | null
-          sort_order?: number | null
-          title?: string
-          updated_at?: string | null
-          url?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_links_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "link_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       user_profits: {
         Row: {
