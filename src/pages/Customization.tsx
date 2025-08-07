@@ -117,7 +117,7 @@ export default function WhitelabelCustomization() {
   const loadColorCombinations = async () => {
     try {
       const { data, error } = await supabase
-        .from('color_combinations')
+        .from('lib_color_combinations')
         .select('*')
         .order('used_at', { ascending: false })
         .limit(10);
@@ -342,7 +342,7 @@ export default function WhitelabelCustomization() {
       // Adicionar combinação de cores ao histórico (não bloquear o save principal)
       if (hasChanges && previewColor.hsl && previewSecondaryColor.hsl) {
         supabase
-          .from('color_combinations')
+          .from('lib_color_combinations')
           .insert({
             primary_color_hsl: previewColor.hsl,
             primary_color_hex: previewColor.hex,

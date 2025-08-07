@@ -499,7 +499,7 @@ export default function SLADetailModal({
       return;
     }
 
-    if (!canEdit && !isSuperAdmin) {
+    if (!canEdit) {
       toast({
         title: "Erro",
         description: "Você não tem permissão para comentar em tickets.",
