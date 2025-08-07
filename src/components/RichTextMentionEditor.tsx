@@ -47,7 +47,6 @@ export default function RichTextMentionEditor({
         .from('profiles')
         .select('id, user_id, nome_completo, email')
         .neq('user_id', user?.id) // Não incluir o próprio usuário
-        .eq('ativo', true)
         .order('nome_completo', { ascending: true });
 
       // Se tem query, filtrar por nome/email. Se não tem query, mostrar todos (até 50)
