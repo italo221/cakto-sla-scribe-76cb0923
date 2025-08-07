@@ -151,14 +151,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const isSuperAdmin = profile?.role === 'super_admin' || profile?.user_type === 'administrador_master';
   const canEdit = isSuperAdmin || profile?.role === 'operador';
   const isAdmin = isSuperAdmin; // Compatibilidade com código existente
-  
-  // Debug para entender permissões
-  console.log('useAuth - Debug:', { 
-    profileRole: profile?.role, 
-    userType: profile?.user_type, 
-    isSuperAdmin, 
-    canEdit 
-  });
 
   const value = {
     user,

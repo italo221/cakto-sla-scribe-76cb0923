@@ -38,14 +38,6 @@ export default function RichTextMentionEditor({
 
   // Verificar se usuário pode fazer menções (Operadores e Super Admins)
   const canMention = canEdit || isSuperAdmin;
-  
-  // Debug para entender por que operadores não conseguem mencionar
-  console.log('RichTextMentionEditor - Debug:', { 
-    canEdit, 
-    isSuperAdmin, 
-    canMention, 
-    role: user?.user_metadata?.role || 'no role' 
-  });
 
   // Buscar usuários para mentions
   const searchUsers = useCallback(async (query: string) => {
