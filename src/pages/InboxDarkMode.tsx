@@ -264,7 +264,8 @@ export default function Inbox() {
           case 'atrasado':
             return ticket.isExpired;
           case 'critico':
-            return ticket.nivel_criticidade === 'P0';
+            return ticket.nivel_criticidade === 'P0' && 
+                   ['aberto', 'em_andamento'].includes(ticketStatus);
           default:
             return ticketStatus === activeFilter && !ticket.isExpired;
         }

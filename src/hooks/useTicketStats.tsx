@@ -36,9 +36,12 @@ export const useTicketStats = () => {
         counts.atrasados++;
       }
       
-      // Contagem de críticos
+      // Contagem de críticos (apenas abertos ou em andamento)
       if (ticket.nivel_criticidade === 'P0') {
-        counts.criticos++;
+        const status = ticket.status?.toString()?.trim()?.toLowerCase();
+        if (['aberto', 'em_andamento'].includes(status)) {
+          counts.criticos++;
+        }
       }
       
       // Contagem por status - INCLUIR todos os tickets (mesmo atrasados)
