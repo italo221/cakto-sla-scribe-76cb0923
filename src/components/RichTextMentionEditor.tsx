@@ -41,6 +41,7 @@ export default function RichTextMentionEditor({
 
   // Buscar usuários para mentions
   const searchUsers = useCallback(async (query: string) => {
+    console.log('🔍 searchUsers chamado:', { query, user: user?.email });
     try {
       let queryBuilder = supabase
         .from('profiles')
@@ -59,6 +60,7 @@ export default function RichTextMentionEditor({
       const { data, error } = await queryBuilder;
 
       if (error) throw error;
+      console.log('🔍 Usuários encontrados:', data?.length || 0, data);
       setMentionUsers(data || []);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
@@ -68,6 +70,7 @@ export default function RichTextMentionEditor({
 
   // Detectar @ no texto
   const handleTextChange = (newValue: string) => {
+    console.log('🔍 RichTextMentionEditor - handleTextChange chamado:', { newValue, user: user?.email });
     onChange(newValue);
     
     // Trabalhar com o HTML completo para preservar menções anteriores
@@ -76,9 +79,11 @@ export default function RichTextMentionEditor({
     const textContent = tempDiv.textContent || tempDiv.innerText || '';
     
     const lastAtIndex = textContent.lastIndexOf('@');
+    console.log('🔍 Último @ encontrado na posição:', lastAtIndex, 'texto:', textContent);
     
     if (lastAtIndex !== -1) {
       const afterAt = textContent.substring(lastAtIndex + 1);
+      console.log('🔍 Texto após @:', afterAt);
       
       // Se não há espaços ou quebras de linha após @ e não é uma menção já formatada
       if (!afterAt.includes(' ') && !afterAt.includes('\n') && afterAt.length <= 50) {
@@ -88,6 +93,7 @@ export default function RichTextMentionEditor({
         
         // Se não está dentro de uma tag de menção existente
         if (!htmlBeforeAt.includes('<span class="mention-highlight"') || htmlBeforeAt.lastIndexOf('</span>') > htmlBeforeAt.lastIndexOf('<span class="mention-highlight"')) {
+          console.log('🔍 Detectando menção válida, ativando dropdown');
           setLastAtPosition(lastAtIndex);
           setMentionQuery(afterAt);
           setShowMentions(true);
@@ -109,6 +115,7 @@ export default function RichTextMentionEditor({
     }
     
     // Limpar estado de menções quando não há @ ou quando a busca foi cancelada
+    console.log('🔍 Limpando estado de menções');
     setShowMentions(false);
     setMentionQuery('');
     setLastAtPosition(-1);
