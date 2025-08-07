@@ -34,10 +34,17 @@ export default function RichTextMentionEditor({
   
   const editorRef = useRef<HTMLDivElement>(null);
   const mentionListRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuth();
+  const { user, canEdit, isSuperAdmin } = useAuth();
+
+  // Verificar se usuário pode fazer menções (Operadores e Super Admins)
+  const canMention = canEdit || isSuperAdmin;
 
   // Buscar usuários para mentions
   const searchUsers = useCallback(async (query: string) => {
+    if (!canMention) {
+      setMentionUsers([]);
+      return;
+    }
     try {
       let queryBuilder = supabase
         .from('profiles')
@@ -61,11 +68,16 @@ export default function RichTextMentionEditor({
       console.error('Erro ao buscar usuários:', error);
       setMentionUsers([]);
     }
-  }, [user?.id]);
+  }, [user?.id, canMention]);
 
   // Detectar @ no texto
   const handleTextChange = (newValue: string) => {
     onChange(newValue);
+    
+    // Se usuário não pode fazer menções, apenas processar o texto
+    if (!canMention) {
+      return;
+    }
     
     // Trabalhar com o HTML completo para preservar menções anteriores
     const tempDiv = document.createElement('div');

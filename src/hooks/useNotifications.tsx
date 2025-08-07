@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
 interface Notification {
@@ -23,6 +23,7 @@ export function useNotifications() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   // Buscar notificações iniciais
@@ -154,7 +155,19 @@ export function useNotifications() {
 
     // Navegar para o ticket relacionado
     if (notification.ticket_id) {
-      navigate(`/inbox?ticket=${notification.ticket_id}`);
+      // Se já estamos na inbox, apenas adicionar o parâmetro
+      if (location.pathname === '/inbox') {
+        navigate(`/inbox?ticket=${notification.ticket_id}`, { replace: true });
+      } else {
+        navigate(`/inbox?ticket=${notification.ticket_id}`);
+      }
+      
+      // Disparar evento customizado para abrir o modal
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('openTicketModal', { 
+          detail: { ticketId: notification.ticket_id } 
+        }));
+      }, 100);
     }
   };
 

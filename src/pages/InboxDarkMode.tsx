@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -93,6 +94,8 @@ export default function Inbox() {
   const [selectedTicketForDelete, setSelectedTicketForDelete] = useState<Ticket | null>(null);
   const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('detailed');
   
+  const [searchParams, setSearchParams] = useSearchParams();
+  
   const {
     user,
     canEdit,
@@ -101,6 +104,20 @@ export default function Inbox() {
   const { allTags } = useTags();
   const [userRole, setUserRole] = useState<string>('viewer');
   const { toast } = useToast();
+
+  // Verificar parâmetro ticket na URL para abertura automática do modal
+  useEffect(() => {
+    const ticketId = searchParams.get('ticket');
+    if (ticketId && optimizedTicketsWithStatus.length > 0) {
+      const ticket = optimizedTicketsWithStatus.find(t => t.id === ticketId);
+      if (ticket) {
+        setSelectedTicket(ticket);
+        setModalOpen(true);
+        // Limpar parâmetro da URL após abrir modal
+        setSearchParams({});
+      }
+    }
+  }, [searchParams, optimizedTicketsWithStatus, setSearchParams]);
 
   // Define canDelete based on user permissions
   const canDelete = isSuperAdmin;
@@ -116,10 +133,23 @@ export default function Inbox() {
       setEditModalOpen(true);
     };
     window.addEventListener('openEditModal', handleOpenEditModal as EventListener);
+
+    // Event listener para abrir modal via notificação
+    const handleOpenTicketModal = (event: CustomEvent) => {
+      const { ticketId } = event.detail;
+      const ticket = optimizedTicketsWithStatus.find(t => t.id === ticketId);
+      if (ticket) {
+        setSelectedTicket(ticket);
+        setModalOpen(true);
+      }
+    };
+    window.addEventListener('openTicketModal', handleOpenTicketModal as EventListener);
+
     return () => {
       window.removeEventListener('openEditModal', handleOpenEditModal as EventListener);
+      window.removeEventListener('openTicketModal', handleOpenTicketModal as EventListener);
     };
-  }, []);
+  }, [optimizedTicketsWithStatus]);
 
   const loadSetores = async () => {
     try {
