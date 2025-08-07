@@ -77,62 +77,67 @@ export default function RichTextMentionEditor({
     });
     onChange(newValue);
     
-    // Trabalhar com o HTML completo para preservar menções anteriores
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = newValue;
-    const textContent = tempDiv.textContent || tempDiv.innerText || '';
-    
-    console.log('🔍 TextContent extraído:', { 
-      textContent: textContent.substring(0, 100) + (textContent.length > 100 ? '...' : ''),
-      contentLength: textContent.length
-    });
+    // ABORDAGEM MAIS DIRETA: trabalhar direto com o texto do DOM
+    let textContent = '';
+    if (editorRef.current) {
+      textContent = editorRef.current.textContent || editorRef.current.innerText || '';
+      console.log('🔍 Texto extraído diretamente do DOM:', { 
+        textContent: textContent.substring(0, 100) + (textContent.length > 100 ? '...' : ''),
+        contentLength: textContent.length
+      });
+    } else {
+      // Fallback para o método anterior
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = newValue;
+      textContent = tempDiv.textContent || tempDiv.innerText || '';
+      console.log('🔍 Texto extraído via tempDiv (fallback):', { 
+        textContent: textContent.substring(0, 100) + (textContent.length > 100 ? '...' : ''),
+        contentLength: textContent.length
+      });
+    }
     
     const lastAtIndex = textContent.lastIndexOf('@');
     console.log('🔍 Último @ encontrado na posição:', lastAtIndex);
     
     if (lastAtIndex !== -1) {
       const afterAt = textContent.substring(lastAtIndex + 1);
-      console.log('🔍 Texto após @:', { afterAt, length: afterAt.length });
+      console.log('🔍 Texto após @ (RAW):', { 
+        afterAt: JSON.stringify(afterAt), 
+        length: afterAt.length,
+        chars: afterAt.split('').map(c => c.charCodeAt(0))
+      });
       
       // Condições mais simples para detectar menção
       const isValidMention = afterAt.length <= 50 && 
                            !afterAt.includes('\n') && 
                            (!afterAt.includes(' ') || afterAt.trim().length > 0);
       
-      console.log('🔍 Validação de menção:', { isValidMention, afterAt });
+      console.log('🔍 Validação de menção:', { isValidMention, afterAt, conditions: {
+        lengthOk: afterAt.length <= 50,
+        noNewline: !afterAt.includes('\n'),
+        spaceOk: !afterAt.includes(' ') || afterAt.trim().length > 0
+      }});
       
       if (isValidMention) {
-        // Verificar se não é uma menção já existente
-        const htmlBeforeAt = newValue.substring(0, newValue.lastIndexOf('@'));
-        const isInsideExistingMention = htmlBeforeAt.includes('<span class="mention-highlight"') && 
-                                       htmlBeforeAt.lastIndexOf('</span>') < htmlBeforeAt.lastIndexOf('<span class="mention-highlight"');
+        console.log('🔍 ATIVANDO DROPDOWN - Query será:', JSON.stringify(afterAt));
+        setLastAtPosition(lastAtIndex);
+        setMentionQuery(afterAt);
+        setShowMentions(true);
+        setSelectedIndex(0);
         
-        console.log('🔍 Verificação de menção existente:', { 
-          isInsideExistingMention,
-          hasSpanBefore: htmlBeforeAt.includes('<span class="mention-highlight"')
-        });
-        
-        if (!isInsideExistingMention) {
-          console.log('🔍 ATIVANDO DROPDOWN - Query será:', afterAt);
-          setLastAtPosition(lastAtIndex);
-          setMentionQuery(afterAt);
-          setShowMentions(true);
-          setSelectedIndex(0);
-          
-          // Calcular posição aproximada do dropdown
-          if (editorRef.current) {
-            const rect = editorRef.current.getBoundingClientRect();
-            setMentionPosition({
-              top: rect.bottom + 5,
-              left: rect.left + 10
-            });
-          }
-          
-          // Chamar searchUsers com a query
-          console.log('🔍 Chamando searchUsers com query:', afterAt);
-          searchUsers(afterAt);
-          return;
+        // Calcular posição aproximada do dropdown
+        if (editorRef.current) {
+          const rect = editorRef.current.getBoundingClientRect();
+          setMentionPosition({
+            top: rect.bottom + 5,
+            left: rect.left + 10
+          });
         }
+        
+        // Chamar searchUsers com a query
+        console.log('🔍 Chamando searchUsers com query:', JSON.stringify(afterAt));
+        searchUsers(afterAt);
+        return;
       }
     }
     
