@@ -115,7 +115,7 @@ export default function FileUploader({
         className={cn(
           "relative border-2 border-dashed rounded-lg p-6 text-center transition-colors",
           dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25",
-          uploading && "opacity-50 pointer-events-none"
+          uploading && "opacity-50"
         )}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}

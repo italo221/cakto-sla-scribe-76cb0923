@@ -122,8 +122,12 @@ export const useFileUpload = (options: FileUploadOptions) => {
           const { data: signed, error: signedErr } = await supabase.storage
             .from(options.bucket)
             .createSignedUrl(fileName, 3600);
-          if (signedErr) throw signedErr;
-          previewUrl = signed?.signedUrl || '';
+          if (signedErr) {
+            console.warn('Falha ao gerar Signed URL, seguindo sem preview imediato:', signedErr);
+            previewUrl = '';
+          } else {
+            previewUrl = signed?.signedUrl || '';
+          }
         } else {
           const { data: { publicUrl } } = supabase.storage
             .from(options.bucket)

@@ -727,6 +727,7 @@ export default function SLADetailModal({
         description: "Comentário adicionado com sucesso."
       });
       setNewComment('');
+      setCommentFiles([]);
       loadComments();
     } catch (error: any) {
       toast({
