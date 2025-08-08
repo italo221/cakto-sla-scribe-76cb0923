@@ -6,7 +6,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
 interface User {
-  id: string;
   user_id: string;
   nome_completo: string;
   email: string;
@@ -39,19 +38,20 @@ export default function RichTextMentionEditor({
   // Permitir menções para todos os usuários logados
   const canMention = true;
 
-  // Buscar usuários para mentions
+  // Buscar usuários para mentions com debounce
   const searchUsers = useCallback(async (query: string) => {
     console.log('🔍 searchUsers chamado:', { query, user: user?.email });
     try {
       let queryBuilder = supabase
         .from('profiles')
-        .select('id, user_id, nome_completo, email')
+        .select('user_id, nome_completo, email')
+        .eq('ativo', true)
         .neq('user_id', user?.id) // Não incluir o próprio usuário
         .order('nome_completo', { ascending: true });
 
-      // Se tem query, filtrar por nome/email. Se não tem query, mostrar todos (até 50)
+      // Se tem query, filtrar por nome/email case-insensitive. Se não tem query, mostrar todos (até 50)
       if (query.trim()) {
-        queryBuilder = queryBuilder.or(`nome_completo.ilike.%${query}%,email.ilike.%${query}%`).limit(20);
+        queryBuilder = queryBuilder.or(`nome_completo.ilike.%${query}%,email.ilike.%${query}%`).limit(50);
       } else {
         queryBuilder = queryBuilder.limit(50); // Mostrar mais usuários quando não há busca
       }
@@ -66,6 +66,20 @@ export default function RichTextMentionEditor({
       setMentionUsers([]);
     }
   }, [user?.id]);
+
+  // Debounced search function
+  const debouncedSearchUsers = useCallback(
+    (() => {
+      let timeout: NodeJS.Timeout;
+      return (query: string) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          searchUsers(query);
+        }, 250); // 250ms debounce
+      };
+    })(),
+    [searchUsers]
+  );
 
   // Detectar @ no texto
   const handleTextChange = (newValue: string) => {
@@ -133,9 +147,9 @@ export default function RichTextMentionEditor({
           });
         }
         
-        // Chamar searchUsers com a query
-        console.log('🔍 Chamando searchUsers com query:', JSON.stringify(afterAt));
-        searchUsers(afterAt);
+        // Chamar searchUsers com debounce
+        console.log('🔍 Chamando debouncedSearchUsers com query:', JSON.stringify(afterAt));
+        debouncedSearchUsers(afterAt);
         return;
       }
     }
@@ -271,7 +285,7 @@ export default function RichTextMentionEditor({
               </div>
               {mentionUsers.map((mentionUser, index) => (
                 <div
-                  key={mentionUser.id}
+                  key={mentionUser.user_id}
                   className={`flex items-center gap-3 p-2 rounded-sm cursor-pointer transition-colors ${
                     index === selectedIndex ? 'bg-accent' : 'hover:bg-accent/50'
                   }`}
