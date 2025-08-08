@@ -21,6 +21,7 @@ import CommentDeleteModal from "@/components/CommentDeleteModal";
 import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit2, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown, Eye } from "lucide-react";
 import TicketAttachments from "@/components/TicketAttachments";
 import TicketEditModal from "@/components/TicketEditModal";
+import FileUploader from "@/components/FileUploader";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -160,6 +161,8 @@ export default function SLADetailModal({
     url: string;
     uploader_name?: string;
   }>>([]);
+
+  const [commentFiles, setCommentFiles] = useState<Array<{ id: string; name: string; url: string; type: string; size: number; storagePath?: string }>>([]);
 
   const { toast } = useToast();
 
@@ -628,6 +631,48 @@ export default function SLADetailModal({
 
       if (commentError) throw commentError;
 
+      // Persistir anexos do comentário (se houver)
+      try {
+        if (commentData?.id && commentFiles.length > 0) {
+          const moved = await Promise.all(commentFiles.map(async (f) => {
+            const oldPath = (f as any).storagePath || f.id;
+            const newPath = `${currentSLA.id}/comments/${commentData.id}/${oldPath}`;
+            try {
+              const { error: moveErr } = await supabase.storage
+                .from('tickets')
+                .move(oldPath, newPath);
+              if (moveErr) {
+                console.warn('Falha ao mover arquivo de comentário, mantendo caminho original:', moveErr);
+                return { ...f, storagePath: oldPath };
+              }
+              return { ...f, storagePath: newPath };
+            } catch (e) {
+              console.warn('Erro ao mover arquivo de comentário:', e);
+              return { ...f, storagePath: oldPath };
+            }
+          }));
+
+          // Normalizar estrutura para armazenar no JSONB do comentário
+          const anexosToSave = moved.map((f) => ({
+            nome: f.name,
+            tipo: f.type,
+            tamanho: f.size,
+            storage_path: (f as any).storagePath
+          }));
+
+          const { error: updErr } = await supabase
+            .from('sla_comentarios_internos')
+            .update({ anexos: anexosToSave })
+            .eq('id', commentData.id);
+
+          if (updErr) {
+            console.warn('Falha ao atualizar anexos do comentário:', updErr);
+          }
+        }
+      } catch (attErr) {
+        console.warn('Erro ao persistir anexos do comentário:', attErr);
+      }
+
       // Processar menções e enviar notificações
       try {
         // Extrair menções do HTML usando tanto texto limpo quanto spans com data-user-id
@@ -865,9 +910,17 @@ export default function SLADetailModal({
                             placeholder="Digite seu comentário... (use @ para mencionar alguém)"
                             className="min-h-[80px]"
                           />
+                          <FileUploader
+                            files={commentFiles}
+                            onFilesChange={setCommentFiles}
+                            maxFiles={3}
+                            maxSizeMB={10}
+                            acceptedTypes={['image/png','image/jpg','image/jpeg','image/webp','application/pdf','video/mp4','video/webm']}
+                            bucket="tickets"
+                          />
                           <div className="flex justify-between items-center">
                             <span className="text-xs text-muted-foreground">
-                              Suporte a formatação de texto, emojis e menções
+                              Suporte a formatação de texto, emojis e menções • Anexos: {commentFiles.length}
                             </span>
                             <Button
                               onClick={handleAddComment}
