@@ -38,30 +38,55 @@ export default function RichTextMentionEditor({
   // Permitir menções para todos os usuários logados
   const canMention = true;
 
-  // Buscar usuários para mentions com debounce
+  // Função para sanitizar query removendo caracteres invisíveis/estranhos
+  const sanitizeQuery = (raw: string) => {
+    return (raw ?? '')
+      // normaliza acentos
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      // remove caracteres invisíveis/controle (como A↑A↓)
+      .replace(/[^\p{L}\p{N}\s.@_-]+/gu, '')
+      .trim();
+  };
+
+  // Buscar usuários para mentions
   const searchUsers = useCallback(async (query: string) => {
     console.log('🔍 searchUsers chamado:', { query, user: user?.email });
+    
+    // Primeiro fazer probe da sessão
+    const authUser = await supabase.auth.getUser();
+    console.log('🔍 auth probe:', authUser?.data?.user?.id ? 'ok' : 'missing');
+    
     try {
+      // Sanitizar query para remover caracteres estranhos
+      const sanitizedQuery = sanitizeQuery(query);
+      console.log('🔍 Query sanitizada:', { original: query, sanitized: sanitizedQuery });
+
       let queryBuilder = supabase
         .from('profiles')
         .select('user_id, nome_completo, email')
         .neq('user_id', user?.id) // Não incluir o próprio usuário
-        .order('nome_completo', { ascending: true });
+        .order('nome_completo', { ascending: true })
+        .limit(50);
 
-      // Se tem query, filtrar por nome/email case-insensitive. Se não tem query, mostrar todos (até 50)
-      if (query.trim()) {
-        queryBuilder = queryBuilder.or(`nome_completo.ilike.%${query}%,email.ilike.%${query}%`).limit(50);
-      } else {
-        queryBuilder = queryBuilder.limit(50); // Mostrar mais usuários quando não há busca
+      // Se tem query sanitizada, filtrar por nome/email case-insensitive
+      if (sanitizedQuery.length > 0) {
+        // Escapar % e _ para evitar problemas com ILIKE
+        const escapedQuery = sanitizedQuery.replace(/[%_]/g, s => '\\' + s);
+        queryBuilder = queryBuilder.or(`nome_completo.ilike.%${escapedQuery}%,email.ilike.%${escapedQuery}%`);
       }
+      // Se query vazia, retorna top 50 ordenados (não pode voltar vazio)
 
       const { data, error } = await queryBuilder;
 
-      if (error) throw error;
+      if (error) {
+        console.error('🔍 Erro na busca:', error);
+        throw error;
+      }
+      
       console.log('🔍 Usuários encontrados:', data?.length || 0, data);
       setMentionUsers(data || []);
     } catch (error) {
-      console.error('Erro ao buscar usuários:', error);
+      console.error('🔍 Erro ao buscar usuários:', error);
       setMentionUsers([]);
     }
   }, [user?.id]);
