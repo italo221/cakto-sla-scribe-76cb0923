@@ -49,41 +49,23 @@ export default function RichTextMentionEditor({
     const m = text.match(MENTION_RE);
     return m ? (m[2] ?? '') : null;
   }
-  // Buscar usuários para mentions
-  const searchUsers = useCallback(async (raw: string) => {
-    const q0 = (raw ?? '').trim();
-    const listAll = q0.length === 0;
+// Buscar usuários para mentions (via RPC SECURITY DEFINER)
+const searchUsers = useCallback(async (raw: string) => {
+  const q0 = (raw ?? '').trim(); // '' quando for só '@'
 
-    // Probe de sessão (mantém RLS funcional)
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    console.log('[mention] raw:', raw, 'query:', q0, 'listAll?', listAll);
+  const { data, error } = await supabase.rpc('mention_search', { q: q0 });
+  if (error) {
+    console.error('mention search error (rpc)', error);
+    setMentionUsers([]);
+    return;
+  }
 
-    let req = supabase
-      .from('profiles')                         // TABELA base
-      .select('user_id, nome_completo, email')  // só o necessário
-      .order('nome_completo', { ascending: true })
-      .limit(50);                               // nunca 2, nem range(0,1)
-
-    if (!listAll) {
-      // normalização leve: sem acentos, sem alterar letras
-      const q = escIlike(
-        q0
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-      );
-      console.log('[mention] executing OR ILIKE when listAll=false');
-      req = req.or(`nome_completo.ilike.%${q}%,email.ilike.%${q}%`);
-    }
-
-    const { data, error } = await req;
-    if (error) {
-      console.error('mention search error', error);
-      setMentionUsers([]);
-      return;
-    }
-    console.log('[mention] results:', data?.length);
-    setMentionUsers(data ?? []);
-  }, []);
+  setMentionUsers((data ?? []).map((u: any) => ({
+    user_id: u.user_id,
+    nome_completo: u.nome_completo ?? u.email ?? 'Usuário',
+    email: u.email ?? '',
+  })));
+}, []);
 
   // Debounced search function
   const debouncedSearchUsers = useCallback(
@@ -271,7 +253,12 @@ export default function RichTextMentionEditor({
                 >
                   <Avatar className="h-6 w-6">
                     <AvatarFallback className="text-xs">
-                      {mentionUser.nome_completo.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                      {(mentionUser.nome_completo || mentionUser.email || 'U')
+                        .split(' ')
+                        .map(n => (n && n[0]) ? n[0] : '')
+                        .join('')
+                        .toUpperCase()
+                        .slice(0, 2)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
