@@ -49,39 +49,44 @@ export default function RichTextMentionEditor({
   };
 
   // Buscar usuários para mentions
-  const searchUsers = useCallback(async (query: string) => {
-    console.log('🔍 searchUsers chamado:', { query, user: user?.email });
+  const searchUsers = useCallback(async (raw: string) => {
+    console.log('🔍 searchUsers chamado:', { raw });
     
     // Primeiro fazer probe da sessão
-    const authUser = await supabase.auth.getUser();
-    console.log('🔍 auth probe:', authUser?.data?.user?.id ? 'ok' : 'missing');
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    console.log('🔍 auth probe:', authUser?.id ? 'ok' : 'missing');
     
     try {
       // Sanitizar query para remover caracteres estranhos
-      const sanitizedQuery = sanitizeQuery(query);
-      console.log('🔍 Query sanitizada:', { original: query, sanitized: sanitizedQuery });
+      const q = (raw ?? '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^\p{L}\p{N}\s.@_-]+/gu, '')
+        .trim();
+      
+      console.log('🔍 Query sanitizada:', { original: raw, sanitized: q });
 
-      // Base query: buscar todos os usuários ativos, exceto o próprio
+      // Base query: buscar todos os usuários - SEM FILTROS
       let queryBuilder = supabase
-        .from('profiles')
-        .select('user_id, nome_completo, email')
-        .neq('user_id', user?.id) // Não incluir o próprio usuário
+        .from('profiles')                         // garantir TABELA base
+        .select('user_id, nome_completo, email')  // só o necessário
         .order('nome_completo', { ascending: true })
-        .limit(50);
+        .limit(50);                               // NUNCA 2; NUNCA range(0,1)
 
-      // IMPORTANTE: Se query estiver vazia, retornar todos os usuários (até 50)
-      // Se houver texto, aplicar filtro por nome/email
-      if (sanitizedQuery.length > 0) {
-        // Escapar % e _ para evitar problemas com ILIKE
-        const escapedQuery = sanitizedQuery.replace(/[%_]/g, s => '\\' + s);
-        queryBuilder = queryBuilder.or(`nome_completo.ilike.%${escapedQuery}%,email.ilike.%${escapedQuery}%`);
+      // NENHUM filtro por role, setor, domínio ou "ativo = true" aqui.
+      // NENHUM .in('role', ...) / .eq('ativo', true) / .like('email', '%@cakto%')
+      // NENHUM .neq('user_id', user?.id) - mostrar TODOS os usuários
+
+      if (q.length > 0) {
+        const esc = q.replace(/[%_]/g, s => '\\' + s);
+        queryBuilder = queryBuilder.or(`nome_completo.ilike.%${esc}%,email.ilike.%${esc}%`);
       }
 
       const { data, error } = await queryBuilder;
 
       if (error) {
-        console.error('🔍 Erro na busca:', error);
-        throw error;
+        console.error('🔍 searchUsers error:', error);
+        setMentionUsers([]);
+        return;
       }
       
       console.log('🔍 Usuários encontrados:', data?.length || 0, data);
@@ -90,7 +95,7 @@ export default function RichTextMentionEditor({
       console.error('🔍 Erro ao buscar usuários:', error);
       setMentionUsers([]);
     }
-  }, [user?.id]);
+  }, []);
 
   // Debounced search function
   const debouncedSearchUsers = useCallback(
