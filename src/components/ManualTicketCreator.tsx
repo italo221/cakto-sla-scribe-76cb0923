@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TagInput } from "@/components/ui/tag-input";
+import { TagChipsPicker } from "@/components/ui/tag-chips-picker";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -79,7 +79,7 @@ const perguntasPorSetor = {
 export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCreatorProps) {
   const { user } = useAuth();
   const { canCreateTicket, getSetorValidationMessage } = usePermissions();
-  const { allTags, addTagToHistory } = useTags();
+  const { addTagToHistory } = useTags();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'complete'>('form');
@@ -537,12 +537,12 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
           {/* Tags */}
           <div>
             <label className="text-sm font-medium">Tags</label>
-            <TagInput
-              tags={selectedTags}
-              onTagsChange={setSelectedTags}
-              suggestions={allTags}
-              placeholder="Digite uma tag e pressione Enter"
-              maxTags={5}
+            <TagChipsPicker
+              selected={selectedTags}
+              onChange={setSelectedTags}
+              maxSelected={5}
+              maxVisible={50}
+              placeholder="Busque uma tag ou crie e pressione Enter"
             />
             <p className="text-xs text-muted-foreground mt-1">
               Adicione tags para facilitar a organização e busca do ticket
