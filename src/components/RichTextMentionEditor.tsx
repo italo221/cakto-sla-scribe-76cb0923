@@ -45,7 +45,6 @@ export default function RichTextMentionEditor({
       let queryBuilder = supabase
         .from('profiles')
         .select('user_id, nome_completo, email')
-        .eq('ativo', true)
         .neq('user_id', user?.id) // Não incluir o próprio usuário
         .order('nome_completo', { ascending: true });
 
