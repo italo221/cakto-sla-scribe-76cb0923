@@ -14,7 +14,7 @@ interface AttachmentFile {
 
 interface TicketAttachmentsProps {
   linkReferencia?: string;
-  anexos?: string;
+  anexos?: string | AttachmentFile[];
   className?: string;
   compact?: boolean;
 }
@@ -26,13 +26,22 @@ export default function TicketAttachments({
   compact = false 
 }: TicketAttachmentsProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  
-  // Parse dos anexos
+  const [selectedPdf, setSelectedPdf] = useState<string | null>(null);
+  // Parse dos anexos (aceita string JSON ou array de objetos)
   const attachments: AttachmentFile[] = (() => {
     if (!anexos) return [];
     try {
-      const parsed = JSON.parse(anexos);
-      return Array.isArray(parsed) ? parsed : [];
+      const parsed = typeof anexos === 'string' ? JSON.parse(anexos) : anexos;
+      const arr = Array.isArray(parsed) ? parsed : [];
+      return arr
+        .map((f: any) => ({
+          id: f.id || f.url || f.name || f.nome || Math.random().toString(36).slice(2),
+          name: f.name || f.nome || 'arquivo',
+          url: f.url,
+          type: f.type || f.tipo || '',
+          size: typeof f.size === 'number' ? f.size : (typeof f.tamanho === 'number' ? f.tamanho : 0),
+        }))
+        .filter(f => !!f.url);
     } catch {
       return [];
     }
@@ -46,8 +55,10 @@ export default function TicketAttachments({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const isImage = (type: string) => type.startsWith('image/');
-  const isVideo = (type: string) => type.startsWith('video/');
+  const isImage = (type: string) => type?.startsWith('image/');
+  const isVideo = (type: string) => type?.startsWith('video/');
+  const isPdf = (file: AttachmentFile) =>
+    file?.type === 'application/pdf' || file?.name?.toLowerCase?.().endsWith('.pdf');
 
   const getFileIcon = (type: string) => {
     if (isImage(type)) return <FileImage className="w-4 h-4" />;
@@ -148,7 +159,9 @@ export default function TicketAttachments({
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{file.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {formatFileSize(file.size)} • {file.type.split('/')[1].toUpperCase()}
+                      {formatFileSize(file.size)} • {(
+                        file.type?.split?.('/')[1]?.toUpperCase?.() || file.name?.split?.('.').pop?.()?.toUpperCase?.() || 'ARQUIVO'
+                      )}
                     </p>
                   </div>
                   
@@ -165,7 +178,6 @@ export default function TicketAttachments({
                         <Eye className="w-4 h-4" />
                       </Button>
                     )}
-                    
                     {isVideo(file.type) && (
                       <Button
                         variant="ghost"
@@ -177,7 +189,17 @@ export default function TicketAttachments({
                         <Eye className="w-4 h-4" />
                       </Button>
                     )}
-                    
+                    {isPdf(file) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedPdf(file.url)}
+                        className="h-8 w-8 p-0"
+                        title="Visualizar PDF"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -212,6 +234,24 @@ export default function TicketAttachments({
                 src={selectedImage}
                 alt="Anexo"
                 className="w-full h-auto max-h-[70vh] object-contain rounded border"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de visualização de PDF */}
+      <Dialog open={!!selectedPdf} onOpenChange={() => setSelectedPdf(null)}>
+        <DialogContent className="max-w-5xl max-h-[90vh] p-0">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle>Visualizar PDF</DialogTitle>
+          </DialogHeader>
+          {selectedPdf && (
+            <div className="p-6 pt-0">
+              <iframe
+                src={selectedPdf}
+                title="Pré-visualização do PDF"
+                className="w-full h-[70vh] rounded border"
               />
             </div>
           )}

@@ -1037,7 +1037,7 @@ export default function SLADetailModal({
                   <div className="mt-2">
                     <TicketAttachments 
                       linkReferencia={currentSLA.link_referencia}
-                      anexos={currentSLA.anexos}
+                      anexos={typeof currentSLA.anexos === 'string' ? currentSLA.anexos : JSON.stringify(currentSLA.anexos)}
                     />
                   </div>
                 </div>
