@@ -20,7 +20,7 @@ export const useTags = () => {
       if (error) throw error;
 
       // Extrair todas as tags únicas dos tickets
-      const tagsSet = new Set(DEFAULT_TAGS);
+      const tagsSet = new Set(DEFAULT_TAGS.map(t => t.trim().toLowerCase()));
       data?.forEach((ticket) => {
         if (ticket.tags && Array.isArray(ticket.tags)) {
           ticket.tags.forEach((tag: string) => {

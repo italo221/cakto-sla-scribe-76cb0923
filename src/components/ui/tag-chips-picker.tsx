@@ -73,19 +73,22 @@ export function TagChipsPicker({
     async (tag: string) => {
       const t = tag.trim().toLowerCase();
       if (!t) return;
-      const ok = window.confirm(`Remover a tag "${t}" de todos os tickets?`);
+      const ok = window.confirm(`Remover a tag "${tag}" de todos os tickets?`);
       if (!ok) return;
       setDeleting(t);
       try {
         const { data, error } = await supabase
           .from('sla_demandas')
           .select('id, tags')
-          .contains('tags', [t]);
+          .not('tags', 'is', null);
         if (error) throw error;
+
         let success = 0, fail = 0;
         for (const row of data || []) {
           const current: string[] = Array.isArray(row.tags) ? row.tags : [];
+          // remover quaisquer variações de caixa
           const newTags = current.filter((x) => (x || '').trim().toLowerCase() !== t);
+          if (newTags.length === current.length) continue; // nada para atualizar
           const { error: upErr } = await supabase
             .from('sla_demandas')
             .update({ tags: newTags.length ? newTags : null })
@@ -97,7 +100,7 @@ export function TagChipsPicker({
           onChange(selected.filter((s) => s.trim().toLowerCase() !== t));
         }
         await fetchAllTags();
-        toast({ title: 'Tags atualizadas', description: `Removida "${t}" de ${success} tickets${fail ? ` (falhas: ${fail})` : ''}.` });
+        toast({ title: 'Tags atualizadas', description: `Removida "${tag}" de ${success} tickets${fail ? ` (falhas: ${fail})` : ''}.` });
       } catch (err) {
         console.error('Erro ao excluir tag globalmente', err);
         toast({ title: 'Erro ao excluir tag', description: 'Não foi possível remover a tag.', variant: 'destructive' });
@@ -139,7 +142,7 @@ export function TagChipsPicker({
                   type="button"
                   variant={isActive ? "secondary" : "outline"}
                   size="sm"
-                  className="rounded-full h-8 px-3 pr-7"
+                  className="rounded-full h-8 px-3 pr-8"
                   onClick={() => toggleTag(tag)}
                   aria-pressed={isActive}
                 >
@@ -147,9 +150,9 @@ export function TagChipsPicker({
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   size="icon-sm"
-                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-background/90 border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  className="absolute top-1/2 -translate-y-1/2 right-1 h-5 w-5 rounded-full text-muted-foreground hover:text-foreground"
                   onClick={(e) => { e.stopPropagation(); deleteTagGlobally(tag); }}
                   disabled={deleting === tag}
                   aria-label={`Excluir tag ${tag}`}
