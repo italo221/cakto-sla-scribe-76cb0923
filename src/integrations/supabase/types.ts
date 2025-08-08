@@ -1048,6 +1048,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "ticket_attachments_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "sla_comentarios_internos"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ticket_attachments_ticket_id_fkey"
             columns: ["ticket_id"]
             isOneToOne: false
