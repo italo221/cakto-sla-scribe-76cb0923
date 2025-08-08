@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
 interface User {
+  id: string;
   user_id: string;
   nome_completo: string;
   email: string;
@@ -38,88 +39,113 @@ export default function RichTextMentionEditor({
   // Permitir menções para todos os usuários logados
   const canMention = true;
 
-  // util simples para escapar curingas do ILIKE
-  const escIlike = (s: string) => s.replace(/[%_]/g, m => '\\' + m);
+  // Buscar usuários para mentions
+  const searchUsers = useCallback(async (query: string) => {
+    console.log('🔍 searchUsers chamado:', { query, user: user?.email });
+    try {
+      let queryBuilder = supabase
+        .from('profiles')
+        .select('id, user_id, nome_completo, email')
+        .neq('user_id', user?.id) // Não incluir o próprio usuário
+        .order('nome_completo', { ascending: true });
 
-  // Regex para extrair a menção atual (último @ até fim da string)
-  const MENTION_RE = /(^|\s)@([\p{L}\p{N}._-]*)$/u;
+      // Se tem query, filtrar por nome/email. Se não tem query, mostrar todos (até 50)
+      if (query.trim()) {
+        queryBuilder = queryBuilder.or(`nome_completo.ilike.%${query}%,email.ilike.%${query}%`).limit(20);
+      } else {
+        queryBuilder = queryBuilder.limit(50); // Mostrar mais usuários quando não há busca
+      }
 
-  // Extrai a query após @; retorna '' para '@' sozinho, ou null se não encontrou
-  function extractMentionQuery(text: string): string | null {
-    const m = text.match(MENTION_RE);
-    return m ? (m[2] ?? '') : null;
-  }
-// Buscar usuários para mentions (via RPC SECURITY DEFINER)
-const searchUsers = useCallback(async (raw: string) => {
-  const q0 = (raw ?? '').trim(); // '' quando for só '@'
+      const { data, error } = await queryBuilder;
 
-  const { data, error } = await supabase.rpc('mention_search', { q: q0 });
-  if (error) {
-    console.error('mention search error (rpc)', error);
-    setMentionUsers([]);
-    return;
-  }
-
-  setMentionUsers((data ?? []).map((u: any) => ({
-    user_id: u.user_id,
-    nome_completo: u.nome_completo ?? u.email ?? 'Usuário',
-    email: u.email ?? '',
-  })));
-}, []);
-
-  // Debounced search function
-  const debouncedSearchUsers = useCallback(
-    (() => {
-      let timeout: NodeJS.Timeout;
-      return (query: string) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-          searchUsers(query);
-        }, 250); // 250ms debounce
-      };
-    })(),
-    [searchUsers]
-  );
+      if (error) throw error;
+      console.log('🔍 Usuários encontrados:', data?.length || 0, data);
+      setMentionUsers(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar usuários:', error);
+      setMentionUsers([]);
+    }
+  }, [user?.id]);
 
   // Detectar @ no texto
   const handleTextChange = (newValue: string) => {
+    console.log('🔍 RichTextMentionEditor - handleTextChange:', { 
+      newValue: newValue.substring(0, 100) + (newValue.length > 100 ? '...' : ''),
+      valueLength: newValue.length,
+      user: user?.email 
+    });
     onChange(newValue);
-
-    // Extrair texto plano do editor
+    
+    // ABORDAGEM MAIS DIRETA: trabalhar direto com o texto do DOM
     let textContent = '';
     if (editorRef.current) {
       textContent = editorRef.current.textContent || editorRef.current.innerText || '';
+      console.log('🔍 Texto extraído diretamente do DOM:', { 
+        textContent: textContent.substring(0, 100) + (textContent.length > 100 ? '...' : ''),
+        contentLength: textContent.length
+      });
     } else {
+      // Fallback para o método anterior
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = newValue;
       textContent = tempDiv.textContent || tempDiv.innerText || '';
+      console.log('🔍 Texto extraído via tempDiv (fallback):', { 
+        textContent: textContent.substring(0, 100) + (textContent.length > 100 ? '...' : ''),
+        contentLength: textContent.length
+      });
     }
-
-    const query = extractMentionQuery(textContent);
-    const found = query !== null;
-
-    setShowMentions(!!found);
-
-    if (found) {
-      const q0 = (query as string); // '' quando digitou só '@'
-      setMentionQuery(q0);
-      setSelectedIndex(0);
-
-      const lastAtIdx = textContent.lastIndexOf('@' + q0);
-      setLastAtPosition(lastAtIdx >= 0 ? lastAtIdx : textContent.lastIndexOf('@'));
-
-      if (editorRef.current) {
-        const rect = editorRef.current.getBoundingClientRect();
-        setMentionPosition({ top: rect.bottom + 5, left: rect.left + 10 });
+    
+    const lastAtIndex = textContent.lastIndexOf('@');
+    console.log('🔍 Último @ encontrado na posição:', lastAtIndex);
+    
+    if (lastAtIndex !== -1) {
+      const afterAt = textContent.substring(lastAtIndex + 1);
+      console.log('🔍 Texto após @ (RAW):', { 
+        afterAt: JSON.stringify(afterAt), 
+        length: afterAt.length,
+        chars: afterAt.split('').map(c => c.charCodeAt(0))
+      });
+      
+      // Condições mais simples para detectar menção
+      const isValidMention = afterAt.length <= 50 && 
+                           !afterAt.includes('\n') && 
+                           (!afterAt.includes(' ') || afterAt.trim().length > 0);
+      
+      console.log('🔍 Validação de menção:', { isValidMention, afterAt, conditions: {
+        lengthOk: afterAt.length <= 50,
+        noNewline: !afterAt.includes('\n'),
+        spaceOk: !afterAt.includes(' ') || afterAt.trim().length > 0
+      }});
+      
+      if (isValidMention) {
+        console.log('🔍 ATIVANDO DROPDOWN - Query será:', JSON.stringify(afterAt));
+        setLastAtPosition(lastAtIndex);
+        setMentionQuery(afterAt);
+        setShowMentions(true);
+        setSelectedIndex(0);
+        
+        // Calcular posição aproximada do dropdown
+        if (editorRef.current) {
+          const rect = editorRef.current.getBoundingClientRect();
+          setMentionPosition({
+            top: rect.bottom + 5,
+            left: rect.left + 10
+          });
+        }
+        
+        // Chamar searchUsers com a query
+        console.log('🔍 Chamando searchUsers com query:', JSON.stringify(afterAt));
+        searchUsers(afterAt);
+        return;
       }
-
-      // Debounced search com query vazia para listar todos (até 50)
-      debouncedSearchUsers(q0);
-    } else {
-      setMentionQuery('');
-      setLastAtPosition(-1);
-      setSelectedIndex(0);
     }
+    
+    // Limpar estado de menções quando não há @ ou quando a busca foi cancelada
+    console.log('🔍 Limpando estado de menções - não há @ válido');
+    setShowMentions(false);
+    setMentionQuery('');
+    setLastAtPosition(-1);
+    setSelectedIndex(0);
   };
 
   // Selecionar usuário da lista
@@ -245,7 +271,7 @@ const searchUsers = useCallback(async (raw: string) => {
               </div>
               {mentionUsers.map((mentionUser, index) => (
                 <div
-                  key={mentionUser.user_id}
+                  key={mentionUser.id}
                   className={`flex items-center gap-3 p-2 rounded-sm cursor-pointer transition-colors ${
                     index === selectedIndex ? 'bg-accent' : 'hover:bg-accent/50'
                   }`}
@@ -253,12 +279,7 @@ const searchUsers = useCallback(async (raw: string) => {
                 >
                   <Avatar className="h-6 w-6">
                     <AvatarFallback className="text-xs">
-                      {(mentionUser.nome_completo || mentionUser.email || 'U')
-                        .split(' ')
-                        .map(n => (n && n[0]) ? n[0] : '')
-                        .join('')
-                        .toUpperCase()
-                        .slice(0, 2)}
+                      {mentionUser.nome_completo.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">

@@ -1211,14 +1211,6 @@ export type Database = {
         }
         Returns: string
       }
-      mention_search: {
-        Args: { q?: string }
-        Returns: {
-          user_id: string
-          nome_completo: string
-          email: string
-        }[]
-      }
       user_has_setor_access: {
         Args: { setor_uuid: string; user_uuid?: string }
         Returns: boolean
