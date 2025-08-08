@@ -8,34 +8,46 @@ export const useTags = () => {
   const [allTags, setAllTags] = useState<string[]>(DEFAULT_TAGS);
   const [loading, setLoading] = useState(true);
 
-  // Buscar todas as tags existentes no banco
+  // Buscar todas as tags existentes no banco, filtrando as ocultas (catálogo)
   const fetchAllTags = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('sla_demandas')
-        .select('tags')
-        .not('tags', 'is', null);
+      const [ticketsRes, hiddenRes] = await Promise.all([
+        supabase.from('sla_demandas').select('tags').not('tags', 'is', null),
+        supabase.rpc('get_hidden_tags')
+      ]);
 
-      if (error) throw error;
+      if (ticketsRes.error) throw ticketsRes.error;
+      if (hiddenRes.error) {
+        // Usuários não-admin podem não ter acesso a system_settings diretamente; a RPC usa SECURITY DEFINER
+        // Ainda assim, se falhar, seguimos sem ocultar nada
+        console.warn('Falha ao obter hidden tags (seguindo sem ocultar):', hiddenRes.error);
+      }
+
+      const hiddenArray: string[] = Array.isArray(hiddenRes.data) ? hiddenRes.data : [];
+      const hiddenSet = new Set(hiddenArray.map(t => (t || '').trim().toLowerCase()));
 
       // Extrair todas as tags únicas dos tickets
       const tagsSet = new Set(DEFAULT_TAGS.map(t => t.trim().toLowerCase()));
-      data?.forEach((ticket) => {
+      ticketsRes.data?.forEach((ticket) => {
         if (ticket.tags && Array.isArray(ticket.tags)) {
           ticket.tags.forEach((tag: string) => {
-            if (tag && tag.trim()) {
-              tagsSet.add(tag.trim().toLowerCase());
+            const clean = (tag || '').trim().toLowerCase();
+            if (clean && !hiddenSet.has(clean)) {
+              tagsSet.add(clean);
             }
           });
         }
       });
 
+      // Remover tags padrão que estejam ocultas
+      hiddenSet.forEach((t) => tagsSet.delete(t));
+
       setAllTags(Array.from(tagsSet).sort());
     } catch (error) {
       console.error('Erro ao buscar tags:', error);
-      // Manter tags padrão em caso de erro
-      setAllTags(DEFAULT_TAGS);
+      // Manter tags padrão em caso de erro (sem ocultas)
+      setAllTags(DEFAULT_TAGS.map(t => t.trim().toLowerCase()).sort());
     } finally {
       setLoading(false);
     }

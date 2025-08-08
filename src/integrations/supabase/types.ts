@@ -1158,6 +1158,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_hidden_tag: {
+        Args: { p_tag: string }
+        Returns: boolean
+      }
       add_sla_comment: {
         Args: { p_sla_id: string; p_setor_id: string; p_comentario: string }
         Returns: string
@@ -1173,6 +1177,10 @@ export type Database = {
       generate_ticket_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_hidden_tags: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
       }
       get_user_stats: {
         Args: { user_email: string }
