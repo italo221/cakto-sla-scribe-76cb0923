@@ -36,8 +36,12 @@ export function TagChipsPicker({
     const q = query.trim().toLowerCase();
     const base = allTags || [];
     const list = q ? base.filter((t) => t.includes(q)) : base;
-    return list.slice(0, maxVisible);
-  }, [allTags, query, maxVisible]);
+    // Remover tags já selecionadas da lista sugerida (toggle UX)
+    const withoutSelected = list.filter(
+      (t) => !normalizedSelected.includes((t || "").trim().toLowerCase())
+    );
+    return withoutSelected.slice(0, maxVisible);
+  }, [allTags, query, maxVisible, normalizedSelected]);
 
   const addViaInput = useCallback(
     (tag: string) => {
@@ -130,10 +134,28 @@ export function TagChipsPicker({
         placeholder={placeholder}
       />
 
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {selected.map((tag) => (
+            <Button
+              key={`selected-${tag}`}
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="rounded-full h-8 px-3"
+              onClick={() => toggleTag(tag)}
+              aria-pressed
+            >
+              {tag}
+            </Button>
+          ))}
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2 max-h-44 overflow-auto">
         {loading ? (
           <span className="text-sm text-muted-foreground">Carregando tags…</span>
-        ) : (
+        ) : filteredTags.length > 0 ? (
           filteredTags.map((tag) => {
             const isActive = normalizedSelected.includes(tag);
             return (
@@ -163,6 +185,8 @@ export function TagChipsPicker({
               </div>
             );
           })
+        ) : (
+          <span className="text-sm text-muted-foreground">Nenhuma tag encontrada.</span>
         )}
       </div>
     </div>
