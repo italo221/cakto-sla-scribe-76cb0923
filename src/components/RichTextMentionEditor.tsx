@@ -39,33 +39,24 @@ export default function RichTextMentionEditor({
   // Permitir menções para todos os usuários logados
   const canMention = true;
 
-  // Buscar usuários para mentions
-  const searchUsers = useCallback(async (query: string) => {
-    console.log('🔍 searchUsers chamado:', { query, user: user?.email });
-    try {
-      let queryBuilder = supabase
-        .from('profiles')
-        .select('id, user_id, nome_completo, email')
-        .neq('user_id', user?.id) // Não incluir o próprio usuário
-        .order('nome_completo', { ascending: true });
+  // Buscar usuários para mentions via RPC (sem restrições de setor/ativo/role)
+  const searchUsers = useCallback(async (raw: string) => {
+    const q0 = (raw ?? '').trim(); // vazio = listar todos
+    const { data, error } = await supabase.rpc('mention_search', { q: q0 });
 
-      // Se tem query, filtrar por nome/email. Se não tem query, mostrar todos (até 50)
-      if (query.trim()) {
-        queryBuilder = queryBuilder.or(`nome_completo.ilike.%${query}%,email.ilike.%${query}%`).limit(20);
-      } else {
-        queryBuilder = queryBuilder.limit(50); // Mostrar mais usuários quando não há busca
-      }
-
-      const { data, error } = await queryBuilder;
-
-      if (error) throw error;
-      console.log('🔍 Usuários encontrados:', data?.length || 0, data);
-      setMentionUsers(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar usuários:', error);
+    if (error) {
+      console.error('mention search error (rpc)', error);
       setMentionUsers([]);
+      return;
     }
-  }, [user?.id]);
+
+    setMentionUsers((data ?? []).map((u: any) => ({
+      id: u.user_id, // usar user_id como id para chave da lista
+      user_id: u.user_id,
+      nome_completo: u.nome_completo ?? u.email ?? 'Usuário',
+      email: u.email ?? '',
+    })));
+  }, []);
 
   // Detectar @ no texto
   const handleTextChange = (newValue: string) => {
