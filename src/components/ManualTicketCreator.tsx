@@ -101,7 +101,7 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
     pontuacao_total: 0,
     link_referencia: ''
   });
-  const [anexos, setAnexos] = useState<Array<{id: string, name: string, url: string, type: string, size: number}>>([]);
+  const [anexos, setAnexos] = useState<Array<{id: string, name: string, url: string, type: string, size: number, storagePath?: string}>>([]);
 
   // Buscar setores do banco
   useEffect(() => {
@@ -281,6 +281,46 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
       }
 
       console.log('Ticket criado com sucesso:', data);
+
+      // Persistir anexos no banco (tabela ticket_attachments) e mover arquivos para pasta do ticket
+      try {
+        if (data?.id && anexos.length > 0) {
+          const moved = await Promise.all(anexos.map(async (f) => {
+            const oldPath = (f as any).storagePath || f.id; // caminho usado no upload inicial
+            const newPath = `${data.id}/${oldPath}`; // tickets bucket: pasta por ticket
+            try {
+              // mover para pasta do ticket
+              const { error: moveErr } = await supabase.storage
+                .from('tickets')
+                .move(oldPath, newPath);
+              if (moveErr) {
+                console.warn('Falha ao mover arquivo, usando caminho original:', moveErr);
+                return { ...f, storagePath: oldPath };
+              }
+              return { ...f, storagePath: newPath };
+            } catch (e) {
+              console.warn('Erro ao mover arquivo:', e);
+              return { ...f, storagePath: oldPath };
+            }
+          }));
+
+          const rows = moved.map((f) => ({
+            ticket_id: data.id,
+            file_name: f.name,
+            mime_type: f.type,
+            size: f.size,
+            storage_path: (f as any).storagePath,
+            uploaded_by: user.id
+          }));
+
+          const { error: attachErr } = await supabase.from('ticket_attachments').insert(rows);
+          if (attachErr) {
+            console.warn('Falha ao salvar anexos em ticket_attachments:', attachErr);
+          }
+        }
+      } catch (attachError) {
+        console.warn('Erro ao persistir anexos:', attachError);
+      }
 
       // Adicionar novas tags ao histórico
       selectedTags.forEach(tag => addTagToHistory(tag));
@@ -533,9 +573,13 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
               onFilesChange={setAnexos}
               maxFiles={3}
               maxSizeMB={10}
+              acceptedTypes={[
+                'image/png','image/jpg','image/jpeg','image/webp','application/pdf','video/mp4','video/webm'
+              ]}
+              bucket="tickets"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Imagens (PNG, JPG, WebP) até 10MB e vídeos (MP4, WebM) até 25MB • Máximo 3 arquivos
+              Imagens (PNG, JPG, WebP) até 10MB, PDF e vídeos (MP4, WebM) até 25MB • Máximo 3 arquivos
             </p>
           </div>
 

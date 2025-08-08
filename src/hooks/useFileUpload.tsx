@@ -8,14 +8,16 @@ interface FileUploadOptions {
   maxSizeMB: number;
   maxFiles: number;
   allowedTypes: string[];
+  signedPreview?: boolean; // Use signed URL for previews (for private buckets)
 }
 
 interface UploadedFile {
   id: string;
   name: string;
-  url: string;
+  url: string; // Preview URL (public or signed)
   type: string;
   size: number;
+  storagePath?: string; // Path in storage bucket
 }
 
 export const useFileUpload = (options: FileUploadOptions) => {
@@ -114,17 +116,28 @@ export const useFileUpload = (options: FileUploadOptions) => {
           throw error;
         }
 
-        // Obter URL pública
-        const { data: { publicUrl } } = supabase.storage
-          .from(options.bucket)
-          .getPublicUrl(fileName);
+        // Gerar URL de pré-visualização
+        let previewUrl = '';
+        if (options.signedPreview) {
+          const { data: signed, error: signedErr } = await supabase.storage
+            .from(options.bucket)
+            .createSignedUrl(fileName, 3600);
+          if (signedErr) throw signedErr;
+          previewUrl = signed?.signedUrl || '';
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from(options.bucket)
+            .getPublicUrl(fileName);
+          previewUrl = publicUrl;
+        }
 
         uploadedFiles.push({
           id: data.path,
           name: file.name,
-          url: publicUrl,
+          url: previewUrl,
           type: file.type,
-          size: fileToUpload.size
+          size: fileToUpload.size,
+          storagePath: data.path
         });
 
         // Atualizar progresso

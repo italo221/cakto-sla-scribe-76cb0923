@@ -18,7 +18,7 @@ import { useTicketPermissions } from "@/hooks/useTicketPermissions";
 import CommentEditModal from "@/components/CommentEditModal";
 import CommentReactions from "@/components/CommentReactions";
 import CommentDeleteModal from "@/components/CommentDeleteModal";
-import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit2, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown } from "lucide-react";
+import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit2, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown, Eye } from "lucide-react";
 import TicketAttachments from "@/components/TicketAttachments";
 import TicketEditModal from "@/components/TicketEditModal";
 import { format } from "date-fns";
@@ -148,6 +148,18 @@ export default function SLADetailModal({
   const [searchResults, setSearchResults] = useState<string[]>([]);
   const [currentResultIndex, setCurrentResultIndex] = useState(0);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const [dbAttachments, setDbAttachments] = useState<Array<{
+    id: string;
+    file_name: string;
+    mime_type: string;
+    size: number;
+    storage_path: string;
+    uploaded_by: string;
+    created_at: string;
+    url: string;
+    uploader_name?: string;
+  }>>([]);
 
   const { toast } = useToast();
 
@@ -281,6 +293,73 @@ export default function SLADetailModal({
     }
   };
 
+  const formatFileSize = (bytes: number): string => {
+    if (!bytes) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const loadDbAttachments = async () => {
+    if (!currentSLA) return;
+    try {
+      const { data: rows, error } = await supabase
+        .from('ticket_attachments')
+        .select('*')
+        .eq('ticket_id', currentSLA.id)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      const attachments = rows || [];
+
+      if (attachments.length === 0) {
+        setDbAttachments([]);
+        return;
+      }
+
+      // Fetch uploader names
+      const uploaderIds = Array.from(new Set(attachments.map(a => a.uploaded_by).filter(Boolean)));
+      let uploaderMap: Record<string, string> = {};
+      if (uploaderIds.length > 0) {
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('user_id, nome_completo, email')
+          .in('user_id', uploaderIds);
+        (profs || []).forEach(p => {
+          uploaderMap[p.user_id] = p.nome_completo || p.email;
+        });
+      }
+
+      // Generate signed URLs
+      const withUrls: typeof dbAttachments = [] as any;
+      for (const att of attachments as any[]) {
+        const { data: signed, error: sErr } = await supabase.storage
+          .from('tickets')
+          .createSignedUrl(att.storage_path, 3600);
+        if (sErr) {
+          console.warn('Erro ao gerar Signed URL para anexo:', sErr);
+          continue;
+        }
+        withUrls.push({
+          ...att,
+          url: signed?.signedUrl || '',
+          uploader_name: uploaderMap[att.uploaded_by] || 'Usuário'
+        });
+      }
+
+      setDbAttachments(withUrls);
+    } catch (e) {
+      console.warn('Erro ao carregar anexos do ticket:', e);
+      setDbAttachments([]);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && currentSLA?.id) {
+      loadDbAttachments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, currentSLA?.id]);
   const handleTransferTicket = async (novoSetor: Setor) => {
     if (!currentSLA || !user) return;
 

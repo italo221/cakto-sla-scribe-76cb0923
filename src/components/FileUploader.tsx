@@ -10,6 +10,7 @@ interface UploadedFile {
   url: string;
   type: string;
   size: number;
+  storagePath?: string;
 }
 
 interface FileUploaderProps {
@@ -19,6 +20,7 @@ interface FileUploaderProps {
   maxSizeMB?: number;
   acceptedTypes?: string[];
   className?: string;
+  bucket?: string; // Storage bucket (default: ticket-anexos)
 }
 
 const ALLOWED_TYPES = [
@@ -26,6 +28,7 @@ const ALLOWED_TYPES = [
   'image/jpg', 
   'image/jpeg',
   'image/webp',
+  'application/pdf',
   'video/mp4',
   'video/webm'
 ];
@@ -36,16 +39,18 @@ export default function FileUploader({
   maxFiles = 3,
   maxSizeMB = 10,
   acceptedTypes = ALLOWED_TYPES,
-  className
+  className,
+  bucket = 'ticket-anexos'
 }: FileUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   
   const { uploadFiles, deleteFile, uploading, uploadProgress } = useFileUpload({
-    bucket: 'ticket-anexos',
+    bucket,
     maxSizeMB,
     maxFiles,
-    allowedTypes: acceptedTypes
+    allowedTypes: acceptedTypes,
+    signedPreview: bucket === 'tickets'
   });
 
   const handleFiles = async (fileList: FileList) => {
@@ -132,7 +137,7 @@ export default function FileUploader({
           {uploading ? 'Enviando arquivos...' : 'Arraste arquivos aqui ou clique para selecionar'}
         </p>
         <p className="text-xs text-muted-foreground">
-          Máximo {maxFiles} arquivos • Imagens: {maxSizeMB}MB • Vídeos: 25MB • PNG, JPG, WebP, MP4, WebM
+          Máximo {maxFiles} arquivos • Imagens: {maxSizeMB}MB • Vídeos: 25MB • PNG, JPG, WebP, PDF, MP4, WebM
         </p>
         
         {uploading && (
