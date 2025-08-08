@@ -33,18 +33,24 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-background/95 text-foreground overflow-x-hidden">
       {/* Header integrado */}
-      <header className="relative z-50">
+      <header className="landing-header relative z-50">
         <Navigation />
       </header>
 
+      <style>{`
+        /* Landing-only Navigation integration */
+        header.landing-header .sticky { padding: 0.5rem 0.75rem; }
+        header.landing-header .sticky > div { background: transparent !important; box-shadow: none !important; border: 0 !important; backdrop-filter: none !important; }
+        header.landing-header .container-responsive > .flex { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+      `}</style>
       <main className="relative">
         {/* Hero Section */}
         <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
           {/* Background elements */}
           <div className="absolute inset-0 -z-10">
-            <div className="absolute top-1/4 -left-32 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
-            <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-primary/8 rounded-full blur-3xl" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-gradient-to-r from-primary/3 via-transparent to-primary/3 rounded-full blur-3xl" />
+            <div className="absolute top-1/4 -left-32 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-info/10 rounded-full blur-3xl" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-gradient-to-r from-primary/20 via-info/10 to-primary/20 rounded-full blur-3xl" />
           </div>
 
           {/* Floating icons */}
@@ -69,20 +75,19 @@ const LandingPage = () => {
           <div className="container-responsive py-16 md:py-24">
             <div className="mx-auto max-w-5xl text-center space-y-8">
               <div className="space-y-4">
-                <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight bg-gradient-to-r from-foreground via-foreground to-foreground/80 bg-clip-text">
-                  Sistema Inteligente
-                  <span className="block text-primary">de Tickets</span>
+                <h1 className="text-5xl md:text-7xl font-serif font-medium tracking-tight text-foreground">
+                  <span className="block font-semibold">Sistema Inteligente</span>
+                  <span className="block italic text-foreground/90">de Tickets</span>
                 </h1>
-                <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                  Transforme sua gestão com IA avançada. Classifique automaticamente, 
-                  priorize demandas e acompanhe métricas em tempo real.
+                <p className="text-lg md:text-xl text-foreground/70 max-w-3xl mx-auto leading-relaxed">
+                  Utilize nosso assistente de IA para criar tickets de forma rápida e precisa, com classificação automática.
                 </p>
               </div>
               
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
                 <Button 
                   size="lg" 
-                  className="text-lg px-8 py-6 h-auto shadow-xl hover:shadow-2xl transition-all duration-300 group"
+                  className="text-base md:text-lg px-8 py-6 h-auto rounded-full btn-gradient shadow-lg hover:shadow-elevated transition-all duration-300 group"
                   onClick={() => navigate("/auth")}
                 >
                   Criar Ticket Agora
@@ -91,7 +96,7 @@ const LandingPage = () => {
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  className="text-lg px-8 py-6 h-auto border-2 hover:bg-primary/5"
+                  className="text-base md:text-lg px-8 py-6 h-auto rounded-full border-primary/30 hover:bg-primary/5"
                   onClick={() => navigate("/auth")}
                 >
                   Fazer Login
@@ -114,7 +119,7 @@ const LandingPage = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-background/60 backdrop-blur-sm hover:-translate-y-2">
+              <Card className="group transition-all duration-300 border bg-card/80 hover:shadow-lg hover:-translate-y-1">
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <MessageSquare className="h-8 w-8 text-primary" />
@@ -128,7 +133,7 @@ const LandingPage = () => {
                 </CardContent>
               </Card>
 
-              <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-background/60 backdrop-blur-sm hover:-translate-y-2">
+              <Card className="group transition-all duration-300 border bg-card/80 hover:shadow-lg hover:-translate-y-1">
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <Shield className="h-8 w-8 text-primary" />
@@ -142,7 +147,7 @@ const LandingPage = () => {
                 </CardContent>
               </Card>
 
-              <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-background/60 backdrop-blur-sm hover:-translate-y-2">
+              <Card className="group transition-all duration-300 border bg-card/80 hover:shadow-lg hover:-translate-y-1">
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <BarChart3 className="h-8 w-8 text-primary" />
@@ -155,6 +160,18 @@ const LandingPage = () => {
                   </p>
                 </CardContent>
               </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Social Proof Section */}
+        <section className="py-10">
+          <div className="container-responsive">
+            <div className="flex flex-wrap items-center justify-center gap-8 opacity-70">
+              <div className="h-8 w-24 rounded bg-muted" aria-hidden="true" />
+              <div className="h-8 w-24 rounded bg-muted" aria-hidden="true" />
+              <div className="h-8 w-24 rounded bg-muted" aria-hidden="true" />
+              <div className="h-8 w-24 rounded bg-muted" aria-hidden="true" />
             </div>
           </div>
         </section>
@@ -174,7 +191,7 @@ const LandingPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="text-center group">
                 <div className="relative mb-6">
-                  <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white text-2xl font-bold shadow-lg group-hover:scale-105 transition-transform">
+                  <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-primary to-info flex items-center justify-center text-white text-2xl font-bold shadow-md group-hover:scale-105 transition-transform">
                     1
                   </div>
                 </div>
@@ -186,7 +203,7 @@ const LandingPage = () => {
 
               <div className="text-center group">
                 <div className="relative mb-6">
-                  <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white text-2xl font-bold shadow-lg group-hover:scale-105 transition-transform">
+                  <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-primary to-info flex items-center justify-center text-white text-2xl font-bold shadow-md group-hover:scale-105 transition-transform">
                     2
                   </div>
                 </div>
@@ -198,7 +215,7 @@ const LandingPage = () => {
 
               <div className="text-center group">
                 <div className="relative mb-6">
-                  <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white text-2xl font-bold shadow-lg group-hover:scale-105 transition-transform">
+                  <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-primary to-info flex items-center justify-center text-white text-2xl font-bold shadow-md group-hover:scale-105 transition-transform">
                     3
                   </div>
                 </div>
@@ -212,7 +229,7 @@ const LandingPage = () => {
         </section>
 
         {/* CTA Final */}
-        <section className="py-20 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5">
+        <section className="py-20 bg-gradient-to-r from-primary/10 via-info/10 to-primary/10">
           <div className="container-responsive text-center">
             <div className="max-w-3xl mx-auto space-y-6">
               <h2 className="text-3xl md:text-4xl font-bold">
@@ -223,7 +240,7 @@ const LandingPage = () => {
               </p>
               <Button 
                 size="lg" 
-                className="text-lg px-8 py-6 h-auto shadow-xl hover:shadow-2xl transition-all duration-300"
+                className="text-lg px-8 py-6 h-auto rounded-full btn-gradient shadow-lg hover:shadow-elevated transition-all duration-300"
                 onClick={() => navigate("/auth")}
               >
                 Começar Agora Gratuitamente
