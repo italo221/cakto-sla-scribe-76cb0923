@@ -61,6 +61,7 @@ export default function RichTextMentionEditor({
       const sanitizedQuery = sanitizeQuery(query);
       console.log('🔍 Query sanitizada:', { original: query, sanitized: sanitizedQuery });
 
+      // Base query: buscar todos os usuários ativos, exceto o próprio
       let queryBuilder = supabase
         .from('profiles')
         .select('user_id, nome_completo, email')
@@ -68,13 +69,13 @@ export default function RichTextMentionEditor({
         .order('nome_completo', { ascending: true })
         .limit(50);
 
-      // Se tem query sanitizada, filtrar por nome/email case-insensitive
+      // IMPORTANTE: Se query estiver vazia, retornar todos os usuários (até 50)
+      // Se houver texto, aplicar filtro por nome/email
       if (sanitizedQuery.length > 0) {
         // Escapar % e _ para evitar problemas com ILIKE
         const escapedQuery = sanitizedQuery.replace(/[%_]/g, s => '\\' + s);
         queryBuilder = queryBuilder.or(`nome_completo.ilike.%${escapedQuery}%,email.ilike.%${escapedQuery}%`);
       }
-      // Se query vazia, retorna top 50 ordenados (não pode voltar vazio)
 
       const { data, error } = await queryBuilder;
 
