@@ -9,6 +9,7 @@ interface FileUploadOptions {
   maxFiles: number;
   allowedTypes: string[];
   signedPreview?: boolean; // Use signed URL for previews (for private buckets)
+  pathPrefix?: string; // Optional folder prefix inside the bucket (e.g., tickets/{ticketId})
 }
 
 interface UploadedFile {
@@ -100,14 +101,17 @@ export const useFileUpload = (options: FileUploadOptions) => {
           }
         }
 
-        // Gerar nome único para o arquivo
-        const timestamp = Date.now();
-        const fileName = `${timestamp}-${file.name}`;
+        // Gerar nome único para o arquivo e caminho opcional
+        const unique = (typeof crypto !== 'undefined' && (crypto as any).randomUUID)
+          ? (crypto as any).randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const baseName = `${unique}-${file.name}`;
+        const filePath = options.pathPrefix ? `${options.pathPrefix}/${baseName}` : baseName;
         
         // Upload para o Supabase Storage
         const { data, error } = await supabase.storage
           .from(options.bucket)
-          .upload(fileName, fileToUpload, {
+          .upload(filePath, fileToUpload, {
             cacheControl: '3600',
             upsert: false
           });
@@ -121,7 +125,7 @@ export const useFileUpload = (options: FileUploadOptions) => {
         if (options.signedPreview) {
           const { data: signed, error: signedErr } = await supabase.storage
             .from(options.bucket)
-            .createSignedUrl(fileName, 3600);
+            .createSignedUrl(filePath, 3600);
           if (signedErr) {
             console.warn('Falha ao gerar Signed URL, seguindo sem preview imediato:', signedErr);
             previewUrl = '';
@@ -131,7 +135,7 @@ export const useFileUpload = (options: FileUploadOptions) => {
         } else {
           const { data: { publicUrl } } = supabase.storage
             .from(options.bucket)
-            .getPublicUrl(fileName);
+            .getPublicUrl(filePath);
           previewUrl = publicUrl;
         }
 

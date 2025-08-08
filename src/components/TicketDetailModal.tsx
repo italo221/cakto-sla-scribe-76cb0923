@@ -18,16 +18,17 @@ import { useTicketPermissions } from "@/hooks/useTicketPermissions";
 import CommentEditModal from "@/components/CommentEditModal";
 import CommentReactions from "@/components/CommentReactions";
 import CommentDeleteModal from "@/components/CommentDeleteModal";
-import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit2, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown, Eye } from "lucide-react";
+import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit2, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown, Eye, Upload, Image, Video } from "lucide-react";
 import TicketAttachments from "@/components/TicketAttachments";
 import TicketEditModal from "@/components/TicketEditModal";
-import FileUploader from "@/components/FileUploader";
+// (FileUploader import removido)
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { extractCleanTextWithMentions, formatMentionsForDisplay } from "@/utils/textFormatting";
 import { extractMentions, findMentionedUsers, notifyUserMention } from "@/utils/notificationService";
+import { useFileUpload } from "@/hooks/useFileUpload";
 
 interface SLA {
   id: string;
@@ -138,8 +139,6 @@ export default function SLADetailModal({
   const [showEditModal, setShowEditModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'comments' | 'history'>('comments');
   const [showTransferForm, setShowTransferForm] = useState(false);
-  const [attachments, setAttachments] = useState<FileList | null>(null);
-  const [uploadingFiles, setUploadingFiles] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selectedCommentForEdit, setSelectedCommentForEdit] = useState<Comment | null>(null);
   const [selectedCommentForDelete, setSelectedCommentForDelete] = useState<Comment | null>(null);
@@ -162,7 +161,37 @@ export default function SLADetailModal({
     uploader_name?: string;
   }>>([]);
 
-  const [commentFiles, setCommentFiles] = useState<Array<{ id: string; name: string; url: string; type: string; size: number; storagePath?: string }>>([]);
+  // Anexos para novo comentário (pendentes)
+  const [pendingAttachments, setPendingAttachments] = useState<Array<{
+    dbId: string; // id do registro em ticket_attachments
+    name: string;
+    url: string; // signed url para visualizar/baixar antes de enviar
+    type: string;
+    size: number;
+    storagePath: string;
+  }>>([]);
+  const [dragActive, setDragActive] = useState(false);
+
+  // Map de anexos por comentário já publicado
+  const [attachmentsByComment, setAttachmentsByComment] = useState<Record<string, Array<{
+    id: string;
+    file_name: string;
+    mime_type: string;
+    size: number;
+    storage_path: string;
+    url: string;
+  }>>>({});
+  const [expandedAttachments, setExpandedAttachments] = useState<Record<string, boolean>>({});
+
+  const uploadOptions = {
+    bucket: 'tickets',
+    maxSizeMB: 10,
+    maxFiles: 3,
+    allowedTypes: ['image/png','image/jpg','image/jpeg','image/webp','application/pdf','video/mp4','video/webm'],
+    signedPreview: true,
+    pathPrefix: currentSLA ? `tickets/${currentSLA.id}` : undefined
+  };
+  const { uploadFiles, deleteFile, uploading, uploadProgress } = useFileUpload(uploadOptions);
 
   const { toast } = useToast();
 

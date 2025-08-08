@@ -1014,6 +1014,7 @@ export type Database = {
       }
       ticket_attachments: {
         Row: {
+          comment_id: string | null
           created_at: string
           file_name: string
           id: string
@@ -1024,6 +1025,7 @@ export type Database = {
           uploaded_by: string
         }
         Insert: {
+          comment_id?: string | null
           created_at?: string
           file_name: string
           id?: string
@@ -1034,6 +1036,7 @@ export type Database = {
           uploaded_by: string
         }
         Update: {
+          comment_id?: string | null
           created_at?: string
           file_name?: string
           id?: string
