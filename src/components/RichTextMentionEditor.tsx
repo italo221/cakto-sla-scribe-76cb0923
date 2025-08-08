@@ -67,7 +67,7 @@ export default function RichTextMentionEditor({
     });
     onChange(newValue);
     
-    // ABORDAGEM MAIS DIRETA: trabalhar direto com o texto do DOM
+    // Trabalhar direto com o texto visível do editor
     let textContent = '';
     if (editorRef.current) {
       textContent = editorRef.current.textContent || editorRef.current.innerText || '';
@@ -76,7 +76,6 @@ export default function RichTextMentionEditor({
         contentLength: textContent.length
       });
     } else {
-      // Fallback para o método anterior
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = newValue;
       textContent = tempDiv.textContent || tempDiv.innerText || '';
@@ -90,48 +89,46 @@ export default function RichTextMentionEditor({
     console.log('🔍 Último @ encontrado na posição:', lastAtIndex);
     
     if (lastAtIndex !== -1) {
-      const afterAt = textContent.substring(lastAtIndex + 1);
+      // Pegar o token imediatamente após o "@" até espaço/quebra
+      const afterAtRaw = textContent.substring(lastAtIndex + 1);
       console.log('🔍 Texto após @ (RAW):', { 
-        afterAt: JSON.stringify(afterAt), 
-        length: afterAt.length,
-        chars: afterAt.split('').map(c => c.charCodeAt(0))
+        afterAt: JSON.stringify(afterAtRaw), 
+        length: afterAtRaw.length,
+        chars: afterAtRaw.split('').map(c => c.charCodeAt(0))
       });
-      
-      // Condições mais simples para detectar menção
-      const isValidMention = afterAt.length <= 50 && 
-                           !afterAt.includes('\n') && 
-                           (!afterAt.includes(' ') || afterAt.trim().length > 0);
-      
-      console.log('🔍 Validação de menção:', { isValidMention, afterAt, conditions: {
-        lengthOk: afterAt.length <= 50,
-        noNewline: !afterAt.includes('\n'),
-        spaceOk: !afterAt.includes(' ') || afterAt.trim().length > 0
-      }});
-      
-      if (isValidMention) {
-        console.log('🔍 ATIVANDO DROPDOWN - Query será:', JSON.stringify(afterAt));
-        setLastAtPosition(lastAtIndex);
-        setMentionQuery(afterAt);
-        setShowMentions(true);
-        setSelectedIndex(0);
-        
-        // Calcular posição aproximada do dropdown
-        if (editorRef.current) {
-          const rect = editorRef.current.getBoundingClientRect();
-          setMentionPosition({
-            top: rect.bottom + 5,
-            left: rect.left + 10
-          });
-        }
-        
-        // Chamar searchUsers com a query
-        console.log('🔍 Chamando searchUsers com query:', JSON.stringify(afterAt));
-        searchUsers(afterAt);
-        return;
+
+      // Extrair apenas o primeiro token (até espaço ou quebra de linha)
+      let token = afterAtRaw.split(/\s|\n/)[0] ?? '';
+
+      // Remover artefatos visuais que alguns editores inserem (ex: "A↑A↓" no fim)
+      // Padrão: letra opcional + seta para cima + letra opcional + seta para baixo no FINAL do token
+      token = token.replace(/[A-Za-z]?\u2191[A-Za-z]?\u2193$/, '');
+
+      // Sanitizar para manter apenas caracteres relevantes para nomes/emails
+      // Letras (inclui acentos), números, ponto, underscore, hífen, mais
+      const sanitized = token.replace(/[^\p{L}\p{N}._+\-]/gu, '');
+
+      console.log('🔍 Token sanitizado para busca de menções:', { token, sanitized });
+
+      // Mostrar dropdown mesmo quando sanitized = '' (caso digite apenas "@")
+      setLastAtPosition(lastAtIndex);
+      setMentionQuery(sanitized);
+      setShowMentions(true);
+      setSelectedIndex(0);
+
+      // Calcular posição aproximada do dropdown
+      if (editorRef.current) {
+        const rect = editorRef.current.getBoundingClientRect();
+        setMentionPosition({ top: rect.bottom + 5, left: rect.left + 10 });
       }
+
+      // Buscar usuários com a query sanitizada ('' lista até 50)
+      console.log('🔍 Chamando searchUsers com query (sanitized):', JSON.stringify(sanitized));
+      searchUsers(sanitized);
+      return;
     }
     
-    // Limpar estado de menções quando não há @ ou quando a busca foi cancelada
+    // Sem "@" válido no texto: limpar estado de menções
     console.log('🔍 Limpando estado de menções - não há @ válido');
     setShowMentions(false);
     setMentionQuery('');
