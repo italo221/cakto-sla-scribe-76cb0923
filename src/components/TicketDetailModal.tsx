@@ -1109,7 +1109,71 @@ export default function SLADetailModal({
                 </div>
               )}
               
-              {/* Anexos e Link de Referência */}
+              {/* Anexos do Ticket (via tabela) */}
+              {dbAttachments.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Arquivos</label>
+                  <div className="mt-2 grid gap-2">
+                    {dbAttachments.map((file) => {
+                      const isImage = file.mime_type?.startsWith('image/');
+                      const isVideo = file.mime_type?.startsWith('video/');
+                      const isPdf = file.mime_type === 'application/pdf' || file.file_name?.toLowerCase?.().endsWith('.pdf');
+                      return (
+                        <div key={file.id} className="flex items-center gap-3 p-3 border rounded-lg bg-muted/50">
+                          <div className="flex-shrink-0">
+                            {isImage ? (
+                              <img
+                                src={file.url}
+                                alt={file.file_name}
+                                className="w-12 h-12 object-cover rounded border"
+                              />
+                            ) : isVideo ? (
+                              <video src={file.url} className="w-12 h-12 object-cover rounded border" muted />
+                            ) : (
+                              <div className="w-12 h-12 bg-secondary rounded border flex items-center justify-center">
+                                <FileText className="w-5 h-5 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{file.file_name}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {formatFileSize(Number(file.size))} • {(file.uploader_name || 'Usuário')}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(file.url, '_blank', 'noopener,noreferrer')}
+                              className="h-8 px-2"
+                              title={isPdf ? 'Abrir PDF' : isImage ? 'Abrir imagem' : 'Abrir arquivo'}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const a = document.createElement('a');
+                                a.href = file.url;
+                                a.download = file.file_name;
+                                a.click();
+                              }}
+                              className="h-8 px-2"
+                              title="Baixar"
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              {/* Anexos e Link de Referência (legado/descrição) */}
               {currentSLA && (currentSLA.link_referencia || currentSLA.anexos) && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Anexos e Links</label>
