@@ -157,6 +157,7 @@ export default function SLADetailModal({
     storage_path: string;
     uploaded_by: string;
     created_at: string;
+    comment_id?: string | null;
     url: string;
     uploader_name?: string;
   }>>([]);
@@ -171,6 +172,62 @@ export default function SLADetailModal({
     storagePath: string;
   }>>([]);
   const [dragActive, setDragActive] = useState(false);
+
+  // Handlers de upload simples (dropzone compacta + chips)
+  const handleFilesSelected = async (fileList: FileList) => {
+    if (!currentSLA || !user) return;
+    const uploaded = await uploadFiles(fileList);
+    if (!uploaded || uploaded.length === 0) return;
+
+    // Persistir linhas em ticket_attachments (comment_id permanece NULL até enviar o comentário)
+    const rows = uploaded.map((f) => ({
+      ticket_id: currentSLA.id,
+      file_name: f.name,
+      mime_type: f.type,
+      size: f.size,
+      storage_path: (f as any).storagePath || f.id,
+      uploaded_by: user.id
+    }));
+
+    const { data: inserted, error: insErr } = await supabase
+      .from('ticket_attachments')
+      .insert(rows)
+      .select();
+
+    if (insErr) {
+      console.warn('Falha ao registrar anexos no banco:', insErr);
+      return;
+    }
+
+    // Gerar signed URLs para visualização/baixa (bucket privado)
+    const chips: Array<{ dbId: string; name: string; url: string; type: string; size: number; storagePath: string; }> = [];
+    for (const att of inserted || []) {
+      const { data: signed } = await supabase.storage
+        .from('tickets')
+        .createSignedUrl(att.storage_path, 3600);
+      chips.push({
+        dbId: att.id,
+        name: att.file_name,
+        url: signed?.signedUrl || '',
+        type: att.mime_type,
+        size: Number(att.size),
+        storagePath: att.storage_path
+      });
+    }
+
+    setPendingAttachments((prev) => [...prev, ...chips]);
+  };
+
+  const removePendingAttachment = async (dbId: string, storagePath: string) => {
+    try {
+      await supabase.from('ticket_attachments').delete().eq('id', dbId);
+      await deleteFile(storagePath);
+    } catch (e) {
+      console.warn('Erro ao remover anexo pendente:', e);
+    } finally {
+      setPendingAttachments((prev) => prev.filter((p) => p.dbId !== dbId));
+    }
+  };
 
   // Map de anexos por comentário já publicado
   const [attachmentsByComment, setAttachmentsByComment] = useState<Record<string, Array<{
@@ -660,46 +717,20 @@ export default function SLADetailModal({
 
       if (commentError) throw commentError;
 
-      // Persistir anexos do comentário (se houver)
+      // Associar anexos pendentes ao comentário
       try {
-        if (commentData?.id && commentFiles.length > 0) {
-          const moved = await Promise.all(commentFiles.map(async (f) => {
-            const oldPath = (f as any).storagePath || f.id;
-            const newPath = `${currentSLA.id}/comments/${commentData.id}/${oldPath}`;
-            try {
-              const { error: moveErr } = await supabase.storage
-                .from('tickets')
-                .move(oldPath, newPath);
-              if (moveErr) {
-                console.warn('Falha ao mover arquivo de comentário, mantendo caminho original:', moveErr);
-                return { ...f, storagePath: oldPath };
-              }
-              return { ...f, storagePath: newPath };
-            } catch (e) {
-              console.warn('Erro ao mover arquivo de comentário:', e);
-              return { ...f, storagePath: oldPath };
-            }
-          }));
-
-          // Normalizar estrutura para armazenar no JSONB do comentário
-          const anexosToSave = moved.map((f) => ({
-            nome: f.name,
-            tipo: f.type,
-            tamanho: f.size,
-            storage_path: (f as any).storagePath
-          }));
-
-          const { error: updErr } = await supabase
-            .from('sla_comentarios_internos')
-            .update({ anexos: anexosToSave })
-            .eq('id', commentData.id);
-
-          if (updErr) {
-            console.warn('Falha ao atualizar anexos do comentário:', updErr);
+        if (commentData?.id && pendingAttachments.length > 0) {
+          const ids = pendingAttachments.map(a => a.dbId);
+          const { error: linkErr } = await supabase
+            .from('ticket_attachments')
+            .update({ comment_id: commentData.id })
+            .in('id', ids);
+          if (linkErr) {
+            console.warn('Falha ao associar anexos ao comentário:', linkErr);
           }
         }
       } catch (attErr) {
-        console.warn('Erro ao persistir anexos do comentário:', attErr);
+        console.warn('Erro ao associar anexos do comentário:', attErr);
       }
 
       // Processar menções e enviar notificações
@@ -756,8 +787,9 @@ export default function SLADetailModal({
         description: "Comentário adicionado com sucesso."
       });
       setNewComment('');
-      setCommentFiles([]);
+      setPendingAttachments([]);
       loadComments();
+      loadDbAttachments();
     } catch (error: any) {
       toast({
         title: "Erro ao publicar comentário",
@@ -940,17 +972,97 @@ export default function SLADetailModal({
                             placeholder="Digite seu comentário... (use @ para mencionar alguém)"
                             className="min-h-[80px]"
                           />
-                          <FileUploader
-                            files={commentFiles}
-                            onFilesChange={setCommentFiles}
-                            maxFiles={3}
-                            maxSizeMB={10}
-                            acceptedTypes={['image/png','image/jpg','image/jpeg','image/webp','application/pdf','video/mp4','video/webm']}
-                            bucket="tickets"
-                          />
+                          {/* Dropzone compacta */}
+                          <div
+                            className="relative h-14 max-h-14 border border-dashed border-muted-foreground/30 rounded-md flex items-center gap-3 px-3 text-sm text-muted-foreground transition-colors"
+                            onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }}
+                            onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                            onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
+                            onDrop={async (e) => {
+                              e.preventDefault();
+                              setDragActive(false);
+                              if (e.dataTransfer.files && e.dataTransfer.files.length) {
+                                await handleFilesSelected(e.dataTransfer.files);
+                              }
+                            }}
+                          >
+                            <input
+                              type="file"
+                              multiple
+                              accept={"image/png,image/jpg,image/jpeg,image/webp,application/pdf,video/mp4,video/webm"}
+                              onChange={async (e) => {
+                                if (e.target.files && e.target.files.length) {
+                                  await handleFilesSelected(e.target.files);
+                                  e.currentTarget.value = '';
+                                }
+                              }}
+                              className="absolute inset-0 opacity-0 cursor-pointer"
+                              disabled={uploading || pendingAttachments.length >= 3}
+                            />
+                            <Upload className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">Anexar arquivos</span>
+                            <span className="ml-2 text-xs text-muted-foreground/80 truncate">
+                              Máximo 3 arquivos • Imagens: 10MB • Vídeos: 25MB • PNG, JPG, WebP, PDF, MP4, WebM
+                            </span>
+                            {dragActive && (
+                              <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary/50 rounded-md flex items-center justify-center text-xs text-primary">
+                                Solte para enviar
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Chips dos anexos pendentes (sem preview inline) */}
+                          {pendingAttachments.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {pendingAttachments.map((f) => {
+                                const isImage = f.type.startsWith('image/');
+                                const isVideo = f.type.startsWith('video/');
+                                const isPdf = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+                                return (
+                                  <div key={f.dbId} className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs">
+                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-secondary/60">
+                                      {isImage ? <Image className="w-3.5 h-3.5" /> : isVideo ? <Video className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
+                                    </span>
+                                    <span className="max-w-[200px] truncate font-medium">{f.name}</span>
+                                    <span className="text-muted-foreground/80">• {formatFileSize(f.size)}</span>
+                                    <button
+                                      type="button"
+                                      className="ml-1 text-muted-foreground hover:text-foreground"
+                                      onClick={() => window.open(f.url, '_blank', 'noopener,noreferrer')}
+                                      title="Ver"
+                                    >
+                                      <Eye className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="text-muted-foreground hover:text-foreground"
+                                      onClick={() => {
+                                        const a = document.createElement('a');
+                                        a.href = f.url;
+                                        a.download = f.name;
+                                        a.click();
+                                      }}
+                                      title="Baixar"
+                                    >
+                                      <Download className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="text-destructive hover:text-destructive"
+                                      onClick={() => removePendingAttachment(f.dbId, f.storagePath)}
+                                      title="Remover"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
                           <div className="flex justify-between items-center">
                             <span className="text-xs text-muted-foreground">
-                              Suporte a formatação de texto, emojis e menções • Anexos: {commentFiles.length}
+                              Suporte a formatação de texto, emojis e menções • Anexos: {pendingAttachments.length}
                             </span>
                             <Button
                               onClick={handleAddComment}
