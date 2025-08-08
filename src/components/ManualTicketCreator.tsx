@@ -173,6 +173,11 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
     if (formData.setor && !setorExists) {
       newErrors.setor = 'Setor selecionado inválido';
     }
+
+    // Pelo menos uma tag obrigatória
+    if (selectedTags.length === 0) {
+      newErrors.tags = 'Adicione pelo menos uma tag';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -547,6 +552,7 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
             <p className="text-xs text-muted-foreground mt-1">
               Adicione tags para facilitar a organização e busca do ticket
             </p>
+            {errors.tags && <p className="text-sm text-destructive mt-1">{errors.tags}</p>}
           </div>
         </div>
         
