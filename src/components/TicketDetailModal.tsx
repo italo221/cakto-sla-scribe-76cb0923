@@ -18,7 +18,7 @@ import { useTicketPermissions } from "@/hooks/useTicketPermissions";
 import CommentEditModal from "@/components/CommentEditModal";
 import CommentReactions from "@/components/CommentReactions";
 import CommentDeleteModal from "@/components/CommentDeleteModal";
-import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit2, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown, Eye, Upload, Image, Video } from "lucide-react";
+import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit2, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown, Eye, Upload, Image, Video, Maximize, Minimize } from "lucide-react";
 import TicketAttachments from "@/components/TicketAttachments";
 import TicketEditModal from "@/components/TicketEditModal";
 // (FileUploader import removido)
@@ -147,7 +147,20 @@ export default function SLADetailModal({
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<string[]>([]);
   const [currentResultIndex, setCurrentResultIndex] = useState(0);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+const [isCommentsFocusMode, setIsCommentsFocusMode] = useState(false);
+const preservedScrollTopRef = useRef(0);
+const toggleCommentsFocusMode = () => {
+  const el = scrollAreaRef.current;
+  if (el) preservedScrollTopRef.current = el.scrollTop;
+  setIsCommentsFocusMode((prev) => !prev);
+  // Restore scroll position after layout changes
+  requestAnimationFrame(() => {
+    const el2 = scrollAreaRef.current;
+    if (el2) el2.scrollTop = preservedScrollTopRef.current;
+  });
+};
 
   const [dbAttachments, setDbAttachments] = useState<Array<{
     id: string;
@@ -861,13 +874,15 @@ export default function SLADetailModal({
       <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-4">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-bold">
-              {currentSLA.ticket_number || `#${currentSLA.id.slice(0, 8)}`} - {currentSLA.titulo}
-            </DialogTitle>
+            {!isCommentsFocusMode && (
+              <DialogTitle className="text-xl font-bold">
+                {currentSLA.ticket_number || `#${currentSLA.id.slice(0, 8)}`} - {currentSLA.titulo}
+              </DialogTitle>
+            )}
             
             <div className="flex items-center gap-3 mr-4">
               {/* Botão de Editar */}
-              {canEditTicket(currentSLA as any) && (
+              {canEditTicket(currentSLA as any) && !isCommentsFocusMode && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -878,100 +893,130 @@ export default function SLADetailModal({
                   Editar
                 </Button>
               )}
+              {/* Botão Focar comentários */}
+              <Button
+                size="sm"
+                variant={isCommentsFocusMode ? "default" : "outline"}
+                className="gap-2"
+                onClick={toggleCommentsFocusMode}
+                aria-pressed={isCommentsFocusMode}
+                aria-expanded={isCommentsFocusMode}
+                title={isCommentsFocusMode ? "Voltar à visualização padrão" : "Focar comentários"}
+              >
+                {isCommentsFocusMode ? (
+                  <Minimize className="h-4 w-4" />
+                ) : (
+                  <Maximize className="h-4 w-4" />
+                )}
+                {isCommentsFocusMode ? "Voltar" : "Focar comentários"}
+              </Button>
 
-              {/* Botões de Status */}
-              {currentSLA.status !== 'fechado' && (() => {
-                const buttonConfig = getStatusButtonConfig(currentSLA.status);
-                const canPerform = buttonConfig && canPerformAction(currentSLA as any, getActionFromStatus(buttonConfig.nextStatus));
-                
-                if (buttonConfig && canPerform) {
-                  const Icon = buttonConfig.icon;
-                  return (
-                    <Button
-                      size="sm"
-                      variant={buttonConfig.variant}
-                      className="gap-2"
-                      disabled={statusLoading === buttonConfig.nextStatus}
-                      onClick={() => handleStatusChange(buttonConfig.nextStatus)}
-                    >
-                      {statusLoading === buttonConfig.nextStatus ? (
-                        <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                      ) : (
-                        <Icon className="h-4 w-4" />
-                      )}
-                      {statusLoading === buttonConfig.nextStatus ? 'Processando...' : buttonConfig.label}
-                    </Button>
-                  );
-                }
-                return null;
-              })()}
+              {!isCommentsFocusMode && (
+                <>
+                {/* Botões de Status */}
+                {currentSLA.status !== 'fechado' && (() => {
+                  const buttonConfig = getStatusButtonConfig(currentSLA.status);
+                  const canPerform = buttonConfig && canPerformAction(currentSLA as any, getActionFromStatus(buttonConfig.nextStatus));
+                  
+                  if (buttonConfig && canPerform) {
+                    const Icon = buttonConfig.icon;
+                    return (
+                      <Button
+                        size="sm"
+                        variant={buttonConfig.variant}
+                        className="gap-2"
+                        disabled={statusLoading === buttonConfig.nextStatus}
+                        onClick={() => handleStatusChange(buttonConfig.nextStatus)}
+                      >
+                        {statusLoading === buttonConfig.nextStatus ? (
+                          <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                        ) : (
+                          <Icon className="h-4 w-4" />
+                        )}
+                        {statusLoading === buttonConfig.nextStatus ? 'Processando...' : buttonConfig.label}
+                      </Button>
+                    );
+                  }
+                  return null;
+                })()}
+                </>
+              )}
 
-              {/* Botão de Transferir Setor */}
-              {(profile?.role === 'super_admin' || profile?.role === 'operador') && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <ArrowRightLeft className="h-4 w-4" />
-                      Transferir Setor
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <div className="px-2 py-1.5 text-sm font-medium">
-                      Transferir para:
-                    </div>
-                    <DropdownMenuSeparator />
-                    {setores
-                      .filter(setor => setor.id !== currentSLA.setor_id)
-                      .map(setor => (
-                        <DropdownMenuItem
-                          key={setor.id}
-                          onClick={() => handleTransferTicket(setor)}
-                          className="cursor-pointer"
-                        >
-                          <Building className="h-4 w-4 mr-2" />
-                          {setor.nome}
-                        </DropdownMenuItem>
-                      ))
-                    }
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              {!isCommentsFocusMode && (
+                <>
+                {/* Botão de Transferir Setor */}
+                {(profile?.role === 'super_admin' || profile?.role === 'operador') && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <ArrowRightLeft className="h-4 w-4" />
+                        Transferir Setor
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <div className="px-2 py-1.5 text-sm font-medium">
+                        Transferir para:
+                      </div>
+                      <DropdownMenuSeparator />
+                      {setores
+                        .filter(setor => setor.id !== currentSLA.setor_id)
+                        .map(setor => (
+                          <DropdownMenuItem
+                            key={setor.id}
+                            onClick={() => handleTransferTicket(setor)}
+                            className="cursor-pointer"
+                          >
+                            <Building className="h-4 w-4 mr-2" />
+                            {setor.nome}
+                          </DropdownMenuItem>
+                        ))
+                      }
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                </>
               )}
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {getStatusBadge(currentSLA.status)}
-            {getCriticalityBadge(currentSLA.nivel_criticidade)}
-          </div>
+            {!isCommentsFocusMode && (
+              <div className="flex flex-wrap gap-2">
+                {getStatusBadge(currentSLA.status)}
+                {getCriticalityBadge(currentSLA.nivel_criticidade)}
+              </div>
+            )}
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Conteúdo principal */}
           {/* Tabs de Discussão e Histórico */}
-          <div className="flex gap-4 border-b mb-6">
-            <Button
-              variant={activeTab === 'comments' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('comments')}
-              className="gap-2"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Discussão ({comments.length})
-            </Button>
-            <Button
-              variant={activeTab === 'history' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('history')}
-              className="gap-2"
-            >
-              <History className="h-4 w-4" />
-              Histórico ({actionLogs.length})
-            </Button>
-          </div>
+          {!isCommentsFocusMode && (
+            <div className="flex gap-4 border-b mb-6">
+              <Button
+                variant={activeTab === 'comments' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab('comments')}
+                className="gap-2"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Discussão ({comments.length})
+              </Button>
+              <Button
+                variant={activeTab === 'history' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab('history')}
+                className="gap-2"
+              >
+                <History className="h-4 w-4" />
+                Histórico ({actionLogs.length})
+              </Button>
+            </div>
+          )}
 
           {/* Conteúdo das Tabs */}
           <div className="mb-6">
-            {activeTab === 'comments' ? (
-              <Card className="flex-1 flex flex-col min-h-[400px] max-h-[400px]">
+            {(isCommentsFocusMode || activeTab === 'comments') ? (
+              <Card className={`flex-1 flex flex-col ${isCommentsFocusMode ? 'min-h-[60vh] max-h-[70vh]' : 'min-h-[400px] max-h-[400px]'}`}>
                 <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
                   {/* Área de Novo Comentário */}
                   {user && (
@@ -1298,139 +1343,140 @@ export default function SLADetailModal({
             )}
           </div>
 
-          {/* Informações Básicas */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Informações Básicas</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Solicitante</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <User className="h-4 w-4" />
-                    <span>{currentSLA.solicitante}</span>
+          {!isCommentsFocusMode && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Informações Básicas</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Solicitante</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <User className="h-4 w-4" />
+                      <span>{currentSLA.solicitante}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Time Responsável</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Building className="h-4 w-4" />
+                      <span>{currentSLA.time_responsavel}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Calendar className="h-4 w-4" />
+                      <span>
+                        {format(new Date(currentSLA.data_criacao), "dd/MM/yyyy 'às' HH:mm", {
+                          locale: ptBR
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Pontuação Total</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Target className="h-4 w-4" />
+                      <span>{currentSLA.pontuacao_total} pontos</span>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Time Responsável</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Building className="h-4 w-4" />
-                    <span>{currentSLA.time_responsavel}</span>
+                
+                {/* Tags */}
+                {currentSLA.tags && currentSLA.tags.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Tags</label>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {currentSLA.tags.map((tag, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Calendar className="h-4 w-4" />
-                    <span>
-                      {format(new Date(currentSLA.data_criacao), "dd/MM/yyyy 'às' HH:mm", {
-                        locale: ptBR
+                )}
+                
+                {/* Anexos do Ticket (via tabela) */}
+                {dbAttachments.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Arquivos</label>
+                    <div className="mt-2 grid gap-2">
+                      {dbAttachments.map((file) => {
+                        const isImage = file.mime_type?.startsWith('image/');
+                        const isVideo = file.mime_type?.startsWith('video/');
+                        const isPdf = file.mime_type === 'application/pdf' || file.file_name?.toLowerCase?.().endsWith('.pdf');
+                        return (
+                          <div key={file.id} className="flex items-center gap-3 p-3 border rounded-lg bg-muted/50">
+                            <div className="flex-shrink-0">
+                              {isImage ? (
+                                <img
+                                  src={file.url}
+                                  alt={file.file_name}
+                                  className="w-12 h-12 object-cover rounded border"
+                                />
+                              ) : isVideo ? (
+                                <video src={file.url} className="w-12 h-12 object-cover rounded border" muted />
+                              ) : (
+                                <div className="w-12 h-12 bg-secondary rounded border flex items-center justify-center">
+                                  <FileText className="w-5 h-5 text-muted-foreground" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{file.file_name}</p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {formatFileSize(Number(file.size))} • {(file.uploader_name || 'Usuário')}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => window.open(file.url, '_blank', 'noopener,noreferrer')}
+                                className="h-8 px-2"
+                                title={isPdf ? 'Abrir PDF' : isImage ? 'Abrir imagem' : 'Abrir arquivo'}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const a = document.createElement('a');
+                                  a.href = file.url;
+                                  a.download = file.file_name;
+                                  a.click();
+                                }}
+                                className="h-8 px-2"
+                                title="Baixar"
+                              >
+                                <Download className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
                       })}
-                    </span>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Pontuação Total</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Target className="h-4 w-4" />
-                    <span>{currentSLA.pontuacao_total} pontos</span>
+                )}
+                
+                {/* Anexos e Link de Referência (legado/descrição) */}
+                {currentSLA && (currentSLA.link_referencia || currentSLA.anexos) && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Anexos e Links</label>
+                    <div className="mt-2">
+                      <TicketAttachments 
+                        linkReferencia={currentSLA.link_referencia}
+                        anexos={typeof currentSLA.anexos === 'string' ? currentSLA.anexos : JSON.stringify(currentSLA.anexos)}
+                      />
+                    </div>
                   </div>
-                </div>
-              </div>
-              
-              {/* Tags */}
-              {currentSLA.tags && currentSLA.tags.length > 0 && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Tags</label>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {currentSLA.tags.map((tag, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Anexos do Ticket (via tabela) */}
-              {dbAttachments.length > 0 && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Arquivos</label>
-                  <div className="mt-2 grid gap-2">
-                    {dbAttachments.map((file) => {
-                      const isImage = file.mime_type?.startsWith('image/');
-                      const isVideo = file.mime_type?.startsWith('video/');
-                      const isPdf = file.mime_type === 'application/pdf' || file.file_name?.toLowerCase?.().endsWith('.pdf');
-                      return (
-                        <div key={file.id} className="flex items-center gap-3 p-3 border rounded-lg bg-muted/50">
-                          <div className="flex-shrink-0">
-                            {isImage ? (
-                              <img
-                                src={file.url}
-                                alt={file.file_name}
-                                className="w-12 h-12 object-cover rounded border"
-                              />
-                            ) : isVideo ? (
-                              <video src={file.url} className="w-12 h-12 object-cover rounded border" muted />
-                            ) : (
-                              <div className="w-12 h-12 bg-secondary rounded border flex items-center justify-center">
-                                <FileText className="w-5 h-5 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{file.file_name}</p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {formatFileSize(Number(file.size))} • {(file.uploader_name || 'Usuário')}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => window.open(file.url, '_blank', 'noopener,noreferrer')}
-                              className="h-8 px-2"
-                              title={isPdf ? 'Abrir PDF' : isImage ? 'Abrir imagem' : 'Abrir arquivo'}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                const a = document.createElement('a');
-                                a.href = file.url;
-                                a.download = file.file_name;
-                                a.click();
-                              }}
-                              className="h-8 px-2"
-                              title="Baixar"
-                            >
-                              <Download className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              
-              {/* Anexos e Link de Referência (legado/descrição) */}
-              {currentSLA && (currentSLA.link_referencia || currentSLA.anexos) && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Anexos e Links</label>
-                  <div className="mt-2">
-                    <TicketAttachments 
-                      linkReferencia={currentSLA.link_referencia}
-                      anexos={typeof currentSLA.anexos === 'string' ? currentSLA.anexos : JSON.stringify(currentSLA.anexos)}
-                    />
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </DialogContent>
       
