@@ -1018,129 +1018,414 @@ const toggleCommentsFocusMode = () => {
             {(isCommentsFocusMode || activeTab === 'comments') ? (
               <Card className={`flex-1 flex flex-col ${isCommentsFocusMode ? 'min-h-[60vh] max-h-[70vh]' : 'min-h-[400px] max-h-[400px]'}`}>
                 <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
-                  {/* Área de Novo Comentário */}
-                  {user && (
-                    <div className="p-4 border-b bg-muted/10 flex-shrink-0">
-                      <div className="flex gap-3">
-                        <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
-                          <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                            {user.user_metadata?.nome_completo?.substring(0, 2)?.toUpperCase() || 'EU'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 space-y-3">
-                          <RichTextMentionEditor
-                            value={newComment}
-                            onChange={setNewComment}
-                            placeholder="Digite seu comentário... (use @ para mencionar alguém)"
-                            className="min-h-[80px]"
-                          />
-                          {/* Dropzone compacta */}
-                          <div
-                            className="relative h-14 max-h-14 border border-dashed border-muted-foreground/30 rounded-md flex items-center gap-3 px-3 text-sm text-muted-foreground transition-colors"
-                            onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }}
-                            onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-                            onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
-                            onDrop={async (e) => {
-                              e.preventDefault();
-                              setDragActive(false);
-                              if (e.dataTransfer.files && e.dataTransfer.files.length) {
-                                await handleFilesSelected(e.dataTransfer.files);
-                              }
-                            }}
-                          >
-                            <input
-                              type="file"
-                              multiple
-                              accept={"image/png,image/jpg,image/jpeg,image/webp,application/pdf,video/mp4,video/webm"}
-                              onChange={async (e) => {
-                                if (e.target.files && e.target.files.length) {
-                                  await handleFilesSelected(e.target.files);
-                                  e.currentTarget.value = '';
-                                }
-                              }}
-                              className="absolute inset-0 opacity-0 cursor-pointer"
-                              disabled={uploading || pendingAttachments.length >= 3}
-                            />
-                            <Upload className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">Anexar arquivos</span>
-                            <span className="ml-2 text-xs text-muted-foreground/80 truncate">
-                              Máximo 3 arquivos • Imagens: 10MB • Vídeos: 25MB • PNG, JPG, WebP, PDF, MP4, WebM
-                            </span>
-                            {dragActive && (
-                              <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary/50 rounded-md flex items-center justify-center text-xs text-primary">
-                                Solte para enviar
+                  {isCommentsFocusMode ? (
+                    <>
+                      {/* Lista de Comentários - No modo foco vai primeiro e rola */}
+                      <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 overflow-y-auto">
+                        <div className="space-y-4 pb-4">
+                          {/* Comentário inicial - Descrição do SLA - SEMPRE EXIBIDO */}
+                          <div className="flex gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                              <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
+                                <AvatarFallback className="text-xs bg-blue-600 text-white">
+                                  {currentSLA.solicitante.substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="font-medium text-sm text-blue-900 dark:text-blue-100">
+                                    {currentSLA.solicitante}
+                                  </span>
+                                  <span className="text-xs text-blue-600 dark:text-blue-300">
+                                    {format(new Date(currentSLA.data_criacao), "dd/MM/yyyy 'às' HH:mm", {
+                                      locale: ptBR
+                                    })}
+                                  </span>
+                                </div>
+                                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <FileText className="h-4 w-4 text-blue-600" />
+                                    <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                                      Descrição Inicial do SLA
+                                    </span>
+                                  </div>
+                                  <p className="text-sm leading-relaxed text-blue-800 dark:text-blue-200 whitespace-pre-wrap">
+                                    {currentSLA.descricao}
+                                  </p>
+                                  {currentSLA.observacoes && (
+                                    <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                                      <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">Observações:</p>
+                                      <p className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap">
+                                        {currentSLA.observacoes}
+                                      </p>
+                                    </div>
+                                  )}
+                                  
+                    {/* Anexos e Links na descrição inicial */}
+                    {(currentSLA.link_referencia || (currentSLA.anexos && JSON.stringify(currentSLA.anexos) !== '[]')) && (
+                      <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                        <TicketAttachments 
+                          linkReferencia={currentSLA.link_referencia}
+                          anexos={typeof currentSLA.anexos === 'string' ? currentSLA.anexos : JSON.stringify(currentSLA.anexos)}
+                          className="[&_h4]:text-blue-700 [&_h4]:dark:text-blue-300 [&_h4]:text-xs [&_h4]:font-medium [&_.bg-muted\/50]:bg-blue-100/50 [&_.bg-muted\/50]:dark:bg-blue-900/20 [&_.border]:border-blue-200 [&_.border]:dark:border-blue-700"
+                        />
+                      </div>
+                    )}
+                                </div>
+                              </div>
+                            </div>
+
+                           {/* Comentários da discussão */}
+                           {comments.length > 0 ? (
+                             comments.map(comment => (
+                               <div key={comment.id} className="flex gap-3 group">
+                                 <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
+                                   <AvatarFallback className="text-xs">
+                                     {comment.autor_nome.substring(0, 2).toUpperCase()}
+                                   </AvatarFallback>
+                                 </Avatar>
+                                 <div className="flex-1 min-w-0">
+                                   <div className="flex items-center justify-between mb-1">
+                                     <div className="flex items-center gap-2">
+                                       <span className="font-medium text-sm">{comment.autor_nome}</span>
+                                       <span className="text-xs text-muted-foreground">
+                                         {format(new Date(comment.created_at), "dd/MM 'às' HH:mm", {
+                                           locale: ptBR
+                                         })}
+                                       </span>
+                                     </div>
+                                     {(canEdit && user?.id === comment.autor_id) || isSuperAdmin ? (
+                                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                         {canEdit && user?.id === comment.autor_id && (
+                                           <Button
+                                             variant="ghost"
+                                             size="sm"
+                                             className="h-6 px-2 text-xs"
+                                             onClick={() => {
+                                               setSelectedCommentForEdit(comment);
+                                               setEditCommentModalOpen(true);
+                                             }}
+                                           >
+                                             <Edit2 className="h-3 w-3" />
+                                           </Button>
+                                         )}
+                                         <Button
+                                           variant="ghost"
+                                           size="sm"
+                                           className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                                           onClick={() => {
+                                             setSelectedCommentForDelete(comment);
+                                             setDeleteCommentModalOpen(true);
+                                           }}
+                                         >
+                                           <Trash2 className="h-3 w-3" />
+                                         </Button>
+                                       </div>
+                                     ) : null}
+                                   </div>
+                                   <div className="space-y-2">
+                                     <FormattedText 
+                                       text={comment.comentario} 
+                                       className="text-sm leading-relaxed break-words" 
+                                     />
+                                     
+                                     {/* Reações do comentário */}
+                                     <CommentReactions 
+                                       commentId={comment.id} 
+                                       className="mt-2" 
+                                     />
+
+                                     {/* Anexos do comentário - somente chips, sem preview inline */}
+                                     {attachmentsByComment[comment.id] && attachmentsByComment[comment.id].length > 0 && (
+                                       <div className="mt-2">
+                                         <h4 className="text-xs font-medium text-muted-foreground">Anexos ({attachmentsByComment[comment.id].length})</h4>
+                                         <div className="mt-1 flex flex-wrap gap-2">
+                                           {attachmentsByComment[comment.id].map(att => (
+                                             <div key={att.id} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs">
+                                               <span className="max-w-[220px] truncate font-medium">{att.file_name}</span>
+                                               <span className="text-muted-foreground/80">• {formatFileSize(att.size)}</span>
+                                               <a
+                                                 href={att.url}
+                                                 target="_blank"
+                                                 rel="noopener"
+                                                 className="text-foreground/80 hover:opacity-100 opacity-80"
+                                                 title="Ver"
+                                                 aria-label="Ver"
+                                               >
+                                                 <Eye className="w-3.5 h-3.5" />
+                                               </a>
+                                               <a
+                                                 href={att.url}
+                                                 download={att.file_name}
+                                                 className="text-foreground/80 hover:opacity-100 opacity-80"
+                                                 title="Baixar"
+                                                 aria-label="Baixar"
+                                               >
+                                                 <Download className="w-3.5 h-3.5" />
+                                               </a>
+                                             </div>
+                                           ))}
+                                         </div>
+                                       </div>
+                                     )}
+                                   </div>
+                                 </div>
+                               </div>
+                              ))
+                            ) : (
+                              <div className="text-center text-muted-foreground py-6 border-t border-border/30 mt-4">
+                                <MessageSquare className="h-6 w-6 mx-auto mb-2 opacity-30" />
+                                <p className="text-sm">Seja o primeiro a comentar neste SLA</p>
                               </div>
                             )}
                           </div>
+                      </ScrollArea>
 
-                          {/* Chips dos anexos pendentes (sem preview inline) */}
-                          {pendingAttachments.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {pendingAttachments.map((f) => {
-                                const isImage = f.type.startsWith('image/');
-                                const isVideo = f.type.startsWith('video/');
-                                const isPdf = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
-                                return (
-                                  <div key={f.dbId} className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs">
-                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-secondary/60">
-                                      {isImage ? <Image className="w-3.5 h-3.5" /> : isVideo ? <Video className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
-                                    </span>
-                                    <span className="max-w-[200px] truncate font-medium">{f.name}</span>
-                                    <span className="text-muted-foreground/80">• {formatFileSize(f.size)}</span>
-                                    <button
-                                      type="button"
-                                      className="ml-1 text-muted-foreground/50 cursor-not-allowed"
-                                      disabled
-                                      title="Ver (pendente)"
-                                      aria-label="Ver (pendente)"
-                                    >
-                                      <Eye className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="text-muted-foreground/50 cursor-not-allowed"
-                                      disabled
-                                      title="Baixar (pendente)"
-                                      aria-label="Baixar (pendente)"
-                                    >
-                                      <Download className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="text-destructive hover:text-destructive"
-                                      onClick={() => removePendingAttachment(f.dbId, f.storagePath)}
-                                      title="Remover"
-                                      aria-label="Remover"
-                                    >
-                                      <X className="w-3.5 h-3.5" />
-                                    </button>
+                      {/* Área de Novo Comentário - Fixo no rodapé em modo foco */}
+                      {user && (
+                        <div className="p-4 border-t bg-muted/10 flex-shrink-0 sticky bottom-0">
+                          <div className="flex gap-3">
+                            <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
+                              <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                                {user.user_metadata?.nome_completo?.substring(0, 2)?.toUpperCase() || 'EU'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 space-y-3">
+                              <RichTextMentionEditor
+                                value={newComment}
+                                onChange={setNewComment}
+                                placeholder="Digite seu comentário... (use @ para mencionar alguém)"
+                                className="min-h-[80px]"
+                              />
+                              {/* Dropzone compacta */}
+                              <div
+                                className="relative h-14 max-h-14 border border-dashed border-muted-foreground/30 rounded-md flex items-center gap-3 px-3 text-sm text-muted-foreground transition-colors"
+                                onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }}
+                                onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                                onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
+                                onDrop={async (e) => {
+                                  e.preventDefault();
+                                  setDragActive(false);
+                                  if (e.dataTransfer.files && e.dataTransfer.files.length) {
+                                    await handleFilesSelected(e.dataTransfer.files);
+                                  }
+                                }}
+                              >
+                                <input
+                                  type="file"
+                                  multiple
+                                  accept={"image/png,image/jpg,image/jpeg,image/webp,application/pdf,video/mp4,video/webm"}
+                                  onChange={async (e) => {
+                                    if (e.target.files && e.target.files.length) {
+                                      await handleFilesSelected(e.target.files);
+                                      e.currentTarget.value = '';
+                                    }
+                                  }}
+                                  className="absolute inset-0 opacity-0 cursor-pointer"
+                                  disabled={uploading || pendingAttachments.length >= 3}
+                                />
+                                <Upload className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">Anexar arquivos</span>
+                                <span className="ml-2 text-xs text-muted-foreground/80 truncate">
+                                  Máximo 3 arquivos • Imagens: 10MB • Vídeos: 25MB • PNG, JPG, WebP, PDF, MP4, WebM
+                                </span>
+                                {dragActive && (
+                                  <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary/50 rounded-md flex items-center justify-center text-xs text-primary">
+                                    Solte para enviar
                                   </div>
-                                );
-                              })}
-                            </div>
-                          )}
+                                )}
+                              </div>
 
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs text-muted-foreground">
-                              Suporte a formatação de texto, emojis e menções • Anexos: {pendingAttachments.length}
-                            </span>
-                            <Button
-                              onClick={handleAddComment}
-                              disabled={!newComment.trim() || commentLoading}
-                              size="sm"
-                              className="gap-2"
-                            >
-                              <Send className="h-4 w-4" />
-                              {commentLoading ? 'Enviando...' : 'Comentar'}
-                            </Button>
+                              {/* Chips dos anexos pendentes (sem preview inline) */}
+                              {pendingAttachments.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {pendingAttachments.map((f) => {
+                                    const isImage = f.type.startsWith('image/');
+                                    const isVideo = f.type.startsWith('video/');
+                                    const isPdf = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+                                    return (
+                                      <div key={f.dbId} className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs">
+                                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-secondary/60">
+                                          {isImage ? <Image className="w-3.5 h-3.5" /> : isVideo ? <Video className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
+                                        </span>
+                                        <span className="max-w-[200px] truncate font-medium">{f.name}</span>
+                                        <span className="text-muted-foreground/80">• {formatFileSize(f.size)}</span>
+                                        <button
+                                          type="button"
+                                          className="ml-1 text-muted-foreground/50 cursor-not-allowed"
+                                          disabled
+                                          title="Ver (pendente)"
+                                          aria-label="Ver (pendente)"
+                                        >
+                                          <Eye className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="text-muted-foreground/50 cursor-not-allowed"
+                                          disabled
+                                          title="Baixar (pendente)"
+                                          aria-label="Baixar (pendente)"
+                                        >
+                                          <Download className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="text-destructive hover:text-destructive"
+                                          onClick={() => removePendingAttachment(f.dbId, f.storagePath)}
+                                          title="Remover"
+                                          aria-label="Remover"
+                                        >
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-muted-foreground">
+                                  Suporte a formatação de texto, emojis e menções • Anexos: {pendingAttachments.length}
+                                </span>
+                                <Button
+                                  onClick={handleAddComment}
+                                  disabled={!newComment.trim() || commentLoading}
+                                  size="sm"
+                                  className="gap-2"
+                                >
+                                  <Send className="h-4 w-4" />
+                                  {commentLoading ? 'Enviando...' : 'Comentar'}
+                                </Button>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  )}
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {/* Área de Novo Comentário - Modo normal (no topo) */}
+                      {user && (
+                        <div className="p-4 border-b bg-muted/10 flex-shrink-0">
+                          <div className="flex gap-3">
+                            <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
+                              <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                                {user.user_metadata?.nome_completo?.substring(0, 2)?.toUpperCase() || 'EU'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 space-y-3">
+                              <RichTextMentionEditor
+                                value={newComment}
+                                onChange={setNewComment}
+                                placeholder="Digite seu comentário... (use @ para mencionar alguém)"
+                                className="min-h-[80px]"
+                              />
+                              {/* Dropzone compacta */}
+                              <div
+                                className="relative h-14 max-h-14 border border-dashed border-muted-foreground/30 rounded-md flex items-center gap-3 px-3 text-sm text-muted-foreground transition-colors"
+                                onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }}
+                                onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                                onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
+                                onDrop={async (e) => {
+                                  e.preventDefault();
+                                  setDragActive(false);
+                                  if (e.dataTransfer.files && e.dataTransfer.files.length) {
+                                    await handleFilesSelected(e.dataTransfer.files);
+                                  }
+                                }}
+                              >
+                                <input
+                                  type="file"
+                                  multiple
+                                  accept={"image/png,image/jpg,image/jpeg,image/webp,application/pdf,video/mp4,video/webm"}
+                                  onChange={async (e) => {
+                                    if (e.target.files && e.target.files.length) {
+                                      await handleFilesSelected(e.target.files);
+                                      e.currentTarget.value = '';
+                                    }
+                                  }}
+                                  className="absolute inset-0 opacity-0 cursor-pointer"
+                                  disabled={uploading || pendingAttachments.length >= 3}
+                                />
+                                <Upload className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">Anexar arquivos</span>
+                                <span className="ml-2 text-xs text-muted-foreground/80 truncate">
+                                  Máximo 3 arquivos • Imagens: 10MB • Vídeos: 25MB • PNG, JPG, WebP, PDF, MP4, WebM
+                                </span>
+                                {dragActive && (
+                                  <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary/50 rounded-md flex items-center justify-center text-xs text-primary">
+                                    Solte para enviar
+                                  </div>
+                                )}
+                              </div>
 
-                  {/* Lista de Comentários */}
-                  <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 overflow-y-auto">
+                              {/* Chips dos anexos pendentes (sem preview inline) */}
+                              {pendingAttachments.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {pendingAttachments.map((f) => {
+                                    const isImage = f.type.startsWith('image/');
+                                    const isVideo = f.type.startsWith('video/');
+                                    const isPdf = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+                                    return (
+                                      <div key={f.dbId} className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs">
+                                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-secondary/60">
+                                          {isImage ? <Image className="w-3.5 h-3.5" /> : isVideo ? <Video className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
+                                        </span>
+                                        <span className="max-w-[200px] truncate font-medium">{f.name}</span>
+                                        <span className="text-muted-foreground/80">• {formatFileSize(f.size)}</span>
+                                        <button
+                                          type="button"
+                                          className="ml-1 text-muted-foreground/50 cursor-not-allowed"
+                                          disabled
+                                          title="Ver (pendente)"
+                                          aria-label="Ver (pendente)"
+                                        >
+                                          <Eye className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="text-muted-foreground/50 cursor-not-allowed"
+                                          disabled
+                                          title="Baixar (pendente)"
+                                          aria-label="Baixar (pendente)"
+                                        >
+                                          <Download className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="text-destructive hover:text-destructive"
+                                          onClick={() => removePendingAttachment(f.dbId, f.storagePath)}
+                                          title="Remover"
+                                          aria-label="Remover"
+                                        >
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-muted-foreground">
+                                  Suporte a formatação de texto, emojis e menções • Anexos: {pendingAttachments.length}
+                                </span>
+                                <Button
+                                  onClick={handleAddComment}
+                                  disabled={!newComment.trim() || commentLoading}
+                                  size="sm"
+                                  className="gap-2"
+                                >
+                                  <Send className="h-4 w-4" />
+                                  {commentLoading ? 'Enviando...' : 'Comentar'}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Lista de Comentários - Modo normal */}
+                      <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 overflow-y-auto">
                     <div className="space-y-4 pb-4">
                       {/* Comentário inicial - Descrição do SLA - SEMPRE EXIBIDO */}
                       <div className="flex gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -1298,6 +1583,8 @@ const toggleCommentsFocusMode = () => {
                         )}
                       </div>
                   </ScrollArea>
+                      </>
+                    )}
                 </CardContent>
               </Card>
             ) : (
