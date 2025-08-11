@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DashboardCustomizer } from "./DashboardCustomizer";
+import TagTrendChart from "./TagTrendChart";
 import {
   Settings,
   BarChart3,
@@ -790,6 +791,13 @@ export default function DynamicDashboard() {
             }
             return null;
           })}
+        </div>
+      )}
+
+      {/* Tag Trend Chart - positioned between widgets and team chart */}
+      {!loading && (
+        <div className="mt-6">
+          <TagTrendChart />
         </div>
       )}
 
