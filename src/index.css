@@ -102,6 +102,30 @@ All colors MUST be HSL.
     --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 
+    /* Dashboard theme colors - Green focused palette */
+    --dashboard-primary: 142 76% 42%;
+    --dashboard-primary-light: 142 76% 85%;
+    --dashboard-secondary: 138 72% 46%;
+    --dashboard-accent: 134 68% 50%;
+    --dashboard-muted: 220 13% 91%;
+    --dashboard-neutral: 215 28% 17%;
+    
+    /* KPI Card colors */
+    --kpi-total: 142 76% 42%;
+    --kpi-open: 138 72% 46%;
+    --kpi-progress: 134 68% 50%;
+    --kpi-resolved: 130 64% 54%;
+    --kpi-overdue: 0 84% 60%;
+    --kpi-critical: 358 75% 59%;
+    
+    /* Chart colors - Green spectrum */
+    --chart-color-1: 142 76% 42%;
+    --chart-color-2: 138 72% 46%;
+    --chart-color-3: 134 68% 50%;
+    --chart-color-4: 130 64% 54%;
+    --chart-color-5: 126 60% 58%;
+    --chart-color-6: 220 13% 91%;
+
     /* Custom semantic colors */
     --success: 142 71% 45%;
     --warning: 38 92% 50%;

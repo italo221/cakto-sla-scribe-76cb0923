@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { DashboardCustomizer } from "./DashboardCustomizer";
 import {
   Settings,
   BarChart3,
@@ -24,7 +25,10 @@ import {
   Eye,
   EyeOff,
   Save,
-  RefreshCw
+  RefreshCw,
+  Palette,
+  TrendingDown,
+  Minus
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -89,6 +93,7 @@ export default function DynamicDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [showCustomizer, setShowCustomizer] = useState(false);
   const [dateFilter, setDateFilter] = useState('30days');
 
   const { user, isSuperAdmin } = useAuth();
@@ -162,33 +167,41 @@ export default function DynamicDashboard() {
       const totalResolvedTickets = resolvedTickets + closedTickets;
       const slaCompliance = totalResolvedTickets > 0 ? (resolvedTicketsOnTime / totalResolvedTickets) * 100 : 100;
 
-      // Status data
+      // Status data with semantic colors
       const statusData = [
-        { name: 'Abertos', value: openTickets, color: '#ef4444' },
-        { name: 'Em Andamento', value: inProgressTickets, color: '#3b82f6' },
-        { name: 'Resolvidos', value: resolvedTickets, color: '#10b981' },
-        { name: 'Fechados', value: closedTickets, color: '#6b7280' },
+        { name: 'Abertos', value: openTickets, color: 'hsl(var(--kpi-open))' },
+        { name: 'Em Andamento', value: inProgressTickets, color: 'hsl(var(--kpi-progress))' },
+        { name: 'Resolvidos', value: resolvedTickets, color: 'hsl(var(--kpi-resolved))' },
+        { name: 'Fechados', value: closedTickets, color: 'hsl(var(--dashboard-muted))' },
       ].filter(item => item.value > 0);
 
-      // Priority data
+      // Priority data with semantic colors
       const priorityData = [
-        { name: 'P0 - Crítico', value: tickets?.filter(t => t.nivel_criticidade === 'P0').length || 0, color: '#dc2626' },
-        { name: 'P1 - Alto', value: tickets?.filter(t => t.nivel_criticidade === 'P1').length || 0, color: '#ea580c' },
-        { name: 'P2 - Médio', value: tickets?.filter(t => t.nivel_criticidade === 'P2').length || 0, color: '#ca8a04' },
-        { name: 'P3 - Baixo', value: tickets?.filter(t => t.nivel_criticidade === 'P3').length || 0, color: '#16a34a' },
+        { name: 'P0 - Crítico', value: tickets?.filter(t => t.nivel_criticidade === 'P0').length || 0, color: 'hsl(var(--kpi-critical))' },
+        { name: 'P1 - Alto', value: tickets?.filter(t => t.nivel_criticidade === 'P1').length || 0, color: 'hsl(var(--kpi-overdue))' },
+        { name: 'P2 - Médio', value: tickets?.filter(t => t.nivel_criticidade === 'P2').length || 0, color: 'hsl(var(--kpi-progress))' },
+        { name: 'P3 - Baixo', value: tickets?.filter(t => t.nivel_criticidade === 'P3').length || 0, color: 'hsl(var(--kpi-resolved))' },
       ].filter(item => item.value > 0);
 
-      // Team data
+      // Team data with semantic colors
       const teamCounts = tickets?.reduce((acc, ticket) => {
         const team = ticket.time_responsavel || 'Não Atribuído';
         acc[team] = (acc[team] || 0) + 1;
         return acc;
       }, {} as Record<string, number>) || {};
 
+      const chartColors = [
+        'hsl(var(--chart-color-1))',
+        'hsl(var(--chart-color-2))',
+        'hsl(var(--chart-color-3))',
+        'hsl(var(--chart-color-4))',
+        'hsl(var(--chart-color-5))'
+      ];
+
       const teamData = Object.entries(teamCounts).map(([name, tickets], index) => ({
         name,
         tickets,
-        color: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]
+        color: chartColors[index % chartColors.length]
       }));
 
       setDashboardData({
@@ -304,16 +317,16 @@ export default function DynamicDashboard() {
       case 'total-tickets':
         value = dashboardData.totalTickets;
         subtitle = 'Total de tickets no período';
-        glowColor = 'blue';
-        accentColor = 'from-blue-500/20 via-blue-400/10 to-transparent';
-        shadowColor = 'shadow-blue-500/10';
+        glowColor = 'total';
+        accentColor = 'from-kpi-total/20 via-kpi-total/10 to-transparent';
+        shadowColor = 'shadow-kpi-total/10';
         break;
       case 'open-tickets':
         value = dashboardData.openTickets;
         subtitle = 'Tickets em aberto';
-        glowColor = 'red';
-        accentColor = 'from-red-500/20 via-red-400/10 to-transparent';
-        shadowColor = 'shadow-red-500/10';
+        glowColor = 'open';
+        accentColor = 'from-kpi-open/20 via-kpi-open/10 to-transparent';
+        shadowColor = 'shadow-kpi-open/10';
         break;
       case 'sla-compliance':
         value = Math.round(dashboardData.slaCompliance);
@@ -323,61 +336,63 @@ export default function DynamicDashboard() {
           : `${value}% de cumprimento do SLA`;
         
         if (value >= 95) {
-          glowColor = 'green';
-          accentColor = 'from-green-500/20 via-green-400/10 to-transparent';
-          shadowColor = 'shadow-green-500/10';
+          glowColor = 'resolved';
+          accentColor = 'from-kpi-resolved/20 via-kpi-resolved/10 to-transparent';
+          shadowColor = 'shadow-kpi-resolved/10';
         } else if (value >= 80) {
-          glowColor = 'yellow';
-          accentColor = 'from-yellow-500/20 via-yellow-400/10 to-transparent';
-          shadowColor = 'shadow-yellow-500/10';
+          glowColor = 'progress';
+          accentColor = 'from-kpi-progress/20 via-kpi-progress/10 to-transparent';
+          shadowColor = 'shadow-kpi-progress/10';
         } else {
-          glowColor = 'orange';
-          accentColor = 'from-orange-500/20 via-orange-400/10 to-transparent';
-          shadowColor = 'shadow-orange-500/10';
+          glowColor = 'overdue';
+          accentColor = 'from-kpi-overdue/20 via-kpi-overdue/10 to-transparent';
+          shadowColor = 'shadow-kpi-overdue/10';
         }
         break;
       case 'overdue-tickets':
         value = dashboardData.overdueTickets;
         subtitle = 'Tickets em atraso';
-        glowColor = 'purple';
-        accentColor = 'from-purple-500/20 via-purple-400/10 to-transparent';
-        shadowColor = 'shadow-purple-500/10';
+        glowColor = 'critical';
+        accentColor = 'from-kpi-critical/20 via-kpi-critical/10 to-transparent';
+        shadowColor = 'shadow-kpi-critical/10';
         break;
     }
 
     const getGlowClasses = (color: string) => {
       const glowMap = {
-        blue: 'text-blue-600 dark:text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]',
-        red: 'text-red-600 dark:text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]',
-        green: 'text-green-600 dark:text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]',
-        yellow: 'text-yellow-600 dark:text-yellow-400 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]',
-        orange: 'text-orange-600 dark:text-orange-400 drop-shadow-[0_0_8px_rgba(251,146,60,0.5)]',
-        purple: 'text-purple-600 dark:text-purple-400 drop-shadow-[0_0_8px_rgba(147,51,234,0.5)]'
+        total: 'text-kpi-total drop-shadow-[0_0_8px_hsl(var(--kpi-total)/0.5)]',
+        open: 'text-kpi-open drop-shadow-[0_0_8px_hsl(var(--kpi-open)/0.5)]',
+        progress: 'text-kpi-progress drop-shadow-[0_0_8px_hsl(var(--kpi-progress)/0.5)]',
+        resolved: 'text-kpi-resolved drop-shadow-[0_0_8px_hsl(var(--kpi-resolved)/0.5)]',
+        overdue: 'text-kpi-overdue drop-shadow-[0_0_8px_hsl(var(--kpi-overdue)/0.5)]',
+        critical: 'text-kpi-critical drop-shadow-[0_0_8px_hsl(var(--kpi-critical)/0.5)]'
       };
-      return glowMap[color] || glowMap.blue;
+      return glowMap[color] || glowMap.total;
     };
 
     const getIconGlowClasses = (color: string) => {
       const iconGlowMap = {
-        blue: 'text-blue-500 drop-shadow-[0_0_6px_rgba(59,130,246,0.4)]',
-        red: 'text-red-500 drop-shadow-[0_0_6px_rgba(239,68,68,0.4)]',
-        green: 'text-green-500 drop-shadow-[0_0_6px_rgba(34,197,94,0.4)]',
-        yellow: 'text-yellow-500 drop-shadow-[0_0_6px_rgba(234,179,8,0.4)]',
-        orange: 'text-orange-500 drop-shadow-[0_0_6px_rgba(251,146,60,0.4)]',
-        purple: 'text-purple-500 drop-shadow-[0_0_6px_rgba(147,51,234,0.4)]'
+        total: 'text-kpi-total drop-shadow-[0_0_6px_hsl(var(--kpi-total)/0.4)]',
+        open: 'text-kpi-open drop-shadow-[0_0_6px_hsl(var(--kpi-open)/0.4)]',
+        progress: 'text-kpi-progress drop-shadow-[0_0_6px_hsl(var(--kpi-progress)/0.4)]',
+        resolved: 'text-kpi-resolved drop-shadow-[0_0_6px_hsl(var(--kpi-resolved)/0.4)]',
+        overdue: 'text-kpi-overdue drop-shadow-[0_0_6px_hsl(var(--kpi-overdue)/0.4)]',
+        critical: 'text-kpi-critical drop-shadow-[0_0_6px_hsl(var(--kpi-critical)/0.4)]'
       };
-      return iconGlowMap[color] || iconGlowMap.blue;
+      return iconGlowMap[color] || iconGlowMap.total;
     };
 
     trend = (
       <div className="flex items-center gap-1 text-sm font-medium text-foreground">
-        {isPositive ? (
-          <TrendingUp className="w-4 h-4 text-green-500 drop-shadow-[0_0_4px_rgba(34,197,94,0.3)]" />
+        {trendValue === 0 ? (
+          <Minus className="w-4 h-4 text-dashboard-muted" />
+        ) : isPositive ? (
+          <TrendingUp className="w-4 h-4 text-kpi-resolved drop-shadow-[0_0_4px_hsl(var(--kpi-resolved)/0.3)]" />
         ) : (
-          <TrendingUp className="w-4 h-4 rotate-180 text-red-500 drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
+          <TrendingDown className="w-4 h-4 text-kpi-overdue drop-shadow-[0_0_4px_hsl(var(--kpi-overdue)/0.3)]" />
         )}
-        <span className={isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-          {Math.abs(trendValue)}%
+        <span className={trendValue === 0 ? 'text-dashboard-muted' : isPositive ? 'text-kpi-resolved' : 'text-kpi-overdue'}>
+          {trendValue === 0 ? '0%' : `${Math.abs(trendValue)}%`}
         </span>
       </div>
     );
@@ -446,9 +461,10 @@ export default function DynamicDashboard() {
                        nameKey="name"
                        cx="50%"
                        cy="50%"
-                       outerRadius={isMobile ? 80 : 120}
-                       innerRadius={isMobile ? 45 : 65}
-                       paddingAngle={6}
+                       outerRadius={isMobile ? 75 : 105}
+                       innerRadius={isMobile ? 40 : 55}
+                       paddingAngle={3}
+                       strokeWidth={1}
                        label={isMobile ? false : ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
                        labelLine={false}
                        animationBegin={0}
@@ -624,14 +640,21 @@ export default function DynamicDashboard() {
                      }}
                      animationDuration={200}
                    />
-                   <Bar 
-                     dataKey="tickets" 
-                     fill="#3b82f6"
-                     radius={[8, 8, 0, 0]}
-                     animationBegin={0}
-                     animationDuration={1200}
-                     className="transition-all duration-300 ease-out hover:brightness-110 cursor-pointer drop-shadow-sm"
-                   />
+                     <Bar 
+                       dataKey="tickets" 
+                       radius={[6, 6, 0, 0]}
+                       animationBegin={0}
+                       animationDuration={1200}
+                       className="transition-all duration-300 ease-out hover:brightness-110 cursor-pointer drop-shadow-sm"
+                     >
+                       {dashboardData.teamData.map((entry, index) => (
+                         <Cell 
+                           key={`cell-${index}`} 
+                           fill={entry.color}
+                           className="transition-all duration-300 ease-out hover:brightness-125"
+                         />
+                       ))}
+                     </Bar>
                  </BarChart>
                </ResponsiveContainer>
             </div>
@@ -665,14 +688,25 @@ export default function DynamicDashboard() {
           </Select>
           
           {isSuperAdmin && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowSettings(!showSettings)}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Configurar
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCustomizer(true)}
+                className="gap-2"
+              >
+                <Palette className="w-4 h-4" />
+                Editar Dashboard
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSettings(!showSettings)}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Configurar
+              </Button>
+            </>
           )}
           
           <Button onClick={loadDashboardData} variant="outline" size="sm" disabled={loading}>
@@ -762,6 +796,12 @@ export default function DynamicDashboard() {
           })}
         </div>
       )}
+
+      {/* Dashboard Customizer */}
+      <DashboardCustomizer 
+        isOpen={showCustomizer} 
+        onOpenChange={setShowCustomizer} 
+      />
     </div>
   );
 }

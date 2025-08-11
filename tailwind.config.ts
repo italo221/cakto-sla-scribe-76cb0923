@@ -91,6 +91,30 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				dashboard: {
+					primary: 'hsl(var(--dashboard-primary))',
+					'primary-light': 'hsl(var(--dashboard-primary-light))',
+					secondary: 'hsl(var(--dashboard-secondary))',
+					accent: 'hsl(var(--dashboard-accent))',
+					muted: 'hsl(var(--dashboard-muted))',
+					neutral: 'hsl(var(--dashboard-neutral))'
+				},
+				kpi: {
+					total: 'hsl(var(--kpi-total))',
+					open: 'hsl(var(--kpi-open))',
+					progress: 'hsl(var(--kpi-progress))',
+					resolved: 'hsl(var(--kpi-resolved))',
+					overdue: 'hsl(var(--kpi-overdue))',
+					critical: 'hsl(var(--kpi-critical))'
+				},
+				chart: {
+					1: 'hsl(var(--chart-color-1))',
+					2: 'hsl(var(--chart-color-2))',
+					3: 'hsl(var(--chart-color-3))',
+					4: 'hsl(var(--chart-color-4))',
+					5: 'hsl(var(--chart-color-5))',
+					6: 'hsl(var(--chart-color-6))'
 				}
 			},
 			boxShadow: {
