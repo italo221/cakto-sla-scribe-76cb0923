@@ -297,7 +297,8 @@ export default function Inbox() {
             return ticket.nivel_criticidade === 'P0' && 
                    ['aberto', 'em_andamento'].includes(ticketStatus);
           default:
-            return ticketStatus === activeFilter && !ticket.isExpired;
+            // Remover a exclusão de tickets atrasados - eles devem aparecer na sua aba base
+            return ticketStatus === activeFilter;
         }
       });
     }
