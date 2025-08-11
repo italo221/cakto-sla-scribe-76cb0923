@@ -153,71 +153,97 @@ export default function TagTrendChart() {
         return;
       }
 
-      // Create time buckets
+      // Create time buckets with proper date normalization
       const buckets: Record<string, Record<string, number>> = {};
-      const points = newAggregation === 'day' ? days : 
-                     newAggregation === 'week' ? Math.ceil(days / 7) : 
-                     Math.ceil(days / 30);
-
-      // Initialize buckets
-      for (let i = 0; i < points; i++) {
-        const date = new Date(startDate);
+      
+      // Generate all time periods in the range
+      const current = new Date(startDate);
+      const end = new Date(endDate);
+      
+      while (current <= end) {
+        let bucketKey: string;
+        
         if (newAggregation === 'day') {
-          date.setDate(startDate.getDate() + i);
+          bucketKey = current.toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit'
+          });
+          current.setDate(current.getDate() + 1);
         } else if (newAggregation === 'week') {
-          date.setDate(startDate.getDate() + (i * 7));
+          // Start of week (Sunday)
+          const weekStart = new Date(current);
+          weekStart.setDate(current.getDate() - current.getDay());
+          bucketKey = weekStart.toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: 'short'
+          });
+          current.setDate(current.getDate() + 7);
         } else {
-          date.setMonth(startDate.getMonth() + i);
+          bucketKey = current.toLocaleDateString('pt-BR', {
+            month: 'short',
+            year: 'numeric'
+          });
+          current.setMonth(current.getMonth() + 1);
         }
 
-        const bucketKey = date.toLocaleDateString('pt-BR', {
-          day: '2-digit',
-          month: newAggregation === 'day' ? '2-digit' : 'short',
-          year: newAggregation === 'month' ? 'numeric' : undefined
-        });
-
-        buckets[bucketKey] = {};
-        tagsToQuery.forEach(tag => {
-          buckets[bucketKey][tag] = 0;
-        });
+        if (!buckets[bucketKey]) {
+          buckets[bucketKey] = {};
+          tagsToQuery.forEach(tag => {
+            buckets[bucketKey][tag] = 0;
+          });
+        }
       }
 
       // Count tickets in each bucket
       tickets?.forEach(ticket => {
         if (ticket.tags && Array.isArray(ticket.tags)) {
           const ticketDate = new Date(ticket.data_criacao);
+          let bucketKey: string;
           
-          // Find the appropriate bucket
-          let bucketDate = new Date(ticketDate);
-          if (newAggregation === 'week') {
-            // Round to start of week
-            bucketDate.setDate(ticketDate.getDate() - ticketDate.getDay());
-          } else if (newAggregation === 'month') {
-            // Round to start of month
-            bucketDate.setDate(1);
-          }
-
-          const bucketKey = bucketDate.toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: newAggregation === 'day' ? '2-digit' : 'short',
-            year: newAggregation === 'month' ? 'numeric' : undefined
-          });
-
-          if (buckets[bucketKey]) {
-            ticket.tags.forEach(tag => {
-              if (tag && typeof tag === 'string' && tagsToQuery.includes(tag.trim())) {
-                buckets[bucketKey][tag.trim()] = (buckets[bucketKey][tag.trim()] || 0) + 1;
-              }
+          if (newAggregation === 'day') {
+            bucketKey = ticketDate.toLocaleDateString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit'
+            });
+          } else if (newAggregation === 'week') {
+            // Start of week (Sunday)
+            const weekStart = new Date(ticketDate);
+            weekStart.setDate(ticketDate.getDate() - ticketDate.getDay());
+            bucketKey = weekStart.toLocaleDateString('pt-BR', {
+              day: '2-digit',
+              month: 'short'
+            });
+          } else {
+            bucketKey = ticketDate.toLocaleDateString('pt-BR', {
+              month: 'short',
+              year: 'numeric'
             });
           }
+
+          // Count each tag in the ticket
+          ticket.tags.forEach(tag => {
+            if (tag && typeof tag === 'string') {
+              const cleanTag = tag.trim();
+              if (tagsToQuery.includes(cleanTag) && buckets[bucketKey]) {
+                buckets[bucketKey][cleanTag] = (buckets[bucketKey][cleanTag] || 0) + 1;
+              }
+            }
+          });
         }
       });
 
-      // Convert to chart data format
-      const chartData = Object.entries(buckets).map(([date, tagCounts]) => ({
-        date,
-        ...tagCounts
-      }));
+      // Convert to chart data format, sorted by date
+      const chartData = Object.entries(buckets)
+        .map(([date, tagCounts]) => ({
+          date,
+          ...tagCounts
+        }))
+        .sort((a, b) => {
+          // Simple date comparison for PT-BR format
+          const [dayA, monthA] = a.date.split('/').map(Number);
+          const [dayB, monthB] = b.date.split('/').map(Number);
+          return monthA - monthB || dayA - dayB;
+        });
 
       setTrendData(chartData);
 
