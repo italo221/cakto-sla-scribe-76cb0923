@@ -419,119 +419,166 @@ export default function DynamicDashboard() {
     switch (widget.id) {
       case 'status-chart':
         return (
-          <div key={widget.id} className="col-span-full md:col-span-2 bg-gradient-to-br from-card to-card/50 rounded-2xl p-6 shadow-lg border border-border/50 backdrop-blur-sm">
-            <div className="mb-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-xl bg-primary/10">
-                  <PieChart className="w-6 h-6 text-primary" />
+          <div key={widget.id} className="col-span-full md:col-span-2 relative overflow-hidden rounded-2xl backdrop-blur-md bg-background/60 border border-white/20 dark:border-white/10 shadow-2xl hover:shadow-primary/20 transition-all duration-500">
+            {/* Glassmorphism gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10 pointer-events-none" />
+            
+            <div className="relative p-6">
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-3 rounded-xl bg-primary/20 backdrop-blur-sm border border-primary/30">
+                    <PieChart className="w-6 h-6 text-primary drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground">Distribuição por Status</h3>
                 </div>
-                <h3 className="text-xl font-bold text-foreground">Distribuição por Status</h3>
+                <p className="text-sm text-muted-foreground">
+                  Visualização completa dos tickets por status
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Visualização completa dos tickets por status
-              </p>
-            </div>
-            <div className="bg-background/30 rounded-xl p-4 backdrop-blur-sm">
-              <ResponsiveContainer width="100%" height={isMobile ? 250 : 350}>
-                <RechartsPieChart>
-                   <Pie
-                     data={dashboardData.statusData}
-                     dataKey="value"
-                     nameKey="name"
-                     cx="50%"
-                     cy="50%"
-                     outerRadius={isMobile ? 80 : 120}
-                     innerRadius={isMobile ? 40 : 60}
-                     paddingAngle={5}
-                     label={isMobile ? false : ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
-                     labelLine={false}
-                     animationBegin={0}
-                     animationDuration={1200}
-                   >
-                     {dashboardData.statusData.map((entry, index) => (
-                       <Cell 
-                         key={`cell-${index}`} 
-                         fill={entry.color}
-                         className="transition-all duration-300 ease-out hover:brightness-110 hover:scale-105 cursor-pointer drop-shadow-sm"
-                         style={{ transformOrigin: "center" }}
-                       />
-                     ))}
-                   </Pie>
-                  <Tooltip 
-                    content={<GlassTooltip />}
-                    animationDuration={200}
-                  />
-                  <Legend 
-                    verticalAlign="bottom" 
-                    height={36}
-                    formatter={(value) => <span className="text-sm font-medium text-foreground">{value}</span>}
-                  />
-                </RechartsPieChart>
-              </ResponsiveContainer>
+              
+              <div className="bg-background/40 rounded-xl p-4 backdrop-blur-sm border border-white/10">
+                <ResponsiveContainer width="100%" height={isMobile ? 250 : 350}>
+                  <RechartsPieChart>
+                     <Pie
+                       data={dashboardData.statusData}
+                       dataKey="value"
+                       nameKey="name"
+                       cx="50%"
+                       cy="50%"
+                       outerRadius={isMobile ? 80 : 120}
+                       innerRadius={isMobile ? 45 : 65}
+                       paddingAngle={6}
+                       label={isMobile ? false : ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
+                       labelLine={false}
+                       animationBegin={0}
+                       animationDuration={1500}
+                       animationEasing="ease-out"
+                     >
+                       {dashboardData.statusData.map((entry, index) => (
+                         <Cell 
+                           key={`cell-${index}`} 
+                           fill={entry.color}
+                           className="transition-all duration-300 ease-out hover:brightness-125 hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] cursor-pointer"
+                           style={{ 
+                             transformOrigin: "center",
+                             filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.1))"
+                           }}
+                         />
+                       ))}
+                     </Pie>
+                    <Tooltip 
+                      content={<GlassTooltip />}
+                      animationDuration={200}
+                    />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={40}
+                      formatter={(value) => <span className="text-sm font-medium text-foreground drop-shadow-sm">{value}</span>}
+                      wrapperStyle={{
+                        paddingTop: '20px',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </RechartsPieChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
         );
 
       case 'priority-chart':
         return (
-          <div key={widget.id} className="col-span-full md:col-span-2 bg-gradient-to-br from-card to-card/50 rounded-2xl p-6 shadow-lg border border-border/50 backdrop-blur-sm">
-            <div className="mb-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-xl bg-primary/10">
-                  <BarChart3 className="w-6 h-6 text-primary" />
+          <div key={widget.id} className="col-span-full md:col-span-2 relative overflow-hidden rounded-2xl backdrop-blur-md bg-background/60 border border-white/20 dark:border-white/10 shadow-2xl hover:shadow-primary/20 transition-all duration-500">
+            {/* Glassmorphism gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-secondary/5 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10 pointer-events-none" />
+            
+            <div className="relative p-6">
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-3 rounded-xl bg-secondary/20 backdrop-blur-sm border border-secondary/30">
+                    <BarChart3 className="w-6 h-6 text-secondary drop-shadow-[0_0_8px_rgba(var(--secondary-rgb),0.5)]" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground">Tickets por Prioridade</h3>
                 </div>
-                <h3 className="text-xl font-bold text-foreground">Tickets por Prioridade</h3>
+                <p className="text-sm text-muted-foreground">
+                  Distribuição de tickets por nível de criticidade
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Distribuição de tickets por nível de criticidade
-              </p>
-            </div>
-            <div className="bg-background/30 rounded-xl p-4 backdrop-blur-sm">
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={dashboardData.priorityData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="hsl(var(--foreground))"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis 
-                    stroke="hsl(var(--foreground))"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                   <Tooltip 
-                     content={<GlassTooltip />}
-                     cursor={{
-                       fill: 'hsl(var(--primary))',
-                       fillOpacity: 0.1,
-                       strokeWidth: 2,
-                       stroke: 'hsl(var(--primary))'
-                     }}
-                     animationDuration={200}
-                   />
-                  <Legend 
-                    formatter={(value) => <span className="text-sm font-medium text-foreground">Quantidade de Tickets</span>}
-                  />
-                   <Bar 
-                     dataKey="value" 
-                     radius={[8, 8, 0, 0]}
-                     animationBegin={0}
-                     animationDuration={1200}
-                   >
-                     {dashboardData.priorityData.map((entry, index) => (
-                       <Cell 
-                         key={`cell-${index}`} 
-                         fill={entry.color}
-                         className="transition-all duration-300 ease-out hover:brightness-110 cursor-pointer drop-shadow-sm"
-                       />
-                     ))}
-                   </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              
+              <div className="bg-background/40 rounded-xl p-4 backdrop-blur-sm border border-white/10">
+                <ResponsiveContainer width="100%" height={350}>
+                  <BarChart data={dashboardData.priorityData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
+                    <XAxis 
+                      dataKey="name" 
+                      stroke="hsl(var(--foreground))"
+                      fontSize={13}
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontWeight: 500 }}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--foreground))"
+                      fontSize={13}
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontWeight: 500 }}
+                    />
+                     <Tooltip 
+                       content={<GlassTooltip />}
+                       cursor={{
+                         fill: 'hsl(var(--primary))',
+                         fillOpacity: 0.08,
+                         strokeWidth: 2,
+                         stroke: 'hsl(var(--primary))',
+                         radius: 8
+                       }}
+                       animationDuration={200}
+                     />
+                    <Legend 
+                      formatter={(value) => <span className="text-sm font-medium text-foreground drop-shadow-sm">Quantidade de Tickets</span>}
+                      wrapperStyle={{
+                        paddingTop: '15px',
+                        fontSize: '14px'
+                      }}
+                    />
+                     <Bar 
+                       dataKey="value" 
+                       radius={[10, 10, 0, 0]}
+                       animationBegin={200}
+                       animationDuration={1800}
+                       animationEasing="ease-out"
+                     >
+                       {dashboardData.priorityData.map((entry, index) => {
+                         // Create gradient definition for each bar
+                         const gradientId = `gradient-${entry.name.replace(/\s+/g, '-')}`;
+                         return (
+                           <Cell 
+                             key={`cell-${index}`} 
+                             fill={`url(#${gradientId})`}
+                             className="transition-all duration-300 ease-out hover:brightness-125 hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] cursor-pointer"
+                           />
+                         );
+                       })}
+                     </Bar>
+                     
+                     {/* Define gradients for each bar */}
+                     <defs>
+                       {dashboardData.priorityData.map((entry, index) => {
+                         const gradientId = `gradient-${entry.name.replace(/\s+/g, '-')}`;
+                         return (
+                           <linearGradient key={gradientId} id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                             <stop offset="0%" stopColor={entry.color} stopOpacity={0.9} />
+                             <stop offset="100%" stopColor={entry.color} stopOpacity={0.6} />
+                           </linearGradient>
+                         );
+                       })}
+                     </defs>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
         );
