@@ -76,7 +76,7 @@ const LandingPage = () => {
             <div className="mx-auto max-w-5xl text-center space-y-8">
               <div className="space-y-4">
                 <h1 className="text-5xl md:text-7xl font-serif font-medium tracking-tight text-foreground">
-                  <span className="block font-semibold">Sistema Inteligente</span>
+                  <span className="block font-inter font-semibold">Sistema Inteligente</span>
                   <span className="block italic text-foreground/90">de Tickets</span>
                 </h1>
                 <p className="text-lg md:text-xl text-foreground/70 max-w-3xl mx-auto leading-relaxed">
