@@ -21,7 +21,6 @@ import {
 } from "recharts";
 import { GlassTooltip } from "@/components/ui/glass-tooltip";
 import { supabase } from "@/integrations/supabase/client";
-import { useTags } from "@/hooks/useTags";
 
 interface TagTrendData {
   date: string;
