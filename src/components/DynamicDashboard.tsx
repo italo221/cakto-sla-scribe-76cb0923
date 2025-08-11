@@ -292,17 +292,28 @@ export default function DynamicDashboard() {
     let value = 0;
     let subtitle = '';
     let trend = null;
-    let color = 'text-primary';
+    let gradient = '';
+    let iconColor = '';
+    let textColor = '';
+    
+    // Generate mock trend data (replace with real data when available)
+    const trendValue = Math.random() > 0.5 ? Math.floor(Math.random() * 15) + 1 : -(Math.floor(Math.random() * 15) + 1);
+    const isPositive = trendValue > 0;
 
     switch (widget.id) {
       case 'total-tickets':
         value = dashboardData.totalTickets;
         subtitle = 'Total de tickets no período';
+        gradient = 'bg-gradient-to-br from-blue-500 to-blue-600';
+        iconColor = 'text-blue-100';
+        textColor = 'text-white';
         break;
       case 'open-tickets':
         value = dashboardData.openTickets;
         subtitle = 'Tickets em aberto';
-        color = 'text-red-600 dark:text-red-400';
+        gradient = 'bg-gradient-to-br from-red-500 to-red-600';
+        iconColor = 'text-red-100';
+        textColor = 'text-white';
         break;
       case 'sla-compliance':
         value = Math.round(dashboardData.slaCompliance);
@@ -310,39 +321,54 @@ export default function DynamicDashboard() {
         subtitle = totalResolvedForSubtitle === 0 
           ? 'Nenhum ticket resolvido ainda' 
           : `${value}% de cumprimento do SLA`;
-        color = totalResolvedForSubtitle === 0 
-          ? 'text-muted-foreground'
-          : value >= 95 ? 'text-green-600 dark:text-green-400' : 
-            value >= 80 ? 'text-yellow-600 dark:text-yellow-400' : 
-            'text-red-600 dark:text-red-400';
+        gradient = value >= 95 
+          ? 'bg-gradient-to-br from-green-500 to-green-600'
+          : value >= 80 
+          ? 'bg-gradient-to-br from-yellow-500 to-yellow-600'
+          : 'bg-gradient-to-br from-orange-500 to-orange-600';
+        iconColor = value >= 80 ? 'text-green-100' : 'text-orange-100';
+        textColor = 'text-white';
         break;
       case 'overdue-tickets':
         value = dashboardData.overdueTickets;
         subtitle = 'Tickets em atraso';
-        color = 'text-red-600 dark:text-red-400';
+        gradient = 'bg-gradient-to-br from-purple-500 to-purple-600';
+        iconColor = 'text-purple-100';
+        textColor = 'text-white';
         break;
     }
 
+    trend = (
+      <div className={`flex items-center gap-1 text-sm font-medium ${textColor}`}>
+        {isPositive ? (
+          <TrendingUp className="w-4 h-4 text-green-300" />
+        ) : (
+          <TrendingUp className="w-4 h-4 rotate-180 text-red-300" />
+        )}
+        <span className={isPositive ? 'text-green-300' : 'text-red-300'}>
+          {Math.abs(trendValue)}%
+        </span>
+      </div>
+    );
+
     return (
-      <Card key={widget.id} className="bg-card hover:bg-muted/10 transition-colors">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between">
+      <div key={widget.id} className={`${gradient} rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/10`}>
+        <div className="flex items-start justify-between h-full">
+          <div className="space-y-3 flex-1">
+            <p className={`text-sm font-medium ${textColor} opacity-90`}>{widget.name}</p>
             <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">{widget.name}</p>
-              <div className="flex items-end gap-2">
-                <h3 className={`text-3xl font-bold tracking-tight ${color}`}>
-                  {widget.id === 'sla-compliance' ? `${value}%` : value}
-                </h3>
-                {trend}
-              </div>
-              <p className="text-xs text-muted-foreground">{subtitle}</p>
+              <h3 className={`text-4xl font-bold tracking-tight ${textColor}`}>
+                {widget.id === 'sla-compliance' ? `${value}%` : value.toLocaleString()}
+              </h3>
+              {trend}
             </div>
-            <div className="p-3 rounded-xl bg-primary/10">
-              <widget.icon className="w-6 h-6 text-primary" />
-            </div>
+            <p className={`text-xs ${textColor} opacity-75`}>{subtitle}</p>
           </div>
-        </CardContent>
-      </Card>
+          <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-sm">
+            <widget.icon className={`w-8 h-8 ${iconColor}`} />
+          </div>
+        </div>
+      </div>
     );
   };
 
@@ -350,17 +376,19 @@ export default function DynamicDashboard() {
     switch (widget.id) {
       case 'status-chart':
         return (
-          <Card key={widget.id} className="col-span-full md:col-span-2 bg-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-foreground">
-                <PieChart className="w-5 h-5" />
-                Distribuição por Status
-              </CardTitle>
+          <div key={widget.id} className="col-span-full md:col-span-2 bg-gradient-to-br from-card to-card/50 rounded-2xl p-6 shadow-lg border border-border/50 backdrop-blur-sm">
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <PieChart className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">Distribuição por Status</h3>
+              </div>
               <p className="text-sm text-muted-foreground">
                 Visualização completa dos tickets por status
               </p>
-            </CardHeader>
-            <CardContent>
+            </div>
+            <div className="bg-background/30 rounded-xl p-4 backdrop-blur-sm">
               <ResponsiveContainer width="100%" height={isMobile ? 250 : 350}>
                 <RechartsPieChart>
                    <Pie
@@ -375,13 +403,13 @@ export default function DynamicDashboard() {
                      label={isMobile ? false : ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
                      labelLine={false}
                      animationBegin={0}
-                     animationDuration={800}
+                     animationDuration={1200}
                    >
                      {dashboardData.statusData.map((entry, index) => (
                        <Cell 
                          key={`cell-${index}`} 
                          fill={entry.color}
-                         className="transition-all duration-300 ease-out hover:brightness-110 hover:scale-105 cursor-pointer"
+                         className="transition-all duration-300 ease-out hover:brightness-110 hover:scale-105 cursor-pointer drop-shadow-sm"
                          style={{ transformOrigin: "center" }}
                        />
                      ))}
@@ -397,26 +425,28 @@ export default function DynamicDashboard() {
                   />
                 </RechartsPieChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         );
 
       case 'priority-chart':
         return (
-          <Card key={widget.id} className="col-span-full md:col-span-2 bg-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-foreground">
-                <BarChart3 className="w-5 h-5" />
-                Tickets por Prioridade
-              </CardTitle>
+          <div key={widget.id} className="col-span-full md:col-span-2 bg-gradient-to-br from-card to-card/50 rounded-2xl p-6 shadow-lg border border-border/50 backdrop-blur-sm">
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <BarChart3 className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">Tickets por Prioridade</h3>
+              </div>
               <p className="text-sm text-muted-foreground">
                 Distribuição de tickets por nível de criticidade
               </p>
-            </CardHeader>
-            <CardContent>
+            </div>
+            <div className="bg-background/30 rounded-xl p-4 backdrop-blur-sm">
               <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={dashboardData.priorityData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                   <XAxis 
                     dataKey="name" 
                     stroke="hsl(var(--foreground))"
@@ -445,37 +475,42 @@ export default function DynamicDashboard() {
                   />
                    <Bar 
                      dataKey="value" 
-                     radius={[4, 4, 0, 0]}
+                     radius={[8, 8, 0, 0]}
                      animationBegin={0}
-                     animationDuration={800}
+                     animationDuration={1200}
                    >
                      {dashboardData.priorityData.map((entry, index) => (
                        <Cell 
                          key={`cell-${index}`} 
                          fill={entry.color}
-                         className="transition-all duration-300 ease-out hover:brightness-110 cursor-pointer"
+                         className="transition-all duration-300 ease-out hover:brightness-110 cursor-pointer drop-shadow-sm"
                        />
                      ))}
                    </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         );
 
       case 'team-chart':
         return (
-          <Card key={widget.id} className="col-span-full bg-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                {widget.name}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div key={widget.id} className="col-span-full bg-gradient-to-br from-card to-card/50 rounded-2xl p-6 shadow-lg border border-border/50 backdrop-blur-sm">
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <Users className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">{widget.name}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Distribuição de tickets por equipe responsável
+              </p>
+            </div>
+            <div className="bg-background/30 rounded-xl p-4 backdrop-blur-sm">
                <ResponsiveContainer width="100%" height={300}>
-                 <BarChart data={dashboardData.teamData}>
-                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                 <BarChart data={dashboardData.teamData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                    <XAxis 
                      dataKey="name" 
                      stroke="hsl(var(--foreground))"
@@ -493,22 +528,24 @@ export default function DynamicDashboard() {
                      content={<GlassTooltip />}
                      cursor={{
                        fill: 'hsl(var(--primary))',
-                       fillOpacity: 0.1
+                       fillOpacity: 0.1,
+                       strokeWidth: 2,
+                       stroke: 'hsl(var(--primary))'
                      }}
                      animationDuration={200}
                    />
                    <Bar 
                      dataKey="tickets" 
                      fill="#3b82f6"
-                     radius={[4, 4, 0, 0]}
+                     radius={[8, 8, 0, 0]}
                      animationBegin={0}
-                     animationDuration={800}
-                     className="transition-all duration-300 ease-out hover:brightness-110"
+                     animationDuration={1200}
+                     className="transition-all duration-300 ease-out hover:brightness-110 cursor-pointer drop-shadow-sm"
                    />
                  </BarChart>
                </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         );
 
       default:
@@ -557,43 +594,55 @@ export default function DynamicDashboard() {
 
       {/* Settings Panel */}
       {showSettings && (
-        <Card className="bg-card">
-          <CardHeader>
-            <CardTitle>Configurar Widgets</CardTitle>
+        <div className="bg-gradient-to-br from-card to-card/50 rounded-2xl p-6 shadow-lg border border-border/50 backdrop-blur-sm animate-fade-in">
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-xl bg-primary/10">
+                <Settings className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground">Configurar Widgets</h3>
+            </div>
             <p className="text-sm text-muted-foreground">
               Escolha quais widgets deseja exibir no seu dashboard
             </p>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="bg-background/30 rounded-xl p-4 backdrop-blur-sm space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {widgets.map((widget) => (
-                <div key={widget.id} className="flex items-center space-x-2">
+                <div key={widget.id} className="flex items-center space-x-3 p-3 rounded-xl bg-background/50 hover:bg-background/70 transition-all duration-200 border border-border/30">
                   <Checkbox
                     id={widget.id}
                     checked={widget.visible}
                     onCheckedChange={() => toggleWidget(widget.id)}
+                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   />
-                  <Label htmlFor={widget.id} className="flex items-center gap-2 cursor-pointer text-sm">
-                    <widget.icon className="w-4 h-4 shrink-0" />
-                    <span className="truncate">{widget.name}</span>
+                  <Label htmlFor={widget.id} className="flex items-center gap-2 cursor-pointer text-sm flex-1">
+                    <div className="p-1.5 rounded-lg bg-primary/10">
+                      <widget.icon className="w-4 h-4 text-primary shrink-0" />
+                    </div>
+                    <span className="truncate font-medium">{widget.name}</span>
                     {widget.visible ? (
-                      <Eye className="w-3 h-3 text-green-500 shrink-0" />
+                      <div className="p-1 rounded-full bg-green-100 dark:bg-green-900/30">
+                        <Eye className="w-3 h-3 text-green-600 dark:text-green-400 shrink-0" />
+                      </div>
                     ) : (
-                      <EyeOff className="w-3 h-3 text-gray-400 shrink-0" />
+                      <div className="p-1 rounded-full bg-gray-100 dark:bg-gray-800">
+                        <EyeOff className="w-3 h-3 text-gray-500 shrink-0" />
+                      </div>
                     )}
                   </Label>
                 </div>
               ))}
             </div>
-            <Separator className="my-4" />
+            <Separator className="my-4 bg-border/50" />
             <div className="flex justify-end">
-              <Button onClick={saveUserPreferences} size="sm">
+              <Button onClick={saveUserPreferences} size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200">
                 <Save className="w-4 h-4 mr-2" />
                 Salvar Preferências
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Dashboard Grid */}
