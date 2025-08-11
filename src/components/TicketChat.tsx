@@ -115,22 +115,19 @@ export default function TicketChat() {
   // Verificar permissões de criação
   const canCreateTickets = canEdit || isSuperAdmin;
   
-  // Ir direto para criação de ticket quando acessado via menu
+  // Ir direto para criação de ticket (eliminar tela de boas-vindas)
   useEffect(() => {
     const state = (window.history.state && window.history.state.usr) || {};
-    if (state.action === 'create-ticket') {
+    
+    // Se acessado via menu específico ou se tem permissão para criar
+    if (state.action === 'create-ticket' || (canCreateTickets && step === 'welcome')) {
       setStep('create-ticket');
       // Limpar o state para não interferir em futuras navegações
-      window.history.replaceState({}, '', window.location.pathname);
+      if (state.action === 'create-ticket') {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
     }
-  }, []);
-
-  // Ir direto para criação se usuário tem permissão (eliminar tela de boas-vindas)
-  useEffect(() => {
-    if (canCreateTickets && step === 'welcome') {
-      setStep('create-ticket');
-    }
-  }, [canCreateTickets, step]);
+  }, [canCreateTickets]); // Removido 'step' das dependências para evitar loop
   const [currentCriteria, setCurrentCriteria] = useState<string>('financeiro');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
