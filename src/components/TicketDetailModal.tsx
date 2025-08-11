@@ -1047,24 +1047,27 @@ export default function SLADetailModal({
                                       className="ml-1 text-muted-foreground/50 cursor-not-allowed"
                                       disabled
                                       title="Ver (pendente)"
+                                      aria-label="Ver (pendente)"
                                     >
-                                      👁 Ver
+                                      <Eye className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                       type="button"
                                       className="text-muted-foreground/50 cursor-not-allowed"
                                       disabled
                                       title="Baixar (pendente)"
+                                      aria-label="Baixar (pendente)"
                                     >
-                                      ⬇ Baixar
+                                      <Download className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                       type="button"
                                       className="text-destructive hover:text-destructive"
                                       onClick={() => removePendingAttachment(f.dbId, f.storagePath)}
                                       title="Remover"
+                                      aria-label="Remover"
                                     >
-                                      ✕
+                                      <X className="w-3.5 h-3.5" />
                                     </button>
                                   </div>
                                 );
@@ -1218,18 +1221,20 @@ export default function SLADetailModal({
                                              href={att.url}
                                              target="_blank"
                                              rel="noopener"
-                                             className="text-foreground/80 hover:underline"
+                                             className="text-foreground/80 hover:opacity-100 opacity-80"
                                              title="Ver"
+                                             aria-label="Ver"
                                            >
-                                             👁 Ver
+                                             <Eye className="w-3.5 h-3.5" />
                                            </a>
                                            <a
                                              href={att.url}
                                              download={att.file_name}
-                                             className="text-foreground/80 hover:underline"
+                                             className="text-foreground/80 hover:opacity-100 opacity-80"
                                              title="Baixar"
+                                             aria-label="Baixar"
                                            >
-                                             ⬇ Baixar
+                                             <Download className="w-3.5 h-3.5" />
                                            </a>
                                          </div>
                                        ))}
