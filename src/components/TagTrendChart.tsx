@@ -20,17 +20,13 @@ import {
   Legend 
 } from "recharts";
 import { GlassTooltip } from "@/components/ui/glass-tooltip";
+import { supabase } from "@/integrations/supabase/client";
+import { useTags } from "@/hooks/useTags";
 
 interface TagTrendData {
   date: string;
   [key: string]: string | number;
 }
-
-const AVAILABLE_TAGS = [
-  "Bug", "Feature", "Melhoria", "Suporte", "Documentação", 
-  "Performance", "Segurança", "UI/UX", "Integração", "Configuração",
-  "Banco de Dados", "API", "Mobile", "Web", "Backend"
-];
 
 const CHART_COLORS = [
   'hsl(var(--chart-color-1))',
@@ -50,60 +46,187 @@ export default function TagTrendChart() {
   const [hiddenTags, setHiddenTags] = useState<Set<string>>(new Set());
   const [trendData, setTrendData] = useState<TagTrendData[]>([]);
   const [aggregationLevel, setAggregationLevel] = useState<'day' | 'week' | 'month'>('day');
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Mock data generation - replace with actual data fetching
+  // Load available tags on mount
   useEffect(() => {
-    generateMockData();
-  }, [timeFilter, selectedTags]);
+    fetchAvailableTags();
+  }, [timeFilter]);
 
-  const generateMockData = () => {
+  // Update data when filters change
+  useEffect(() => {
+    if (availableTags.length > 0) {
+      fetchTagTrendData();
+    }
+  }, [timeFilter, selectedTags, availableTags]);
+
+  const getDateRange = () => {
     const days = timeFilter === '7days' ? 7 : 
                  timeFilter === '30days' ? 30 : 
                  timeFilter === '90days' ? 90 : 
                  timeFilter === '6months' ? 180 : 365;
     
-    // Auto-aggregation logic
-    const newAggregation = days <= 30 ? 'day' : days <= 180 ? 'week' : 'month';
-    setAggregationLevel(newAggregation);
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - days);
+    
+    return { startDate, endDate, days };
+  };
 
-    // If no tags selected, use top 5 by volume
-    const tagsToShow = selectedTags.length > 0 ? selectedTags : AVAILABLE_TAGS.slice(0, 5);
+  const fetchAvailableTags = async () => {
+    setLoading(true);
+    try {
+      const { startDate, endDate } = getDateRange();
+      
+      // Query tickets in the time range and extract unique tags
+      const { data: tickets, error } = await supabase
+        .from('sla_demandas')
+        .select('tags')
+        .gte('data_criacao', startDate.toISOString())
+        .lte('data_criacao', endDate.toISOString())
+        .not('tags', 'is', null);
 
-    const data: TagTrendData[] = [];
-    const points = newAggregation === 'day' ? days : 
-                   newAggregation === 'week' ? Math.ceil(days / 7) : 
-                   Math.ceil(days / 30);
-
-    for (let i = 0; i < points; i++) {
-      const date = new Date();
-      if (newAggregation === 'day') {
-        date.setDate(date.getDate() - (points - 1 - i));
-      } else if (newAggregation === 'week') {
-        date.setDate(date.getDate() - (points - 1 - i) * 7);
-      } else {
-        date.setMonth(date.getMonth() - (points - 1 - i));
+      if (error) {
+        console.error('Error fetching tags:', error);
+        return;
       }
 
-      const entry: TagTrendData = {
-        date: date.toLocaleDateString('pt-BR', {
+      // Extract and count unique tags
+      const tagCounts: Record<string, number> = {};
+      tickets?.forEach(ticket => {
+        if (ticket.tags && Array.isArray(ticket.tags)) {
+          ticket.tags.forEach(tag => {
+            if (tag && typeof tag === 'string') {
+              const cleanTag = tag.trim();
+              if (cleanTag) {
+                tagCounts[cleanTag] = (tagCounts[cleanTag] || 0) + 1;
+              }
+            }
+          });
+        }
+      });
+
+      // Sort tags by frequency and take top 20
+      const sortedTags = Object.entries(tagCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 20)
+        .map(([tag]) => tag);
+
+      setAvailableTags(sortedTags);
+
+      // Auto-select top 5 if no tags selected yet
+      if (selectedTags.length === 0 && sortedTags.length > 0) {
+        setSelectedTags(sortedTags.slice(0, Math.min(5, sortedTags.length)));
+      }
+
+    } catch (error) {
+      console.error('Error fetching available tags:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTagTrendData = async () => {
+    if (availableTags.length === 0) return;
+    
+    setLoading(true);
+    try {
+      const { startDate, endDate, days } = getDateRange();
+      
+      // Determine aggregation level
+      const newAggregation = days <= 30 ? 'day' : days <= 180 ? 'week' : 'month';
+      setAggregationLevel(newAggregation);
+
+      // Use selected tags or default to top 5
+      const tagsToQuery = selectedTags.length > 0 ? selectedTags : availableTags.slice(0, 5);
+
+      // Query tickets with the selected tags
+      const { data: tickets, error } = await supabase
+        .from('sla_demandas')
+        .select('data_criacao, tags')
+        .gte('data_criacao', startDate.toISOString())
+        .lte('data_criacao', endDate.toISOString())
+        .not('tags', 'is', null);
+
+      if (error) {
+        console.error('Error fetching trend data:', error);
+        return;
+      }
+
+      // Create time buckets
+      const buckets: Record<string, Record<string, number>> = {};
+      const points = newAggregation === 'day' ? days : 
+                     newAggregation === 'week' ? Math.ceil(days / 7) : 
+                     Math.ceil(days / 30);
+
+      // Initialize buckets
+      for (let i = 0; i < points; i++) {
+        const date = new Date(startDate);
+        if (newAggregation === 'day') {
+          date.setDate(startDate.getDate() + i);
+        } else if (newAggregation === 'week') {
+          date.setDate(startDate.getDate() + (i * 7));
+        } else {
+          date.setMonth(startDate.getMonth() + i);
+        }
+
+        const bucketKey = date.toLocaleDateString('pt-BR', {
           day: '2-digit',
           month: newAggregation === 'day' ? '2-digit' : 'short',
           year: newAggregation === 'month' ? 'numeric' : undefined
-        })
-      };
+        });
 
-      // Generate realistic trend data for each tag
-      tagsToShow.forEach(tag => {
-        const baseValue = Math.floor(Math.random() * 15) + 5;
-        const trend = Math.sin((i / points) * Math.PI * 2) * 3;
-        const noise = (Math.random() - 0.5) * 4;
-        entry[tag] = Math.max(0, Math.floor(baseValue + trend + noise));
+        buckets[bucketKey] = {};
+        tagsToQuery.forEach(tag => {
+          buckets[bucketKey][tag] = 0;
+        });
+      }
+
+      // Count tickets in each bucket
+      tickets?.forEach(ticket => {
+        if (ticket.tags && Array.isArray(ticket.tags)) {
+          const ticketDate = new Date(ticket.data_criacao);
+          
+          // Find the appropriate bucket
+          let bucketDate = new Date(ticketDate);
+          if (newAggregation === 'week') {
+            // Round to start of week
+            bucketDate.setDate(ticketDate.getDate() - ticketDate.getDay());
+          } else if (newAggregation === 'month') {
+            // Round to start of month
+            bucketDate.setDate(1);
+          }
+
+          const bucketKey = bucketDate.toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: newAggregation === 'day' ? '2-digit' : 'short',
+            year: newAggregation === 'month' ? 'numeric' : undefined
+          });
+
+          if (buckets[bucketKey]) {
+            ticket.tags.forEach(tag => {
+              if (tag && typeof tag === 'string' && tagsToQuery.includes(tag.trim())) {
+                buckets[bucketKey][tag.trim()] = (buckets[bucketKey][tag.trim()] || 0) + 1;
+              }
+            });
+          }
+        }
       });
 
-      data.push(entry);
-    }
+      // Convert to chart data format
+      const chartData = Object.entries(buckets).map(([date, tagCounts]) => ({
+        date,
+        ...tagCounts
+      }));
 
-    setTrendData(data);
+      setTrendData(chartData);
+
+    } catch (error) {
+      console.error('Error fetching trend data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getAggregationLabel = () => {
@@ -142,7 +265,7 @@ export default function TagTrendChart() {
   };
 
   const handleExportCSV = () => {
-    const activeTagsData = selectedTags.length > 0 ? selectedTags : AVAILABLE_TAGS.slice(0, 5);
+    const activeTagsData = selectedTags.length > 0 ? selectedTags : availableTags.slice(0, 5);
     const visibleTags = activeTagsData.filter(tag => !hiddenTags.has(tag));
     
     let csvContent = "Data," + visibleTags.join(",") + "\n";
@@ -160,11 +283,14 @@ export default function TagTrendChart() {
     window.URL.revokeObjectURL(url);
   };
 
-  const filteredTags = AVAILABLE_TAGS.filter(tag => 
-    tag.toLowerCase().includes(searchTag.toLowerCase())
-  );
+  // Filter tags based on search input with case-insensitive and accent-insensitive matching
+  const filteredTags = availableTags.filter(tag => {
+    const normalizedTag = tag.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const normalizedSearch = searchTag.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return normalizedTag.includes(normalizedSearch);
+  });
 
-  const activeTagsData = selectedTags.length > 0 ? selectedTags : AVAILABLE_TAGS.slice(0, 5);
+  const activeTagsData = selectedTags.length > 0 ? selectedTags : availableTags.slice(0, 5);
   const visibleTags = activeTagsData.filter(tag => !hiddenTags.has(tag));
 
   const customTooltip = ({ active, payload, label }: any) => {
