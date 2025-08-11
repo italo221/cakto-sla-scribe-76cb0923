@@ -292,9 +292,9 @@ export default function DynamicDashboard() {
     let value = 0;
     let subtitle = '';
     let trend = null;
-    let gradient = '';
-    let iconColor = '';
-    let textColor = '';
+    let glowColor = '';
+    let accentColor = '';
+    let shadowColor = '';
     
     // Generate mock trend data (replace with real data when available)
     const trendValue = Math.random() > 0.5 ? Math.floor(Math.random() * 15) + 1 : -(Math.floor(Math.random() * 15) + 1);
@@ -304,16 +304,16 @@ export default function DynamicDashboard() {
       case 'total-tickets':
         value = dashboardData.totalTickets;
         subtitle = 'Total de tickets no período';
-        gradient = 'bg-gradient-to-br from-blue-500 to-blue-600';
-        iconColor = 'text-blue-100';
-        textColor = 'text-white';
+        glowColor = 'blue';
+        accentColor = 'from-blue-500/20 via-blue-400/10 to-transparent';
+        shadowColor = 'shadow-blue-500/10';
         break;
       case 'open-tickets':
         value = dashboardData.openTickets;
         subtitle = 'Tickets em aberto';
-        gradient = 'bg-gradient-to-br from-red-500 to-red-600';
-        iconColor = 'text-red-100';
-        textColor = 'text-white';
+        glowColor = 'red';
+        accentColor = 'from-red-500/20 via-red-400/10 to-transparent';
+        shadowColor = 'shadow-red-500/10';
         break;
       case 'sla-compliance':
         value = Math.round(dashboardData.slaCompliance);
@@ -321,51 +321,94 @@ export default function DynamicDashboard() {
         subtitle = totalResolvedForSubtitle === 0 
           ? 'Nenhum ticket resolvido ainda' 
           : `${value}% de cumprimento do SLA`;
-        gradient = value >= 95 
-          ? 'bg-gradient-to-br from-green-500 to-green-600'
-          : value >= 80 
-          ? 'bg-gradient-to-br from-yellow-500 to-yellow-600'
-          : 'bg-gradient-to-br from-orange-500 to-orange-600';
-        iconColor = value >= 80 ? 'text-green-100' : 'text-orange-100';
-        textColor = 'text-white';
+        
+        if (value >= 95) {
+          glowColor = 'green';
+          accentColor = 'from-green-500/20 via-green-400/10 to-transparent';
+          shadowColor = 'shadow-green-500/10';
+        } else if (value >= 80) {
+          glowColor = 'yellow';
+          accentColor = 'from-yellow-500/20 via-yellow-400/10 to-transparent';
+          shadowColor = 'shadow-yellow-500/10';
+        } else {
+          glowColor = 'orange';
+          accentColor = 'from-orange-500/20 via-orange-400/10 to-transparent';
+          shadowColor = 'shadow-orange-500/10';
+        }
         break;
       case 'overdue-tickets':
         value = dashboardData.overdueTickets;
         subtitle = 'Tickets em atraso';
-        gradient = 'bg-gradient-to-br from-purple-500 to-purple-600';
-        iconColor = 'text-purple-100';
-        textColor = 'text-white';
+        glowColor = 'purple';
+        accentColor = 'from-purple-500/20 via-purple-400/10 to-transparent';
+        shadowColor = 'shadow-purple-500/10';
         break;
     }
 
+    const getGlowClasses = (color: string) => {
+      const glowMap = {
+        blue: 'text-blue-600 dark:text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]',
+        red: 'text-red-600 dark:text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]',
+        green: 'text-green-600 dark:text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]',
+        yellow: 'text-yellow-600 dark:text-yellow-400 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]',
+        orange: 'text-orange-600 dark:text-orange-400 drop-shadow-[0_0_8px_rgba(251,146,60,0.5)]',
+        purple: 'text-purple-600 dark:text-purple-400 drop-shadow-[0_0_8px_rgba(147,51,234,0.5)]'
+      };
+      return glowMap[color] || glowMap.blue;
+    };
+
+    const getIconGlowClasses = (color: string) => {
+      const iconGlowMap = {
+        blue: 'text-blue-500 drop-shadow-[0_0_6px_rgba(59,130,246,0.4)]',
+        red: 'text-red-500 drop-shadow-[0_0_6px_rgba(239,68,68,0.4)]',
+        green: 'text-green-500 drop-shadow-[0_0_6px_rgba(34,197,94,0.4)]',
+        yellow: 'text-yellow-500 drop-shadow-[0_0_6px_rgba(234,179,8,0.4)]',
+        orange: 'text-orange-500 drop-shadow-[0_0_6px_rgba(251,146,60,0.4)]',
+        purple: 'text-purple-500 drop-shadow-[0_0_6px_rgba(147,51,234,0.4)]'
+      };
+      return iconGlowMap[color] || iconGlowMap.blue;
+    };
+
     trend = (
-      <div className={`flex items-center gap-1 text-sm font-medium ${textColor}`}>
+      <div className="flex items-center gap-1 text-sm font-medium text-foreground">
         {isPositive ? (
-          <TrendingUp className="w-4 h-4 text-green-300" />
+          <TrendingUp className="w-4 h-4 text-green-500 drop-shadow-[0_0_4px_rgba(34,197,94,0.3)]" />
         ) : (
-          <TrendingUp className="w-4 h-4 rotate-180 text-red-300" />
+          <TrendingUp className="w-4 h-4 rotate-180 text-red-500 drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
         )}
-        <span className={isPositive ? 'text-green-300' : 'text-red-300'}>
+        <span className={isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
           {Math.abs(trendValue)}%
         </span>
       </div>
     );
 
     return (
-      <div key={widget.id} className={`${gradient} rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/10`}>
-        <div className="flex items-start justify-between h-full">
-          <div className="space-y-3 flex-1">
-            <p className={`text-sm font-medium ${textColor} opacity-90`}>{widget.name}</p>
-            <div className="space-y-2">
-              <h3 className={`text-4xl font-bold tracking-tight ${textColor}`}>
-                {widget.id === 'sla-compliance' ? `${value}%` : value.toLocaleString()}
-              </h3>
-              {trend}
+      <div 
+        key={widget.id} 
+        className={`relative overflow-hidden rounded-2xl backdrop-blur-md bg-background/60 border border-white/20 dark:border-white/10 hover:bg-background/70 transition-all duration-300 hover:scale-105 ${shadowColor} shadow-lg hover:shadow-xl`}
+      >
+        {/* Gradient accent overlay */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${accentColor} pointer-events-none`} />
+        
+        {/* Glass effect overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/5 pointer-events-none" />
+        
+        {/* Content */}
+        <div className="relative p-6 h-full">
+          <div className="flex items-start justify-between h-full">
+            <div className="space-y-3 flex-1">
+              <p className="text-sm font-medium text-foreground/80">{widget.name}</p>
+              <div className="space-y-2">
+                <h3 className={`text-4xl font-bold tracking-tight ${getGlowClasses(glowColor)}`}>
+                  {widget.id === 'sla-compliance' ? `${value}%` : value.toLocaleString()}
+                </h3>
+                {trend}
+              </div>
+              <p className="text-xs text-foreground/60">{subtitle}</p>
             </div>
-            <p className={`text-xs ${textColor} opacity-75`}>{subtitle}</p>
-          </div>
-          <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-sm">
-            <widget.icon className={`w-8 h-8 ${iconColor}`} />
+            <div className="p-3 rounded-2xl bg-white/10 dark:bg-white/5 backdrop-blur-sm border border-white/20 dark:border-white/10">
+              <widget.icon className={`w-8 h-8 ${getIconGlowClasses(glowColor)}`} />
+            </div>
           </div>
         </div>
       </div>
