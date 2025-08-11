@@ -422,10 +422,6 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
   return (
     <Card className="w-full max-w-2xl mx-auto bg-card dark:bg-card border border-border">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          Criar Ticket
-        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Alerta de validação de setor */}
