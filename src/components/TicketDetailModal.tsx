@@ -437,6 +437,23 @@ export default function SLADetailModal({
       }
 
       setDbAttachments(withUrls);
+
+      // Agrupar anexos por comentário para exibição como chips
+      const grouped: Record<string, Array<{ id: string; file_name: string; mime_type: string; size: number; storage_path: string; url: string }>> = {};
+      for (const att of withUrls as any[]) {
+        if (att.comment_id) {
+          if (!grouped[att.comment_id]) grouped[att.comment_id] = [];
+          grouped[att.comment_id].push({
+            id: att.id,
+            file_name: att.file_name,
+            mime_type: att.mime_type,
+            size: Number(att.size),
+            storage_path: att.storage_path,
+            url: att.url,
+          });
+        }
+      }
+      setAttachmentsByComment(grouped);
     } catch (e) {
       console.warn('Erro ao carregar anexos do ticket:', e);
       setDbAttachments([]);
@@ -1027,24 +1044,19 @@ export default function SLADetailModal({
                                     <span className="text-muted-foreground/80">• {formatFileSize(f.size)}</span>
                                     <button
                                       type="button"
-                                      className="ml-1 text-muted-foreground hover:text-foreground"
-                                      onClick={() => window.open(f.url, '_blank', 'noopener,noreferrer')}
-                                      title="Ver"
+                                      className="ml-1 text-muted-foreground/50 cursor-not-allowed"
+                                      disabled
+                                      title="Ver (pendente)"
                                     >
-                                      <Eye className="w-3.5 h-3.5" />
+                                      👁 Ver
                                     </button>
                                     <button
                                       type="button"
-                                      className="text-muted-foreground hover:text-foreground"
-                                      onClick={() => {
-                                        const a = document.createElement('a');
-                                        a.href = f.url;
-                                        a.download = f.name;
-                                        a.click();
-                                      }}
-                                      title="Baixar"
+                                      className="text-muted-foreground/50 cursor-not-allowed"
+                                      disabled
+                                      title="Baixar (pendente)"
                                     >
-                                      <Download className="w-3.5 h-3.5" />
+                                      ⬇ Baixar
                                     </button>
                                     <button
                                       type="button"
@@ -1052,7 +1064,7 @@ export default function SLADetailModal({
                                       onClick={() => removePendingAttachment(f.dbId, f.storagePath)}
                                       title="Remover"
                                     >
-                                      <X className="w-3.5 h-3.5" />
+                                      ✕
                                     </button>
                                   </div>
                                 );
@@ -1192,17 +1204,49 @@ export default function SLADetailModal({
                                    commentId={comment.id} 
                                    className="mt-2" 
                                  />
+
+                                 {/* Anexos do comentário - somente chips, sem preview inline */}
+                                 {attachmentsByComment[comment.id] && attachmentsByComment[comment.id].length > 0 && (
+                                   <div className="mt-2">
+                                     <h4 className="text-xs font-medium text-muted-foreground">Anexos ({attachmentsByComment[comment.id].length})</h4>
+                                     <div className="mt-1 flex flex-wrap gap-2">
+                                       {attachmentsByComment[comment.id].map(att => (
+                                         <div key={att.id} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs">
+                                           <span className="max-w-[220px] truncate font-medium">{att.file_name}</span>
+                                           <span className="text-muted-foreground/80">• {formatFileSize(att.size)}</span>
+                                           <a
+                                             href={att.url}
+                                             target="_blank"
+                                             rel="noopener"
+                                             className="text-foreground/80 hover:underline"
+                                             title="Ver"
+                                           >
+                                             👁 Ver
+                                           </a>
+                                           <a
+                                             href={att.url}
+                                             download={att.file_name}
+                                             className="text-foreground/80 hover:underline"
+                                             title="Baixar"
+                                           >
+                                             ⬇ Baixar
+                                           </a>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 )}
                                </div>
                              </div>
                            </div>
-                         ))
-                       ) : (
-                         <div className="text-center text-muted-foreground py-6 border-t border-border/30 mt-4">
-                           <MessageSquare className="h-6 w-6 mx-auto mb-2 opacity-30" />
-                           <p className="text-sm">Seja o primeiro a comentar neste SLA</p>
-                         </div>
-                       )}
-                     </div>
+                          ))
+                        ) : (
+                          <div className="text-center text-muted-foreground py-6 border-t border-border/30 mt-4">
+                            <MessageSquare className="h-6 w-6 mx-auto mb-2 opacity-30" />
+                            <p className="text-sm">Seja o primeiro a comentar neste SLA</p>
+                          </div>
+                        )}
+                      </div>
                   </ScrollArea>
                 </CardContent>
               </Card>
