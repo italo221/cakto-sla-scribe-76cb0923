@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { 
   MessageSquare, 
   Inbox, 
-  Home, 
+  Plus, 
   BarChart3, 
   Settings, 
   BookOpen, 
@@ -37,7 +37,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { path: "/", label: "Criar Ticket", icon: Home, requireCreatePermission: true },
+  { path: "/", label: "Criar Ticket", icon: Plus, requireCreatePermission: true },
   { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { path: "/inbox", label: "Caixa de Entrada", icon: Inbox, hideForViewer: true },
   { path: "/kanban", label: "Kanban", icon: Columns3, hideForViewer: true },
