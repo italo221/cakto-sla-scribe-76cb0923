@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -112,8 +112,11 @@ export default function TicketChat() {
   const { user, isAdmin, canEdit, isSuperAdmin } = useAuth();
   const [step, setStep] = useState<Step>('welcome');
   
-  // Verificar se deve ir direto para criação de ticket
-  React.useEffect(() => {
+  // Verificar permissões de criação
+  const canCreateTickets = canEdit || isSuperAdmin;
+  
+  // Ir direto para criação de ticket quando acessado via menu
+  useEffect(() => {
     const state = (window.history.state && window.history.state.usr) || {};
     if (state.action === 'create-ticket') {
       setStep('create-ticket');
@@ -121,6 +124,13 @@ export default function TicketChat() {
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
+
+  // Ir direto para criação se usuário tem permissão (eliminar tela de boas-vindas)
+  useEffect(() => {
+    if (canCreateTickets && step === 'welcome') {
+      setStep('create-ticket');
+    }
+  }, [canCreateTickets, step]);
   const [currentCriteria, setCurrentCriteria] = useState<string>('financeiro');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -141,9 +151,6 @@ export default function TicketChat() {
     arquivos: []
   });
   const { toast } = useToast();
-
-  // Verificar permissões de criação
-  const canCreateTickets = canEdit || isSuperAdmin;
 
   const addMessage = (type: 'assistant' | 'user', content: string) => {
     const newMessage: Message = {
@@ -1281,16 +1288,16 @@ export default function TicketChat() {
             </h1>
             <p className="text-muted-foreground mt-2">Preencha as informações para registrar sua demanda</p>
             <Button 
-              onClick={() => setStep('welcome')} 
+              onClick={() => window.history.back()} 
               variant="outline" 
               size="sm" 
               className="mt-2"
             >
-              Voltar ao menu
+              Voltar
             </Button>
           </div>
           <ManualTicketCreator onTicketCreated={() => {
-            setStep('welcome');
+            window.history.back();
             toast({
               title: "Sucesso!",
               description: "Ticket criado com sucesso.",
