@@ -6,7 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Calendar, Search, Download, RotateCcw, TrendingUp } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Calendar, Search, Download, RotateCcw, TrendingUp, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 import { 
   ResponsiveContainer, 
   LineChart, 
@@ -47,6 +50,8 @@ export default function TagTrendChart() {
   const [aggregationLevel, setAggregationLevel] = useState<'day' | 'week' | 'month'>('day');
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
 
   // Load available tags on mount
   useEffect(() => {
@@ -58,17 +63,45 @@ export default function TagTrendChart() {
     if (availableTags.length > 0) {
       fetchTagTrendData();
     }
-  }, [timeFilter, selectedTags, availableTags]);
+  }, [timeFilter, selectedTags, availableTags, customStartDate, customEndDate]);
 
   const getDateRange = () => {
-    const days = timeFilter === '7days' ? 7 : 
-                 timeFilter === '30days' ? 30 : 
-                 timeFilter === '90days' ? 90 : 
-                 timeFilter === '6months' ? 180 : 365;
-    
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(endDate.getDate() - days);
+    let startDate: Date;
+    let endDate: Date;
+    let days: number;
+
+    if (timeFilter === 'hoje') {
+      startDate = new Date();
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date();
+      endDate.setHours(23, 59, 59, 999);
+      days = 1;
+    } else if (timeFilter === 'mensal') {
+      const now = new Date();
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      endDate = new Date();
+      days = endDate.getDate();
+    } else if (timeFilter === 'periodo_personalizado') {
+      if (!customStartDate || !customEndDate) {
+        endDate = new Date();
+        startDate = new Date();
+        startDate.setDate(endDate.getDate() - 90);
+        days = 90;
+      } else {
+        startDate = new Date(customStartDate);
+        endDate = new Date(customEndDate);
+        days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      }
+    } else {
+      days = timeFilter === '7days' ? 7 : 
+            timeFilter === '30days' ? 30 : 
+            timeFilter === '90days' ? 90 : 
+            timeFilter === '6months' ? 180 : 365;
+      
+      endDate = new Date();
+      startDate = new Date();
+      startDate.setDate(endDate.getDate() - days);
+    }
     
     return { startDate, endDate, days };
   };
@@ -387,17 +420,67 @@ export default function TagTrendChart() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="hoje">Hoje</SelectItem>
                   <SelectItem value="7days">Últimos 7 dias</SelectItem>
                   <SelectItem value="30days">Últimos 30 dias</SelectItem>
+                  <SelectItem value="mensal">Mês atual</SelectItem>
                   <SelectItem value="90days">Últimos 90 dias</SelectItem>
                   <SelectItem value="6months">Últimos 6 meses</SelectItem>
                   <SelectItem value="12months">Últimos 12 meses</SelectItem>
+                  <SelectItem value="periodo_personalizado">Período personalizado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <Separator className="my-4" />
+
+          {/* Custom Date Range */}
+          {timeFilter === 'periodo_personalizado' && (
+            <div className="flex items-center gap-4 p-4 bg-background/40 rounded-lg border border-white/10">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium">De:</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-36 justify-start text-left font-normal">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {customStartDate ? format(customStartDate, "dd/MM/yyyy") : "Selecionar"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={customStartDate}
+                      onSelect={setCustomStartDate}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium">Até:</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-36 justify-start text-left font-normal">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {customEndDate ? format(customEndDate, "dd/MM/yyyy") : "Selecionar"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={customEndDate}
+                      onSelect={setCustomEndDate}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          )}
 
           {/* Tag Selection */}
           <div className="space-y-3">
