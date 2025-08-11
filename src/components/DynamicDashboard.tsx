@@ -455,33 +455,29 @@ export default function DynamicDashboard() {
               <div className="bg-background/40 rounded-xl p-4 backdrop-blur-sm border border-white/10">
                 <ResponsiveContainer width="100%" height={isMobile ? 250 : 350}>
                   <RechartsPieChart>
-                     <Pie
-                       data={dashboardData.statusData}
-                       dataKey="value"
-                       nameKey="name"
-                       cx="50%"
-                       cy="50%"
-                       outerRadius={isMobile ? 75 : 105}
-                       innerRadius={isMobile ? 40 : 55}
-                       paddingAngle={3}
-                       strokeWidth={1}
+                      <Pie
+                        data={dashboardData.statusData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={isMobile ? 70 : 95}
+                        innerRadius={isMobile ? 50 : 70}
+                        paddingAngle={2}
+                        strokeWidth={0}
                        label={isMobile ? false : ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
                        labelLine={false}
                        animationBegin={0}
                        animationDuration={1500}
                        animationEasing="ease-out"
                      >
-                       {dashboardData.statusData.map((entry, index) => (
-                         <Cell 
-                           key={`cell-${index}`} 
-                           fill={entry.color}
-                           className="transition-all duration-300 ease-out hover:brightness-125 hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] cursor-pointer"
-                           style={{ 
-                             transformOrigin: "center",
-                             filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.1))"
-                           }}
-                         />
-                       ))}
+                        {dashboardData.statusData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={entry.color}
+                            className="transition-all duration-300 ease-out hover:brightness-110 cursor-pointer"
+                          />
+                        ))}
                      </Pie>
                     <Tooltip 
                       content={<GlassTooltip />}
@@ -524,24 +520,24 @@ export default function DynamicDashboard() {
               </div>
               
               <div className="bg-background/40 rounded-xl p-4 backdrop-blur-sm border border-white/10">
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={dashboardData.priorityData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
-                    <XAxis 
-                      dataKey="name" 
-                      stroke="hsl(var(--foreground))"
-                      fontSize={13}
-                      tickLine={false}
-                      axisLine={false}
-                      tick={{ fontWeight: 500 }}
-                    />
-                    <YAxis 
-                      stroke="hsl(var(--foreground))"
-                      fontSize={13}
-                      tickLine={false}
-                      axisLine={false}
-                      tick={{ fontWeight: 500 }}
-                    />
+                 <ResponsiveContainer width="100%" height={350}>
+                   <BarChart data={dashboardData.priorityData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }} maxBarSize={40}>
+                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
+                     <XAxis 
+                       dataKey="name" 
+                       stroke="hsl(var(--foreground))"
+                       fontSize={13}
+                       tickLine={false}
+                       axisLine={false}
+                       tick={{ fontWeight: 500 }}
+                     />
+                     <YAxis 
+                       stroke="hsl(var(--foreground))"
+                       fontSize={13}
+                       tickLine={false}
+                       axisLine={false}
+                       tick={{ fontWeight: 500 }}
+                     />
                      <Tooltip 
                        content={<GlassTooltip />}
                        cursor={{
@@ -571,11 +567,11 @@ export default function DynamicDashboard() {
                          // Create gradient definition for each bar
                          const gradientId = `gradient-${entry.name.replace(/\s+/g, '-')}`;
                          return (
-                           <Cell 
-                             key={`cell-${index}`} 
-                             fill={`url(#${gradientId})`}
-                             className="transition-all duration-300 ease-out hover:brightness-125 hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] cursor-pointer"
-                           />
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={`url(#${gradientId})`}
+                              className="transition-all duration-300 ease-out hover:brightness-110 cursor-pointer"
+                            />
                          );
                        })}
                      </Bar>
