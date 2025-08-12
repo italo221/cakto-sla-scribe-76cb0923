@@ -601,15 +601,32 @@ export default function DynamicDashboard() {
         return (
           <div key={widget.id} className="col-span-full bg-gradient-to-br from-card to-card/50 rounded-2xl p-6 shadow-lg border border-border/50 backdrop-blur-sm">
             <div className="mb-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-xl bg-primary/10">
-                  <Users className="w-6 h-6 text-primary" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-primary/10">
+                    <Users className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground">{widget.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Distribuição de tickets por equipe responsável
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-foreground">{widget.name}</h3>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm text-muted-foreground">Período:</Label>
+                  <Select value={dateFilter} onValueChange={setDateFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7days">Últimos 7 dias</SelectItem>
+                      <SelectItem value="30days">Últimos 30 dias</SelectItem>
+                      <SelectItem value="90days">Últimos 90 dias</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Distribuição de tickets por equipe responsável
-              </p>
             </div>
             <div className="bg-background/30 rounded-xl p-4 backdrop-blur-sm">
                <ResponsiveContainer width="100%" height={300}>
