@@ -139,10 +139,12 @@ export default function NotificationCenter() {
         <PopoverContent 
           side="right" 
           align="start" 
-          className="p-0 z-[9999] bg-popover border border-border shadow-lg"
+          className="p-0 z-[9999] bg-popover border border-border shadow-lg w-96 max-w-96"
           sideOffset={12}
         >
-          {NotificationContent}
+          <div className="w-full max-w-full overflow-hidden">
+            {NotificationContent}
+          </div>
         </PopoverContent>
       </Popover>
     );
