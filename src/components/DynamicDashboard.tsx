@@ -467,27 +467,7 @@ export default function DynamicDashboard() {
                         innerRadius={isMobile ? 50 : 70}
                         paddingAngle={2}
                         strokeWidth={0}
-                       label={({ name, value, percent, index, cx, cy, midAngle }) => {
-                         const RADIAN = Math.PI / 180;
-                         const radius = (isMobile ? 70 : 95) * 0.8; // 80% do raio externo
-                         const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                         const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                         
-                         return (
-                           <text 
-                             x={x} 
-                             y={y} 
-                             fill="hsl(var(--foreground))" 
-                             textAnchor={x > cx ? 'start' : 'end'} 
-                             dominantBaseline="central"
-                             fontSize={isMobile ? 10 : 11}
-                             fontWeight="500"
-                             className="drop-shadow-sm"
-                           >
-                             {`${value}`}
-                           </text>
-                         );
-                       }}
+                       label={isMobile ? false : ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
                        labelLine={false}
                        animationBegin={0}
                        animationDuration={1500}
