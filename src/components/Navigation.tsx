@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { 
@@ -26,6 +26,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSystemConfig } from "@/contexts/SystemConfigContext";
 import UserProfileSettings from "@/components/UserProfileSettings";
 import NotificationCenter from "@/components/NotificationCenter";
+import NavbarCustomization from "@/components/NavbarCustomization";
 
 interface NavItem {
   path: string;
@@ -52,6 +53,7 @@ export default function Navigation() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
+  const [customizationOpen, setCustomizationOpen] = useState(false);
   const { user, profile, isSuperAdmin, canEdit, signOut } = useAuth();
   const { systemName, systemLogo, isInitialized } = useSystemConfig();
   
@@ -153,6 +155,10 @@ export default function Navigation() {
           <DropdownMenuItem onClick={() => setProfileSettingsOpen(true)}>
             <UserCog className="mr-2 h-4 w-4" />
             Configurações
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setCustomizationOpen(true)}>
+            <Palette className="mr-2 h-4 w-4" />
+            Customização
           </DropdownMenuItem>
           {isSuperAdmin && (
             <>
@@ -267,6 +273,18 @@ export default function Navigation() {
         open={profileSettingsOpen} 
         onOpenChange={setProfileSettingsOpen} 
       />
+
+      {/* Customization Sheet */}
+      <Sheet open={customizationOpen} onOpenChange={setCustomizationOpen}>
+        <SheetContent side="right" className="w-[400px] sm:w-[500px]">
+          <SheetHeader>
+            <SheetTitle>Customização</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6">
+            <NavbarCustomization />
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
