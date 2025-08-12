@@ -98,7 +98,6 @@ export default function DynamicDashboard() {
   const [dateFilter, setDateFilter] = useState('30days');
   const [teamDateFilter, setTeamDateFilter] = useState('30days');
   const [teamData, setTeamData] = useState<Array<{ name: string; tickets: number; color: string }>>([]);
-  const [showPieLabels, setShowPieLabels] = useState(true);
 
   const { user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
@@ -492,26 +491,11 @@ export default function DynamicDashboard() {
             
             <div className="relative p-6">
               <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-xl bg-primary/20 backdrop-blur-sm border border-primary/30">
-                      <PieChart className="w-6 h-6 text-primary drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />
-                    </div>
-                    <h3 className="text-xl font-bold text-foreground">Distribuição por Status</h3>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-3 rounded-xl bg-primary/20 backdrop-blur-sm border border-primary/30">
+                    <PieChart className="w-6 h-6 text-primary drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowPieLabels(!showPieLabels);
-                    }}
-                    className="gap-2"
-                  >
-                    {showPieLabels ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    {showPieLabels ? 'Ocultar Nomes' : 'Mostrar Nomes'}
-                  </Button>
+                  <h3 className="text-xl font-bold text-foreground">Distribuição por Status</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Visualização completa dos tickets por status
@@ -531,7 +515,7 @@ export default function DynamicDashboard() {
                         innerRadius={isMobile ? 50 : 70}
                         paddingAngle={2}
                         strokeWidth={0}
-                       label={showPieLabels && !isMobile ? ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)` : false}
+                       label={isMobile ? false : ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
                        labelLine={false}
                        animationBegin={0}
                        animationDuration={1500}
