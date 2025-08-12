@@ -467,7 +467,7 @@ export default function DynamicDashboard() {
                         innerRadius={isMobile ? 50 : 70}
                         paddingAngle={2}
                         strokeWidth={0}
-                       label={isMobile ? false : ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
+                       label={false}
                        labelLine={false}
                        animationBegin={0}
                        animationDuration={1500}
