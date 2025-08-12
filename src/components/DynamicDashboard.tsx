@@ -96,6 +96,8 @@ export default function DynamicDashboard() {
   const [showSettings, setShowSettings] = useState(false);
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [dateFilter, setDateFilter] = useState('30days');
+  const [teamDateFilter, setTeamDateFilter] = useState('30days');
+  const [teamData, setTeamData] = useState<Array<{ name: string; tickets: number; color: string }>>([]);
 
   const { user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
@@ -105,6 +107,10 @@ export default function DynamicDashboard() {
     loadDashboardData();
     loadUserPreferences();
   }, [dateFilter]);
+
+  useEffect(() => {
+    loadTeamData();
+  }, [teamDateFilter]);
 
   const loadDashboardData = async () => {
     try {
@@ -228,6 +234,48 @@ export default function DynamicDashboard() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTeamData = async () => {
+    try {
+      // Calculate date range for team chart
+      const now = new Date();
+      const daysAgo = teamDateFilter === '7days' ? 7 : teamDateFilter === '30days' ? 30 : 90;
+      const startDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+
+      const { data: tickets, error } = await supabase
+        .from('sla_demandas')
+        .select('time_responsavel')
+        .gte('data_criacao', startDate.toISOString());
+
+      if (error) throw error;
+
+      // Team data with semantic colors
+      const teamCounts = tickets?.reduce((acc, ticket) => {
+        const team = ticket.time_responsavel || 'Não Atribuído';
+        acc[team] = (acc[team] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>) || {};
+
+      const chartColors = [
+        'hsl(var(--chart-color-1))',
+        'hsl(var(--chart-color-2))',
+        'hsl(var(--chart-color-3))',
+        'hsl(var(--chart-color-4))',
+        'hsl(var(--chart-color-5))'
+      ];
+
+      const teamDataResult = Object.entries(teamCounts).map(([name, tickets], index) => ({
+        name,
+        tickets,
+        color: chartColors[index % chartColors.length]
+      }));
+
+      setTeamData(teamDataResult);
+
+    } catch (error) {
+      console.error('Erro ao carregar dados da equipe:', error);
     }
   };
 
@@ -615,7 +663,7 @@ export default function DynamicDashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-muted-foreground">Período:</Label>
-                  <Select value={dateFilter} onValueChange={setDateFilter}>
+                  <Select value={teamDateFilter} onValueChange={setTeamDateFilter}>
                     <SelectTrigger className="w-40">
                       <SelectValue />
                     </SelectTrigger>
@@ -630,7 +678,7 @@ export default function DynamicDashboard() {
             </div>
             <div className="bg-background/30 rounded-xl p-4 backdrop-blur-sm">
                <ResponsiveContainer width="100%" height={300}>
-                 <BarChart data={dashboardData.teamData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                 <BarChart data={teamData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                    <XAxis 
                      dataKey="name" 
@@ -662,13 +710,13 @@ export default function DynamicDashboard() {
                        animationDuration={1200}
                        className="transition-all duration-300 ease-out hover:brightness-110 cursor-pointer drop-shadow-sm"
                      >
-                       {dashboardData.teamData.map((entry, index) => (
-                         <Cell 
-                           key={`cell-${index}`} 
-                           fill={entry.color}
-                           className="transition-all duration-300 ease-out hover:brightness-125"
-                         />
-                       ))}
+                        {teamData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={entry.color}
+                            className="transition-all duration-300 ease-out hover:brightness-125"
+                          />
+                        ))}
                      </Bar>
                  </BarChart>
                </ResponsiveContainer>
