@@ -26,6 +26,8 @@ export default function NotificationCenter() {
   
   const { settings } = useNavbarSettings();
 
+  console.log('🔔 NotificationCenter - Configurações:', settings);
+
   const formatTimeAgo = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), {
       addSuffix: true,
@@ -37,10 +39,17 @@ export default function NotificationCenter() {
   const dropdownAlign = settings.navbar_position === 'left' ? 'start' : 'end';
   const dropdownSide = settings.navbar_position === 'left' ? 'right' : 'bottom';
 
+  console.log('🔔 NotificationCenter - Posicionamento:', { dropdownAlign, dropdownSide });
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="relative"
+          onClick={() => console.log('🔔 NotificationCenter - Botão clicado!')}
+        >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge 
@@ -57,9 +66,9 @@ export default function NotificationCenter() {
       <DropdownMenuContent 
         align={dropdownAlign as 'start' | 'center' | 'end'} 
         side={dropdownSide as 'top' | 'right' | 'bottom' | 'left'}
-        className="w-80 z-[100]"
-        sideOffset={settings.navbar_position === 'left' ? 12 : 8}
-        alignOffset={settings.navbar_position === 'left' ? -8 : 0}
+        className="w-80 z-[9999] bg-popover border border-border shadow-lg"
+        sideOffset={settings.navbar_position === 'left' ? 16 : 8}
+        alignOffset={settings.navbar_position === 'left' ? 0 : 0}
       >
         <div className="flex items-center justify-between px-3 py-2">
           <DropdownMenuLabel className="text-sm font-semibold">
