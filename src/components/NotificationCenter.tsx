@@ -78,9 +78,9 @@ export default function NotificationCenter() {
             size="sm"
             onClick={markAllAsRead}
             className="h-auto px-2 py-1 text-xs whitespace-nowrap"
+            title="Marcar todas como lidas"
           >
-            <CheckCheck className="h-3 w-3 mr-1" />
-            Marcar todas como lidas
+            <CheckCheck className="h-3 w-3" />
           </Button>
         )}
       </div>
