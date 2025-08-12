@@ -70,22 +70,20 @@ export default function NotificationCenter() {
 
   const NotificationContent = (
     <div className="w-80">
-      <div className="flex items-center justify-between px-3 py-2">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <h3 className="text-sm font-semibold">Notificações</h3>
         {unreadCount > 0 && (
           <Button
             variant="ghost"
             size="sm"
             onClick={markAllAsRead}
-            className="h-auto p-1 text-xs"
+            className="h-auto px-2 py-1 text-xs flex-shrink-0"
           >
-            <CheckCheck className="h-4 w-4 mr-1" />
-            Marcar todas como lidas
+            <CheckCheck className="h-3 w-3 mr-1" />
+            Marcar todas
           </Button>
         )}
       </div>
-      
-      <div className="border-t border-border" />
       
       {loading ? (
         <div className="p-4 text-center text-muted-foreground">
