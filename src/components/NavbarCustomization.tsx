@@ -29,6 +29,7 @@ export default function NavbarCustomization() {
   };
 
   const handleSave = () => {
+    console.log('🎯 NavbarCustomization - Tentando salvar:', previewSettings);
     updateSettings(previewSettings);
   };
 

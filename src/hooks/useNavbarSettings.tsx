@@ -21,6 +21,7 @@ export function useNavbarSettings() {
 
   // Load settings from database
   useEffect(() => {
+    console.log('🔍 useNavbarSettings - Profile completo:', profile);
     if (profile) {
       const loadedSettings = {
         navbar_position: ((profile as any).navbar_position as 'top' | 'left') || 'top',
@@ -33,7 +34,13 @@ export function useNavbarSettings() {
   }, [profile]);
 
   const updateSettings = async (newSettings: Partial<NavbarSettings>) => {
-    if (!user) return;
+    console.log('🚀 updateSettings chamado com:', newSettings);
+    console.log('🔑 User atual:', user?.id);
+    
+    if (!user) {
+      console.error('❌ Usuário não encontrado');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -41,6 +48,11 @@ export function useNavbarSettings() {
       
       const updatedSettings = { ...settings, ...newSettings };
       
+      console.log('📝 Dados que serão enviados para o Supabase:', {
+        navbar_position: updatedSettings.navbar_position,
+        navbar_glass: updatedSettings.navbar_glass,
+      });
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -48,6 +60,8 @@ export function useNavbarSettings() {
           navbar_glass: updatedSettings.navbar_glass,
         })
         .eq('user_id', user.id);
+
+      console.log('📊 Resultado do Supabase - Error:', error);
 
       if (error) throw error;
 
