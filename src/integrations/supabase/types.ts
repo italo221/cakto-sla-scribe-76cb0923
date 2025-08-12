@@ -570,8 +570,6 @@ export type Database = {
           created_at: string
           email: string
           id: string
-          navbar_glass: boolean | null
-          navbar_position: string | null
           nome_completo: string
           role: Database["public"]["Enums"]["user_role"]
           telefone: string | null
@@ -586,8 +584,6 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
-          navbar_glass?: boolean | null
-          navbar_position?: string | null
           nome_completo: string
           role?: Database["public"]["Enums"]["user_role"]
           telefone?: string | null
@@ -602,8 +598,6 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
-          navbar_glass?: boolean | null
-          navbar_position?: string | null
           nome_completo?: string
           role?: Database["public"]["Enums"]["user_role"]
           telefone?: string | null
