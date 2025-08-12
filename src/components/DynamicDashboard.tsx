@@ -467,7 +467,27 @@ export default function DynamicDashboard() {
                         innerRadius={isMobile ? 50 : 70}
                         paddingAngle={2}
                         strokeWidth={0}
-                       label={false}
+                       label={({ name, value, percent, index }) => {
+                         const RADIAN = Math.PI / 180;
+                         const radius = isMobile ? 85 : 110;
+                         const x = Math.cos(-percent * 100 * RADIAN) * radius;
+                         const y = Math.sin(-percent * 100 * RADIAN) * radius;
+                         
+                         return (
+                           <text 
+                             x={x} 
+                             y={y} 
+                             fill="hsl(var(--foreground))" 
+                             textAnchor={x > 0 ? 'start' : 'end'} 
+                             dominantBaseline="central"
+                             fontSize={isMobile ? 11 : 12}
+                             fontWeight="500"
+                             className="drop-shadow-sm"
+                           >
+                             {`${name}: ${value}`}
+                           </text>
+                         );
+                       }}
                        labelLine={false}
                        animationBegin={0}
                        animationDuration={1500}
