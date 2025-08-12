@@ -185,7 +185,7 @@ export default function DynamicDashboard() {
         { name: 'P3 - Baixo', value: tickets?.filter(t => t.nivel_criticidade === 'P3').length || 0, color: 'hsl(var(--kpi-resolved))' },
       ].filter(item => item.value > 0);
 
-      // Team data with semantic colors
+      // Team data with semantic colors and date filtering
       const teamCounts = tickets?.reduce((acc, ticket) => {
         const team = ticket.time_responsavel || 'Não Atribuído';
         acc[team] = (acc[team] || 0) + 1;
