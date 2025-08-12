@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -10,7 +10,15 @@ import { useNavbarSettings, NavbarSettings } from '@/hooks/useNavbarSettings';
 
 export default function NavbarCustomization() {
   const { settings, updateSettings, loading } = useNavbarSettings();
-  const [previewSettings, setPreviewSettings] = useState<NavbarSettings>(settings);
+  const [previewSettings, setPreviewSettings] = useState<NavbarSettings>({
+    navbar_position: 'top',
+    navbar_glass: false,
+  });
+
+  // Update preview settings when settings change
+  useEffect(() => {
+    setPreviewSettings(settings);
+  }, [settings]);
 
   const handlePositionChange = (position: 'top' | 'left') => {
     setPreviewSettings(prev => ({ ...prev, navbar_position: position }));
