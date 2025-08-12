@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ModernTicketDashboard from "@/components/ModernTicketDashboard";
 import DynamicDashboard from "@/components/DynamicDashboard";
-import Navigation from "@/components/Navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { BarChart3, TrendingUp, Settings, Activity } from "lucide-react";
 
@@ -11,8 +10,6 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Navigation />
-      
       <div className="container mx-auto p-6">
         <div className="space-y-6">
           <div className="space-y-2">

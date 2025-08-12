@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSystemConfig } from "@/contexts/SystemConfigContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import Navigation from "@/components/Navigation";
+
 
 interface ColorData {
   hsl: string;
@@ -419,7 +419,6 @@ export default function WhitelabelCustomization() {
   if (userRole !== 'super_admin') {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
         <div className="p-6">
           <div className="max-w-4xl mx-auto text-center mt-20">
             <AlertTriangle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
@@ -435,7 +434,6 @@ export default function WhitelabelCustomization() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
       <div className="p-6">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">

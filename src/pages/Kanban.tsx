@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useOptimizedTickets } from "@/hooks/useOptimizedTickets";
 import { useTicketStats } from "@/hooks/useTicketStats";
-import Navigation from "@/components/Navigation";
+
 import TicketKanban from "@/components/TicketKanban";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import TicketEditModal from "@/components/TicketEditModal";
@@ -169,8 +169,6 @@ export default function KanbanPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Navigation />
-      
       <div className="container mx-auto p-6 space-y-6">
         {/* Alerta de validação de setor */}
         <SetorValidationAlert />

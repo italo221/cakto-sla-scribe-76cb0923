@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import TicketChat from "@/components/TicketChat";
-import Navigation from "@/components/Navigation";
 import SupabaseStatus from "@/components/SupabaseStatus";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +21,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <Navigation />
       <div className="container-responsive py-8 space-y-8">
         {!isSupabaseConfigured && (
           <div className="animate-fade-in">

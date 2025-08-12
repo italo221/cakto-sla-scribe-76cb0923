@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search, Filter, Clock, AlertCircle, CheckCircle, X, Grid3X3, List, Star, User, MoreVertical, Play, Pause, CheckCircle2, XCircle, Eye, Columns3, AlertTriangle, Flag, Building, Target, Users, Activity, Inbox as InboxIcon, Circle, Info, Building2 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import Navigation from "@/components/Navigation";
+
 import TicketDetailModal from "@/components/TicketDetailModal";
 import TicketEditModal from "@/components/TicketEditModal";
 import TicketDeleteModal from "@/components/TicketDeleteModal";
@@ -514,15 +514,12 @@ export default function Inbox() {
   };
   if (!isSupabaseConfigured) {
     return <div className="min-h-screen bg-background dark:bg-background">
-        <Navigation />
         <div className="container mx-auto p-6">
           <SupabaseStatus />
         </div>
       </div>;
   }
   return <div className="min-h-screen bg-background dark:bg-background text-foreground dark:text-foreground">
-      <Navigation />
-      
       <div className="container mx-auto p-6 space-y-6">
         {/* Alerta de validação de setor */}
         <SetorValidationAlert />

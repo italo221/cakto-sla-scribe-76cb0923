@@ -18,7 +18,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import AdminUserEditor from "@/components/AdminUserEditor";
 import { useIsMobile } from "@/hooks/use-mobile";
-import Navigation from "@/components/Navigation";
 import SupabaseStatus from "@/components/SupabaseStatus";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 interface Profile {
@@ -577,7 +576,6 @@ const Admin = () => {
   };
   if (!isAdmin) {
     return <div className="min-h-screen bg-background">
-        <Navigation />
         <div className="container mx-auto py-8">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -590,15 +588,12 @@ const Admin = () => {
   }
   if (loading) {
     return <div className="min-h-screen bg-background">
-        <Navigation />
         <div className="container mx-auto py-8">
           <div className="text-center">Carregando...</div>
         </div>
       </div>;
   }
   return <div className="min-h-screen bg-background">
-      <Navigation />
-      
       <div className="container mx-auto py-4 sm:py-6 lg:py-8 px-2 sm:px-4 max-w-6xl">
         {!isSupabaseConfigured && <div className="mb-6">
             <SupabaseStatus />

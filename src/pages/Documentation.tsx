@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
-import Navigation from "@/components/Navigation";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -46,8 +46,6 @@ const Documentation = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <Navigation />
-      
       <div className="container-responsive py-8 space-y-8">
         {/* Header */}
         <div className="text-center space-y-6 animate-fade-in-up">
