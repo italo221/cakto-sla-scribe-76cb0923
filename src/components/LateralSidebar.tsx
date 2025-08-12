@@ -58,8 +58,12 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
   const [expanded, setExpanded] = useState(false);
   const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
   const [customizationOpen, setCustomizationOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { user, profile, isSuperAdmin, canEdit, signOut } = useAuth();
   const { systemName, systemLogo } = useSystemConfig();
+  
+  // Anti-jitter: prevent collapse when user menu is open
+  const shouldExpand = expanded || userMenuOpen;
   
   const isActive = (path: string) => location.pathname === path;
   
@@ -84,12 +88,12 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
         className={`
           w-full justify-start transition-all duration-200
           ${active ? 'shadow-sm' : 'hover:bg-accent'}
-          ${expanded ? 'px-3' : 'px-2 justify-center'}
+          ${shouldExpand ? 'px-3' : 'px-2 justify-center'}
         `}
       >
         <Link to={item.path} className="flex items-center gap-3">
           <item.icon className="h-4 w-4 flex-shrink-0" />
-          {expanded && <span className="truncate">{item.label}</span>}
+          {shouldExpand && <span className="truncate">{item.label}</span>}
         </Link>
       </Button>
     );
@@ -121,113 +125,125 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
     <>
       <div 
         className={`
-          fixed left-0 top-0 h-full z-40 transition-all duration-300 ease-in-out
-          ${expanded ? 'w-64' : 'w-16'}
+          fixed left-0 top-0 h-full z-40 transition-all duration-300 ease-in-out flex flex-col
+          ${shouldExpand ? 'w-64' : 'w-16'}
           ${glassEffect 
             ? 'bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 border-r border-border/40' 
             : 'bg-background border-r border-border'
           }
         `}
         onMouseEnter={() => setExpanded(true)}
-        onMouseLeave={() => setExpanded(false)}
+        onMouseLeave={() => !userMenuOpen && setExpanded(false)}
       >
-        {/* Header */}
+        {/* Header - Logo + Notificações */}
         <div className="p-4 border-b border-border/40">
-          <div className="flex items-center gap-3">
-            {systemLogo && (
-              <img 
-                src={systemLogo} 
-                alt="Logo" 
-                className="h-8 w-8 object-contain flex-shrink-0" 
-              />
-            )}
-            {expanded && (
-              <div className="truncate">
-                <h1 className="text-lg font-bold text-gradient truncate">
-                  {systemName}
-                </h1>
-                <p className="text-xs text-muted-foreground">
-                  Sistema Tickets
-                </p>
+          <div className="flex items-center justify-between">
+            {/* Logo e Nome */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              {systemLogo && (
+                <img 
+                  src={systemLogo} 
+                  alt="Logo" 
+                  className="h-8 w-8 object-contain flex-shrink-0" 
+                />
+              )}
+              {shouldExpand && (
+                <div className="truncate">
+                  <h1 className="text-lg font-bold text-gradient truncate">
+                    {systemName}
+                  </h1>
+                  <p className="text-xs text-muted-foreground">
+                    Sistema Tickets
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            {/* Notificações - Expandida: ao lado da logo, Colapsada: canto superior direito */}
+            {user && shouldExpand && (
+              <div className="ml-4 flex-shrink-0">
+                <NotificationCenter />
               </div>
             )}
           </div>
         </div>
 
-        {/* Navigation */}
-        <div className="flex-1 p-2 space-y-1">
+        {/* Notificações quando colapsada - ancorada no canto superior direito da sidebar */}
+        {user && !shouldExpand && (
+          <div className="absolute top-2 right-2 z-50">
+            <NotificationCenter />
+          </div>
+        )}
+
+        {/* Navigation - Flexível */}
+        <div className="flex-1 p-2 space-y-1 overflow-y-auto">
           {filteredNavItems.map((item) => (
             <NavLink key={item.path} item={item} />
           ))}
         </div>
 
-        {/* Footer */}
-        <div className="p-2 border-t border-border/40 space-y-2">
-          {/* Notifications */}
+        {/* Footer - Fixo no rodapé */}
+        <div className="mt-auto p-2 border-t border-border/40">
+          {/* User Card - Sempre no rodapé */}
           {user && (
-            <div className={`flex ${expanded ? 'justify-start' : 'justify-center'}`}>
-              <NotificationCenter />
+            <div className="mb-2">
+              <DropdownMenu open={userMenuOpen} onOpenChange={setUserMenuOpen}>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className={`w-full transition-all duration-200 ${
+                      shouldExpand ? 'justify-start' : 'justify-center px-2'
+                    }`}
+                  >
+                    <Avatar className="h-8 w-8 flex-shrink-0">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                    {shouldExpand && (
+                      <div className="ml-3 flex flex-col items-start truncate">
+                        <span className="text-sm font-medium truncate">
+                          {profile?.nome_completo || user.email}
+                        </span>
+                        <Badge variant={getRoleBadge().variant} className="text-xs">
+                          {getRoleBadge().label}
+                        </Badge>
+                      </div>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => setProfileSettingsOpen(true)}>
+                    <UserCog className="mr-2 h-4 w-4" />
+                    Configurações
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setCustomizationOpen(true)}>
+                    <Palette className="mr-2 h-4 w-4" />
+                    Customização
+                  </DropdownMenuItem>
+                  {isSuperAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate('/admin')}>
+                        <User className="mr-2 h-4 w-4" />
+                        Gerenciar Usuários
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
           
-          {/* Theme Toggle */}
-          <div className={`flex ${expanded ? 'justify-start' : 'justify-center'}`}>
+          {/* Theme Toggle - Abaixo do card do usuário */}
+          <div className={`flex ${shouldExpand ? 'justify-start' : 'justify-center'}`}>
             <ThemeToggle />
           </div>
-
-          {/* User Menu */}
-          {user && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className={`w-full transition-all duration-200 ${
-                    expanded ? 'justify-start' : 'justify-center px-2'
-                  }`}
-                >
-                  <Avatar className="h-8 w-8 flex-shrink-0">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      {getUserInitials()}
-                    </AvatarFallback>
-                  </Avatar>
-                  {expanded && (
-                    <div className="ml-3 flex flex-col items-start truncate">
-                      <span className="text-sm font-medium truncate">
-                        {profile?.nome_completo || user.email}
-                      </span>
-                      <Badge variant={getRoleBadge().variant} className="text-xs">
-                        {getRoleBadge().label}
-                      </Badge>
-                    </div>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={() => setProfileSettingsOpen(true)}>
-                  <UserCog className="mr-2 h-4 w-4" />
-                  Configurações
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setCustomizationOpen(true)}>
-                  <Palette className="mr-2 h-4 w-4" />
-                  Customização
-                </DropdownMenuItem>
-                {isSuperAdmin && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate('/admin')}>
-                      <User className="mr-2 h-4 w-4" />
-                      Gerenciar Usuários
-                    </DropdownMenuItem>
-                  </>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sair
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
         </div>
       </div>
 
