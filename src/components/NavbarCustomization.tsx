@@ -180,7 +180,10 @@ export default function NavbarCustomization() {
         {/* Save Button */}
         <div className="flex justify-end">
           <Button 
-            onClick={handleSave} 
+            onClick={(e) => {
+              console.log('🔘 Botão Salvar clicado!', e);
+              handleSave();
+            }} 
             disabled={!hasChanges || loading}
             className="min-w-[100px]"
           >
