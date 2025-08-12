@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useNavbarSettings } from '@/hooks/useNavbarSettings';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -22,6 +23,8 @@ export default function NotificationCenter() {
     markAllAsRead, 
     handleNotificationClick 
   } = useNotifications();
+  
+  const { settings } = useNavbarSettings();
 
   const formatTimeAgo = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), {
@@ -29,6 +32,10 @@ export default function NotificationCenter() {
       locale: ptBR
     });
   };
+
+  // Determinar alinhamento baseado na posição da navbar
+  const dropdownAlign = settings.navbar_position === 'left' ? 'start' : 'end';
+  const dropdownSide = settings.navbar_position === 'left' ? 'right' : 'bottom';
 
   return (
     <DropdownMenu>
@@ -47,7 +54,13 @@ export default function NotificationCenter() {
         </Button>
       </DropdownMenuTrigger>
       
-      <DropdownMenuContent align="end" className="w-80">
+      <DropdownMenuContent 
+        align={dropdownAlign as 'start' | 'center' | 'end'} 
+        side={dropdownSide as 'top' | 'right' | 'bottom' | 'left'}
+        className="w-80 z-[100]"
+        sideOffset={settings.navbar_position === 'left' ? 12 : 8}
+        alignOffset={settings.navbar_position === 'left' ? -8 : 0}
+      >
         <div className="flex items-center justify-between px-3 py-2">
           <DropdownMenuLabel className="text-sm font-semibold">
             Notificações
