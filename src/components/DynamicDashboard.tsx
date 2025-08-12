@@ -174,6 +174,7 @@ export default function DynamicDashboard() {
         { name: 'Em Andamento', value: inProgressTickets, color: 'hsl(var(--kpi-progress))' },
         { name: 'Resolvidos', value: resolvedTickets, color: 'hsl(var(--kpi-resolved))' },
         { name: 'Fechados', value: closedTickets, color: 'hsl(var(--dashboard-neutral))' },
+        { name: 'Atrasados', value: overdueTickets, color: 'hsl(var(--kpi-overdue))' },
       ].filter(item => item.value > 0);
 
       // Priority data with semantic colors
