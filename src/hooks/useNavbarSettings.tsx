@@ -16,7 +16,7 @@ const DEFAULT_SETTINGS: NavbarSettings = {
 export function useNavbarSettings() {
   const [settings, setSettings] = useState<NavbarSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { toast } = useToast();
 
   // Load settings from database
@@ -53,6 +53,9 @@ export function useNavbarSettings() {
 
       setSettings(updatedSettings);
       console.log('✅ Configurações de navbar salvas com sucesso:', updatedSettings);
+
+      // Recarregar perfil global para que o AppLayout reflita imediatamente
+      try { await refreshProfile?.(); } catch (e) { console.warn('refreshProfile falhou', e); }
       
       toast({
         title: "Configurações salvas",
