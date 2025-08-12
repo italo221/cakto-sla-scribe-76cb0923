@@ -21,6 +21,7 @@ export default function NavbarCustomization() {
   }, [settings]);
 
   const handlePositionChange = (position: 'top' | 'left') => {
+    console.log('📍 Mudando posição para:', position);
     setPreviewSettings(prev => ({ ...prev, navbar_position: position }));
   };
 
@@ -36,6 +37,13 @@ export default function NavbarCustomization() {
   const hasChanges = 
     previewSettings.navbar_position !== settings.navbar_position ||
     previewSettings.navbar_glass !== settings.navbar_glass;
+
+  console.log('🔄 NavbarCustomization - Estado atual:', {
+    settings,
+    previewSettings,
+    hasChanges,
+    loading
+  });
 
   return (
     <div className="space-y-6">
@@ -177,6 +185,7 @@ export default function NavbarCustomization() {
             className="min-w-[100px]"
           >
             {loading ? 'Salvando...' : 'Salvar'}
+            {!hasChanges && <span className="ml-2 text-xs">(Sem alterações)</span>}
           </Button>
         </div>
       </Card>
