@@ -502,7 +502,11 @@ export default function DynamicDashboard() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setShowPieLabels(!showPieLabels)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowPieLabels(!showPieLabels);
+                    }}
                     className="gap-2"
                   >
                     {showPieLabels ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
