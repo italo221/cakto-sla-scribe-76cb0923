@@ -1,4 +1,5 @@
 import { Bell, Check, CheckCheck } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -9,6 +10,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from '@/components/ui/dropdown-menu';
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
+} from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useNavbarSettings } from '@/hooks/useNavbarSettings';
@@ -16,6 +22,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function NotificationCenter() {
+  const [open, setOpen] = useState(false);
   const { 
     notifications, 
     unreadCount, 
@@ -35,40 +42,126 @@ export default function NotificationCenter() {
     });
   };
 
-  // Determinar alinhamento baseado na posição da navbar
-  const dropdownAlign = settings.navbar_position === 'left' ? 'start' : 'end';
-  const dropdownSide = settings.navbar_position === 'left' ? 'right' : 'bottom';
+  // Usar Popover para sidebar esquerda (mais confiável)
+  const usePopover = settings.navbar_position === 'left';
 
-  console.log('🔔 NotificationCenter - Posicionamento:', { dropdownAlign, dropdownSide });
+  const NotificationButton = (
+    <Button 
+      variant="ghost" 
+      size="sm" 
+      className="relative"
+      onClick={() => {
+        console.log('🔔 NotificationCenter - Botão clicado!');
+        if (usePopover) setOpen(!open);
+      }}
+    >
+      <Bell className="h-5 w-5" />
+      {unreadCount > 0 && (
+        <Badge 
+          variant="default" 
+          className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+        >
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </Badge>
+      )}
+      <span className="sr-only">Notificações</span>
+    </Button>
+  );
 
+  const NotificationContent = (
+    <div className="w-80">
+      <div className="flex items-center justify-between px-3 py-2">
+        <h3 className="text-sm font-semibold">Notificações</h3>
+        {unreadCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={markAllAsRead}
+            className="h-auto p-1 text-xs"
+          >
+            <CheckCheck className="h-4 w-4 mr-1" />
+            Marcar todas como lidas
+          </Button>
+        )}
+      </div>
+      
+      <div className="border-t border-border" />
+      
+      {loading ? (
+        <div className="p-4 text-center text-muted-foreground">
+          Carregando notificações...
+        </div>
+      ) : notifications.length === 0 ? (
+        <div className="p-4 text-center text-muted-foreground">
+          Nenhuma notificação
+        </div>
+      ) : (
+        <ScrollArea className="h-96">
+          {notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className="flex flex-col items-start p-3 cursor-pointer hover:bg-muted/50 border-b border-border/40 last:border-b-0"
+              onClick={() => {
+                handleNotificationClick(notification);
+                if (usePopover) setOpen(false);
+              }}
+            >
+              <div className="flex items-start justify-between w-full">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className={`text-sm font-medium ${!notification.is_read ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      {notification.title}
+                    </h4>
+                    {!notification.is_read && (
+                      <div className="h-2 w-2 bg-primary rounded-full flex-shrink-0" />
+                    )}
+                  </div>
+                  <p className={`text-xs mt-1 ${!notification.is_read ? 'text-muted-foreground' : 'text-muted-foreground/70'}`}>
+                    {notification.message}
+                  </p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">
+                    {formatTimeAgo(notification.created_at)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </ScrollArea>
+      )}
+    </div>
+  );
+
+  // Para navbar à esquerda, usar Popover
+  if (usePopover) {
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          {NotificationButton}
+        </PopoverTrigger>
+        <PopoverContent 
+          side="right" 
+          align="start" 
+          className="p-0 z-[9999] bg-popover border border-border shadow-lg"
+          sideOffset={12}
+        >
+          {NotificationContent}
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  // Para navbar no topo, usar DropdownMenu
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="relative"
-          onClick={() => console.log('🔔 NotificationCenter - Botão clicado!')}
-        >
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <Badge 
-              variant="default" 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-            >
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </Badge>
-          )}
-          <span className="sr-only">Notificações</span>
-        </Button>
+        {NotificationButton}
       </DropdownMenuTrigger>
       
       <DropdownMenuContent 
-        align={dropdownAlign as 'start' | 'center' | 'end'} 
-        side={dropdownSide as 'top' | 'right' | 'bottom' | 'left'}
+        align="end" 
+        side="bottom"
         className="w-80 z-[9999] bg-popover border border-border shadow-lg"
-        sideOffset={settings.navbar_position === 'left' ? 16 : 8}
-        alignOffset={settings.navbar_position === 'left' ? 0 : 0}
+        sideOffset={8}
       >
         <div className="flex items-center justify-between px-3 py-2">
           <DropdownMenuLabel className="text-sm font-semibold">
