@@ -4,12 +4,14 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Palette, Save, RotateCcw, Sparkles, AlertTriangle, Upload, Image, Type, Loader2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Palette, Save, RotateCcw, Sparkles, AlertTriangle, Upload, Image, Type, Loader2, Layout, Sidebar } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSystemConfig } from "@/contexts/SystemConfigContext";
+import { useNavbarSettings } from "@/hooks/useNavbarSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import Navigation from "@/components/Navigation";
 
 interface ColorData {
   hsl: string;
@@ -30,6 +32,7 @@ interface ColorCombination {
 export default function WhitelabelCustomization() {
   const { user, profile } = useAuth();
   const { systemName, systemLogo, updateSystemName, updateSystemLogo, updateColors, clearCache } = useSystemConfig();
+  const { settings: navbarSettings, updateSettings: updateNavbarSettings } = useNavbarSettings();
   const [currentColor, setCurrentColor] = useState<ColorData>({ hsl: '142 76% 36%', hex: '#16a34a', name: 'Verde Padrão' });
   const [currentSecondaryColor, setCurrentSecondaryColor] = useState<ColorData>({ hsl: '262 83% 58%', hex: '#8b5cf6', name: 'Roxo Padrão' });
   const [previewColor, setPreviewColor] = useState<ColorData>({ hsl: '', hex: '', name: '' });
@@ -45,6 +48,10 @@ export default function WhitelabelCustomization() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  
+  // Estados para navegação
+  const [previewNavbarPosition, setPreviewNavbarPosition] = useState<'top' | 'left'>('top');
+  const [previewGlassEffect, setPreviewGlassEffect] = useState(false);
 
   useEffect(() => {
     if (user && profile) {
@@ -60,6 +67,12 @@ export default function WhitelabelCustomization() {
     setNewSystemName(systemName);
     setLogoPreview(systemLogo);
   }, [systemName, systemLogo]);
+
+  // Sincronizar configurações da navbar
+  useEffect(() => {
+    setPreviewNavbarPosition(navbarSettings.position);
+    setPreviewGlassEffect(navbarSettings.glassEffect);
+  }, [navbarSettings]);
 
   const loadCurrentColors = async () => {
     try {
@@ -384,6 +397,8 @@ export default function WhitelabelCustomization() {
     setNewSystemName(systemName);
     setLogoPreview(systemLogo);
     setLogoFile(null);
+    setPreviewNavbarPosition(navbarSettings.position);
+    setPreviewGlassEffect(navbarSettings.glassEffect);
     applyPreviewColors(currentColor.hsl, currentSecondaryColor.hsl);
     setHasChanges(false);
   };
@@ -418,35 +433,30 @@ export default function WhitelabelCustomization() {
 
   if (userRole !== 'super_admin') {
     return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <div className="p-6">
-          <div className="max-w-4xl mx-auto text-center mt-20">
-            <AlertTriangle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-foreground mb-2">Acesso Negado</h1>
-            <p className="text-muted-foreground">
-              Apenas Super Administradores podem acessar as configurações de personalização.
-            </p>
-          </div>
+      <div className="p-6">
+        <div className="max-w-4xl mx-auto text-center mt-20">
+          <AlertTriangle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-foreground mb-2">Acesso Negado</h1>
+          <p className="text-muted-foreground">
+            Apenas Super Administradores podem acessar as configurações de personalização.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <div className="p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
-              <Palette className="h-8 w-8" />
-              Personalização do Sistema
-            </h1>
-            <p className="text-muted-foreground">
-              Customize o nome, logo e cores do seu sistema. As mudanças são aplicadas em tempo real.
-            </p>
-          </div>
+    <div className="p-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
+            <Palette className="h-8 w-8" />
+            Personalização do Sistema
+          </h1>
+          <p className="text-muted-foreground">
+            Customize o nome, logo, cores e navegação do seu sistema. As mudanças são aplicadas em tempo real.
+          </p>
+        </div>
 
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Painel de Configuração */}
@@ -580,6 +590,83 @@ export default function WhitelabelCustomization() {
                           HSL: {previewSecondaryColor.hsl}
                         </p>
                       </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Configurações de Navegação */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Layout className="h-5 w-5" />
+                    Configurações de Navegação
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Posição da Navbar */}
+                  <div className="space-y-3">
+                    <Label>Posição da Barra de Navegação</Label>
+                    <RadioGroup 
+                      value={previewNavbarPosition} 
+                      onValueChange={(value: 'top' | 'left') => {
+                        setPreviewNavbarPosition(value);
+                        setHasChanges(true);
+                      }}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="top" id="navbar-top" />
+                        <Label htmlFor="navbar-top" className="flex items-center gap-2 cursor-pointer">
+                          <Layout className="h-4 w-4" />
+                          Navegação Superior (Padrão)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="left" id="navbar-left" />
+                        <Label htmlFor="navbar-left" className="flex items-center gap-2 cursor-pointer">
+                          <Sidebar className="h-4 w-4" />
+                          Sidebar Lateral (Nova)
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                    <p className="text-xs text-muted-foreground">
+                      A sidebar lateral expande ao passar o mouse e oferece uma experiência mais moderna.
+                    </p>
+                  </div>
+
+                  {/* Efeito Glass */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="glass-effect">Efeito Glassmorphism</Label>
+                      <Switch
+                        id="glass-effect"
+                        checked={previewGlassEffect}
+                        onCheckedChange={(checked) => {
+                          setPreviewGlassEffect(checked);
+                          setHasChanges(true);
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Ativa um efeito de vidro translúcido com blur na navegação {previewNavbarPosition === 'left' ? 'lateral' : 'superior'}.
+                      {!CSS.supports('backdrop-filter', 'blur(10px)') && 
+                        " Seu navegador pode não suportar todos os efeitos visuais."
+                      }
+                    </p>
+                  </div>
+
+                  {/* Preview Visual */}
+                  <div className="p-4 border rounded-lg bg-muted/20">
+                    <div className="text-sm font-medium mb-2">Preview da Configuração:</div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>Posição:</span>
+                      <Badge variant="outline">
+                        {previewNavbarPosition === 'left' ? 'Sidebar Lateral' : 'Navegação Superior'}
+                      </Badge>
+                      <span>Glass:</span>
+                      <Badge variant={previewGlassEffect ? 'default' : 'secondary'}>
+                        {previewGlassEffect ? 'Ativo' : 'Inativo'}
+                      </Badge>
                     </div>
                   </div>
                 </CardContent>
@@ -771,6 +858,5 @@ export default function WhitelabelCustomization() {
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
 }
