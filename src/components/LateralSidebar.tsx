@@ -184,9 +184,14 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
 
         {/* Footer - Fixo no rodapé */}
         <div className="mt-auto p-2 border-t border-border/40">
+          {/* Theme Toggle - Acima do card do usuário */}
+          <div className={`flex mb-2 ${shouldExpand ? 'justify-start' : 'justify-center'}`}>
+            <ThemeToggle />
+          </div>
+          
           {/* User Card - Sempre no rodapé */}
           {user && (
-            <div className="mb-2">
+            <div>
               <DropdownMenu open={userMenuOpen} onOpenChange={setUserMenuOpen}>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -239,11 +244,6 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
               </DropdownMenu>
             </div>
           )}
-          
-          {/* Theme Toggle - Abaixo do card do usuário */}
-          <div className={`flex ${shouldExpand ? 'justify-start' : 'justify-center'}`}>
-            <ThemeToggle />
-          </div>
         </div>
       </div>
 
