@@ -276,11 +276,11 @@ export default function Navigation() {
 
       {/* Customization Sheet */}
       <Sheet open={customizationOpen} onOpenChange={setCustomizationOpen}>
-        <SheetContent side="right" className="w-[400px] sm:w-[500px]">
+        <SheetContent side="right" className="w-[400px] sm:w-[500px] overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Customização</SheetTitle>
           </SheetHeader>
-          <div className="mt-6">
+          <div className="mt-6 pb-6">
             <NavbarCustomization />
           </div>
         </SheetContent>

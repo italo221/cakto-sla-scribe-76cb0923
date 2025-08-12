@@ -46,7 +46,7 @@ export default function NavbarCustomization() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-h-[calc(100vh-120px)] overflow-y-auto">
       <div>
         <h3 className="text-lg font-semibold">Customização da Navbar</h3>
         <p className="text-sm text-muted-foreground">
@@ -177,19 +177,21 @@ export default function NavbarCustomization() {
 
         <Separator />
 
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <Button 
-            onClick={(e) => {
-              console.log('🔘 Botão Salvar clicado!', e);
-              handleSave();
-            }} 
-            disabled={!hasChanges || loading}
-            className="min-w-[100px]"
-          >
-            {loading ? 'Salvando...' : 'Salvar'}
-            {!hasChanges && <span className="ml-2 text-xs">(Sem alterações)</span>}
-          </Button>
+        {/* Save Button - FIXO no final */}
+        <div className="sticky bottom-0 bg-card pt-4 border-t border-border/40">
+          <div className="flex justify-end">
+            <Button 
+              onClick={(e) => {
+                console.log('🔘 Botão Salvar clicado!', e);
+                handleSave();
+              }} 
+              disabled={!hasChanges || loading}
+              className="min-w-[100px]"
+            >
+              {loading ? 'Salvando...' : 'Salvar'}
+              {!hasChanges && <span className="ml-2 text-xs">(Sem alterações)</span>}
+            </Button>
+          </div>
         </div>
       </Card>
     </div>
