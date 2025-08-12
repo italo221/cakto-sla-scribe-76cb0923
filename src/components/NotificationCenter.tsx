@@ -71,13 +71,13 @@ export default function NotificationCenter() {
   const NotificationContent = (
     <div className="w-96">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-        <h3 className="text-sm font-semibold">Notificações</h3>
+        <h3 className="text-sm font-semibold flex-1">Notificações</h3>
         {unreadCount > 0 && (
           <Button
             variant="ghost"
             size="sm"
             onClick={markAllAsRead}
-            className="h-auto px-2 py-1 text-xs whitespace-nowrap"
+            className="h-auto p-1 ml-2 flex-shrink-0"
             title="Marcar todas como lidas"
           >
             <CheckCheck className="h-3 w-3" />
