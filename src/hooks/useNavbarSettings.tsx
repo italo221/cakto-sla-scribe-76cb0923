@@ -22,10 +22,12 @@ export function useNavbarSettings() {
   // Load settings from database
   useEffect(() => {
     if (profile) {
-      setSettings({
+      const loadedSettings = {
         navbar_position: ((profile as any).navbar_position as 'top' | 'left') || 'top',
         navbar_glass: (profile as any).navbar_glass || false,
-      });
+      };
+      console.log('🔧 Carregando configurações de navbar:', loadedSettings);
+      setSettings(loadedSettings);
     }
     setLoading(false);
   }, [profile]);
@@ -35,6 +37,7 @@ export function useNavbarSettings() {
 
     try {
       setLoading(true);
+      console.log('💾 Salvando configurações de navbar:', newSettings);
       
       const updatedSettings = { ...settings, ...newSettings };
       
@@ -49,6 +52,7 @@ export function useNavbarSettings() {
       if (error) throw error;
 
       setSettings(updatedSettings);
+      console.log('✅ Configurações de navbar salvas com sucesso:', updatedSettings);
       
       toast({
         title: "Configurações salvas",

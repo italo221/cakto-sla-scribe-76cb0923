@@ -10,6 +10,8 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
   const { settings, loading } = useNavbarSettings();
 
+  console.log('🎨 AppLayout - Configurações atuais:', settings, 'Loading:', loading);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">

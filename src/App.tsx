@@ -41,11 +41,7 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/auth" element={<div className="animate-fade-in"><Auth /></div>} />
-              <Route path="/" element={
-                <AppLayout>
-                  <div className="animate-fade-in"><Index /></div>
-                </AppLayout>
-              } />
+              <Route path="/" element={<Index />} />
               <Route path="/dashboard" element={
                 <AppLayout>
                   <div className="animate-fade-in">
