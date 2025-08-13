@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from "@/integrations/supabase/client";
+import { AlertTriangle, Circle, Play, CheckCircle, XCircle } from 'lucide-react';
 
 interface Ticket {
   id: string;
@@ -232,7 +233,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}, fi
         
         if (isExpired) {
           return {
-            icon: require('lucide-react').AlertTriangle,
+            icon: AlertTriangle,
             bgColor: 'bg-red-50 dark:bg-red-900/20',
             textColor: 'text-red-800 dark:text-red-200',
             borderColor: 'border-red-200 dark:border-red-800',
@@ -244,7 +245,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}, fi
         switch (status) {
           case 'aberto':
             return {
-              icon: require('lucide-react').Circle,
+              icon: Circle,
               bgColor: 'bg-slate-50 dark:bg-slate-900/20',
               textColor: 'text-slate-800 dark:text-slate-200',
               borderColor: 'border-slate-200 dark:border-slate-800',
@@ -253,7 +254,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}, fi
             };
           case 'em_andamento':
             return {
-              icon: require('lucide-react').Play,
+              icon: Play,
               bgColor: 'bg-blue-50 dark:bg-blue-900/20',
               textColor: 'text-blue-800 dark:text-blue-200',
               borderColor: 'border-blue-200 dark:border-blue-800',
@@ -262,7 +263,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}, fi
             };
           case 'resolvido':
             return {
-              icon: require('lucide-react').CheckCircle,
+              icon: CheckCircle,
               bgColor: 'bg-green-50 dark:bg-green-900/20',
               textColor: 'text-green-800 dark:text-green-200',
               borderColor: 'border-green-200 dark:border-green-800',
@@ -271,7 +272,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}, fi
             };
           case 'fechado':
             return {
-              icon: require('lucide-react').XCircle,
+              icon: XCircle,
               bgColor: 'bg-gray-50 dark:bg-gray-900/20',
               textColor: 'text-gray-800 dark:text-gray-200',
               borderColor: 'border-gray-200 dark:border-gray-800',
@@ -280,7 +281,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}, fi
             };
           default:
             return {
-              icon: require('lucide-react').Circle,
+              icon: Circle,
               bgColor: 'bg-gray-50 dark:bg-gray-900/20',
               textColor: 'text-gray-800 dark:text-gray-200',
               borderColor: 'border-gray-200 dark:border-gray-800',
