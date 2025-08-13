@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, subDays, subMonths, parseISO } from "date-fns";
+import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, subDays, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar, CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
