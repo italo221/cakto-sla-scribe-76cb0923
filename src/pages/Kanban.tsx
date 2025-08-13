@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useTags } from "@/hooks/useTags";
 import { supabase } from "@/integrations/supabase/client";
 import { RefreshCw, Kanban as KanbanIcon, TrendingUp, Clock, AlertTriangle, Search, Filter, Building2 } from "lucide-react";
+import { DateFilter, DateFilterConfig } from "@/components/ui/date-filter";
+import { useDateFilter } from "@/hooks/useDateFilter";
 
 interface Ticket {
   id: string;
@@ -45,6 +47,9 @@ interface Setor {
 }
 
 export default function KanbanPage() {
+  // Hook de filtro de data
+  const { dateFilter, updateDateFilter, getFilterParams } = useDateFilter();
+
   // Usar hook otimizado para tickets
   const { 
     tickets, 
@@ -53,7 +58,7 @@ export default function KanbanPage() {
   } = useOptimizedTickets({
     enableRealtime: true,
     batchSize: 100
-  });
+  }, getFilterParams());
 
   // Usar hook centralizado para estatísticas sincronizadas
   const { stats } = useTicketStats();
@@ -202,7 +207,17 @@ export default function KanbanPage() {
                 <span className="text-sm font-medium text-muted-foreground">Filtros do Kanban</span>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                {/* Filtro de Data */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Período</label>
+                  <DateFilter
+                    value={dateFilter}
+                    onChange={updateDateFilter}
+                    className="w-full"
+                  />
+                </div>
+
                 {/* Busca */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Buscar</label>
