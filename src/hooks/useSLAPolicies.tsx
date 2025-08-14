@@ -58,12 +58,22 @@ export const useSLAPolicies = () => {
   const [policies, setPolicies] = useState<SLAPolicy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
   const { toast } = useToast();
 
   const fetchPolicies = async (retryCount = 0) => {
+    // Evitar múltiplas chamadas simultâneas
+    if (isRetrying && retryCount === 0) {
+      console.log('🔄 Fetch already in progress, skipping...');
+      return;
+    }
+
     try {
       setLoading(true);
-      setError(null);
+      if (retryCount === 0) {
+        setError(null);
+        setIsRetrying(true);
+      }
       
       console.log(`🔍 Fetching SLA policies... (attempt ${retryCount + 1})`);
       
@@ -78,6 +88,7 @@ export const useSLAPolicies = () => {
       
       setPolicies(data || []);
       setError(null);
+      setIsRetrying(false);
     } catch (err: any) {
       console.error('Error fetching SLA policies:', err);
       
@@ -99,12 +110,16 @@ export const useSLAPolicies = () => {
       
       const errorMessage = err.message || 'Erro desconhecido ao carregar políticas';
       setError(errorMessage);
+      setIsRetrying(false);
       
-      toast({
-        title: "Erro ao carregar políticas",
-        description: `${errorMessage}${retryCount > 0 ? ` (após ${retryCount + 1} tentativas)` : ''}`,
-        variant: "destructive",
-      });
+      // Só mostrar toast após esgotar todas as tentativas
+      if (retryCount >= 2) {
+        toast({
+          title: "Erro ao carregar políticas",
+          description: `${errorMessage} (após ${retryCount + 1} tentativas)`,
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -222,25 +237,19 @@ export const useSLAPolicies = () => {
   };
 
   useEffect(() => {
-    // Tentar carregar imediatamente
+    // Carregar políticas apenas uma vez na montagem do componente
     fetchPolicies();
-    
-    // Setup de um intervalo para recarregar periodicamente em caso de falha
-    const interval = setInterval(() => {
-      if (error && !loading) {
-        console.log('🔄 Auto-retrying failed SLA policies fetch...');
-        fetchPolicies();
-      }
-    }, 30000); // Retry a cada 30 segundos se houver erro
-    
-    return () => clearInterval(interval);
-  }, [error, loading]);
+  }, []);
 
   return {
     policies,
     loading,
     error,
-    fetchPolicies: () => fetchPolicies(0), // Reset retry count para chamadas manuais
+    fetchPolicies: () => {
+      if (!isRetrying) {
+        fetchPolicies(0);
+      }
+    },
     updatePolicy,
     createPolicy,
     getPolicyBySetor,
