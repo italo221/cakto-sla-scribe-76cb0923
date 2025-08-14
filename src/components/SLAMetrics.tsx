@@ -17,7 +17,7 @@ interface SLAMetricsProps {
 export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
   const { policies, getPolicyBySetor, calculateSLADeadline } = useSLAPolicies();
   const { ticketsWithStatus } = useOptimizedTickets({ enableRealtime: true });
-  const [selectedSetorId, setSelectedSetorId] = useState<string>('');
+  const [selectedSetorId, setSelectedSetorId] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('30');
 
   const filteredTickets = useMemo(() => {
@@ -27,7 +27,7 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
     return ticketsWithStatus.filter(ticket => {
       const ticketDate = new Date(ticket.data_criacao);
       const isInDateRange = ticketDate >= startDate && ticketDate <= endDate;
-      const isInSetor = selectedSetorId ? ticket.setor_id === selectedSetorId : true;
+      const isInSetor = selectedSetorId && selectedSetorId !== 'all' ? ticket.setor_id === selectedSetorId : true;
       
       return isInDateRange && isInSetor;
     });
@@ -114,7 +114,7 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
     };
   }, [filteredTickets, calculateSLADeadline]);
 
-  const selectedPolicy = selectedSetorId ? getPolicyBySetor(selectedSetorId) : null;
+  const selectedPolicy = selectedSetorId && selectedSetorId !== 'all' ? getPolicyBySetor(selectedSetorId) : null;
 
   const handleExportCSV = () => {
     const csvContent = [
@@ -163,7 +163,7 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
                   <SelectValue placeholder="Todos os setores" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os setores</SelectItem>
+                  <SelectItem value="all">Todos os setores</SelectItem>
                   {setores.map((setor) => (
                     <SelectItem key={setor.id} value={setor.id}>
                       {setor.nome}
@@ -195,7 +195,7 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
             </div>
           </div>
 
-          {selectedPolicy && (
+          {selectedPolicy && selectedSetorId !== 'all' && (
             <div className="p-4 bg-muted rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Target className="h-4 w-4" />
