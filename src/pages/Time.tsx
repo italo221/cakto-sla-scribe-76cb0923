@@ -249,7 +249,6 @@ function SortableTicketItem({ ticket, onTicketClick, onUnpinClick, isPinned }: {
               {/* Status and Time */}
               <div className="text-right">
                 <Badge className={cn("text-xs mb-1", getStatusBadgeColor(ticket.status))}>
-                  {isPinned && <span className="mr-1">📌</span>}
                   {getStatusLabel(ticket.status)}
                 </Badge>
                 <div className="text-xs text-muted-foreground">
@@ -1063,7 +1062,7 @@ export default function Time() {
                             <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
                             <p className="text-lg font-medium mb-2">Nenhum ticket fixado ainda</p>
                             <p className="text-sm">
-                              Clique no ícone 📌 em um ticket para destacar aqui.
+                              Clique no ícone de pin em um ticket para destacar aqui.
                             </p>
                           </div>
                         ) : (
