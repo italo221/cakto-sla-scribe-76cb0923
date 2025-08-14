@@ -542,18 +542,30 @@ export default function Time() {
   }, [selectedSetor]);
 
   const handlePinTicket = async (ticketId: string) => {
-    if (!selectedSetor) return;
+    if (!selectedSetor) {
+      console.error('handlePinTicket: selectedSetor is null');
+      return;
+    }
+    
+    console.log('handlePinTicket: Starting with', { ticketId, selectedSetor });
     
     setPinnedLoading(true);
     try {
+      console.log('handlePinTicket: Calling pin_ticket RPC function');
       const { data, error } = await supabase.rpc('pin_ticket', {
         p_team_id: selectedSetor,
         p_ticket_id: ticketId
       });
       
-      if (error) throw error;
+      console.log('handlePinTicket: RPC response', { data, error });
+      
+      if (error) {
+        console.error('handlePinTicket: Supabase RPC error', error);
+        throw error;
+      }
       
       if (data === false) {
+        console.log('handlePinTicket: Limit reached');
         toast({
           title: "Limite atingido",
           description: "Limite de 5 fixados por time. Desafixe um para adicionar outro.",
@@ -562,16 +574,17 @@ export default function Time() {
         return;
       }
       
+      console.log('handlePinTicket: Success, reloading pinned tickets');
       await loadPinnedTickets();
       toast({
         title: "Ticket fixado",
         description: "Ticket foi fixado no topo da lista."
       });
     } catch (error) {
-      console.error('Erro ao fixar ticket:', error);
+      console.error('handlePinTicket: Caught error', error);
       toast({
         title: "Erro",
-        description: "Erro ao fixar ticket",
+        description: `Erro ao fixar ticket: ${error.message || error}`,
         variant: "destructive"
       });
     } finally {
