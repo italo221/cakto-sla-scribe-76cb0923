@@ -66,7 +66,7 @@ export const useSLAPolicies = () => {
         .from('sla_policies')
         .select(`
           *,
-          setor:setores(id, nome, descricao)
+          setor:setores!setor_id(id, nome, descricao)
         `)
         .order('created_at', { ascending: false });
 
