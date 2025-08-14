@@ -17,7 +17,8 @@ import {
   Columns3,
   Menu,
   User,
-  Bell
+  Bell,
+  Users
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,6 +45,7 @@ interface LateralSidebarProps {
 const navItems: NavItem[] = [
   { path: "/", label: "Criar Ticket", icon: Plus, requireCreatePermission: true },
   { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
+  { path: "/time", label: "Time", icon: Users, hideForViewer: true },
   { path: "/inbox", label: "Caixa de Entrada", icon: Inbox, hideForViewer: true },
   { path: "/kanban", label: "Kanban", icon: Columns3, hideForViewer: true },
   { path: "/integrations", label: "Integrações", icon: Settings, adminOnly: true },
