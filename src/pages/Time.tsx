@@ -587,165 +587,182 @@ export default function Time() {
   );
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex-none border-b bg-background px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Time</h1>
-            <p className="text-sm text-muted-foreground">Operação e métricas do time</p>
-          </div>
-          {/* Mobile Filter Toggle */}
-          <div className="xl:hidden">
-            <Sheet open={isFilterSidebarOpen} onOpenChange={setIsFilterSidebarOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <SlidersHorizontal className="h-4 w-4 mr-2" />
-                  Filtros
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-80">
-                <SheetHeader>
-                  <SheetTitle>Filtros</SheetTitle>
-                  <SheetDescription>
-                    Configure os filtros para a lista de tickets
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="mt-6">
-                  <FilterSidebar isMobile />
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Ticket List - Left Column */}
-        <div className="flex-1 flex flex-col min-w-0" style={{ minWidth: '420px', maxWidth: '560px' }}>
-          {/* Search Bar */}
-          <div className="flex-none p-4 border-b">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por título, número ou solicitante..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-10"
-              />
-              {searchTerm && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-                  onClick={() => setSearchTerm('')}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
+    <div className="min-h-screen bg-background">
+      {/* Centralized Container */}
+      <div className="mx-auto px-6 py-6 pb-12" style={{ maxWidth: 'clamp(1120px, 90vw, 1320px)' }}>
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Time</h1>
+              <p className="text-sm text-muted-foreground">Operação e métricas do time</p>
+            </div>
+            {/* Mobile Filter Toggle */}
+            <div className="lg:hidden">
+              <Sheet open={isFilterSidebarOpen} onOpenChange={setIsFilterSidebarOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Filtros
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-80">
+                  <SheetHeader>
+                    <SheetTitle>Filtros</SheetTitle>
+                    <SheetDescription>
+                      Configure os filtros para a lista de tickets
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-6">
+                    <FilterSidebar isMobile />
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
+        </div>
 
-          {/* Ticket List */}
-          <ScrollArea className="flex-1">
-            <div className="space-y-1 p-2">
-              {loading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Carregando tickets...
-                </div>
-              ) : filteredAndSortedTickets.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Nenhum ticket encontrado
-                </div>
-              ) : (
-                filteredAndSortedTickets.map(ticket => (
-                  <div
-                    key={ticket.id}
-                    onClick={() => handleTicketClick(ticket)}
-                    className={cn(
-                      "p-3 rounded-lg border cursor-pointer transition-all duration-200",
-                      "hover:shadow-sm hover:bg-muted/50",
-                      "active:scale-[0.99]",
-                      selectedTicket?.id === ticket.id && "bg-muted border-primary"
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      {/* Priority Badge */}
-                      <Badge className={cn("shrink-0 text-xs", getPriorityBadgeColor(ticket.nivel_criticidade))}>
-                        {ticket.nivel_criticidade}
-                      </Badge>
-                      
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <h4 className="font-medium text-sm line-clamp-1 text-foreground">
-                            {ticket.titulo}
-                          </h4>
-                          <div className="text-right flex-shrink-0">
-                            <div className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(ticket.data_criacao), { 
-                                addSuffix: true, 
-                                locale: ptBR 
-                              })}
+        {/* Search Bar - Full Width */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por título, número ou solicitante..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-10"
+            />
+            {searchTerm && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                onClick={() => setSearchTerm('')}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Main Grid Layout */}
+        <div className="grid lg:grid-cols-[2fr_1fr] gap-7 lg:gap-7">
+          {/* Ticket List - Left Column */}
+          <div className="min-w-0">
+            <ScrollArea 
+              className="rounded-lg border bg-card"
+              style={{ 
+                height: 'calc(100vh - var(--header-height, 80px) - 120px)',
+                minWidth: '560px',
+                maxWidth: '760px'
+              }}
+            >
+              <div className="space-y-3 p-3">
+                {loading ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Carregando tickets...
+                  </div>
+                ) : filteredAndSortedTickets.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Nenhum ticket encontrado
+                  </div>
+                ) : (
+                  filteredAndSortedTickets.map(ticket => (
+                    <div
+                      key={ticket.id}
+                      onClick={() => handleTicketClick(ticket)}
+                      className={cn(
+                        "p-3 rounded-lg border cursor-pointer transition-all duration-200",
+                        "hover:shadow-sm hover:bg-muted/50",
+                        "active:scale-[0.99]",
+                        selectedTicket?.id === ticket.id && "bg-muted border-primary"
+                      )}
+                      style={{ padding: '12px 16px' }}
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Priority Badge */}
+                        <Badge className={cn("shrink-0 text-xs", getPriorityBadgeColor(ticket.nivel_criticidade))}>
+                          {ticket.nivel_criticidade}
+                        </Badge>
+                        
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="font-medium text-sm line-clamp-1 text-foreground">
+                              {ticket.titulo}
+                            </h4>
+                            <div className="text-right flex-shrink-0">
+                              <div className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(ticket.data_criacao), { 
+                                  addSuffix: true, 
+                                  locale: ptBR 
+                                })}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        
-                        {/* Sub-line */}
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                          <span>{ticket.ticket_number}</span>
-                          <span>•</span>
-                          <span className="truncate">{ticket.solicitante}</span>
-                        </div>
-                        
-                        {/* Bottom row */}
-                        <div className="flex items-center justify-between mt-2">
-                          <div className="flex items-center gap-2">
-                            {ticket.is_overdue && (
-                              <AlertTriangle className="h-4 w-4 text-red-500" />
-                            )}
-                            {/* Tags - show max 2 */}
-                            {ticket.tags && ticket.tags.length > 0 && (
-                              <div className="flex items-center gap-1">
-                                {ticket.tags.slice(0, 2).map(tag => (
-                                  <span key={tag} className="text-xs bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded">
-                                    {tag}
-                                  </span>
-                                ))}
-                                {ticket.tags.length > 2 && (
-                                  <span className="text-xs text-muted-foreground">
-                                    +{ticket.tags.length - 2}
-                                  </span>
-                                )}
-                              </div>
-                            )}
+                          
+                          {/* Sub-line */}
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                            <span>{ticket.ticket_number}</span>
+                            <span>•</span>
+                            <span className="truncate">{ticket.solicitante}</span>
                           </div>
                           
-                          <Badge 
-                            variant="outline" 
-                            className={cn("text-xs", getStatusBadgeColor(ticket.status))}
-                          >
-                            {getStatusLabel(ticket.status)}
-                          </Badge>
+                          {/* Bottom row */}
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center gap-2">
+                              {ticket.is_overdue && (
+                                <AlertTriangle className="h-4 w-4 text-red-500" />
+                              )}
+                              {/* Tags - show max 2 */}
+                              {ticket.tags && ticket.tags.length > 0 && (
+                                <div className="flex items-center gap-1">
+                                  {ticket.tags.slice(0, 2).map(tag => (
+                                    <span key={tag} className="text-xs bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                  {ticket.tags.length > 2 && (
+                                    <span className="text-xs text-muted-foreground">
+                                      +{ticket.tags.length - 2}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <Badge 
+                              variant="outline" 
+                              className={cn("text-xs", getStatusBadgeColor(ticket.status))}
+                            >
+                              {getStatusLabel(ticket.status)}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </div>
-
-        {/* Filter Sidebar - Right Column (Desktop only) */}
-        <div className="hidden xl:block w-80 border-l bg-muted/30">
-          <div className="sticky top-0 h-full">
-            <ScrollArea className="h-full">
-              <div className="p-6">
-                <FilterSidebar />
+                  ))
+                )}
               </div>
             </ScrollArea>
+          </div>
+
+          {/* Filter Sidebar - Right Column (Desktop only) */}
+          <div className="hidden lg:block">
+            <div 
+              className="rounded-lg border bg-card"
+              style={{ 
+                width: 'clamp(320px, 26vw, 360px)',
+                position: 'sticky',
+                top: '16px'
+              }}
+            >
+              <ScrollArea className="h-full max-h-[calc(100vh-120px)]">
+                <div className="p-6">
+                  <FilterSidebar />
+                </div>
+              </ScrollArea>
+            </div>
           </div>
         </div>
       </div>
