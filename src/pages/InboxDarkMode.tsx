@@ -30,8 +30,6 @@ import { useTicketStats } from "@/hooks/useTicketStats";
 import { useAuth } from "@/hooks/useAuth";
 import { useTags } from "@/hooks/useTags";
 import { useToast } from "@/hooks/use-toast";
-import { DateFilter, DateFilterConfig } from "@/components/ui/date-filter";
-import { useDateFilter } from "@/hooks/useDateFilter";
 interface Ticket {
   id: string;
   ticket_number: string;
@@ -61,9 +59,6 @@ interface Setor {
   nome: string;
 }
 export default function Inbox() {
-  // Hook de filtro de data
-  const { dateFilter, updateDateFilter, getFilterParams } = useDateFilter();
-
   // Usar hook otimizado para tickets
   const {
     tickets: optimizedTickets,
@@ -77,7 +72,7 @@ export default function Inbox() {
   } = useOptimizedTickets({
     enableRealtime: true,
     batchSize: 50
-  }, getFilterParams());
+  });
 
   // Usar hook centralizado para estatísticas sincronizadas  
   const { stats } = useTicketStats();
@@ -566,13 +561,6 @@ export default function Inbox() {
               </div>}
             
             <div className="flex gap-2 flex-wrap">
-              {/* Filtro de Data */}
-              <DateFilter
-                value={dateFilter}
-                onChange={updateDateFilter}
-                className="flex items-center"
-              />
-
               <Select value={setorFilter} onValueChange={setSetorFilter}>
                 <SelectTrigger className="w-[160px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
                   <SelectValue placeholder="Setor" />

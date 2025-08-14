@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from "@/integrations/supabase/client";
-import { AlertTriangle, Circle, Play, CheckCircle, XCircle } from 'lucide-react';
 
 interface Ticket {
   id: string;
@@ -25,20 +24,12 @@ interface Ticket {
   responsavel_interno?: string;
   prazo_interno?: string;
   prioridade_operacional?: string;
-  updated_at?: string;
-  isExpired?: boolean;
 }
 
 interface UseOptimizedTicketsOptions {
   enableRealtime?: boolean;
   batchSize?: number;
   sortFunction?: (a: Ticket, b: Ticket) => number;
-}
-
-interface TicketFilters {
-  dateField?: 'data_criacao' | 'updated_at' | 'prazo_interno';
-  from?: string;
-  to?: string;
 }
 
 // Cache para evitar refetching desnecessário
@@ -72,7 +63,7 @@ const createOptimizedSort = () => {
   };
 };
 
-export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}, filters?: TicketFilters) => {
+export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) => {
   const {
     enableRealtime = true,
     batchSize = 50,
@@ -89,7 +80,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}, fi
 
   // Função de fetch otimizada com cache
   const fetchTickets = useCallback(async (forceRefresh = false) => {
-    const cacheKey = filters ? `tickets_${JSON.stringify(filters)}` : 'all_tickets';
+    const cacheKey = 'all_tickets';
     const now = Date.now();
     
     // Verificar cache se não for refresh forçado
@@ -107,223 +98,178 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}, fi
       setError(null);
 
       // Query otimizada - buscar apenas campos necessários
-      let query = supabase
+      const { data, error } = await supabase
         .from('sla_demandas')
         .select(`
-          id, ticket_number, titulo, time_responsavel, solicitante, 
-          descricao, tipo_ticket, status, nivel_criticidade,
-          pontuacao_total, pontuacao_financeiro, pontuacao_cliente,
-          pontuacao_reputacao, pontuacao_urgencia, pontuacao_operacional,
-          data_criacao, observacoes, tags, setor_id, responsavel_interno,
-          prazo_interno, prioridade_operacional, updated_at
+          id,
+          ticket_number,
+          titulo,
+          time_responsavel,
+          solicitante,
+          descricao,
+          tipo_ticket,
+          status,
+          nivel_criticidade,
+          pontuacao_total,
+          pontuacao_financeiro,
+          pontuacao_cliente,
+          pontuacao_reputacao,
+          pontuacao_urgencia,
+          pontuacao_operacional,
+          data_criacao,
+          observacoes,
+          tags,
+          setor_id,
+          responsavel_interno,
+          prazo_interno,
+          prioridade_operacional
         `)
-        .order('data_criacao', { ascending: false });
+        .order('data_criacao', { ascending: false })
+        .limit(500); // Limitar resultados para performance
 
-      // Aplicar filtros de data se fornecidos
-      if (filters?.dateField && (filters.from || filters.to)) {
-        if (filters.from) {
-          query = query.gte(filters.dateField, filters.from);
-        }
-        if (filters.to) {
-          query = query.lte(filters.dateField, filters.to);
-        }
-      }
-
-      const { data, error: fetchError } = await query.limit(500);
-
-      if (fetchError) throw fetchError;
+      if (error) throw error;
 
       const ticketsData = data || [];
-
-      // Aplicar ordenação customizada
-      const sortedTickets = [...ticketsData].sort(sortFunction);
-      sortedTicketsRef.current = sortedTickets;
-
-      // Salvar no cache
-      ticketCache.set(cacheKey, { data: sortedTickets, timestamp: now });
-      setTickets(sortedTickets);
+      
+      // Ordenar de forma otimizada
+      const sortedData = [...ticketsData].sort(sortFunction);
+      
+      // Atualizar cache
+      ticketCache.set(cacheKey, { data: sortedData, timestamp: now });
+      
+      setTickets(sortedData);
+      sortedTicketsRef.current = sortedData;
       setLastFetch(now);
       
-      return sortedTickets;
+      return sortedData;
     } catch (err) {
-      console.error('Erro ao buscar tickets:', err);
+      console.error('Erro ao carregar tickets:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
       return [];
     } finally {
       setLoading(false);
     }
-  }, [sortFunction, filters]);
+  }, [sortFunction]);
 
-  // Debounce para updates em tempo real
-  let updateTimeout: NodeJS.Timeout;
-  
-  // Realtime subscription
-  useEffect(() => {
-    if (enableRealtime) {
-      realtimeChannelRef.current = supabase
-        .channel('tickets_realtime')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'sla_demandas'
-          },
-          (payload) => {
-            // Para transferências de setor (mudança de setor_id), atualizar imediatamente
-            const isTransfer = payload.eventType === 'UPDATE' && 
-              payload.old?.setor_id !== payload.new?.setor_id;
-            
-            if (updateTimeout) clearTimeout(updateTimeout);
-            
-            // Reduzir debounce para transferências para atualização mais rápida
-            const debounceTime = isTransfer ? 200 : 1000;
-            
-            updateTimeout = setTimeout(() => {
-              fetchTickets(true);
-            }, debounceTime);
-          }
-        )
-        .subscribe();
-
-      return () => {
-        if (realtimeChannelRef.current) {
-          supabase.removeChannel(realtimeChannelRef.current);
-        }
-        if (updateTimeout) {
-          clearTimeout(updateTimeout);
-        }
-      };
-    }
-  }, [enableRealtime, fetchTickets]);
-
-  // Fetch inicial
-  useEffect(() => {
-    fetchTickets();
-  }, [fetchTickets]);
-
-  // Função de reload
+  // Função de reload otimizada
   const reloadTickets = useCallback(() => {
     return fetchTickets(true);
   }, [fetchTickets]);
 
-  // Adição de informações de status para os tickets
+  // Configurar realtime de forma otimizada
+  useEffect(() => {
+    if (!enableRealtime) return;
+
+    // Cleanup canal anterior
+    if (realtimeChannelRef.current) {
+      supabase.removeChannel(realtimeChannelRef.current);
+    }
+
+    // Configurar novo canal com throttling reduzido para transferências
+    let updateTimeout: NodeJS.Timeout | null = null;
+    
+    const channel = supabase
+      .channel('tickets-optimized')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sla_demandas'
+        },
+        (payload) => {
+          // Para transferências de setor (mudança de setor_id), atualizar imediatamente
+          const isTransfer = payload.eventType === 'UPDATE' && 
+            payload.old?.setor_id !== payload.new?.setor_id;
+          
+          if (updateTimeout) clearTimeout(updateTimeout);
+          
+          // Reduzir debounce para transferências para atualização mais rápida
+          const debounceTime = isTransfer ? 200 : 1000;
+          
+          updateTimeout = setTimeout(() => {
+            // Invalidar cache e recarregar
+            ticketCache.clear();
+            fetchTickets(true);
+          }, debounceTime);
+        }
+      )
+      .subscribe();
+
+    realtimeChannelRef.current = channel;
+
+    return () => {
+      if (updateTimeout) clearTimeout(updateTimeout);
+      if (realtimeChannelRef.current) {
+        supabase.removeChannel(realtimeChannelRef.current);
+        realtimeChannelRef.current = null;
+      }
+    };
+  }, [enableRealtime, fetchTickets]);
+
+  // Carregar tickets na inicialização
+  useEffect(() => {
+    fetchTickets();
+  }, [fetchTickets]);
+
+  // Memoizar tickets com status para evitar recálculos
   const ticketsWithStatus = useMemo(() => {
     return tickets.map(ticket => {
+      // Calcular se está atrasado de forma otimizada
+      const timeConfig = {
+        'P0': 4 * 60 * 60 * 1000,   // 4 horas
+        'P1': 24 * 60 * 60 * 1000,  // 24 horas
+        'P2': 3 * 24 * 60 * 60 * 1000,  // 3 dias
+        'P3': 7 * 24 * 60 * 60 * 1000   // 7 dias
+      };
+
       const isExpired = (() => {
-        const now = new Date();
-        const createdAt = new Date(ticket.data_criacao);
-        const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-        
-        const limits = {
-          'P0': 4,   // 4 horas
-          'P1': 24,  // 24 horas
-          'P2': 72,  // 3 dias
-          'P3': 168  // 7 dias
-        };
-        
-        const limit = limits[ticket.nivel_criticidade as keyof typeof limits] || 168;
-        const isActiveTicket = ['aberto', 'em_andamento'].includes(ticket.status?.toLowerCase());
-        
-        return isActiveTicket && hoursSinceCreation > limit;
-      })();
-
-      const statusInfo = (() => {
-        const status = ticket.status?.toString()?.trim()?.toLowerCase();
-        
-        if (isExpired) {
-          return {
-            icon: AlertTriangle,
-            bgColor: 'bg-red-50 dark:bg-red-900/20',
-            textColor: 'text-red-800 dark:text-red-200',
-            borderColor: 'border-red-200 dark:border-red-800',
-            displayStatus: 'Atrasado',
-            isExpired: true
-          };
-        }
-
-        switch (status) {
-          case 'aberto':
-            return {
-              icon: Circle,
-              bgColor: 'bg-slate-50 dark:bg-slate-900/20',
-              textColor: 'text-slate-800 dark:text-slate-200',
-              borderColor: 'border-slate-200 dark:border-slate-800',
-              displayStatus: 'Aberto',
-              isExpired: false
-            };
-          case 'em_andamento':
-            return {
-              icon: Play,
-              bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-              textColor: 'text-blue-800 dark:text-blue-200',
-              borderColor: 'border-blue-200 dark:border-blue-800',
-              displayStatus: 'Em Andamento',
-              isExpired: false
-            };
-          case 'resolvido':
-            return {
-              icon: CheckCircle,
-              bgColor: 'bg-green-50 dark:bg-green-900/20',
-              textColor: 'text-green-800 dark:text-green-200',
-              borderColor: 'border-green-200 dark:border-green-800',
-              displayStatus: 'Resolvido',
-              isExpired: false
-            };
-          case 'fechado':
-            return {
-              icon: XCircle,
-              bgColor: 'bg-gray-50 dark:bg-gray-900/20',
-              textColor: 'text-gray-800 dark:text-gray-200',
-              borderColor: 'border-gray-200 dark:border-gray-800',
-              displayStatus: 'Fechado',
-              isExpired: false
-            };
-          default:
-            return {
-              icon: Circle,
-              bgColor: 'bg-gray-50 dark:bg-gray-900/20',
-              textColor: 'text-gray-800 dark:text-gray-200',
-              borderColor: 'border-gray-200 dark:border-gray-800',
-              displayStatus: status || 'Desconhecido',
-              isExpired: false
-            };
-        }
+        if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
+        const startTime = new Date(ticket.data_criacao).getTime();
+        const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+        const deadline = startTime + timeLimit;
+        return Date.now() > deadline;
       })();
 
       return {
         ...ticket,
-        isExpired,
-        statusInfo
+        isExpired
       };
     });
   }, [tickets]);
 
   // Função de busca otimizada
-  const searchTickets = useCallback((searchTerm: string) => {
-    if (!searchTerm.trim()) return ticketsWithStatus;
+  const searchTickets = useCallback((searchTerm: string, tickets: Ticket[]) => {
+    if (!searchTerm.trim()) return tickets;
     
-    const normalizedTerm = searchTerm.toLowerCase().trim();
-    return ticketsWithStatus.filter(ticket => {
-      const searchableFields = [
+    const lowerTerm = searchTerm.toLowerCase();
+    const termWords = lowerTerm.split(' ').filter(word => word.length > 1);
+    
+    return tickets.filter(ticket => {
+      const searchFields = [
         ticket.titulo,
         ticket.descricao,
         ticket.solicitante,
         ticket.time_responsavel,
         ticket.ticket_number,
         ...(ticket.tags || [])
-      ].filter(Boolean);
-      
-      return searchableFields.some(field =>
-        field.toString().toLowerCase().includes(normalizedTerm)
+      ].filter(Boolean).map(field => field.toLowerCase());
+
+      // Busca exata primeiro (mais rápida)
+      const exactMatch = searchFields.some(field => field.includes(lowerTerm));
+      if (exactMatch) return true;
+
+      // Busca por palavras parciais
+      return termWords.every(word => 
+        searchFields.some(field => field.includes(word))
       );
     });
-  }, [ticketsWithStatus]);
+  }, []);
 
-  // Estatísticas calculadas
+  // Estatísticas otimizadas
   const stats = useMemo(() => {
     const counts = {
-      total: ticketsWithStatus.length,
+      total: tickets.length,
       abertos: 0,
       em_andamento: 0,
       resolvidos: 0,
@@ -334,22 +280,10 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}, fi
 
     // Um loop único para calcular todas as estatísticas
     ticketsWithStatus.forEach(ticket => {
-      // Contagem de atrasados (primeira prioridade)
-      if (ticket.isExpired) {
-        counts.atrasados++;
-      }
+      if (ticket.isExpired) counts.atrasados++;
+      if (ticket.nivel_criticidade === 'P0') counts.criticos++;
       
-      // Contagem de críticos (apenas abertos ou em andamento)
-      if (ticket.nivel_criticidade === 'P0') {
-        const status = ticket.status?.toString()?.trim()?.toLowerCase();
-        if (['aberto', 'em_andamento'].includes(status)) {
-          counts.criticos++;
-        }
-      }
-      
-      // Contagem por status - INCLUIR todos os tickets (mesmo atrasados)
-      const status = ticket.status?.toString()?.trim()?.toLowerCase();
-      switch (status) {
+      switch (ticket.status) {
         case 'aberto':
           counts.abertos++;
           break;
@@ -373,10 +307,10 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}, fi
     ticketsWithStatus,
     loading,
     error,
+    stats,
     lastFetch,
     fetchTickets,
     reloadTickets,
-    searchTickets,
-    stats
+    searchTickets
   };
 };
