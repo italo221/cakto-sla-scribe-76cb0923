@@ -16,10 +16,10 @@ import {
   Menu,
   LogOut,
   User,
-  Users,
   Palette,
   Columns3,
-  UserCog
+  UserCog,
+  Users
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
