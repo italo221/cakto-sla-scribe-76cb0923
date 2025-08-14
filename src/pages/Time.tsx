@@ -5,10 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
-  Calendar, 
   Filter, 
   SortAsc, 
   Users, 
@@ -16,15 +17,20 @@ import {
   CheckCircle,
   AlertTriangle,
   MoreHorizontal,
-  TrendingUp,
-  Target,
-  Timer
+  Search,
+  X,
+  Trash2,
+  SlidersHorizontal
 } from 'lucide-react';
 import { format, subDays, formatDistanceToNow } from 'date-fns';
+import { ptBR } from "date-fns/locale";
+import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useTags } from '@/hooks/useTags';
 import { toast } from '@/hooks/use-toast';
+import TicketDetailModal from "@/components/TicketDetailModal";
 
 interface TeamMetrics {
   total_tickets: number;
@@ -40,12 +46,23 @@ interface TeamTicket {
   id: string;
   ticket_number: string;
   titulo: string;
+  time_responsavel?: string;
   solicitante: string;
+  descricao?: string;
   responsavel_interno?: string;
   status: string;
   nivel_criticidade: string;
+  pontuacao_total?: number;
+  pontuacao_financeiro?: number;
+  pontuacao_cliente?: number;
+  pontuacao_reputacao?: number;
+  pontuacao_urgencia?: number;
+  pontuacao_operacional?: number;
   data_criacao: string;
+  observacoes?: string;
+  setor_id?: string;
   prazo_interno?: string;
+  prioridade_operacional?: string;
   tags?: string[];
   age_days: number;
   is_overdue: boolean;
@@ -59,6 +76,7 @@ interface Setor {
 export default function Time() {
   const { user, isSuperAdmin } = useAuth();
   const { userSetores } = usePermissions();
+  const { allTags } = useTags();
   
   const [selectedSetor, setSelectedSetor] = useState<string>('');
   const [dateRange, setDateRange] = useState('30');
@@ -67,11 +85,19 @@ export default function Time() {
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('priority');
   const [showOnlyMyTickets, setShowOnlyMyTickets] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   
   const [setores, setSetores] = useState<Setor[]>([]);
   const [metrics, setMetrics] = useState<TeamMetrics | null>(null);
   const [tickets, setTickets] = useState<TeamTicket[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Modal states
+  const [selectedTicket, setSelectedTicket] = useState<TeamTicket | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  
+  // Responsive filter sidebar
+  const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
 
   // Carregar setores
   useEffect(() => {
@@ -149,12 +175,23 @@ export default function Time() {
             id,
             ticket_number,
             titulo,
+            time_responsavel,
             solicitante,
+            descricao,
             responsavel_interno,
             status,
             nivel_criticidade,
+            pontuacao_total,
+            pontuacao_financeiro,
+            pontuacao_cliente,
+            pontuacao_reputacao,
+            pontuacao_urgencia,
+            pontuacao_operacional,
             data_criacao,
+            observacoes,
+            setor_id,
             prazo_interno,
+            prioridade_operacional,
             tags
           `)
           .eq('setor_id', selectedSetor);
@@ -202,26 +239,55 @@ export default function Time() {
     );
   }, [setores, userSetores, isSuperAdmin]);
 
-  // Ordenar tickets
-  const sortedTickets = useMemo(() => {
-    const sorted = [...tickets];
+  // Filtrar e ordenar tickets
+  const filteredAndSortedTickets = useMemo(() => {
+    let filtered = [...tickets];
     
+    // Aplicar busca
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(ticket => 
+        ticket.titulo.toLowerCase().includes(term) ||
+        ticket.ticket_number.toLowerCase().includes(term) ||
+        ticket.solicitante.toLowerCase().includes(term) ||
+        (ticket.tags || []).some(tag => tag.toLowerCase().includes(term))
+      );
+    }
+    
+    // Aplicar filtros de prioridade
+    if (priorityFilter.length > 0) {
+      filtered = filtered.filter(ticket => priorityFilter.includes(ticket.nivel_criticidade));
+    }
+    
+    // Aplicar filtros de status
+    if (statusFilter.length > 0) {
+      filtered = filtered.filter(ticket => statusFilter.includes(ticket.status));
+    }
+    
+    // Aplicar filtros de tags
+    if (tagFilter.length > 0) {
+      filtered = filtered.filter(ticket => 
+        ticket.tags && tagFilter.some(tag => ticket.tags!.includes(tag))
+      );
+    }
+    
+    // Aplicar ordenação
     switch (sortBy) {
       case 'priority':
         const priorityOrder = { 'P0': 0, 'P1': 1, 'P2': 2, 'P3': 3 };
-        sorted.sort((a, b) => 
+        filtered.sort((a, b) => 
           (priorityOrder[a.nivel_criticidade as keyof typeof priorityOrder] || 4) - 
           (priorityOrder[b.nivel_criticidade as keyof typeof priorityOrder] || 4)
         );
         break;
       case 'oldest':
-        sorted.sort((a, b) => new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime());
+        filtered.sort((a, b) => new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime());
         break;
       case 'newest':
-        sorted.sort((a, b) => new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime());
+        filtered.sort((a, b) => new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime());
         break;
       case 'sla':
-        sorted.sort((a, b) => {
+        filtered.sort((a, b) => {
           if (a.is_overdue && !b.is_overdue) return -1;
           if (!a.is_overdue && b.is_overdue) return 1;
           return 0;
@@ -229,208 +295,490 @@ export default function Time() {
         break;
     }
     
-    return sorted;
-  }, [tickets, sortBy]);
+    return filtered;
+  }, [tickets, searchTerm, priorityFilter, statusFilter, tagFilter, sortBy]);
 
-  const MetricCard = ({ title, value, subtitle, icon: Icon, trend }: any) => (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold">{value}</p>
-            {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+  // Helper functions
+  const getPriorityBadgeColor = (priority: string) => {
+    switch (priority) {
+      case 'P0': return 'bg-red-500 text-white';
+      case 'P1': return 'bg-orange-500 text-white';
+      case 'P2': return 'bg-yellow-500 text-white';
+      case 'P3': return 'bg-blue-500 text-white';
+      default: return 'bg-gray-500 text-white';
+    }
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'aberto': return 'bg-gray-100 text-gray-800 border-gray-300';
+      case 'em_andamento': return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'resolvido': return 'bg-green-100 text-green-800 border-green-300';
+      case 'fechado': return 'bg-slate-100 text-slate-800 border-slate-300';
+      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels = {
+      'aberto': 'Aberto',
+      'em_andamento': 'Em Andamento',
+      'resolvido': 'Resolvido',
+      'fechado': 'Fechado'
+    };
+    return labels[status as keyof typeof labels] || status;
+  };
+
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setPriorityFilter([]);
+    setStatusFilter([]);
+    setTagFilter([]);
+    setSortBy('priority');
+    setShowOnlyMyTickets(false);
+  };
+
+  const handleTicketClick = (ticket: TeamTicket) => {
+    setSelectedTicket(ticket);
+    setModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setSelectedTicket(null);
+  };
+
+  const handleTicketUpdate = () => {
+    // Recarregar dados após atualização
+    const loadTickets = async () => {
+      if (!selectedSetor) return;
+      
+      try {
+        let query = supabase
+          .from('sla_demandas')
+          .select(`
+            id,
+            ticket_number,
+            titulo,
+            time_responsavel,
+            solicitante,
+            descricao,
+            responsavel_interno,
+            status,
+            nivel_criticidade,
+            pontuacao_total,
+            pontuacao_financeiro,
+            pontuacao_cliente,
+            pontuacao_reputacao,
+            pontuacao_urgencia,
+            pontuacao_operacional,
+            data_criacao,
+            observacoes,
+            setor_id,
+            prazo_interno,
+            prioridade_operacional,
+            tags
+          `)
+          .eq('setor_id', selectedSetor);
+
+        // Aplicar filtros
+        if (priorityFilter.length > 0) {
+          query = query.in('nivel_criticidade', priorityFilter);
+        }
+        
+        if (statusFilter.length > 0) {
+          query = query.in('status', statusFilter);
+        }
+        
+        if (showOnlyMyTickets && user) {
+          query = query.or(`solicitante.eq.${user.email},responsavel_interno.eq.${user.email}`);
+        }
+
+        const { data, error } = await query.order('data_criacao', { ascending: false });
+        
+        if (error) throw error;
+        
+        // Processar dados
+        const processedTickets: TeamTicket[] = (data || []).map(ticket => ({
+          ...ticket,
+          age_days: Math.floor((new Date().getTime() - new Date(ticket.data_criacao).getTime()) / (1000 * 60 * 60 * 24)),
+          is_overdue: ticket.prazo_interno ? new Date(ticket.prazo_interno) < new Date() && !['resolvido', 'fechado'].includes(ticket.status) : false
+        }));
+        
+        setTickets(processedTickets);
+      } catch (error) {
+        console.error('Erro ao carregar tickets:', error);
+      }
+    };
+    
+    loadTickets();
+  };
+
+  // Filter Sidebar Component
+  const FilterSidebar = ({ isMobile = false }) => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="font-semibold mb-4">Filtros</h3>
+        
+        {/* Seletor de Time (apenas para Super Admin) */}
+        {isSuperAdmin && (
+          <div className="space-y-2 mb-4">
+            <Label className="text-sm font-medium">Time</Label>
+            <Select value={selectedSetor} onValueChange={setSelectedSetor}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um time" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableSetores.map(setor => (
+                  <SelectItem key={setor.id} value={setor.id}>
+                    {setor.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div className="h-8 w-8 text-muted-foreground">
-            <Icon className="h-8 w-8" />
-          </div>
+        )}
+
+        {/* Período */}
+        <div className="space-y-2 mb-4">
+          <Label className="text-sm font-medium">Período</Label>
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Últimos 7 dias</SelectItem>
+              <SelectItem value="30">Últimos 30 dias</SelectItem>
+              <SelectItem value="90">Últimos 90 dias</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      </CardContent>
-    </Card>
-  );
 
-  return (
-    <div className="container-responsive space-y-6">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Time</h1>
-          <p className="text-muted-foreground">Operação e métricas do time</p>
+        {/* Ordenação */}
+        <div className="space-y-2 mb-4">
+          <Label className="text-sm font-medium">Ordenar por</Label>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="priority">Prioridade</SelectItem>
+              <SelectItem value="oldest">Mais antigo</SelectItem>
+              <SelectItem value="newest">Mais recente</SelectItem>
+              <SelectItem value="sla">Próximo do SLA</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Status Filter */}
+        <div className="space-y-2 mb-4">
+          <Label className="text-sm font-medium">Status</Label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                {statusFilter.length > 0 ? `${statusFilter.length} selecionados` : 'Todos os status'}
+                <Filter className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-full">
+              {['aberto', 'em_andamento', 'resolvido', 'fechado'].map(status => (
+                <DropdownMenuCheckboxItem
+                  key={status}
+                  checked={statusFilter.includes(status)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setStatusFilter([...statusFilter, status]);
+                    } else {
+                      setStatusFilter(statusFilter.filter(s => s !== status));
+                    }
+                  }}
+                >
+                  {getStatusLabel(status)}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Priority Filter */}
+        <div className="space-y-2 mb-4">
+          <Label className="text-sm font-medium">Prioridade</Label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                {priorityFilter.length > 0 ? `${priorityFilter.length} selecionados` : 'Todas as prioridades'}
+                <Filter className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-full">
+              {['P0', 'P1', 'P2', 'P3'].map(priority => (
+                <DropdownMenuCheckboxItem
+                  key={priority}
+                  checked={priorityFilter.includes(priority)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setPriorityFilter([...priorityFilter, priority]);
+                    } else {
+                      setPriorityFilter(priorityFilter.filter(p => p !== priority));
+                    }
+                  }}
+                >
+                  {priority}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Tags Filter */}
+        <div className="space-y-2 mb-4">
+          <Label className="text-sm font-medium">Tags</Label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                {tagFilter.length > 0 ? `${tagFilter.length} selecionadas` : 'Todas as tags'}
+                <Filter className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-full">
+              {allTags.map(tag => (
+                <DropdownMenuCheckboxItem
+                  key={tag}
+                  checked={tagFilter.includes(tag)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setTagFilter([...tagFilter, tag]);
+                    } else {
+                      setTagFilter(tagFilter.filter(t => t !== tag));
+                    }
+                  }}
+                >
+                  {tag}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Toggle "Só meus tickets" */}
+        <div className="flex items-center space-x-2 mb-4">
+          <Switch
+            id="my-tickets"
+            checked={showOnlyMyTickets}
+            onCheckedChange={setShowOnlyMyTickets}
+          />
+          <Label htmlFor="my-tickets" className="text-sm">Só meus tickets</Label>
         </div>
       </div>
 
-      {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Seletor de Time (apenas para Super Admin) */}
-            {isSuperAdmin && (
-              <div className="space-y-2">
-                <Label>Time</Label>
-                <Select value={selectedSetor} onValueChange={setSelectedSetor}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um time" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableSetores.map(setor => (
-                      <SelectItem key={setor.id} value={setor.id}>
-                        {setor.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+      {/* Action Buttons */}
+      <div className="space-y-2">
+        <Button 
+          onClick={clearAllFilters} 
+          variant="outline" 
+          className="w-full"
+          size="sm"
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Limpar Filtros
+        </Button>
+      </div>
+    </div>
+  );
 
-            {/* Período */}
-            <div className="space-y-2">
-              <Label>Período</Label>
-              <Select value={dateRange} onValueChange={setDateRange}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">Últimos 7 dias</SelectItem>
-                  <SelectItem value="30">Últimos 30 dias</SelectItem>
-                  <SelectItem value="90">Últimos 90 dias</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Ordenação */}
-            <div className="space-y-2">
-              <Label>Ordenar por</Label>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="priority">Prioridade</SelectItem>
-                  <SelectItem value="oldest">Mais antigo</SelectItem>
-                  <SelectItem value="newest">Mais recente</SelectItem>
-                  <SelectItem value="sla">Próximo do SLA</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Toggle "Só meus tickets" */}
-            <div className="space-y-2">
-              <Label>Filtros avançados</Label>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="my-tickets"
-                  checked={showOnlyMyTickets}
-                  onCheckedChange={setShowOnlyMyTickets}
-                />
-                <Label htmlFor="my-tickets" className="text-sm">Só meus tickets</Label>
-              </div>
-            </div>
+  return (
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="flex-none border-b bg-background px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Time</h1>
+            <p className="text-sm text-muted-foreground">Operação e métricas do time</p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Métricas */}
-      {metrics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard
-            title="Total de Tickets"
-            value={metrics.total_tickets}
-            subtitle={`Últimos ${dateRange} dias`}
-            icon={Users}
-          />
-          <MetricCard
-            title="Em Andamento"
-            value={metrics.tickets_em_andamento}
-            subtitle={`${metrics.tickets_abertos} abertos`}
-            icon={Clock}
-          />
-          <MetricCard
-            title="Resolvidos"
-            value={metrics.tickets_resolvidos}
-            icon={CheckCircle}
-          />
-          <MetricCard
-            title="Conformidade SLA"
-            value={`${Math.round(metrics.sla_compliance_rate)}%`}
-            icon={Target}
-          />
-        </div>
-      )}
-
-      {/* Tempos médios */}
-      {metrics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <MetricCard
-            title="Tempo Médio para Iniciar"
-            value={`${Math.round(metrics.avg_time_to_start_hours)}h`}
-            icon={Timer}
-          />
-          <MetricCard
-            title="Tempo Médio de Resolução"
-            value={`${Math.round(metrics.avg_resolution_time_hours)}h`}
-            icon={TrendingUp}
-          />
-        </div>
-      )}
-
-      {/* Lista de Tickets */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Trabalho do Time</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {sortedTickets.map(ticket => (
-              <div key={ticket.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-4 flex-1">
-                  <Badge variant={
-                    ticket.nivel_criticidade === 'P0' ? 'destructive' :
-                    ticket.nivel_criticidade === 'P1' ? 'destructive' :
-                    ticket.nivel_criticidade === 'P2' ? 'default' : 'secondary'
-                  }>
-                    {ticket.nivel_criticidade}
-                  </Badge>
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{ticket.titulo}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {ticket.ticket_number} • {ticket.solicitante}
-                    </p>
-                  </div>
-                  
-                  <div className="text-sm text-muted-foreground">
-                    {formatDistanceToNow(new Date(ticket.data_criacao), { addSuffix: true })}
-                  </div>
-                  
-                  {ticket.is_overdue && (
-                    <AlertTriangle className="h-4 w-4 text-destructive" />
-                  )}
-                  
-                  <Badge variant="outline">
-                    {ticket.status}
-                  </Badge>
-                </div>
-                
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
+          {/* Mobile Filter Toggle */}
+          <div className="xl:hidden">
+            <Sheet open={isFilterSidebarOpen} onOpenChange={setIsFilterSidebarOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  Filtros
                 </Button>
-              </div>
-            ))}
-            
-            {sortedTickets.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                Nenhum ticket encontrado
-              </div>
-            )}
+              </SheetTrigger>
+              <SheetContent side="right" className="w-80">
+                <SheetHeader>
+                  <SheetTitle>Filtros</SheetTitle>
+                  <SheetDescription>
+                    Configure os filtros para a lista de tickets
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="mt-6">
+                  <FilterSidebar isMobile />
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Ticket List - Left Column */}
+        <div className="flex-1 flex flex-col min-w-0" style={{ minWidth: '420px', maxWidth: '560px' }}>
+          {/* Search Bar */}
+          <div className="flex-none p-4 border-b">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por título, número ou solicitante..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {searchTerm && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                  onClick={() => setSearchTerm('')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Ticket List */}
+          <ScrollArea className="flex-1">
+            <div className="space-y-1 p-2">
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Carregando tickets...
+                </div>
+              ) : filteredAndSortedTickets.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum ticket encontrado
+                </div>
+              ) : (
+                filteredAndSortedTickets.map(ticket => (
+                  <div
+                    key={ticket.id}
+                    onClick={() => handleTicketClick(ticket)}
+                    className={cn(
+                      "p-3 rounded-lg border cursor-pointer transition-all duration-200",
+                      "hover:shadow-sm hover:bg-muted/50",
+                      "active:scale-[0.99]",
+                      selectedTicket?.id === ticket.id && "bg-muted border-primary"
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Priority Badge */}
+                      <Badge className={cn("shrink-0 text-xs", getPriorityBadgeColor(ticket.nivel_criticidade))}>
+                        {ticket.nivel_criticidade}
+                      </Badge>
+                      
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-medium text-sm line-clamp-1 text-foreground">
+                            {ticket.titulo}
+                          </h4>
+                          <div className="text-right flex-shrink-0">
+                            <div className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(ticket.data_criacao), { 
+                                addSuffix: true, 
+                                locale: ptBR 
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Sub-line */}
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                          <span>{ticket.ticket_number}</span>
+                          <span>•</span>
+                          <span className="truncate">{ticket.solicitante}</span>
+                        </div>
+                        
+                        {/* Bottom row */}
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-2">
+                            {ticket.is_overdue && (
+                              <AlertTriangle className="h-4 w-4 text-red-500" />
+                            )}
+                            {/* Tags - show max 2 */}
+                            {ticket.tags && ticket.tags.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                {ticket.tags.slice(0, 2).map(tag => (
+                                  <span key={tag} className="text-xs bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded">
+                                    {tag}
+                                  </span>
+                                ))}
+                                {ticket.tags.length > 2 && (
+                                  <span className="text-xs text-muted-foreground">
+                                    +{ticket.tags.length - 2}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <Badge 
+                            variant="outline" 
+                            className={cn("text-xs", getStatusBadgeColor(ticket.status))}
+                          >
+                            {getStatusLabel(ticket.status)}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+
+        {/* Filter Sidebar - Right Column (Desktop only) */}
+        <div className="hidden xl:block w-80 border-l bg-muted/30">
+          <div className="sticky top-0 h-full">
+            <ScrollArea className="h-full">
+              <div className="p-6">
+                <FilterSidebar />
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
+      </div>
+
+      {/* Ticket Detail Modal */}
+      <TicketDetailModal
+        sla={selectedTicket ? {
+          id: selectedTicket.id,
+          titulo: selectedTicket.titulo,
+          time_responsavel: selectedTicket.time_responsavel || '',
+          solicitante: selectedTicket.solicitante,
+          descricao: selectedTicket.descricao || '',
+          status: selectedTicket.status,
+          nivel_criticidade: selectedTicket.nivel_criticidade,
+          pontuacao_total: selectedTicket.pontuacao_total || 0,
+          pontuacao_financeiro: selectedTicket.pontuacao_financeiro || 0,
+          pontuacao_cliente: selectedTicket.pontuacao_cliente || 0,
+          pontuacao_reputacao: selectedTicket.pontuacao_reputacao || 0,
+          pontuacao_urgencia: selectedTicket.pontuacao_urgencia || 0,
+          pontuacao_operacional: selectedTicket.pontuacao_operacional || 0,
+          data_criacao: selectedTicket.data_criacao,
+          observacoes: selectedTicket.observacoes,
+          setor_id: selectedTicket.setor_id,
+          tags: selectedTicket.tags,
+          ticket_number: selectedTicket.ticket_number,
+          responsavel_interno: selectedTicket.responsavel_interno,
+          prazo_interno: selectedTicket.prazo_interno,
+          prioridade_operacional: selectedTicket.prioridade_operacional
+        } : null}
+        isOpen={modalOpen}
+        onClose={handleModalClose}
+        onUpdate={handleTicketUpdate}
+      />
     </div>
   );
 }
