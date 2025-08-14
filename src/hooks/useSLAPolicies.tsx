@@ -60,24 +60,49 @@ export const useSLAPolicies = () => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchPolicies = async () => {
+  const fetchPolicies = async (retryCount = 0) => {
     try {
       setLoading(true);
-      console.log('🔍 Fetching SLA policies...');
-      // Primeiro tentativa: sem o join para ver se é problema de schema cache
+      setError(null);
+      
+      console.log(`🔍 Fetching SLA policies... (attempt ${retryCount + 1})`);
+      
       const { data, error } = await supabase
         .from('sla_policies')
         .select('*')
         .order('created_at', { ascending: false });
 
-      console.log('📊 SLA policies query result:', { data, error });
+      console.log('📊 SLA policies query result:', { data, error, retryCount });
+      
       if (error) throw error;
+      
       setPolicies(data || []);
+      setError(null);
     } catch (err: any) {
-      setError(err.message);
+      console.error('Error fetching SLA policies:', err);
+      
+      // Retry automático para erros de rede (máximo 3 tentativas)
+      if (retryCount < 2 && (
+        err.message?.includes('Failed to fetch') ||
+        err.message?.includes('NetworkError') ||
+        err.message?.includes('TypeError') ||
+        err.code === 'PGRST116' // Timeout do PostgREST
+      )) {
+        console.log(`🔄 Retrying SLA policies fetch in ${(retryCount + 1) * 1000}ms...`);
+        
+        setTimeout(() => {
+          fetchPolicies(retryCount + 1);
+        }, (retryCount + 1) * 1000); // Delay progressivo: 1s, 2s, 3s
+        
+        return;
+      }
+      
+      const errorMessage = err.message || 'Erro desconhecido ao carregar políticas';
+      setError(errorMessage);
+      
       toast({
         title: "Erro ao carregar políticas",
-        description: err.message,
+        description: `${errorMessage}${retryCount > 0 ? ` (após ${retryCount + 1} tentativas)` : ''}`,
         variant: "destructive",
       });
     } finally {
@@ -197,14 +222,25 @@ export const useSLAPolicies = () => {
   };
 
   useEffect(() => {
+    // Tentar carregar imediatamente
     fetchPolicies();
-  }, []);
+    
+    // Setup de um intervalo para recarregar periodicamente em caso de falha
+    const interval = setInterval(() => {
+      if (error && !loading) {
+        console.log('🔄 Auto-retrying failed SLA policies fetch...');
+        fetchPolicies();
+      }
+    }, 30000); // Retry a cada 30 segundos se houver erro
+    
+    return () => clearInterval(interval);
+  }, [error, loading]);
 
   return {
     policies,
     loading,
     error,
-    fetchPolicies,
+    fetchPolicies: () => fetchPolicies(0), // Reset retry count para chamadas manuais
     updatePolicy,
     createPolicy,
     getPolicyBySetor,
