@@ -1,12 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ModernTicketDashboard from "@/components/ModernTicketDashboard";
 import DynamicDashboard from "@/components/DynamicDashboard";
+import { SLAPolicyPanel } from "@/components/SLAPolicyPanel";
+import { SLAMetrics } from "@/components/SLAMetrics";
 import { Card, CardContent } from "@/components/ui/card";
 import { BarChart3, TrendingUp, Settings, Activity } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { usePermissions } from "@/hooks/usePermissions";
+
+interface Setor {
+  id: string;
+  nome: string;
+  descricao?: string;
+}
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [setores, setSetores] = useState<Setor[]>([]);
+  const { userSetores } = usePermissions();
+
+  useEffect(() => {
+    const fetchSetores = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('setores')
+          .select('id, nome, descricao')
+          .eq('ativo', true)
+          .order('nome');
+
+        if (error) throw error;
+        setSetores(data || []);
+      } catch (err) {
+        console.error('Error fetching setores:', err);
+      }
+    };
+
+    fetchSetores();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -20,7 +51,7 @@ const Dashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 lg:w-400">
+            <TabsList className="grid w-full grid-cols-3 lg:w-600">
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
                 Visão Geral
@@ -28,6 +59,10 @@ const Dashboard = () => {
               <TabsTrigger value="metrics" className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
                 Métricas SLA
+              </TabsTrigger>
+              <TabsTrigger value="policies" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Políticas SLA
               </TabsTrigger>
             </TabsList>
 
@@ -41,7 +76,11 @@ const Dashboard = () => {
 
 
             <TabsContent value="metrics" className="space-y-6">
-              <ModernTicketDashboard />
+              <SLAMetrics setores={setores} />
+            </TabsContent>
+
+            <TabsContent value="policies" className="space-y-6">
+              <SLAPolicyPanel setores={setores} />
             </TabsContent>
           </Tabs>
         </div>

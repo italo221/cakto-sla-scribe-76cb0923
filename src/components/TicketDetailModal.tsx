@@ -21,6 +21,8 @@ import CommentDeleteModal from "@/components/CommentDeleteModal";
 import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit2, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown, Eye, Upload, Image, Video, Maximize, Minimize } from "lucide-react";
 import TicketAttachments from "@/components/TicketAttachments";
 import TicketEditModal from "@/components/TicketEditModal";
+import { SLADeadlineChip } from "@/components/SLADeadlineChip";
+import { SLADeadlineModal } from "@/components/SLADeadlineModal";
 // (FileUploader import removido)
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";

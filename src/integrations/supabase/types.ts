@@ -988,6 +988,59 @@ export type Database = {
           },
         ]
       }
+      sla_policies: {
+        Row: {
+          allow_superadmin_override: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          mode: Database["public"]["Enums"]["sla_mode"]
+          p0_hours: number
+          p1_hours: number
+          p2_hours: number
+          p3_hours: number
+          setor_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allow_superadmin_override?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mode?: Database["public"]["Enums"]["sla_mode"]
+          p0_hours?: number
+          p1_hours?: number
+          p2_hours?: number
+          p3_hours?: number
+          setor_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allow_superadmin_override?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mode?: Database["public"]["Enums"]["sla_mode"]
+          p0_hours?: number
+          p1_hours?: number
+          p2_hours?: number
+          p3_hours?: number
+          setor_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sla_policies_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: true
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           created_at: string
@@ -1100,6 +1153,60 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      ticket_sla_events: {
+        Row: {
+          action: Database["public"]["Enums"]["sla_event_action"]
+          actor_id: string
+          created_at: string
+          id: string
+          level: Database["public"]["Enums"]["sla_level"] | null
+          new_deadline: string | null
+          note: string | null
+          old_deadline: string | null
+          sector_id: string | null
+          ticket_id: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["sla_event_action"]
+          actor_id: string
+          created_at?: string
+          id?: string
+          level?: Database["public"]["Enums"]["sla_level"] | null
+          new_deadline?: string | null
+          note?: string | null
+          old_deadline?: string | null
+          sector_id?: string | null
+          ticket_id: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["sla_event_action"]
+          actor_id?: string
+          created_at?: string
+          id?: string
+          level?: Database["public"]["Enums"]["sla_level"] | null
+          new_deadline?: string | null
+          note?: string | null
+          old_deadline?: string | null
+          sector_id?: string | null
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_sla_events_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_sla_events_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1342,6 +1449,13 @@ export type Database = {
     Enums: {
       link_type: "link" | "video" | "form" | "qr"
       prioridade_operacional: "alta" | "media" | "baixa"
+      sla_event_action:
+        | "SET_FIXED"
+        | "SET_CUSTOM"
+        | "OVERRIDE"
+        | "UPDATE_POLICY"
+      sla_level: "P0" | "P1" | "P2" | "P3"
+      sla_mode: "FIXO" | "PERSONALIZADO"
       user_role: "super_admin" | "operador" | "viewer"
       user_type: "administrador_master" | "colaborador_setor"
     }
@@ -1473,6 +1587,14 @@ export const Constants = {
     Enums: {
       link_type: ["link", "video", "form", "qr"],
       prioridade_operacional: ["alta", "media", "baixa"],
+      sla_event_action: [
+        "SET_FIXED",
+        "SET_CUSTOM",
+        "OVERRIDE",
+        "UPDATE_POLICY",
+      ],
+      sla_level: ["P0", "P1", "P2", "P3"],
+      sla_mode: ["FIXO", "PERSONALIZADO"],
       user_role: ["super_admin", "operador", "viewer"],
       user_type: ["administrador_master", "colaborador_setor"],
     },
