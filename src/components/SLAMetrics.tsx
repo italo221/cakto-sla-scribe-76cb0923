@@ -39,10 +39,16 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
   const filteredTickets = useMemo(() => {
     const startDate = startOfDay(subDays(new Date(), parseInt(dateRange)));
     const endDate = endOfDay(new Date());
+    
+    // Data mínima fixa: 11/07/2025
+    const minDate = new Date('2025-07-11T00:00:00.000Z');
 
     return ticketsWithStatus.filter(ticket => {
       const ticketDate = new Date(ticket.data_criacao);
-      const isInDateRange = ticketDate >= startDate && ticketDate <= endDate;
+      
+      // Combinar período selecionado com data mínima (interseção)
+      const effectiveStartDate = new Date(Math.max(startDate.getTime(), minDate.getTime()));
+      const isInDateRange = ticketDate >= effectiveStartDate && ticketDate <= endDate;
       const isInSetor = selectedSetorId && selectedSetorId !== 'all' ? ticket.setor_id === selectedSetorId : true;
       
       return isInDateRange && isInSetor;
