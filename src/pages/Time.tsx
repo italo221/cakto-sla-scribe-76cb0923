@@ -69,18 +69,18 @@ interface TeamTicket {
   id: string;
   ticket_number: string;
   titulo: string;
-  time_responsavel?: string;
+  time_responsavel: string;
   solicitante: string;
-  descricao?: string;
+  descricao: string;
   responsavel_interno?: string;
   status: string;
   nivel_criticidade: string;
-  pontuacao_total?: number;
-  pontuacao_financeiro?: number;
-  pontuacao_cliente?: number;
-  pontuacao_reputacao?: number;
-  pontuacao_urgencia?: number;
-  pontuacao_operacional?: number;
+  pontuacao_total: number;
+  pontuacao_financeiro: number;
+  pontuacao_cliente: number;
+  pontuacao_reputacao: number;
+  pontuacao_urgencia: number;
+  pontuacao_operacional: number;
   data_criacao: string;
   observacoes?: string;
   setor_id?: string;
@@ -412,6 +412,14 @@ export default function Time() {
         // Processar dados
         const processedTickets: TeamTicket[] = (data || []).map(ticket => ({
           ...ticket,
+          time_responsavel: ticket.time_responsavel || 'Não definido',
+          descricao: ticket.descricao || '',
+          pontuacao_total: ticket.pontuacao_total || 0,
+          pontuacao_financeiro: ticket.pontuacao_financeiro || 0,
+          pontuacao_cliente: ticket.pontuacao_cliente || 0,
+          pontuacao_reputacao: ticket.pontuacao_reputacao || 0,
+          pontuacao_urgencia: ticket.pontuacao_urgencia || 0,
+          pontuacao_operacional: ticket.pontuacao_operacional || 0,
           age_days: Math.floor((new Date().getTime() - new Date(ticket.data_criacao).getTime()) / (1000 * 60 * 60 * 24)),
           is_overdue: ticket.prazo_interno ? new Date(ticket.prazo_interno) < new Date() && !['resolvido', 'fechado'].includes(ticket.status) : false
         }));
@@ -708,6 +716,14 @@ export default function Time() {
         // Processar dados
         const processedTickets: TeamTicket[] = (data || []).map(ticket => ({
           ...ticket,
+          time_responsavel: ticket.time_responsavel || 'Não definido',
+          descricao: ticket.descricao || '',
+          pontuacao_total: ticket.pontuacao_total || 0,
+          pontuacao_financeiro: ticket.pontuacao_financeiro || 0,
+          pontuacao_cliente: ticket.pontuacao_cliente || 0,
+          pontuacao_reputacao: ticket.pontuacao_reputacao || 0,
+          pontuacao_urgencia: ticket.pontuacao_urgencia || 0,
+          pontuacao_operacional: ticket.pontuacao_operacional || 0,
           age_days: Math.floor((new Date().getTime() - new Date(ticket.data_criacao).getTime()) / (1000 * 60 * 60 * 24)),
           is_overdue: ticket.prazo_interno ? new Date(ticket.prazo_interno) < new Date() && !['resolvido', 'fechado'].includes(ticket.status) : false
         }));
