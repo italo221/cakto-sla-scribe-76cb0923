@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { User, Clock, Target, Building, Play, Pause, CheckCircle2, AlertTriangle, Circle, Activity, CheckCircle, X, Edit3, Trash2, Tag, MessageSquare } from "lucide-react";
+import { SetTicketDeadlineButton } from "@/components/SetTicketDeadlineButton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -308,6 +309,12 @@ const JiraTicketCard = memo(({
                   <CheckCircle2 className="h-3 w-3 mr-1" />
                   Resolver
                 </Button>}
+              <SetTicketDeadlineButton
+                ticket={ticket}
+                variant="outline"
+                size="sm"
+                showIcon={false}
+              />
               {userCanEdit && onEditTicket && <Button size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={e => {
             e.stopPropagation();
             onEditTicket(ticket);

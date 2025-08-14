@@ -23,6 +23,7 @@ import TicketAttachments from "@/components/TicketAttachments";
 import TicketEditModal from "@/components/TicketEditModal";
 import { SLADeadlineChip } from "@/components/SLADeadlineChip";
 import { SLADeadlineModal } from "@/components/SLADeadlineModal";
+import { SetTicketDeadlineButton } from "@/components/SetTicketDeadlineButton";
 // (FileUploader import removido)
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -947,35 +948,46 @@ const toggleCommentsFocusMode = () => {
               {!isCommentsFocusMode && (
                 <>
                 {/* Botão de Transferir Setor */}
-                {(profile?.role === 'super_admin' || profile?.role === 'operador') && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-2">
-                        <ArrowRightLeft className="h-4 w-4" />
-                        Transferir Setor
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <div className="px-2 py-1.5 text-sm font-medium">
-                        Transferir para:
-                      </div>
-                      <DropdownMenuSeparator />
-                      {setores
-                        .filter(setor => setor.id !== currentSLA.setor_id)
-                        .map(setor => (
-                          <DropdownMenuItem
-                            key={setor.id}
-                            onClick={() => handleTransferTicket(setor)}
-                            className="cursor-pointer"
-                          >
-                            <Building className="h-4 w-4 mr-2" />
-                            {setor.nome}
-                          </DropdownMenuItem>
-                        ))
-                      }
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
+                 {(profile?.role === 'super_admin' || profile?.role === 'operador') && (
+                   <DropdownMenu>
+                     <DropdownMenuTrigger asChild>
+                       <Button variant="outline" size="sm" className="gap-2">
+                         <ArrowRightLeft className="h-4 w-4" />
+                         Transferir Setor
+                       </Button>
+                     </DropdownMenuTrigger>
+                     <DropdownMenuContent align="end" className="w-56">
+                       <div className="px-2 py-1.5 text-sm font-medium">
+                         Transferir para:
+                       </div>
+                       <DropdownMenuSeparator />
+                       {setores
+                         .filter(setor => setor.id !== currentSLA.setor_id)
+                         .map(setor => (
+                           <DropdownMenuItem
+                             key={setor.id}
+                             onClick={() => handleTransferTicket(setor)}
+                             className="cursor-pointer"
+                           >
+                             <Building className="h-4 w-4 mr-2" />
+                             {setor.nome}
+                           </DropdownMenuItem>
+                         ))
+                       }
+                     </DropdownMenuContent>
+                   </DropdownMenu>
+                 )}
+
+                 {/* Botão Definir Prazo */}
+                 <SetTicketDeadlineButton
+                   ticket={currentSLA}
+                   onUpdate={() => {
+                     setCurrentSLA({ ...currentSLA });
+                     onUpdate();
+                   }}
+                   variant="outline"
+                   size="sm"
+                 />
                 </>
               )}
             </div>

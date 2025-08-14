@@ -20,6 +20,22 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
   const [selectedSetorId, setSelectedSetorId] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('30');
 
+  // Função para formatar duração: xh ym ou Xd xh, sem dados = "—"
+  const formatDuration = (hours: number) => {
+    if (!hours || hours === 0) return '—';
+    
+    if (hours < 24) {
+      const h = Math.floor(hours);
+      const m = Math.floor((hours - h) * 60);
+      if (h === 0) return `${m}m`;
+      return m > 0 ? `${h}h ${m}m` : `${h}h`;
+    } else {
+      const days = Math.floor(hours / 24);
+      const remainingHours = Math.floor(hours % 24);
+      return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
+    }
+  };
+
   const filteredTickets = useMemo(() => {
     const startDate = startOfDay(subDays(new Date(), parseInt(dateRange)));
     const endDate = endOfDay(new Date());
@@ -35,16 +51,16 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
 
   const slaMetrics = useMemo(() => {
     const totalTickets = filteredTickets.length;
-    let withinSLA = 0;
+    let withinSLAResolved = 0;
     let overdue = 0;
     let resolved = 0;
     let totalResolutionTime = 0;
 
     const criticityBreakdown = {
-      P0: { total: 0, withinSLA: 0, avgResolutionHours: 0 },
-      P1: { total: 0, withinSLA: 0, avgResolutionHours: 0 },
-      P2: { total: 0, withinSLA: 0, avgResolutionHours: 0 },
-      P3: { total: 0, withinSLA: 0, avgResolutionHours: 0 },
+      P0: { total: 0, withinSLA: 0, avgResolutionHours: 0, resolutionTimes: [] as number[] },
+      P1: { total: 0, withinSLA: 0, avgResolutionHours: 0, resolutionTimes: [] as number[] },
+      P2: { total: 0, withinSLA: 0, avgResolutionHours: 0, resolutionTimes: [] as number[] },
+      P3: { total: 0, withinSLA: 0, avgResolutionHours: 0, resolutionTimes: [] as number[] },
     };
 
     filteredTickets.forEach(ticket => {
@@ -53,7 +69,7 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
 
       criticityBreakdown[level].total++;
 
-      // Calcular deadline baseado na política do setor
+      // Calcular deadline aplicado (prazo interno tem prioridade)
       let deadline: Date;
       if (ticket.prazo_interno) {
         deadline = new Date(ticket.prazo_interno);
@@ -65,47 +81,55 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
         );
       }
 
-        const isResolved = ['resolvido', 'fechado'].includes(ticket.status);
-        if (isResolved) {
-          resolved++;
-          // Usar data_criacao como fallback se updated_at não existir
-          const resolutionDate = new Date(ticket.data_criacao);
-          const resolutionTime = resolutionDate.getTime() - new Date(ticket.data_criacao).getTime();
-          
-          totalResolutionTime += resolutionTime;
-          
-          const resolvedWithinSLA = resolutionDate <= deadline;
+      const isResolved = ['resolvido', 'fechado'].includes(ticket.status);
+      
+      if (isResolved) {
+        resolved++;
+        
+        // Calcular tempo de resolução: resolved_at - created_at
+        // Como não temos resolved_at exato, usar updated_at como aproximação
+        const createdAt = new Date(ticket.data_criacao);
+        const resolvedAt = ticket.updated_at ? new Date(ticket.updated_at) : createdAt;
+        const resolutionTimeMs = Math.max(0, resolvedAt.getTime() - createdAt.getTime());
+        
+        if (resolutionTimeMs > 0) {
+          totalResolutionTime += resolutionTimeMs;
+          criticityBreakdown[level].resolutionTimes.push(resolutionTimeMs);
+        }
+        
+        // Verificar conformidade SLA: resolvido dentro do prazo aplicado
+        const resolvedWithinSLA = resolvedAt <= deadline;
         if (resolvedWithinSLA) {
-          withinSLA++;
+          withinSLAResolved++;
           criticityBreakdown[level].withinSLA++;
         }
-
-        criticityBreakdown[level].avgResolutionHours += resolutionTime / (1000 * 60 * 60);
       } else {
-        // Ticket ainda aberto, verificar se está atrasado
+        // Ticket não resolvido: verificar se está atrasado
         if (new Date() > deadline) {
           overdue++;
-        } else {
-          withinSLA++;
-          criticityBreakdown[level].withinSLA++;
         }
       }
     });
 
-    // Calcular médias
+    // Calcular médias de tempo de resolução por criticidade
     Object.keys(criticityBreakdown).forEach(level => {
       const levelData = criticityBreakdown[level as keyof typeof criticityBreakdown];
-      if (levelData.total > 0) {
-        levelData.avgResolutionHours = levelData.avgResolutionHours / levelData.total;
+      const resolutionTimes = levelData.resolutionTimes;
+      if (resolutionTimes.length > 0) {
+        const avgMs = resolutionTimes.reduce((a, b) => a + b, 0) / resolutionTimes.length;
+        levelData.avgResolutionHours = avgMs / (1000 * 60 * 60);
       }
     });
 
-    const complianceRate = totalTickets > 0 ? (withinSLA / totalTickets) * 100 : 0;
+    // Taxa de conformidade SLA: % de tickets resolvidos dentro do prazo aplicado
+    const complianceRate = resolved > 0 ? (withinSLAResolved / resolved) * 100 : 0;
+    
+    // Tempo médio de resolução: média de (resolved_at - created_at) para tickets resolvidos
     const avgResolutionHours = resolved > 0 ? totalResolutionTime / (resolved * 1000 * 60 * 60) : 0;
 
     return {
       totalTickets,
-      withinSLA,
+      withinSLA: withinSLAResolved,
       overdue,
       resolved,
       complianceRate,
@@ -256,7 +280,7 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Tempo Médio</p>
-                <p className="text-2xl font-bold">{slaMetrics.avgResolutionHours.toFixed(1)}h</p>
+                <p className="text-2xl font-bold">{formatDuration(slaMetrics.avgResolutionHours)}</p>
               </div>
               <Clock className="h-8 w-8 text-blue-500" />
             </div>
@@ -291,7 +315,7 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
                     className="h-2"
                   />
                   <div className="text-xs text-muted-foreground">
-                    Tempo médio: {data.avgResolutionHours.toFixed(1)}h
+                    Tempo médio: {formatDuration(data.avgResolutionHours)}
                   </div>
                 </div>
               </div>

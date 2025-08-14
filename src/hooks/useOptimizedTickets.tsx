@@ -18,6 +18,7 @@ interface Ticket {
   pontuacao_urgencia: number;
   pontuacao_operacional: number;
   data_criacao: string;
+  updated_at?: string;
   observacoes?: string;
   tags?: string[];
   setor_id?: string;
