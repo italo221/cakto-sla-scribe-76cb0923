@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -1227,7 +1227,7 @@ export type Database = {
         Returns: boolean
       }
       add_sla_comment: {
-        Args: { p_sla_id: string; p_setor_id: string; p_comentario: string }
+        Args: { p_comentario: string; p_setor_id: string; p_sla_id: string }
         Returns: string
       }
       can_edit: {
@@ -1251,12 +1251,12 @@ export type Database = {
         Returns: {
           email: string
           has_registration: boolean
-          registration_status: string
-          registration_date: string
-          kyc_status: string
           kyc_date: string
-          total_profit_30_days: number
+          kyc_status: string
           profit_count_30_days: number
+          registration_date: string
+          registration_status: string
+          total_profit_30_days: number
         }[]
       }
       has_role: {
@@ -1273,22 +1273,22 @@ export type Database = {
       }
       log_sla_action: {
         Args: {
-          p_sla_id: string
           p_acao: string
-          p_setor_origem_id?: string
-          p_setor_destino_id?: string
-          p_justificativa?: string
           p_dados_anteriores?: Json
           p_dados_novos?: Json
+          p_justificativa?: string
+          p_setor_destino_id?: string
+          p_setor_origem_id?: string
+          p_sla_id: string
         }
         Returns: string
       }
       mention_search: {
         Args: { q?: string }
         Returns: {
-          user_id: string
-          nome_completo: string
           email: string
+          nome_completo: string
+          user_id: string
         }[]
       }
       user_has_setor_access: {
