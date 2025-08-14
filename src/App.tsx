@@ -10,6 +10,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AppLayout from "@/components/AppLayout";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import Time from "./pages/Time";
 import Integrations from "./pages/Integrations";
 import Inbox from "./pages/Inbox";
 import Kanban from "./pages/Kanban";
@@ -47,6 +48,15 @@ function App() {
                   <div className="animate-fade-in">
                     <ProtectedRoute>
                       <Dashboard />
+                    </ProtectedRoute>
+                  </div>
+                </AppLayout>
+              } />
+              <Route path="/time" element={
+                <AppLayout>
+                  <div className="animate-fade-in">
+                    <ProtectedRoute>
+                      <Time />
                     </ProtectedRoute>
                   </div>
                 </AppLayout>

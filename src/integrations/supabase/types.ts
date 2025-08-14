@@ -1291,6 +1291,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      team_metrics: {
+        Args: { date_from?: string; date_to?: string; setor_ids?: string[] }
+        Returns: Json
+      }
       user_has_setor_access: {
         Args: { setor_uuid: string; user_uuid?: string }
         Returns: boolean
