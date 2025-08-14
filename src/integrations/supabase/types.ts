@@ -1441,6 +1441,15 @@ export type Database = {
         Args: { p_team_id: string; p_ticket_id: string }
         Returns: undefined
       }
+      update_ticket_deadline: {
+        Args: {
+          p_actor_id?: string
+          p_deadline: string
+          p_note?: string
+          p_ticket_id: string
+        }
+        Returns: Json
+      }
       user_has_setor_access: {
         Args: { setor_uuid: string; user_uuid?: string }
         Returns: boolean

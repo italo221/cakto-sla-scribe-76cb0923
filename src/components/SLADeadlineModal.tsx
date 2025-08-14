@@ -58,37 +58,15 @@ export const SLADeadlineModal = ({
     setLoading(true);
     try {
       const deadlineDate = new Date(deadline);
-      
-      // Atualizar o prazo_interno do ticket
-      const { error: updateError } = await supabase
-        .from('sla_demandas')
-        .update({ prazo_interno: deadlineDate.toISOString() })
-        .eq('id', ticketId);
 
-      if (updateError) throw updateError;
-
-      // Registrar evento de SLA
-      const eventData: CreateSLAEventData = {
-        ticket_id: ticketId,
-        action: isOverride ? 'OVERRIDE' : 'SET_CUSTOM',
-        old_deadline: currentDeadline || undefined,
-        new_deadline: deadlineDate.toISOString(),
-        note: note || undefined,
-        actor_id: user.id,
-      };
-
-      await createEvent(eventData);
-
-      // Registrar no histórico do ticket
-      await supabase.rpc('log_sla_action', {
-        p_sla_id: ticketId,
-        p_acao: isOverride ? 'override_prazo' : 'definir_prazo',
-        p_justificativa: note || `Prazo ${isOverride ? 'forçado' : 'definido'} para ${format(deadlineDate, 'dd/MM/yyyy HH:mm', { locale: ptBR })}`,
-        p_dados_novos: {
-          prazo_interno: deadlineDate.toISOString(),
-          metodo: isOverride ? 'override' : 'custom',
-        }
+      // Usar a nova função do banco para atualizar o prazo
+      const { data, error } = await supabase.rpc('update_ticket_deadline', {
+        p_ticket_id: ticketId,
+        p_deadline: deadlineDate.toISOString(),
+        p_note: note || undefined
       });
+
+      if (error) throw error;
 
       toast({
         title: isOverride ? "Prazo forçado" : "Prazo definido",
