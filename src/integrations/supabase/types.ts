@@ -1018,6 +1018,33 @@ export type Database = {
         }
         Relationships: []
       }
+      team_ticket_pins: {
+        Row: {
+          id: string
+          pinned_at: string
+          pinned_by: string
+          position: number
+          team_id: string
+          ticket_id: string
+        }
+        Insert: {
+          id?: string
+          pinned_at?: string
+          pinned_by: string
+          position?: number
+          team_id: string
+          ticket_id: string
+        }
+        Update: {
+          id?: string
+          pinned_at?: string
+          pinned_by?: string
+          position?: number
+          team_id?: string
+          ticket_id?: string
+        }
+        Relationships: []
+      }
       ticket_attachments: {
         Row: {
           comment_id: string | null
@@ -1291,9 +1318,21 @@ export type Database = {
           user_id: string
         }[]
       }
+      pin_ticket: {
+        Args: { p_team_id: string; p_ticket_id: string }
+        Returns: boolean
+      }
+      reorder_pins: {
+        Args: { p_team_id: string; p_ticket_ids: string[] }
+        Returns: undefined
+      }
       team_metrics: {
         Args: { date_from?: string; date_to?: string; setor_ids?: string[] }
         Returns: Json
+      }
+      unpin_ticket: {
+        Args: { p_team_id: string; p_ticket_id: string }
+        Returns: undefined
       }
       user_has_setor_access: {
         Args: { setor_uuid: string; user_uuid?: string }

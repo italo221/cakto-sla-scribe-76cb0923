@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   Filter, 
   SortAsc, 
@@ -20,8 +21,30 @@ import {
   Search,
   X,
   Trash2,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Pin,
+  Target,
+  GripVertical
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { format, subDays, formatDistanceToNow } from 'date-fns';
 import { ptBR } from "date-fns/locale";
 import { cn } from '@/lib/utils';
@@ -73,6 +96,174 @@ interface Setor {
   nome: string;
 }
 
+// Sortable Ticket Item Component
+function SortableTicketItem({ ticket, onTicketClick, onUnpinClick, isPinned }: {
+  ticket: TeamTicket;
+  onTicketClick: (ticket: TeamTicket) => void;
+  onUnpinClick: (ticketId: string) => void;
+  isPinned: boolean;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: ticket.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const getPriorityBadgeColor = (priority: string) => {
+    switch (priority) {
+      case 'P0': return 'bg-red-500 text-white';
+      case 'P1': return 'bg-orange-500 text-white';
+      case 'P2': return 'bg-yellow-500 text-white';
+      case 'P3': return 'bg-blue-500 text-white';
+      default: return 'bg-gray-500 text-white';
+    }
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'aberto': return 'bg-gray-100 text-gray-800 border-gray-300';
+      case 'em_andamento': return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'resolvido': return 'bg-green-100 text-green-800 border-green-300';
+      case 'fechado': return 'bg-slate-100 text-slate-800 border-slate-300';
+      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels = {
+      'aberto': 'Aberto',
+      'em_andamento': 'Em Andamento',
+      'resolvido': 'Resolvido',
+      'fechado': 'Fechado'
+    };
+    return labels[status as keyof typeof labels] || status;
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "p-3 rounded-lg border cursor-pointer transition-all duration-200 relative",
+        "hover:shadow-sm hover:bg-muted/50",
+        isDragging && "opacity-50 z-10",
+        isPinned && "bg-primary/5 border-primary/20"
+      )}
+    >
+      {/* Drag Handle for pinned tickets */}
+      {isPinned && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute left-2 top-1/2 transform -translate-y-1/2 cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </div>
+      )}
+
+      <div 
+        className={cn("flex items-start gap-3", isPinned && "ml-6")}
+        onClick={() => onTicketClick(ticket)}
+      >
+        {/* Priority Badge */}
+        <Badge className={cn("shrink-0 text-xs", getPriorityBadgeColor(ticket.nivel_criticidade))}>
+          {ticket.nivel_criticidade}
+        </Badge>
+
+        {/* Main Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-sm truncate">{ticket.titulo}</h4>
+              <div className="text-xs text-muted-foreground mt-1 space-x-1">
+                <span>{ticket.ticket_number}</span>
+                <span>•</span>
+                <span>{ticket.solicitante}</span>
+                {ticket.setor_id && (
+                  <>
+                    <span>•</span>
+                    <span>Setor</span>
+                  </>
+                )}
+              </div>
+              
+              {/* Tags */}
+              {ticket.tags && ticket.tags.length > 0 && (
+                <div className="flex items-center gap-1 mt-2">
+                  {ticket.tags.slice(0, 2).map((tag, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                  {ticket.tags.length > 2 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{ticket.tags.length - 2}
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Right side */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* SLA Warning */}
+              {ticket.is_overdue && (
+                <Tooltip>
+                  <TooltipTrigger>
+                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>SLA em atraso</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              {/* Pin Icon */}
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onUnpinClick(ticket.id);
+                    }}
+                  >
+                    <Pin className={cn("h-3 w-3", isPinned ? "fill-current text-primary" : "text-muted-foreground")} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isPinned ? "Desafixar" : "Fixar"}</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Status and Time */}
+              <div className="text-right">
+                <Badge className={cn("text-xs mb-1", getStatusBadgeColor(ticket.status))}>
+                  {isPinned && <span className="mr-1">📌</span>}
+                  {getStatusLabel(ticket.status)}
+                </Badge>
+                <div className="text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(ticket.data_criacao), { addSuffix: true, locale: ptBR })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Time() {
   const { user, isSuperAdmin } = useAuth();
   const { userSetores } = usePermissions();
@@ -98,6 +289,11 @@ export default function Time() {
   
   // Responsive filter sidebar
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
+  
+  // Pinned tickets states
+  const [pinnedTickets, setPinnedTickets] = useState<string[]>([]);
+  const [showOnlyPinned, setShowOnlyPinned] = useState(false);
+  const [pinnedLoading, setPinnedLoading] = useState(false);
 
   // Carregar setores
   useEffect(() => {
@@ -239,14 +435,14 @@ export default function Time() {
     );
   }, [setores, userSetores, isSuperAdmin]);
 
-  // Filtrar e ordenar tickets
-  const filteredAndSortedTickets = useMemo(() => {
-    let filtered = [...tickets];
+  // Separar e filtrar tickets
+  const { pinnedTicketsData, regularTicketsData } = useMemo(() => {
+    let allFiltered = [...tickets];
     
     // Aplicar busca
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(ticket => 
+      allFiltered = allFiltered.filter(ticket => 
         ticket.titulo.toLowerCase().includes(term) ||
         ticket.ticket_number.toLowerCase().includes(term) ||
         ticket.solicitante.toLowerCase().includes(term) ||
@@ -256,38 +452,46 @@ export default function Time() {
     
     // Aplicar filtros de prioridade
     if (priorityFilter.length > 0) {
-      filtered = filtered.filter(ticket => priorityFilter.includes(ticket.nivel_criticidade));
+      allFiltered = allFiltered.filter(ticket => priorityFilter.includes(ticket.nivel_criticidade));
     }
     
     // Aplicar filtros de status
     if (statusFilter.length > 0) {
-      filtered = filtered.filter(ticket => statusFilter.includes(ticket.status));
+      allFiltered = allFiltered.filter(ticket => statusFilter.includes(ticket.status));
     }
     
     // Aplicar filtros de tags
     if (tagFilter.length > 0) {
-      filtered = filtered.filter(ticket => 
+      allFiltered = allFiltered.filter(ticket => 
         ticket.tags && tagFilter.some(tag => ticket.tags!.includes(tag))
       );
     }
     
-    // Aplicar ordenação
+    // Separar tickets fixados
+    const pinned = pinnedTickets
+      .map(pinnedId => allFiltered.find(t => t.id === pinnedId))
+      .filter(Boolean) as TeamTicket[];
+    
+    // Tickets regulares (excluir os fixados)
+    const regular = allFiltered.filter(ticket => !pinnedTickets.includes(ticket.id));
+    
+    // Aplicar ordenação apenas aos tickets regulares
     switch (sortBy) {
       case 'priority':
         const priorityOrder = { 'P0': 0, 'P1': 1, 'P2': 2, 'P3': 3 };
-        filtered.sort((a, b) => 
+        regular.sort((a, b) => 
           (priorityOrder[a.nivel_criticidade as keyof typeof priorityOrder] || 4) - 
           (priorityOrder[b.nivel_criticidade as keyof typeof priorityOrder] || 4)
         );
         break;
       case 'oldest':
-        filtered.sort((a, b) => new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime());
+        regular.sort((a, b) => new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime());
         break;
       case 'newest':
-        filtered.sort((a, b) => new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime());
+        regular.sort((a, b) => new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime());
         break;
       case 'sla':
-        filtered.sort((a, b) => {
+        regular.sort((a, b) => {
           if (a.is_overdue && !b.is_overdue) return -1;
           if (!a.is_overdue && b.is_overdue) return 1;
           return 0;
@@ -295,39 +499,11 @@ export default function Time() {
         break;
     }
     
-    return filtered;
-  }, [tickets, searchTerm, priorityFilter, statusFilter, tagFilter, sortBy]);
-
-  // Helper functions
-  const getPriorityBadgeColor = (priority: string) => {
-    switch (priority) {
-      case 'P0': return 'bg-red-500 text-white';
-      case 'P1': return 'bg-orange-500 text-white';
-      case 'P2': return 'bg-yellow-500 text-white';
-      case 'P3': return 'bg-blue-500 text-white';
-      default: return 'bg-gray-500 text-white';
-    }
-  };
-
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'aberto': return 'bg-gray-100 text-gray-800 border-gray-300';
-      case 'em_andamento': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'resolvido': return 'bg-green-100 text-green-800 border-green-300';
-      case 'fechado': return 'bg-slate-100 text-slate-800 border-slate-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    const labels = {
-      'aberto': 'Aberto',
-      'em_andamento': 'Em Andamento',
-      'resolvido': 'Resolvido',
-      'fechado': 'Fechado'
+    return {
+      pinnedTicketsData: pinned,
+      regularTicketsData: regular
     };
-    return labels[status as keyof typeof labels] || status;
-  };
+  }, [tickets, searchTerm, priorityFilter, statusFilter, tagFilter, sortBy, pinnedTickets]);
 
   const clearAllFilters = () => {
     setSearchTerm('');
@@ -337,6 +513,137 @@ export default function Time() {
     setSortBy('priority');
     setShowOnlyMyTickets(false);
   };
+
+  // Pinned tickets functions
+  const loadPinnedTickets = useCallback(async () => {
+    if (!selectedSetor) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('team_ticket_pins')
+        .select('ticket_id, position')
+        .eq('team_id', selectedSetor)
+        .order('position');
+      
+      if (error) throw error;
+      
+      setPinnedTickets(data?.map(pin => pin.ticket_id) || []);
+    } catch (error) {
+      console.error('Erro ao carregar tickets fixados:', error);
+    }
+  }, [selectedSetor]);
+
+  const handlePinTicket = async (ticketId: string) => {
+    if (!selectedSetor) return;
+    
+    setPinnedLoading(true);
+    try {
+      const { data, error } = await supabase.rpc('pin_ticket', {
+        p_team_id: selectedSetor,
+        p_ticket_id: ticketId
+      });
+      
+      if (error) throw error;
+      
+      if (data === false) {
+        toast({
+          title: "Limite atingido",
+          description: "Limite de 5 fixados por time. Desafixe um para adicionar outro.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      await loadPinnedTickets();
+      toast({
+        title: "Ticket fixado",
+        description: "Ticket foi fixado no topo da lista."
+      });
+    } catch (error) {
+      console.error('Erro ao fixar ticket:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao fixar ticket",
+        variant: "destructive"
+      });
+    } finally {
+      setPinnedLoading(false);
+    }
+  };
+
+  const handleUnpinTicket = async (ticketId: string) => {
+    if (!selectedSetor) return;
+    
+    setPinnedLoading(true);
+    try {
+      const { error } = await supabase.rpc('unpin_ticket', {
+        p_team_id: selectedSetor,
+        p_ticket_id: ticketId
+      });
+      
+      if (error) throw error;
+      
+      await loadPinnedTickets();
+      toast({
+        title: "Ticket desafixado",
+        description: "Ticket foi removido dos fixados."
+      });
+    } catch (error) {
+      console.error('Erro ao desafixar ticket:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao desafixar ticket",
+        variant: "destructive"
+      });
+    } finally {
+      setPinnedLoading(false);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+    
+    setPinnedTickets((items) => {
+      const oldIndex = items.indexOf(active.id as string);
+      const newIndex = items.indexOf(over.id as string);
+      
+      return arrayMove(items, oldIndex, newIndex);
+    });
+    
+    // Persist reorder with debounce
+    const reorderedIds = arrayMove(pinnedTickets, 
+      pinnedTickets.indexOf(active.id as string), 
+      pinnedTickets.indexOf(over.id as string)
+    );
+    
+    try {
+      const { error } = await supabase.rpc('reorder_pins', {
+        p_team_id: selectedSetor,
+        p_ticket_ids: reorderedIds
+      });
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('Erro ao reordenar pins:', error);
+      // Revert on error
+      await loadPinnedTickets();
+    }
+  };
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Load pinned tickets when setor changes
+  useEffect(() => {
+    loadPinnedTickets();
+  }, [loadPinnedTickets]);
 
   const handleTicketClick = (ticket: TeamTicket) => {
     setSelectedTicket(ticket);
@@ -412,6 +719,16 @@ export default function Time() {
     };
     
     loadTickets();
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels = {
+      'aberto': 'Aberto',
+      'em_andamento': 'Em Andamento',
+      'resolvido': 'Resolvido',
+      'fechado': 'Fechado'
+    };
+    return labels[status as keyof typeof labels] || status;
   };
 
   // Filter Sidebar Component
@@ -569,6 +886,16 @@ export default function Time() {
           />
           <Label htmlFor="my-tickets" className="text-sm">Só meus tickets</Label>
         </div>
+
+        {/* Toggle "Só fixados" */}
+        <div className="flex items-center space-x-2 mb-4">
+          <Switch
+            id="pinned-only"
+            checked={showOnlyPinned}
+            onCheckedChange={setShowOnlyPinned}
+          />
+          <Label htmlFor="pinned-only" className="text-sm">Só fixados</Label>
+        </div>
       </div>
 
       {/* Action Buttons */}
@@ -587,215 +914,203 @@ export default function Time() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Centralized Container */}
-      <div className="mx-auto px-6 py-6 pb-12" style={{ maxWidth: 'clamp(1120px, 90vw, 1320px)' }}>
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Time</h1>
-              <p className="text-sm text-muted-foreground">Operação e métricas do time</p>
-            </div>
-            {/* Mobile Filter Toggle */}
-            <div className="lg:hidden">
-              <Sheet open={isFilterSidebarOpen} onOpenChange={setIsFilterSidebarOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <SlidersHorizontal className="h-4 w-4 mr-2" />
-                    Filtros
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-80">
-                  <SheetHeader>
-                    <SheetTitle>Filtros</SheetTitle>
-                    <SheetDescription>
-                      Configure os filtros para a lista de tickets
-                    </SheetDescription>
-                  </SheetHeader>
-                  <div className="mt-6">
-                    <FilterSidebar isMobile />
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
-          </div>
-        </div>
-
-        {/* Search Bar - Full Width */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por título, número ou solicitante..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-10"
-            />
-            {searchTerm && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-                onClick={() => setSearchTerm('')}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Main Grid Layout */}
-        <div className="grid lg:grid-cols-[2fr_1fr] gap-7 lg:gap-7">
-          {/* Ticket List - Left Column */}
-          <div className="min-w-0">
-            <ScrollArea 
-              className="rounded-lg border bg-card"
-              style={{ 
-                height: 'calc(100vh - var(--header-height, 80px) - 120px)',
-                minWidth: '560px',
-                maxWidth: '760px'
-              }}
-            >
-              <div className="space-y-3 p-3">
-                {loading ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Carregando tickets...
-                  </div>
-                ) : filteredAndSortedTickets.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Nenhum ticket encontrado
-                  </div>
-                ) : (
-                  filteredAndSortedTickets.map(ticket => (
-                    <div
-                      key={ticket.id}
-                      onClick={() => handleTicketClick(ticket)}
-                      className={cn(
-                        "p-3 rounded-lg border cursor-pointer transition-all duration-200",
-                        "hover:shadow-sm hover:bg-muted/50",
-                        "active:scale-[0.99]",
-                        selectedTicket?.id === ticket.id && "bg-muted border-primary"
-                      )}
-                      style={{ padding: '12px 16px' }}
-                    >
-                      <div className="flex items-start gap-3">
-                        {/* Priority Badge */}
-                        <Badge className={cn("shrink-0 text-xs", getPriorityBadgeColor(ticket.nivel_criticidade))}>
-                          {ticket.nivel_criticidade}
-                        </Badge>
-                        
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-medium text-sm line-clamp-1 text-foreground">
-                              {ticket.titulo}
-                            </h4>
-                            <div className="text-right flex-shrink-0">
-                              <div className="text-xs text-muted-foreground">
-                                {formatDistanceToNow(new Date(ticket.data_criacao), { 
-                                  addSuffix: true, 
-                                  locale: ptBR 
-                                })}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Sub-line */}
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                            <span>{ticket.ticket_number}</span>
-                            <span>•</span>
-                            <span className="truncate">{ticket.solicitante}</span>
-                          </div>
-                          
-                          {/* Bottom row */}
-                          <div className="flex items-center justify-between mt-2">
-                            <div className="flex items-center gap-2">
-                              {ticket.is_overdue && (
-                                <AlertTriangle className="h-4 w-4 text-red-500" />
-                              )}
-                              {/* Tags - show max 2 */}
-                              {ticket.tags && ticket.tags.length > 0 && (
-                                <div className="flex items-center gap-1">
-                                  {ticket.tags.slice(0, 2).map(tag => (
-                                    <span key={tag} className="text-xs bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded">
-                                      {tag}
-                                    </span>
-                                  ))}
-                                  {ticket.tags.length > 2 && (
-                                    <span className="text-xs text-muted-foreground">
-                                      +{ticket.tags.length - 2}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                            
-                            <Badge 
-                              variant="outline" 
-                              className={cn("text-xs", getStatusBadgeColor(ticket.status))}
-                            >
-                              {getStatusLabel(ticket.status)}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
+    <TooltipProvider>
+      <div className="min-h-screen bg-background">
+        {/* Centralized Container */}
+        <div className="mx-auto px-6 py-6 pb-12" style={{ maxWidth: 'clamp(1120px, 90vw, 1320px)' }}>
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold">Time</h1>
+                <p className="text-sm text-muted-foreground">Operação e métricas do time</p>
               </div>
-            </ScrollArea>
+              {/* Mobile Filter Toggle */}
+              <div className="lg:hidden">
+                <Sheet open={isFilterSidebarOpen} onOpenChange={setIsFilterSidebarOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <SlidersHorizontal className="h-4 w-4 mr-2" />
+                      Filtros
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-80">
+                    <SheetHeader>
+                      <SheetTitle>Filtros</SheetTitle>
+                      <SheetDescription>
+                        Configure os filtros para a lista de tickets
+                      </SheetDescription>
+                    </SheetHeader>
+                    <div className="mt-6">
+                      <FilterSidebar isMobile />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+            </div>
           </div>
 
-          {/* Filter Sidebar - Right Column (Desktop only) */}
-          <div className="hidden lg:block">
-            <div 
-              className="rounded-lg border bg-card"
-              style={{ 
-                width: 'clamp(320px, 26vw, 360px)',
-                position: 'sticky',
-                top: '16px'
-              }}
-            >
-              <ScrollArea className="h-full max-h-[calc(100vh-120px)]">
-                <div className="p-6">
-                  <FilterSidebar />
+          {/* Search Bar - Full Width */}
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por título, número ou solicitante..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {searchTerm && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                  onClick={() => setSearchTerm('')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Main Grid Layout */}
+          <div className="grid lg:grid-cols-[2fr_1fr] gap-7 lg:gap-7">
+            {/* Ticket List - Left Column */}
+            <div className="min-w-0">
+              <ScrollArea 
+                className="rounded-lg border bg-card"
+                style={{ 
+                  height: 'calc(100vh - var(--header-height, 80px) - 120px)',
+                  minWidth: '560px',
+                  maxWidth: '760px'
+                }}
+              >
+                <div className="space-y-3 p-3">
+                  {loading ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Carregando tickets...
+                    </div>
+                  ) : (
+                    <>
+                      {/* Pinned Tickets Section */}
+                      {!showOnlyPinned && pinnedTicketsData.length > 0 && (
+                        <div className="mb-6">
+                          <div className="flex items-center gap-2 mb-3 px-2">
+                            <Target className="h-4 w-4 text-primary" />
+                            <h3 className="font-semibold text-sm">
+                              Fixados ({pinnedTicketsData.length}/5)
+                            </h3>
+                          </div>
+                          
+                          <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                          >
+                            <SortableContext
+                              items={pinnedTickets}
+                              strategy={verticalListSortingStrategy}
+                            >
+                              <div className="space-y-2">
+                                {pinnedTicketsData.map(ticket => (
+                                  <SortableTicketItem
+                                    key={ticket.id}
+                                    ticket={ticket}
+                                    onTicketClick={handleTicketClick}
+                                    onUnpinClick={handleUnpinTicket}
+                                    isPinned={true}
+                                  />
+                                ))}
+                              </div>
+                            </SortableContext>
+                          </DndContext>
+                        </div>
+                      )}
+
+                      {/* Regular Tickets or Pinned Only */}
+                      {showOnlyPinned ? (
+                        pinnedTicketsData.length === 0 ? (
+                          <div className="text-center py-12 text-muted-foreground">
+                            <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p className="text-lg font-medium mb-2">Nenhum ticket fixado ainda</p>
+                            <p className="text-sm">
+                              Clique no ícone 📌 em um ticket para destacar aqui.
+                            </p>
+                          </div>
+                        ) : (
+                          <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                          >
+                            <SortableContext
+                              items={pinnedTickets}
+                              strategy={verticalListSortingStrategy}
+                            >
+                              <div className="space-y-2">
+                                {pinnedTicketsData.map(ticket => (
+                                  <SortableTicketItem
+                                    key={ticket.id}
+                                    ticket={ticket}
+                                    onTicketClick={handleTicketClick}
+                                    onUnpinClick={handleUnpinTicket}
+                                    isPinned={true}
+                                  />
+                                ))}
+                              </div>
+                            </SortableContext>
+                          </DndContext>
+                        )
+                      ) : (
+                        regularTicketsData.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            Nenhum ticket encontrado
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {regularTicketsData.map(ticket => (
+                              <SortableTicketItem
+                                key={ticket.id}
+                                ticket={ticket}
+                                onTicketClick={handleTicketClick}
+                                onUnpinClick={handlePinTicket}
+                                isPinned={false}
+                              />
+                            ))}
+                          </div>
+                        )
+                      )}
+                    </>
+                  )}
                 </div>
               </ScrollArea>
             </div>
+
+            {/* Filters Sidebar - Right Column */}
+            <div className="hidden lg:block">
+              <div 
+                className="sticky rounded-lg border bg-card p-4"
+                style={{ 
+                  top: '16px',
+                  width: 'clamp(320px, 26vw, 360px)'
+                }}
+              >
+                <FilterSidebar />
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Ticket Detail Modal */}
-      <TicketDetailModal
-        sla={selectedTicket ? {
-          id: selectedTicket.id,
-          titulo: selectedTicket.titulo,
-          time_responsavel: selectedTicket.time_responsavel || '',
-          solicitante: selectedTicket.solicitante,
-          descricao: selectedTicket.descricao || '',
-          status: selectedTicket.status,
-          nivel_criticidade: selectedTicket.nivel_criticidade,
-          pontuacao_total: selectedTicket.pontuacao_total || 0,
-          pontuacao_financeiro: selectedTicket.pontuacao_financeiro || 0,
-          pontuacao_cliente: selectedTicket.pontuacao_cliente || 0,
-          pontuacao_reputacao: selectedTicket.pontuacao_reputacao || 0,
-          pontuacao_urgencia: selectedTicket.pontuacao_urgencia || 0,
-          pontuacao_operacional: selectedTicket.pontuacao_operacional || 0,
-          data_criacao: selectedTicket.data_criacao,
-          observacoes: selectedTicket.observacoes,
-          setor_id: selectedTicket.setor_id,
-          tags: selectedTicket.tags,
-          ticket_number: selectedTicket.ticket_number,
-          responsavel_interno: selectedTicket.responsavel_interno,
-          prazo_interno: selectedTicket.prazo_interno,
-          prioridade_operacional: selectedTicket.prioridade_operacional
-        } : null}
-        isOpen={modalOpen}
-        onClose={handleModalClose}
-        onUpdate={handleTicketUpdate}
-      />
-    </div>
+        {/* Ticket Detail Modal */}
+        {selectedTicket && (
+          <TicketDetailModal
+            sla={selectedTicket}
+            isOpen={modalOpen}
+            onClose={handleModalClose}
+            onUpdate={handleTicketUpdate}
+          />
+        )}
+      </div>
+    </TooltipProvider>
   );
 }
