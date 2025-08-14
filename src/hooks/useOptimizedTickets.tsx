@@ -19,6 +19,7 @@ interface Ticket {
   pontuacao_operacional: number;
   data_criacao: string;
   updated_at?: string;
+  resolved_at?: string | null;
   observacoes?: string;
   tags?: string[];
   setor_id?: string;
@@ -118,6 +119,8 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
           pontuacao_urgencia,
           pontuacao_operacional,
           data_criacao,
+          updated_at,
+          resolved_at,
           observacoes,
           tags,
           setor_id,

@@ -88,7 +88,7 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
         
         // Calcular tempo de resolução usando resolved_at (campo específico para isso)
         const createdAt = new Date(ticket.data_criacao);
-        const resolvedAt = (ticket as any).resolved_at ? new Date((ticket as any).resolved_at) : null;
+        const resolvedAt = ticket.resolved_at ? new Date(ticket.resolved_at) : null;
         
         if (resolvedAt) {
           const resolutionTimeMs = Math.max(0, resolvedAt.getTime() - createdAt.getTime());
