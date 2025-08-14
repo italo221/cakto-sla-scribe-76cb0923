@@ -298,7 +298,12 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Atrasados</p>
-                <p className="text-2xl font-bold text-red-600">{slaMetrics.overdue}</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {slaMetrics.totalTickets > 0 
+                    ? ((slaMetrics.overdue / slaMetrics.totalTickets) * 100).toFixed(1) + '%'
+                    : '0%'
+                  }
+                </p>
               </div>
               <TrendingDown className="h-8 w-8 text-red-500" />
             </div>
