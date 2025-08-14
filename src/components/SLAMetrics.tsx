@@ -92,6 +92,22 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
         
         if (resolvedAt) {
           const resolutionTimeMs = Math.max(0, resolvedAt.getTime() - createdAt.getTime());
+          const resolutionDays = resolutionTimeMs / (1000 * 60 * 60 * 24);
+          
+          // Debug: Log tickets com tempo muito alto (>= 7 dias)
+          if (resolutionDays >= 7) {
+            console.log(`[SLA Debug] Ticket ${ticket.ticket_number || ticket.id}:`, {
+              nivel: level,
+              criado_em: format(createdAt, 'dd/MM/yyyy HH:mm', { locale: ptBR }),
+              resolvido_em: format(resolvedAt, 'dd/MM/yyyy HH:mm', { locale: ptBR }),
+              dias_resolucao: resolutionDays.toFixed(1),
+              status: ticket.status,
+              setor: ticket.setor_id,
+              updated_at: ticket.updated_at,
+              tem_prazo_interno: !!ticket.prazo_interno
+            });
+          }
+          
           totalResolutionTime += resolutionTimeMs;
           criticityBreakdown[level].resolutionTimes.push(resolutionTimeMs);
           
@@ -136,6 +152,15 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
       criticityBreakdown,
     };
   }, [filteredTickets, calculateSLADeadline]);
+
+  // Debug geral das métricas
+  useEffect(() => {
+    console.log(`[SLA Métricas] Período: ${dateRange} dias | Setor: ${selectedSetorId}`);
+    console.log(`[SLA Métricas] Total tickets no período: ${filteredTickets.length}`);
+    console.log(`[SLA Métricas] Tickets resolvidos: ${slaMetrics.resolved}`);
+    console.log(`[SLA Métricas] Tempo médio geral: ${formatDuration(slaMetrics.avgResolutionHours)}`);
+    console.log(`[SLA Métricas] Breakdown por criticidade:`, slaMetrics.criticityBreakdown);
+  }, [slaMetrics, dateRange, selectedSetorId, filteredTickets.length]);
 
   const selectedPolicy = selectedSetorId && selectedSetorId !== 'all' ? getPolicyBySetor(selectedSetorId) : null;
 
