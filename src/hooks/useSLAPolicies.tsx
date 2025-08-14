@@ -15,11 +15,12 @@ export interface SLAPolicy {
   updated_at: string;
   created_by?: string;
   updated_by?: string;
-  setor?: {
-    id: string;
-    nome: string;
-    descricao?: string;
-  };
+  // Temporariamente removido para debug
+  // setor?: {
+  //   id: string;
+  //   nome: string;
+  //   descricao?: string;
+  // };
 }
 
 export interface SLAEvent {
@@ -62,14 +63,14 @@ export const useSLAPolicies = () => {
   const fetchPolicies = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Fetching SLA policies...');
+      // Primeiro tentativa: sem o join para ver se é problema de schema cache
       const { data, error } = await supabase
         .from('sla_policies')
-        .select(`
-          *,
-          setor:setores!setor_id(id, nome, descricao)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
+      console.log('📊 SLA policies query result:', { data, error });
       if (error) throw error;
       setPolicies(data || []);
     } catch (err: any) {
@@ -86,6 +87,7 @@ export const useSLAPolicies = () => {
 
   const updatePolicy = async (policyId: string, updates: Partial<SLAPolicy>) => {
     try {
+      console.log('🔄 Updating SLA policy:', { policyId, updates });
       const { error } = await supabase
         .from('sla_policies')
         .update({
@@ -93,6 +95,8 @@ export const useSLAPolicies = () => {
           updated_at: new Date().toISOString(),
         })
         .eq('id', policyId);
+
+      console.log('📝 Update result:', { error });
 
       if (error) throw error;
 
