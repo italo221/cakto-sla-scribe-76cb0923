@@ -352,7 +352,7 @@ export default function DynamicDashboard() {
   const visibleWidgets = widgets.filter(w => w.visible).sort((a, b) => a.position - b.position);
 
   const renderKPICard = (widget: DashboardWidget) => {
-    let value = 0;
+    let value: number | string = 0;
     let subtitle = '';
     let trend = null;
     let glowColor = '';
@@ -400,8 +400,11 @@ export default function DynamicDashboard() {
         }
         break;
       case 'overdue-tickets':
-        value = dashboardData.overdueTickets;
-        subtitle = 'Tickets em atraso';
+        const overduePercentage = dashboardData.totalTickets > 0 
+          ? ((dashboardData.overdueTickets / dashboardData.totalTickets) * 100).toFixed(1) 
+          : '0';
+        value = overduePercentage;
+        subtitle = `Tickets em atraso (${dashboardData.overdueTickets} tickets)`;
         glowColor = 'critical';
         accentColor = 'from-kpi-critical/20 via-kpi-critical/10 to-transparent';
         shadowColor = 'shadow-kpi-critical/10';
@@ -465,7 +468,7 @@ export default function DynamicDashboard() {
               <p className="text-sm font-medium text-foreground/80">{widget.name}</p>
               <div className="space-y-2">
                 <h3 className={`text-4xl font-bold tracking-tight ${getGlowClasses(glowColor)}`}>
-                  {widget.id === 'sla-compliance' ? `${value}%` : value.toLocaleString()}
+                  {widget.id === 'sla-compliance' || widget.id === 'overdue-tickets' ? `${value}%` : value.toLocaleString()}
                 </h3>
                 {trend}
               </div>
