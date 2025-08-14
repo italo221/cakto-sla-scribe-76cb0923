@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useTicketPermissions } from "@/hooks/useTicketPermissions";
+import { useSLAPolicies } from "@/hooks/useSLAPolicies";
 import CommentEditModal from "@/components/CommentEditModal";
 import CommentReactions from "@/components/CommentReactions";
 import CommentDeleteModal from "@/components/CommentDeleteModal";
@@ -129,6 +130,7 @@ export default function SLADetailModal({
   } = usePermissions();
   
   const { validateTicketAction, canPerformAction } = useTicketPermissions();
+  const { calculateSLADeadline } = useSLAPolicies();
   
   const [currentSLA, setCurrentSLA] = useState<SLA | null>(sla);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -147,6 +149,8 @@ export default function SLADetailModal({
   const [selectedCommentForDelete, setSelectedCommentForDelete] = useState<Comment | null>(null);
   const [editCommentModalOpen, setEditCommentModalOpen] = useState(false);
   const [deleteCommentModalOpen, setDeleteCommentModalOpen] = useState(false);
+  const [slaHistory, setSlaHistory] = useState<any[]>([]);
+  const [originalDeadline, setOriginalDeadline] = useState<Date | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<string[]>([]);
   const [currentResultIndex, setCurrentResultIndex] = useState(0);
@@ -268,6 +272,39 @@ const toggleCommentsFocusMode = () => {
 
   const { toast } = useToast();
 
+  // Função para carregar histórico de alterações de prazo SLA
+  const loadSLAHistory = async () => {
+    if (!currentSLA) return;
+    try {
+      const { data, error } = await supabase
+        .from('sla_action_logs')
+        .select('*')
+        .eq('sla_id', currentSLA.id)
+        .in('acao', ['definir_prazo', 'alterar_prazo'])
+        .order('timestamp', { ascending: true });
+      
+      if (error) throw error;
+      setSlaHistory(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar histórico SLA:', error);
+    }
+  };
+
+  // Função para calcular prazo original baseado na política SLA
+  const calculateOriginalDeadline = () => {
+    if (!currentSLA) return;
+    try {
+      const originalDeadline = calculateSLADeadline(
+        currentSLA.nivel_criticidade, 
+        currentSLA.data_criacao, 
+        currentSLA.setor_id
+      );
+      setOriginalDeadline(originalDeadline);
+    } catch (error) {
+      console.error('Erro ao calcular prazo original:', error);
+    }
+  };
+
   useEffect(() => {
     setCurrentSLA(sla);
   }, [sla]);
@@ -277,6 +314,8 @@ const toggleCommentsFocusMode = () => {
       loadComments();
       loadActionLogs();
       loadSetores();
+      loadSLAHistory();
+      calculateOriginalDeadline();
       
       // Configurar listeners em tempo real para comentários e atualizações do ticket
       const commentsChannel = supabase
@@ -1676,6 +1715,33 @@ const toggleCommentsFocusMode = () => {
                       </span>
                     </div>
                   </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Prazo Original (SLA)</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Clock className="h-4 w-4" />
+                      <span>
+                        {originalDeadline 
+                          ? format(originalDeadline, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+                          : "Calculando..."
+                        }
+                      </span>
+                    </div>
+                  </div>
+                  {currentSLA.prazo_interno && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Prazo Atualizado {slaHistory.length > 1 ? `(${slaHistory.length - 1} alteração${slaHistory.length > 2 ? 'ões' : ''})` : ''}
+                      </label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <AlertCircle className="h-4 w-4 text-orange-600" />
+                        <span>
+                          {format(new Date(currentSLA.prazo_interno), "dd/MM/yyyy 'às' HH:mm", {
+                            locale: ptBR
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Pontuação Total</label>
                     <div className="flex items-center gap-2 mt-1">
