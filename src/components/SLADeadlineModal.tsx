@@ -58,6 +58,13 @@ export const SLADeadlineModal = ({
     setLoading(true);
     try {
       const deadlineDate = new Date(deadline);
+      
+      console.log('🔄 Tentando definir prazo:', {
+        ticketId,
+        deadline: deadlineDate.toISOString(),
+        note,
+        user: user.id
+      });
 
       // Usar a nova função do banco para atualizar o prazo
       const { data, error } = await supabase.rpc('update_ticket_deadline', {
@@ -66,7 +73,12 @@ export const SLADeadlineModal = ({
         p_note: note || undefined
       });
 
-      if (error) throw error;
+      console.log('📊 Resultado da função:', { data, error });
+
+      if (error) {
+        console.error('❌ Erro na função update_ticket_deadline:', error);
+        throw error;
+      }
 
       toast({
         title: isOverride ? "Prazo forçado" : "Prazo definido",
