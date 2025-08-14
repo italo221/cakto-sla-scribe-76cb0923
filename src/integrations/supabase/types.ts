@@ -869,6 +869,7 @@ export type Database = {
           prioridade_operacional:
             | Database["public"]["Enums"]["prioridade_operacional"]
             | null
+          resolved_at: string | null
           responsavel_interno: string | null
           setor_id: string | null
           solicitante: string
@@ -899,6 +900,7 @@ export type Database = {
           prioridade_operacional?:
             | Database["public"]["Enums"]["prioridade_operacional"]
             | null
+          resolved_at?: string | null
           responsavel_interno?: string | null
           setor_id?: string | null
           solicitante: string
@@ -929,6 +931,7 @@ export type Database = {
           prioridade_operacional?:
             | Database["public"]["Enums"]["prioridade_operacional"]
             | null
+          resolved_at?: string | null
           responsavel_interno?: string | null
           setor_id?: string | null
           solicitante?: string

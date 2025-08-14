@@ -86,22 +86,21 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
       if (isResolved) {
         resolved++;
         
-        // Calcular tempo de resolução: resolved_at - created_at
-        // Como não temos resolved_at exato, usar updated_at como aproximação
+        // Calcular tempo de resolução usando resolved_at (campo específico para isso)
         const createdAt = new Date(ticket.data_criacao);
-        const resolvedAt = ticket.updated_at ? new Date(ticket.updated_at) : createdAt;
-        const resolutionTimeMs = Math.max(0, resolvedAt.getTime() - createdAt.getTime());
+        const resolvedAt = (ticket as any).resolved_at ? new Date((ticket as any).resolved_at) : null;
         
-        if (resolutionTimeMs > 0) {
+        if (resolvedAt) {
+          const resolutionTimeMs = Math.max(0, resolvedAt.getTime() - createdAt.getTime());
           totalResolutionTime += resolutionTimeMs;
           criticityBreakdown[level].resolutionTimes.push(resolutionTimeMs);
-        }
-        
-        // Verificar conformidade SLA: resolvido dentro do prazo aplicado
-        const resolvedWithinSLA = resolvedAt <= deadline;
-        if (resolvedWithinSLA) {
-          withinSLAResolved++;
-          criticityBreakdown[level].withinSLA++;
+          
+          // Verificar conformidade SLA: resolvido dentro do prazo aplicado
+          const resolvedWithinSLA = resolvedAt <= deadline;
+          if (resolvedWithinSLA) {
+            withinSLAResolved++;
+            criticityBreakdown[level].withinSLA++;
+          }
         }
       } else {
         // Ticket não resolvido: verificar se está atrasado
