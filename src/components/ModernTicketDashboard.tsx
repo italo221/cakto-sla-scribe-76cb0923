@@ -117,7 +117,7 @@ const ModernKPICard = ({
   isLoading = false
 }: {
   title: string;
-  value: number | string;
+  value: number | string | React.ReactNode;
   subtitle?: string;
   icon: any;
   iconColor: string;
@@ -144,7 +144,7 @@ const ModernKPICard = ({
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
             <div className="flex items-end gap-2">
-              <h3 className="text-3xl font-bold text-foreground tracking-tight">{value}</h3>
+              <div className="text-3xl font-bold text-foreground tracking-tight">{value}</div>
               {trend}
             </div>
             {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
@@ -983,8 +983,11 @@ export default function ModernSLADashboard() {
             <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/50 dark:to-red-900/50">
               <CardContent className="p-8 text-center">
                 <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-600 dark:text-red-400" />
-                <div className="text-4xl font-bold text-red-700 dark:text-red-300 mb-2">{metrics.atrasados}</div>
+                <div className="text-4xl font-bold text-red-700 dark:text-red-300 mb-2">
+                  {metrics.total > 0 ? ((metrics.atrasados / metrics.total) * 100).toFixed(1) + '%' : '0%'}
+                </div>
                 <div className="text-lg font-medium text-red-600 dark:text-red-400">Atrasados</div>
+                <div className="text-sm text-red-500 dark:text-red-400 opacity-75">({metrics.atrasados} tickets)</div>
               </CardContent>
             </Card>
           </div>
@@ -1318,7 +1321,22 @@ export default function ModernSLADashboard() {
             
             <ModernKPICard title="Em Aberto" value={metrics.abertos + metrics.emAndamento} subtitle="Aguardando resolução" icon={Clock} iconColor="hsl(48 96% 53%)" trend={<TrendIndicator current={metrics.abertos} previous={metrics.previousTotal - metrics.previousResolvidos} isGoodTrend={false} />} isLoading={loading} />
             
-            <ModernKPICard title="Atrasados" value={metrics.atrasados} subtitle="Fora do prazo estabelecido" icon={AlertTriangle} iconColor="hsl(0 84% 60%)" trend={<TrendIndicator current={metrics.atrasados} previous={metrics.previousAtrasados} isGoodTrend={false} />} isLoading={loading} />
+            <ModernKPICard 
+              title="Atrasados" 
+              value={
+                <div className="flex flex-col">
+                  <span className="text-3xl font-bold">
+                    {metrics.total > 0 ? ((metrics.atrasados / metrics.total) * 100).toFixed(1) + '%' : '0%'}
+                  </span>
+                  <span className="text-sm text-muted-foreground opacity-75">({metrics.atrasados} tickets)</span>
+                </div>
+              } 
+              subtitle="Fora do prazo estabelecido" 
+              icon={AlertTriangle} 
+              iconColor="hsl(0 84% 60%)" 
+              trend={<TrendIndicator current={metrics.atrasados} previous={metrics.previousAtrasados} isGoodTrend={false} />} 
+              isLoading={loading} 
+            />
           </div>
         </div>
 
