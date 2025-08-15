@@ -750,24 +750,13 @@ const toggleCommentsFocusMode = () => {
 
     setCommentLoading(true);
     try {
-      let comentarioSetorId;
-      if (isSuperAdmin) {
-        comentarioSetorId = currentSLA.setor_id || (userSetores.length > 0 ? userSetores[0].setor_id : null);
-      } else if (canEdit) {
-        comentarioSetorId = currentSLA.setor_id || (userSetores.length > 0 ? userSetores[0].setor_id : null);
-      } else {
-        const setorDoUsuario = userSetores.find(us => us.setor_id === currentSLA.setor_id);
-        if (setorDoUsuario) {
-          comentarioSetorId = setorDoUsuario.setor_id;
-        } else if (userSetores.length > 0) {
-          comentarioSetorId = userSetores[0].setor_id;
-        }
-      }
+      // Sempre usar o setor do usuário para o comentário (não o setor do ticket)
+      const comentarioSetorId = userSetores.length > 0 ? userSetores[0].setor_id : null;
 
       if (!comentarioSetorId) {
         toast({
           title: "Erro",
-          description: "Você não tem permissão para comentar neste SLA.",
+          description: "Você não tem acesso a nenhum setor para comentar.",
           variant: "destructive",
         });
         return;
