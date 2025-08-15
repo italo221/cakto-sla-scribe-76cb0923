@@ -14,6 +14,7 @@ import SetorValidationAlert from "@/components/SetorValidationAlert";
 import FileUploader from "@/components/FileUploader";
 import LinkInput from "@/components/LinkInput";
 import { Send, CheckCircle, RefreshCw, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { validateTicketData, sanitizeTicketData } from "@/utils/ticketAuditService";
 
 interface ManualTicketCreatorProps {
@@ -81,6 +82,7 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
   const { canCreateTicket, getSetorValidationMessage } = usePermissions();
   const { addTagToHistory } = useTags();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'complete'>('form');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -405,9 +407,7 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
               Criar Outro Ticket
             </Button>
             <Button 
-              onClick={() => {
-                window.location.href = '/inbox';
-              }} 
+              onClick={() => navigate('/inbox')} 
               className="gap-2"
             >
               <FileText className="h-4 w-4" />
