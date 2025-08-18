@@ -131,9 +131,31 @@ export const usePermissions = () => {
       return true;
     }
 
-    // Apenas quem criou o ticket pode fechá-lo (de RESOLVIDO para FECHADO)
-    if (ticket.status === 'resolvido' && ticket.solicitante === user?.email) {
-      return true;
+    // Membros do setor responsável podem fechar tickets resolvidos do seu setor
+    if (ticket.status === 'resolvido') {
+      // Verificar se o usuário pertence ao setor responsável pelo ticket
+      const belongsToResponsibleTeam = () => {
+        // Verificar por setor_id se disponível
+        if (ticket.setor_id) {
+          return userSetores.some(us => us.setor_id === ticket.setor_id);
+        }
+
+        // Verificar por nome do setor (fallback)
+        if (ticket.time_responsavel) {
+          return userSetores.some(us => us.setor?.nome === ticket.time_responsavel);
+        }
+
+        return false;
+      };
+
+      if (belongsToResponsibleTeam()) {
+        return true;
+      }
+
+      // Apenas quem criou o ticket pode fechá-lo se não pertence ao setor responsável
+      if (ticket.solicitante === user?.email) {
+        return true;
+      }
     }
 
     return false;
@@ -170,7 +192,7 @@ export const usePermissions = () => {
 
   const getCloseValidationMessage = (ticket: any) => {
     if (!canCloseTicket(ticket)) {
-      return "⛔ Apenas quem criou o ticket pode fechá-lo.";
+      return "⛔ Você não pode fechar este ticket. Apenas membros do setor responsável ou quem criou o ticket podem fechá-lo.";
     }
     return null;
   };
