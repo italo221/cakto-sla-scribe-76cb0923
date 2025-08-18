@@ -14,14 +14,20 @@ const TICKET_TIME_LIMITS: TicketTimeConfig = {
   'P3': 7 * 24 * 60 * 60 * 1000, // 7 dias em ms
 };
 
-export const useTicketCountdown = (dataCriacao: string, criticidade: string) => {
+export const useTicketCountdown = (dataCriacao: string, criticidade: string, prazoInterno?: string) => {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [isExpired, setIsExpired] = useState<boolean>(false);
 
   useEffect(() => {
-    const startTime = new Date(dataCriacao).getTime();
-    const timeLimit = TICKET_TIME_LIMITS[criticidade as keyof TicketTimeConfig] || TICKET_TIME_LIMITS['P3'];
-    const deadline = startTime + timeLimit;
+    // Usar prazo_interno se definido, senão usar prazo calculado por criticidade
+    let deadline;
+    if (prazoInterno) {
+      deadline = new Date(prazoInterno).getTime();
+    } else {
+      const startTime = new Date(dataCriacao).getTime();
+      const timeLimit = TICKET_TIME_LIMITS[criticidade as keyof TicketTimeConfig] || TICKET_TIME_LIMITS['P3'];
+      deadline = startTime + timeLimit;
+    }
 
     const updateCountdown = () => {
       const now = Date.now();
@@ -43,7 +49,7 @@ export const useTicketCountdown = (dataCriacao: string, criticidade: string) => 
     const interval = setInterval(updateCountdown, 1000);
 
     return () => clearInterval(interval);
-  }, [dataCriacao, criticidade]);
+  }, [dataCriacao, criticidade, prazoInterno]);
 
   const formatTime = (ms: number) => {
     if (ms <= 0) return '00:00:00';

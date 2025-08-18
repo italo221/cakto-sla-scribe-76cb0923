@@ -7,11 +7,12 @@ interface TicketCountdownProps {
   dataCriacao: string;
   criticidade: string;
   status: string;
+  prazoInterno?: string;
   compact?: boolean;
 }
 
-export const TicketCountdown = ({ dataCriacao, criticidade, status, compact = false }: TicketCountdownProps) => {
-  const { formattedTime, isExpired, urgencyLevel } = useTicketCountdown(dataCriacao, criticidade);
+export const TicketCountdown = ({ dataCriacao, criticidade, status, prazoInterno, compact = false }: TicketCountdownProps) => {
+  const { formattedTime, isExpired, urgencyLevel } = useTicketCountdown(dataCriacao, criticidade, prazoInterno);
 
   // Não mostrar cronômetro para tickets já resolvidos
   if (status === 'resolvido' || status === 'fechado') {

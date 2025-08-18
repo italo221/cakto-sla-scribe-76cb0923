@@ -211,6 +211,24 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     };
   }, [enableRealtime, fetchTickets]);
 
+  // Listener para evento de atualização de prazo
+  useEffect(() => {
+    const handleDeadlineUpdate = (event: CustomEvent) => {
+      const { ticketId } = event.detail;
+      console.log('🔄 Recalculando status após atualização de prazo:', ticketId);
+      
+      // Invalidar cache e recarregar tickets
+      ticketCache.clear();
+      fetchTickets(true);
+    };
+
+    window.addEventListener('ticketDeadlineUpdated', handleDeadlineUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('ticketDeadlineUpdated', handleDeadlineUpdate as EventListener);
+    };
+  }, [fetchTickets]);
+
   // Carregar tickets na inicialização
   useEffect(() => {
     fetchTickets();
@@ -229,9 +247,17 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
 
       const isExpired = (() => {
         if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
-        const startTime = new Date(ticket.data_criacao).getTime();
-        const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
-        const deadline = startTime + timeLimit;
+        
+        // Usar prazo_interno se definido, senão usar prazo calculado por criticidade
+        let deadline;
+        if (ticket.prazo_interno) {
+          deadline = new Date(ticket.prazo_interno).getTime();
+        } else {
+          const startTime = new Date(ticket.data_criacao).getTime();
+          const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+          deadline = startTime + timeLimit;
+        }
+        
         return Date.now() > deadline;
       })();
 

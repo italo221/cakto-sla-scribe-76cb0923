@@ -31,8 +31,31 @@ export const useTicketStats = () => {
 
     // Um loop único para calcular todas as estatísticas de forma consistente
     ticketsWithStatus.forEach(ticket => {
+      // Recalcular se está atrasado considerando prazo_interno
+      const isExpired = (() => {
+        if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
+        
+        const timeConfig = {
+          'P0': 4 * 60 * 60 * 1000,
+          'P1': 24 * 60 * 60 * 1000,
+          'P2': 3 * 24 * 60 * 60 * 1000,
+          'P3': 7 * 24 * 60 * 60 * 1000,
+        };
+        
+        let deadline;
+        if (ticket.prazo_interno) {
+          deadline = new Date(ticket.prazo_interno).getTime();
+        } else {
+          const startTime = new Date(ticket.data_criacao).getTime();
+          const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+          deadline = startTime + timeLimit;
+        }
+        
+        return Date.now() > deadline;
+      })();
+      
       // Contagem de atrasados (primeira prioridade)
-      if (ticket.isExpired) {
+      if (isExpired) {
         counts.atrasados++;
       }
       

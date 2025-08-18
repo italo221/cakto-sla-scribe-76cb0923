@@ -58,6 +58,7 @@ export const SLADeadlineModal = ({
     setLoading(true);
     try {
       const deadlineDate = new Date(deadline);
+      const currentTime = Date.now();
       
       console.log('🔄 Tentando definir prazo:', {
         ticketId,
@@ -80,13 +81,30 @@ export const SLADeadlineModal = ({
         throw error;
       }
 
+      // Verificar se o novo prazo afeta o status de atraso
+      const isNewDeadlineInFuture = deadlineDate.getTime() > currentTime;
+      const statusMessage = isNewDeadlineInFuture 
+        ? "Ticket não está mais atrasado" 
+        : "Ticket permanece como atrasado";
+
       toast({
         title: isOverride ? "Prazo forçado" : "Prazo definido",
-        description: `Prazo ${isOverride ? 'forçado' : 'definido'} para ${format(deadlineDate, 'dd/MM/yyyy HH:mm', { locale: ptBR })}`,
+        description: `Prazo ${isOverride ? 'forçado' : 'definido'} para ${format(deadlineDate, 'dd/MM/yyyy HH:mm', { locale: ptBR })}. ${statusMessage}.`,
       });
 
+      // Forçar recálculo imediato do status em todos os componentes
       onUpdate();
       onClose();
+      
+      // Emitir evento customizado para forçar atualização em tempo real
+      window.dispatchEvent(new CustomEvent('ticketDeadlineUpdated', {
+        detail: { 
+          ticketId, 
+          newDeadline: deadlineDate.toISOString(),
+          isOverdue: !isNewDeadlineInFuture
+        }
+      }));
+      
     } catch (error: any) {
       toast({
         title: "Erro ao definir prazo",

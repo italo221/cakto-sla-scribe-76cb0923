@@ -20,6 +20,7 @@ interface SimpleTicket {
   status: string;
   nivel_criticidade: string;
   data_criacao: string;
+  prazo_interno?: string;
 }
 
 interface UseTicketStatusProps {
@@ -42,12 +43,18 @@ export const useTicketStatus = ({ ticket, userRole }: UseTicketStatusProps) => {
       'P3': 7 * 24 * 60 * 60 * 1000, // 7 dias
     };
     
-    const startTime = new Date(ticket.data_criacao).getTime();
-    const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
-    const deadline = startTime + timeLimit;
+    // Usar prazo_interno se definido, senão usar prazo calculado por criticidade
+    let deadline;
+    if (ticket.prazo_interno) {
+      deadline = new Date(ticket.prazo_interno).getTime();
+    } else {
+      const startTime = new Date(ticket.data_criacao).getTime();
+      const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+      deadline = startTime + timeLimit;
+    }
     
     return Date.now() > deadline;
-  }, [ticket.data_criacao, ticket.nivel_criticidade, ticket.status]);
+  }, [ticket.data_criacao, ticket.nivel_criticidade, ticket.status, ticket.prazo_interno]);
 
   // Configuração centralizada de status
   const statusInfo = useMemo((): TicketStatusInfo => {
@@ -146,9 +153,15 @@ export const useTicketFilters = (tickets: any[]) => {
         'P3': 7 * 24 * 60 * 60 * 1000,
       };
       
-      const startTime = new Date(ticket.data_criacao).getTime();
-      const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
-      const deadline = startTime + timeLimit;
+      // Usar prazo_interno se definido, senão usar prazo calculado por criticidade
+      let deadline;
+      if (ticket.prazo_interno) {
+        deadline = new Date(ticket.prazo_interno).getTime();
+      } else {
+        const startTime = new Date(ticket.data_criacao).getTime();
+        const timeLimit = timeConfig[ticket.nivel_criticidade as keyof typeof timeConfig] || timeConfig['P3'];
+        deadline = startTime + timeLimit;
+      }
       
       return Date.now() > deadline;
     });
