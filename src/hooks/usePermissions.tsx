@@ -131,6 +131,11 @@ export const usePermissions = () => {
       return true;
     }
 
+    // Quem criou o ticket pode sempre fechá-lo (independente do setor)
+    if (ticket.status === 'resolvido' && ticket.solicitante === user?.email) {
+      return true;
+    }
+
     // Membros do setor responsável podem fechar tickets resolvidos do seu setor
     if (ticket.status === 'resolvido') {
       // Verificar se o usuário pertence ao setor responsável pelo ticket
@@ -149,11 +154,6 @@ export const usePermissions = () => {
       };
 
       if (belongsToResponsibleTeam()) {
-        return true;
-      }
-
-      // Apenas quem criou o ticket pode fechá-lo se não pertence ao setor responsável
-      if (ticket.solicitante === user?.email) {
         return true;
       }
     }
