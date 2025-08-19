@@ -856,6 +856,7 @@ export type Database = {
           assignee_user_id: string | null
           data_criacao: string
           descricao: string
+          first_in_progress_at: string | null
           id: string
           link_referencia: string | null
           nivel_criticidade: string
@@ -888,6 +889,7 @@ export type Database = {
           assignee_user_id?: string | null
           data_criacao?: string
           descricao: string
+          first_in_progress_at?: string | null
           id?: string
           link_referencia?: string | null
           nivel_criticidade: string
@@ -920,6 +922,7 @@ export type Database = {
           assignee_user_id?: string | null
           data_criacao?: string
           descricao?: string
+          first_in_progress_at?: string | null
           id?: string
           link_referencia?: string | null
           nivel_criticidade?: string
