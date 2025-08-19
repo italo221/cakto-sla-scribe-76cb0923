@@ -93,6 +93,7 @@ export default function DynamicDashboard() {
     teamData: []
   });
   const [loading, setLoading] = useState(true);
+  const [policies, setPolicies] = useState<Array<{setor_id: string; p0_hours: number; p1_hours: number; p2_hours: number; p3_hours: number}>>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [dateFilter, setDateFilter] = useState('30days');
@@ -104,13 +105,30 @@ export default function DynamicDashboard() {
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    loadSLAPolicies();
+  }, []);
+
+  useEffect(() => {
     loadDashboardData();
     loadUserPreferences();
-  }, [dateFilter]);
+  }, [dateFilter, policies]);
 
   useEffect(() => {
     loadTeamData();
   }, [teamDateFilter]);
+
+  const loadSLAPolicies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sla_policies')
+        .select('setor_id, p0_hours, p1_hours, p2_hours, p3_hours');
+
+      if (error) throw error;
+      setPolicies(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar políticas SLA:', error);
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -138,41 +156,82 @@ export default function DynamicDashboard() {
       // Calculate overdue tickets (simplified logic)
       const overdueTickets = tickets?.filter(t => {
         if (t.status === 'resolvido' || t.status === 'fechado') return false;
+        
+        // Verificar se há prazo interno definido
+        if (t.prazo_interno) {
+          return new Date(t.prazo_interno) < now;
+        }
+        
+        // Senão, usar políticas SLA por setor e criticidade
         const createdAt = new Date(t.data_criacao);
         const hoursOld = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-        const slaHours = {
-          'P0': 4,   // Crítico: 4 horas
-          'P1': 24,  // Alto: 24 horas
-          'P2': 72,  // Médio: 72 horas
-          'P3': 168  // Baixo: 168 horas
-        }[t.nivel_criticidade] || 24;
+        
+        // Buscar política SLA do setor específico
+        const setorPolicy = policies.find(p => p.setor_id === t.setor_id);
+        let slaHours = 168; // padrão P3
+        
+        if (setorPolicy) {
+          slaHours = {
+            'P0': setorPolicy.p0_hours,
+            'P1': setorPolicy.p1_hours,
+            'P2': setorPolicy.p2_hours,
+            'P3': setorPolicy.p3_hours
+          }[t.nivel_criticidade] || setorPolicy.p3_hours;
+        } else {
+          // Padrões gerais se não houver política específica
+          slaHours = {
+            'P0': 4,   // Crítico: 4 horas
+            'P1': 24,  // Alto: 24 horas
+            'P2': 72,  // Médio: 72 horas
+            'P3': 168  // Baixo: 168 horas
+          }[t.nivel_criticidade] || 168;
+        }
+        
         return hoursOld > slaHours;
       }).length || 0;
 
       // Calcular tickets resolvidos dentro do prazo para SLA correto
       const resolvedTicketsOnTime = tickets?.filter(t => {
         if (t.status !== 'resolvido' && t.status !== 'fechado') return false;
+        if (!t.updated_at) return false; // Sem data de resolução
         
         const createdAt = new Date(t.data_criacao);
+        const resolvedAt = new Date(t.updated_at);
         
-        // Usar padrões SLA corretos por prioridade (horas)
-        const slaHours = {
-          'P0': 4,   // Crítico: 4 horas
-          'P1': 24,  // Alto: 24 horas
-          'P2': 72,  // Médio: 72 horas
-          'P3': 168  // Baixo: 168 horas
-        }[t.nivel_criticidade] || 24;
+        // Verificar se há prazo interno definido
+        if (t.prazo_interno) {
+          return resolvedAt <= new Date(t.prazo_interno);
+        }
+        
+        // Buscar política SLA do setor específico
+        const setorPolicy = policies.find(p => p.setor_id === t.setor_id);
+        let slaHours = 168; // padrão P3
+        
+        if (setorPolicy) {
+          slaHours = {
+            'P0': setorPolicy.p0_hours,
+            'P1': setorPolicy.p1_hours,
+            'P2': setorPolicy.p2_hours,
+            'P3': setorPolicy.p3_hours
+          }[t.nivel_criticidade] || setorPolicy.p3_hours;
+        } else {
+          // Padrões gerais se não houver política específica
+          slaHours = {
+            'P0': 4,   // Crítico: 4 horas
+            'P1': 24,  // Alto: 24 horas
+            'P2': 72,  // Médio: 72 horas
+            'P3': 168  // Baixo: 168 horas
+          }[t.nivel_criticidade] || 168;
+        }
         
         const slaDeadline = new Date(createdAt.getTime() + slaHours * 60 * 60 * 1000);
-        
-        // Assumindo que o ticket foi resolvido no momento atual (simplificado)
-        return new Date() <= slaDeadline;
+        return resolvedAt <= slaDeadline;
       }).length || 0;
 
       // SLA Compliance = tickets resolvidos dentro do prazo / total de tickets resolvidos
-      // Se não há tickets resolvidos, mostra 100% (meta alcançada)
+      // Se não há tickets resolvidos, mostra 0% para ser mais realista
       const totalResolvedTickets = resolvedTickets + closedTickets;
-      const slaCompliance = totalResolvedTickets > 0 ? (resolvedTicketsOnTime / totalResolvedTickets) * 100 : 100;
+      const slaCompliance = totalResolvedTickets > 0 ? (resolvedTicketsOnTime / totalResolvedTickets) * 100 : 0;
 
       // Status data with semantic colors
       const statusData = [
