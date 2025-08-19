@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
 import { 
   Filter, 
   SortAsc, 
@@ -24,7 +25,9 @@ import {
   SlidersHorizontal,
   Pin,
   Target,
-  GripVertical
+  GripVertical,
+  Download,
+  Layers
 } from 'lucide-react';
 import {
   DndContext,
@@ -269,6 +272,9 @@ export default function Time() {
   const { allTags } = useTags();
   
   const [selectedSetor, setSelectedSetor] = useState<string>('');
+  const [selectedSetores, setSelectedSetores] = useState<string[]>([]);
+  const [allTeamsSelected, setAllTeamsSelected] = useState(true);
+  const [groupByTeam, setGroupByTeam] = useState(false);
   const [dateRange, setDateRange] = useState('30');
   const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
@@ -306,11 +312,19 @@ export default function Time() {
         if (error) throw error;
         setSetores(data || []);
         
-        // Se não é super admin, pegar primeiro setor do usuário
-        if (!isSuperAdmin && userSetores.length > 0) {
-          const userSetor = userSetores[0];
-          if (userSetor.setor) {
-            setSelectedSetor(userSetor.setor.id);
+        // Configurar seleção inicial
+        if (isSuperAdmin) {
+          // Super admin: "Todos os times" por padrão
+          setAllTeamsSelected(true);
+          setSelectedSetores((data || []).map(s => s.id));
+        } else if (userSetores.length > 0) {
+          // Usuário comum: apenas seus setores
+          const userSetorIds = userSetores.map(us => us.setor?.id).filter(Boolean) as string[];
+          setSelectedSetores(userSetorIds);
+          setAllTeamsSelected(false);
+          // Para compatibilidade com código existente
+          if (userSetorIds.length > 0) {
+            setSelectedSetor(userSetorIds[0]);
           }
         }
       } catch (error) {
@@ -326,17 +340,20 @@ export default function Time() {
   // Carregar métricas
   useEffect(() => {
     const loadMetrics = async () => {
-      if (!selectedSetor) return;
+      if (selectedSetores.length === 0) return;
       
       setLoading(true);
       try {
         const dateFrom = format(subDays(new Date(), parseInt(dateRange)), 'yyyy-MM-dd');
         const dateTo = format(new Date(), 'yyyy-MM-dd');
         
+        // Para Super Admin com "Todos os times", não enviar setor_ids (busca todos)
+        const sectorIds = isSuperAdmin && allTeamsSelected ? undefined : selectedSetores;
+        
         const { data, error } = await supabase.rpc('team_metrics', {
           date_from: dateFrom,
           date_to: dateTo,
-          setor_ids: [selectedSetor]
+          setor_ids: sectorIds
         });
         
         if (error) throw error;
@@ -356,12 +373,12 @@ export default function Time() {
     };
     
     loadMetrics();
-  }, [selectedSetor, dateRange]);
+  }, [selectedSetores, dateRange, isSuperAdmin, allTeamsSelected]);
 
   // Carregar tickets
   useEffect(() => {
     const loadTickets = async () => {
-      if (!selectedSetor) return;
+      if (selectedSetores.length === 0) return;
       
       try {
         let query = supabase
@@ -387,9 +404,14 @@ export default function Time() {
             setor_id,
             prazo_interno,
             prioridade_operacional,
-            tags
-          `)
-          .eq('setor_id', selectedSetor);
+            tags,
+            setores(nome)
+          `);
+
+        // Filtro por setores selecionados (apenas se não for "Todos os times")
+        if (!isSuperAdmin || !allTeamsSelected) {
+          query = query.in('setor_id', selectedSetores);
+        }
 
         // Aplicar filtros
         if (priorityFilter.length > 0) {
@@ -430,7 +452,7 @@ export default function Time() {
     };
     
     loadTickets();
-  }, [selectedSetor, priorityFilter, statusFilter, showOnlyMyTickets, user]);
+  }, [selectedSetores, priorityFilter, statusFilter, showOnlyMyTickets, user, isSuperAdmin, allTeamsSelected]);
 
   // Filtrar setores baseado nas permissões
   const availableSetores = useMemo(() => {
@@ -442,8 +464,94 @@ export default function Time() {
     );
   }, [setores, userSetores, isSuperAdmin]);
 
+  // Multi-select handlers para Super Admin
+  const handleTeamSelection = (setorId: string, checked: boolean) => {
+    if (checked) {
+      const newSelection = [...selectedSetores, setorId];
+      setSelectedSetores(newSelection);
+      
+      // Verificar se todos estão selecionados
+      if (newSelection.length === availableSetores.length) {
+        setAllTeamsSelected(true);
+      }
+    } else {
+      const newSelection = selectedSetores.filter(id => id !== setorId);
+      setSelectedSetores(newSelection);
+      setAllTeamsSelected(false);
+    }
+  };
+
+  const handleAllTeamsToggle = (checked: boolean) => {
+    setAllTeamsSelected(checked);
+    if (checked) {
+      setSelectedSetores(availableSetores.map(s => s.id));
+    } else {
+      setSelectedSetores([]);
+    }
+  };
+
+  // Exportar CSV
+  const exportToCSV = () => {
+    // Aplicar mesmos filtros da lista
+    let filteredTickets = [...tickets];
+    
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filteredTickets = filteredTickets.filter(ticket => 
+        ticket.titulo.toLowerCase().includes(term) ||
+        ticket.ticket_number.toLowerCase().includes(term) ||
+        ticket.solicitante.toLowerCase().includes(term) ||
+        (ticket.tags || []).some(tag => tag.toLowerCase().includes(term))
+      );
+    }
+    
+    if (priorityFilter.length > 0) {
+      filteredTickets = filteredTickets.filter(ticket => priorityFilter.includes(ticket.nivel_criticidade));
+    }
+    
+    if (statusFilter.length > 0) {
+      filteredTickets = filteredTickets.filter(ticket => statusFilter.includes(ticket.status));
+    }
+    
+    if (tagFilter.length > 0) {
+      filteredTickets = filteredTickets.filter(ticket => 
+        ticket.tags && tagFilter.some(tag => ticket.tags!.includes(tag))
+      );
+    }
+
+    // Criar CSV
+    const headers = [
+      'Número',
+      'Título', 
+      'Time',
+      'Solicitante',
+      'Status',
+      'Prioridade',
+      'Data Criação',
+      'Atrasado'
+    ].join(',');
+
+    const rows = filteredTickets.map(ticket => [
+      ticket.ticket_number,
+      `"${ticket.titulo.replace(/"/g, '""')}"`,
+      `"${ticket.time_responsavel.replace(/"/g, '""')}"`,
+      `"${ticket.solicitante.replace(/"/g, '""')}"`,
+      ticket.status,
+      ticket.nivel_criticidade,
+      format(new Date(ticket.data_criacao), 'dd/MM/yyyy HH:mm'),
+      ticket.is_overdue ? 'Sim' : 'Não'
+    ].join(','));
+
+    const csv = [headers, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `tickets-time-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.click();
+  };
+
   // Separar e filtrar tickets
-  const { pinnedTicketsData, regularTicketsData } = useMemo(() => {
+  const { pinnedTicketsData, regularTicketsData, groupedTicketsData } = useMemo(() => {
     let allFiltered = [...tickets];
     
     // Aplicar busca
@@ -483,34 +591,74 @@ export default function Time() {
     const regular = allFiltered.filter(ticket => !pinnedTickets.includes(ticket.id));
     
     // Aplicar ordenação apenas aos tickets regulares
-    switch (sortBy) {
-      case 'priority':
-        const priorityOrder = { 'P0': 0, 'P1': 1, 'P2': 2, 'P3': 3 };
-        regular.sort((a, b) => 
-          (priorityOrder[a.nivel_criticidade as keyof typeof priorityOrder] || 4) - 
-          (priorityOrder[b.nivel_criticidade as keyof typeof priorityOrder] || 4)
-        );
-        break;
-      case 'oldest':
-        regular.sort((a, b) => new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime());
-        break;
-      case 'newest':
-        regular.sort((a, b) => new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime());
-        break;
-      case 'sla':
-        regular.sort((a, b) => {
-          if (a.is_overdue && !b.is_overdue) return -1;
-          if (!a.is_overdue && b.is_overdue) return 1;
-          return 0;
-        });
-        break;
+    const sortTickets = (ticketList: TeamTicket[]) => {
+      const sorted = [...ticketList];
+      switch (sortBy) {
+        case 'priority':
+          const priorityOrder = { 'P0': 0, 'P1': 1, 'P2': 2, 'P3': 3 };
+          sorted.sort((a, b) => 
+            (priorityOrder[a.nivel_criticidade as keyof typeof priorityOrder] || 4) - 
+            (priorityOrder[b.nivel_criticidade as keyof typeof priorityOrder] || 4)
+          );
+          break;
+        case 'oldest':
+          sorted.sort((a, b) => new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime());
+          break;
+        case 'newest':
+          sorted.sort((a, b) => new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime());
+          break;
+        case 'sla':
+          sorted.sort((a, b) => {
+            if (a.is_overdue && !b.is_overdue) return -1;
+            if (!a.is_overdue && b.is_overdue) return 1;
+            return 0;
+          });
+          break;
+      }
+      return sorted;
+    };
+    
+    const sortedRegular = sortTickets(regular);
+    
+    // Agrupamento por time (apenas se o toggle estiver ativo)
+    let grouped: Record<string, { setor: Setor; tickets: TeamTicket[]; pinnedTickets: TeamTicket[] }> = {};
+    if (groupByTeam && isSuperAdmin) {
+      // Criar grupos por setor
+      const allTicketsForGrouping = [...pinned, ...sortedRegular];
+      
+      allTicketsForGrouping.forEach(ticket => {
+        if (!ticket.setor_id) return;
+        
+        const setor = availableSetores.find(s => s.id === ticket.setor_id);
+        if (!setor) return;
+        
+        if (!grouped[ticket.setor_id]) {
+          grouped[ticket.setor_id] = {
+            setor,
+            tickets: [],
+            pinnedTickets: []
+          };
+        }
+        
+        if (pinnedTickets.includes(ticket.id)) {
+          grouped[ticket.setor_id].pinnedTickets.push(ticket);
+        } else {
+          grouped[ticket.setor_id].tickets.push(ticket);
+        }
+      });
+      
+      // Ordenar dentro de cada grupo
+      Object.values(grouped).forEach(group => {
+        group.tickets = sortTickets(group.tickets);
+      });
     }
     
     return {
       pinnedTicketsData: pinned,
-      regularTicketsData: regular
+      regularTicketsData: sortedRegular,
+      groupedTicketsData: grouped
     };
-  }, [tickets, searchTerm, priorityFilter, statusFilter, tagFilter, sortBy, pinnedTickets]);
+  }, [tickets, searchTerm, priorityFilter, statusFilter, tagFilter, sortBy, pinnedTickets, groupByTeam, isSuperAdmin, availableSetores]);
 
   const clearAllFilters = () => {
     setSearchTerm('');
@@ -523,36 +671,49 @@ export default function Time() {
 
   // Pinned tickets functions
   const loadPinnedTickets = useCallback(async () => {
-    if (!selectedSetor) return;
+    // Para múltiplos setores, carregar pins de todos os setores selecionados
+    if (selectedSetores.length === 0) return;
     
     try {
-      const { data, error } = await supabase
-        .from('team_ticket_pins')
-        .select('ticket_id, position')
-        .eq('team_id', selectedSetor)
-        .order('position');
+      // Se tem múltiplos setores selecionados, carregar pins de todos
+      const promises = selectedSetores.map(setorId =>
+        supabase
+          .from('team_ticket_pins')
+          .select('ticket_id, position, team_id')
+          .eq('team_id', setorId)
+          .order('position')
+      );
+
+      const results = await Promise.all(promises);
+      const allPins: string[] = [];
       
-      if (error) throw error;
+      results.forEach(({ data, error }) => {
+        if (!error && data) {
+          allPins.push(...data.map(pin => pin.ticket_id));
+        }
+      });
       
-      setPinnedTickets(data?.map(pin => pin.ticket_id) || []);
+      setPinnedTickets(allPins);
     } catch (error) {
       console.error('Erro ao carregar tickets fixados:', error);
     }
-  }, [selectedSetor]);
+  }, [selectedSetores]);
 
   const handlePinTicket = async (ticketId: string) => {
-    if (!selectedSetor) {
-      console.error('handlePinTicket: selectedSetor is null');
+    // Encontrar o setor do ticket para fixar no setor correto
+    const ticket = tickets.find(t => t.id === ticketId);
+    if (!ticket?.setor_id) {
+      console.error('handlePinTicket: ticket setor_id not found');
       return;
     }
     
-    console.log('handlePinTicket: Starting with', { ticketId, selectedSetor });
+    console.log('handlePinTicket: Starting with', { ticketId, setorId: ticket.setor_id });
     
     setPinnedLoading(true);
     try {
       console.log('handlePinTicket: Calling pin_ticket RPC function');
       const { data, error } = await supabase.rpc('pin_ticket', {
-        p_team_id: selectedSetor,
+        p_team_id: ticket.setor_id,
         p_ticket_id: ticketId
       });
       
@@ -592,12 +753,14 @@ export default function Time() {
   };
 
   const handleUnpinTicket = async (ticketId: string) => {
-    if (!selectedSetor) return;
+    // Encontrar o setor do ticket para desafixar do setor correto
+    const ticket = tickets.find(t => t.id === ticketId);
+    if (!ticket?.setor_id) return;
     
     setPinnedLoading(true);
     try {
       const { error } = await supabase.rpc('unpin_ticket', {
-        p_team_id: selectedSetor,
+        p_team_id: ticket.setor_id,
         p_ticket_id: ticketId
       });
       
@@ -639,8 +802,12 @@ export default function Time() {
     );
     
     try {
+      // Para reordenar, usar o primeiro setor selecionado como referência
+      const teamId = selectedSetores[0];
+      if (!teamId) return;
+      
       const { error } = await supabase.rpc('reorder_pins', {
-        p_team_id: selectedSetor,
+        p_team_id: teamId,
         p_ticket_ids: reorderedIds
       });
       
@@ -678,7 +845,7 @@ export default function Time() {
   const handleTicketUpdate = () => {
     // Recarregar dados após atualização
     const loadTickets = async () => {
-      if (!selectedSetor) return;
+      if (selectedSetores.length === 0) return;
       
       try {
         let query = supabase
@@ -705,8 +872,12 @@ export default function Time() {
             prazo_interno,
             prioridade_operacional,
             tags
-          `)
-          .eq('setor_id', selectedSetor);
+          `);
+
+        // Filtro por setores selecionados (apenas se não for "Todos os times")
+        if (!isSuperAdmin || !allTeamsSelected) {
+          query = query.in('setor_id', selectedSetores);
+        }
 
         // Aplicar filtros
         if (priorityFilter.length > 0) {
@@ -765,8 +936,102 @@ export default function Time() {
       <div>
         <h3 className="font-semibold mb-4">Filtros</h3>
         
-        {/* Seletor de Time (apenas para Super Admin) */}
-        {isSuperAdmin && (
+        {/* Seletor de Times (Multi-select para Super Admin) */}
+        {isSuperAdmin ? (
+          <div className="space-y-3 mb-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Times</Label>
+              <Button
+                variant="ghost" 
+                size="sm"
+                onClick={exportToCSV}
+                className="h-7 px-2"
+              >
+                <Download className="h-3 w-3 mr-1" />
+                CSV
+              </Button>
+            </div>
+            
+            {/* Multi-select dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  {allTeamsSelected 
+                    ? "Todos os times"
+                    : selectedSetores.length === 0 
+                      ? "Selecione times"
+                      : `${selectedSetores.length} selecionados`
+                  }
+                  <Filter className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-full">
+                {/* Opção "Todos os times" */}
+                <DropdownMenuCheckboxItem
+                  checked={allTeamsSelected}
+                  onCheckedChange={handleAllTeamsToggle}
+                  className="font-medium"
+                >
+                  Todos os times
+                </DropdownMenuCheckboxItem>
+                <Separator />
+                
+                {/* Lista de setores */}
+                {availableSetores.map(setor => (
+                  <DropdownMenuCheckboxItem
+                    key={setor.id}
+                    checked={selectedSetores.includes(setor.id)}
+                    onCheckedChange={(checked) => handleTeamSelection(setor.id, checked)}
+                  >
+                    {setor.nome}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Chips dos selecionados */}
+            {!allTeamsSelected && selectedSetores.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {selectedSetores.map(setorId => {
+                  const setor = availableSetores.find(s => s.id === setorId);
+                  return setor ? (
+                    <Badge 
+                      key={setorId} 
+                      variant="secondary" 
+                      className="text-xs cursor-pointer hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={() => handleTeamSelection(setorId, false)}
+                    >
+                      {setor.nome}
+                      <X className="h-3 w-3 ml-1" />
+                    </Badge>
+                  ) : null;
+                })}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 text-xs px-2"
+                  onClick={() => setSelectedSetores([])}
+                >
+                  Limpar
+                </Button>
+              </div>
+            )}
+
+            {/* Toggle "Agrupar por time" */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="group-by-team"
+                checked={groupByTeam}
+                onCheckedChange={setGroupByTeam}
+              />
+              <Label htmlFor="group-by-team" className="text-sm">
+                <Layers className="h-3 w-3 inline mr-1" />
+                Agrupar por time
+              </Label>
+            </div>
+          </div>
+        ) : (
+          /* Seletor único para usuários comuns */
           <div className="space-y-2 mb-4">
             <Label className="text-sm font-medium">Time</Label>
             <Select value={selectedSetor} onValueChange={setSelectedSetor}>
@@ -1055,7 +1320,7 @@ export default function Time() {
                         </div>
                       )}
 
-                      {/* Regular Tickets or Pinned Only */}
+                      {/* Regular Tickets, Pinned Only, ou Agrupados por Time */}
                       {showOnlyPinned ? (
                         pinnedTicketsData.length === 0 ? (
                           <div className="text-center py-12 text-muted-foreground">
@@ -1089,7 +1354,66 @@ export default function Time() {
                             </SortableContext>
                           </DndContext>
                         )
+                      ) : groupByTeam && isSuperAdmin ? (
+                        /* Modo agrupado por time */
+                        Object.keys(groupedTicketsData).length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            Nenhum ticket encontrado
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            {Object.entries(groupedTicketsData).map(([setorId, group]) => (
+                              <div key={setorId} className="space-y-3">
+                                {/* Cabeçalho do grupo */}
+                                <div className="flex items-center gap-2 px-2 py-1 bg-muted/50 rounded">
+                                  <Users className="h-4 w-4 text-primary" />
+                                  <h4 className="font-semibold text-sm">{group.setor.nome}</h4>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {group.tickets.length + group.pinnedTickets.length}
+                                  </Badge>
+                                </div>
+                                
+                                {/* Tickets fixados do grupo */}
+                                {group.pinnedTickets.length > 0 && (
+                                  <div className="ml-4">
+                                    <div className="flex items-center gap-1 mb-2">
+                                      <Pin className="h-3 w-3 text-primary" />
+                                      <span className="text-xs text-muted-foreground">Fixados</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                      {group.pinnedTickets.map(ticket => (
+                                        <SortableTicketItem
+                                          key={ticket.id}
+                                          ticket={ticket}
+                                          onTicketClick={handleTicketClick}
+                                          onUnpinClick={handleUnpinTicket}
+                                          isPinned={true}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Tickets regulares do grupo */}
+                                {group.tickets.length > 0 && (
+                                  <div className="ml-4 space-y-2">
+                                    {group.tickets.map(ticket => (
+                                      <SortableTicketItem
+                                        key={ticket.id}
+                                        ticket={ticket}
+                                        onTicketClick={handleTicketClick}
+                                        onUnpinClick={handlePinTicket}
+                                        isPinned={false}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )
                       ) : (
+                        /* Modo lista única */
                         regularTicketsData.length === 0 ? (
                           <div className="text-center py-8 text-muted-foreground">
                             Nenhum ticket encontrado
