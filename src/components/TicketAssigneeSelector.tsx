@@ -136,6 +136,32 @@ export const TicketAssigneeSelector: React.FC<TicketAssigneeSelectorProps> = ({
         p_dados_novos: { assignee_novo: selectedUser?.user_id || null }
       });
 
+      // Criar notificação para o usuário atribuído (se houver)
+      if (selectedUser && selectedUser.user_id !== user?.id) {
+        // Buscar informações do ticket para a notificação
+        const { data: ticketData } = await supabase
+          .from('sla_demandas')
+          .select('titulo')
+          .eq('id', ticketId)
+          .single();
+
+        if (ticketData) {
+          const { error: notificationError } = await supabase
+            .from('notifications')
+            .insert({
+              user_id: selectedUser.user_id,
+              ticket_id: ticketId,
+              type: 'ticket_assignment',
+              title: 'Ticket atribuído a você',
+              message: `Você foi designado como responsável pelo ticket: ${ticketData.titulo}`
+            });
+
+          if (notificationError) {
+            console.error('Erro ao criar notificação:', notificationError);
+          }
+        }
+      }
+
       // Notificar mudança
       onAssigneeChange?.(selectedUser?.user_id || null, selectedUser);
       
