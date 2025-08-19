@@ -303,13 +303,13 @@ export default function DynamicDashboard() {
       const slaCompliance = totalResolvedTickets > 0 ? (resolvedTicketsOnTime / totalResolvedTickets) * 100 : 0;
 
 
-      // Status data with semantic colors
+      // Status data with padronized colors as requested
       const statusData = [
-        { name: 'Abertos', value: openTickets, color: 'hsl(var(--kpi-open))' },
-        { name: 'Em Andamento', value: inProgressTickets, color: 'hsl(var(--kpi-progress))' },
-        { name: 'Resolvidos', value: resolvedTickets, color: 'hsl(var(--kpi-resolved))' },
-        { name: 'Fechados', value: closedTickets, color: 'hsl(var(--dashboard-neutral))' },
-        { name: 'Atrasados', value: overdueTickets, color: 'hsl(var(--kpi-overdue))' },
+        { name: 'Abertos', value: openTickets, color: 'hsl(0 0% 100%)' }, // branco
+        { name: 'Em Andamento', value: inProgressTickets, color: 'hsl(221 83% 53%)' }, // azul
+        { name: 'Resolvidos', value: resolvedTickets, color: 'hsl(142 76% 36%)' }, // verde
+        { name: 'Fechados', value: closedTickets, color: 'hsl(215 28% 17%)' }, // tom escuro (cinza/charcoal)
+        { name: 'Atrasados', value: overdueTickets, color: 'hsl(0 84% 60%)' }, // vermelho
       ].filter(item => item.value > 0);
 
       // Priority data with semantic colors
@@ -652,12 +652,12 @@ export default function DynamicDashboard() {
                         innerRadius={isMobile ? 50 : 70}
                         paddingAngle={2}
                         strokeWidth={0}
-                       label={isMobile ? false : ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
-                       labelLine={false}
-                       animationBegin={0}
-                       animationDuration={1500}
-                       animationEasing="ease-out"
-                     >
+                        label={false}
+                        labelLine={false}
+                        animationBegin={0}
+                        animationDuration={1500}
+                        animationEasing="ease-out"
+                      >
                         {dashboardData.statusData.map((entry, index) => (
                           <Cell 
                             key={`cell-${index}`} 
