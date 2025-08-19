@@ -853,6 +853,7 @@ export type Database = {
         Row: {
           anexos: Json | null
           arquivos: Json | null
+          assignee_user_id: string | null
           data_criacao: string
           descricao: string
           id: string
@@ -884,6 +885,7 @@ export type Database = {
         Insert: {
           anexos?: Json | null
           arquivos?: Json | null
+          assignee_user_id?: string | null
           data_criacao?: string
           descricao: string
           id?: string
@@ -915,6 +917,7 @@ export type Database = {
         Update: {
           anexos?: Json | null
           arquivos?: Json | null
+          assignee_user_id?: string | null
           data_criacao?: string
           descricao?: string
           id?: string

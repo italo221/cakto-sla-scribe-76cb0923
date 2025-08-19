@@ -26,6 +26,13 @@ interface Ticket {
   responsavel_interno?: string;
   prazo_interno?: string;
   prioridade_operacional?: string;
+  assignee_user_id?: string | null;
+  assignee?: {
+    user_id: string;
+    nome_completo: string;
+    email: string;
+    avatar_url?: string;
+  } | null;
 }
 
 interface UseOptimizedTicketsOptions {
@@ -99,7 +106,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       setLoading(true);
       setError(null);
 
-      // Query otimizada - buscar apenas campos necessários
+      // Query otimizada - buscar apenas campos necessários incluindo responsável
       const { data, error } = await supabase
         .from('sla_demandas')
         .select(`
@@ -126,14 +133,27 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
           setor_id,
           responsavel_interno,
           prazo_interno,
-          prioridade_operacional
+          prioridade_operacional,
+          assignee_user_id,
+          assignee:profiles!assignee_user_id(
+            user_id,
+            nome_completo,
+            email,
+            avatar_url
+          )
         `)
         .order('data_criacao', { ascending: false })
         .limit(500); // Limitar resultados para performance
 
       if (error) throw error;
 
-      const ticketsData = data || [];
+      // Transformar dados do Supabase para garantir tipo correto
+      const ticketsData: Ticket[] = (data || []).map((ticket: any) => ({
+        ...ticket,
+        assignee: Array.isArray(ticket.assignee) && ticket.assignee.length > 0 
+          ? ticket.assignee[0] 
+          : null
+      }));
       
       // Ordenar de forma otimizada
       const sortedData = [...ticketsData].sort(sortFunction);

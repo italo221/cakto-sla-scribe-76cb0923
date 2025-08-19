@@ -25,6 +25,8 @@ import TicketEditModal from "@/components/TicketEditModal";
 import { SLADeadlineChip } from "@/components/SLADeadlineChip";
 import { SLADeadlineModal } from "@/components/SLADeadlineModal";
 import { SetTicketDeadlineButton } from "@/components/SetTicketDeadlineButton";
+import { TicketAssigneeSelector } from "@/components/TicketAssigneeSelector";
+import { TicketAssigneeDisplay } from "@/components/TicketAssigneeDisplay";
 // (FileUploader import removido)
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -58,6 +60,13 @@ interface SLA {
   prioridade_operacional?: string;
   link_referencia?: string;
   anexos?: string;
+  assignee_user_id?: string | null;
+  assignee?: {
+    user_id: string;
+    nome_completo: string;
+    email: string;
+    avatar_url?: string;
+  } | null;
 }
 
 interface Comment {
@@ -141,6 +150,7 @@ export default function SLADetailModal({
   const [transferLoading, setTransferLoading] = useState(false);
   const [commentLoading, setCommentLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState<string | null>(null);
+  const [currentAssignee, setCurrentAssignee] = useState<SLA['assignee']>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'comments' | 'history'>('comments');
   const [showTransferForm, setShowTransferForm] = useState(false);
@@ -307,6 +317,7 @@ const toggleCommentsFocusMode = () => {
 
   useEffect(() => {
     setCurrentSLA(sla);
+    setCurrentAssignee(sla?.assignee || null);
   }, [sla]);
 
   useEffect(() => {
@@ -1006,16 +1017,29 @@ const toggleCommentsFocusMode = () => {
                    </DropdownMenu>
                  )}
 
-                 {/* Botão Definir Prazo */}
-                 <SetTicketDeadlineButton
-                   ticket={currentSLA}
-                   onUpdate={() => {
-                     setCurrentSLA({ ...currentSLA });
-                     onUpdate();
-                   }}
-                   variant="outline"
-                   size="sm"
-                 />
+                  {/* Botão Atribuir Responsável */}
+                  <TicketAssigneeSelector
+                    ticketId={currentSLA.id}
+                    currentAssigneeId={currentSLA.assignee_user_id}
+                    currentAssignee={currentAssignee}
+                    ticketSectorId={currentSLA.setor_id}
+                    onAssigneeChange={(assigneeId, assignee) => {
+                      setCurrentSLA(prev => prev ? { ...prev, assignee_user_id: assigneeId, assignee } : null);
+                      setCurrentAssignee(assignee);
+                      onUpdate();
+                    }}
+                  />
+
+                  {/* Botão Definir Prazo */}
+                  <SetTicketDeadlineButton
+                    ticket={currentSLA}
+                    onUpdate={() => {
+                      setCurrentSLA({ ...currentSLA });
+                      onUpdate();
+                    }}
+                    variant="outline"
+                    size="sm"
+                  />
                 </>
               )}
             </div>
@@ -1691,6 +1715,17 @@ const toggleCommentsFocusMode = () => {
                     <div className="flex items-center gap-2 mt-1">
                       <Building className="h-4 w-4" />
                       <span>{currentSLA.time_responsavel}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Responsável</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <User className="h-4 w-4" />
+                      <TicketAssigneeDisplay 
+                        assignee={currentAssignee}
+                        size="sm"
+                        variant="full"
+                      />
                     </div>
                   </div>
                   <div>
