@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DashboardCustomizer } from "./DashboardCustomizer";
 import TagTrendChart from "./TagTrendChart";
+import { TagAnalyticsChart } from "./TagAnalyticsChart";
+import { SLAResolutionTimeChart } from "./SLAResolutionTimeChart";
 import {
   Settings,
   BarChart3,
@@ -73,9 +75,11 @@ const defaultWidgets: DashboardWidget[] = [
   { id: 'open-tickets', name: 'Tickets Abertos', type: 'kpi', icon: AlertTriangle, visible: true, position: 1 },
   { id: 'sla-compliance', name: 'Cumprimento SLA', type: 'kpi', icon: Target, visible: true, position: 2 },
   { id: 'overdue-tickets', name: 'Tickets Atrasados', type: 'kpi', icon: Clock, visible: true, position: 3 },
-  { id: 'status-chart', name: 'Gráfico por Status', type: 'chart', icon: PieChart, visible: true, position: 4 },
-  { id: 'priority-chart', name: 'Gráfico por Prioridade', type: 'chart', icon: BarChart3, visible: true, position: 5 },
-  { id: 'team-chart', name: 'Gráfico por Equipe', type: 'chart', icon: Users, visible: false, position: 6 },
+  { id: 'tag-analytics', name: 'Tags – Volume de Tickets', type: 'chart', icon: Activity, visible: true, position: 4 },
+  { id: 'sla-resolution-time', name: 'Tempo de Resolução do SLA', type: 'chart', icon: Clock, visible: true, position: 5 },
+  { id: 'status-chart', name: 'Distribuição por Status', type: 'chart', icon: PieChart, visible: true, position: 6 },
+  { id: 'priority-chart', name: 'Tickets por Prioridade', type: 'chart', icon: BarChart3, visible: true, position: 7 },
+  { id: 'team-chart', name: 'Gráfico por Equipe', type: 'chart', icon: Users, visible: false, position: 8 },
 ];
 
 export default function DynamicDashboard() {
@@ -632,6 +636,26 @@ export default function DynamicDashboard() {
 
   const renderChart = (widget: DashboardWidget) => {
     switch (widget.id) {
+      case 'tag-analytics':
+        return (
+          <TagAnalyticsChart 
+            key={widget.id}
+            dateFilter={dateFilter}
+            selectedSetor={undefined}
+            setores={[]}
+          />
+        );
+
+      case 'sla-resolution-time':
+        return (
+          <SLAResolutionTimeChart 
+            key={widget.id}
+            dateFilter={dateFilter}
+            selectedSetor={undefined}
+            setores={[]}
+          />
+        );
+
       case 'status-chart':
         return (
           <div key={widget.id} className="col-span-full md:col-span-2 relative overflow-hidden rounded-2xl backdrop-blur-md bg-background/60 border border-white/20 dark:border-white/10 shadow-2xl hover:shadow-primary/20 transition-all duration-500">
