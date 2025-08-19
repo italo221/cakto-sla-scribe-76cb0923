@@ -134,26 +134,47 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
           responsavel_interno,
           prazo_interno,
           prioridade_operacional,
-          assignee_user_id,
-          assignee:profiles!assignee_user_id(
-            user_id,
-            nome_completo,
-            email,
-            avatar_url
-          )
+          assignee_user_id
         `)
         .order('data_criacao', { ascending: false })
         .limit(500); // Limitar resultados para performance
 
       if (error) throw error;
 
-      // Transformar dados do Supabase para garantir tipo correto
-      const ticketsData: Ticket[] = (data || []).map((ticket: any) => ({
-        ...ticket,
-        assignee: Array.isArray(ticket.assignee) && ticket.assignee.length > 0 
-          ? ticket.assignee[0] 
-          : null
-      }));
+      // Transformar dados e buscar informações do responsável
+      const ticketsData: Ticket[] = [];
+      
+      if (data && data.length > 0) {
+        // Buscar IDs únicos de responsáveis
+        const assigneeIds = Array.from(new Set(
+          data.filter(ticket => ticket.assignee_user_id)
+               .map(ticket => ticket.assignee_user_id)
+        ));
+        
+        // Buscar dados dos responsáveis em uma query separada
+        let assigneeMap: Record<string, any> = {};
+        if (assigneeIds.length > 0) {
+          const { data: assignees } = await supabase
+            .from('profiles')
+            .select('user_id, nome_completo, email, avatar_url')
+            .in('user_id', assigneeIds);
+          
+          if (assignees) {
+            assigneeMap = assignees.reduce((acc, assignee) => {
+              acc[assignee.user_id] = assignee;
+              return acc;
+            }, {});
+          }
+        }
+        
+        // Combinar dados dos tickets com informações dos responsáveis
+        data.forEach((ticket: any) => {
+          ticketsData.push({
+            ...ticket,
+            assignee: ticket.assignee_user_id ? assigneeMap[ticket.assignee_user_id] || null : null
+          });
+        });
+      }
       
       // Ordenar de forma otimizada
       const sortedData = [...ticketsData].sort(sortFunction);
