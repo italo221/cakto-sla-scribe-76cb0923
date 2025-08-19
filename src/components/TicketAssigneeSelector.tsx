@@ -179,7 +179,10 @@ export const TicketAssigneeSelector: React.FC<TicketAssigneeSelectorProps> = ({
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="start">
         <Command>
-          <CommandInput placeholder="Buscar usuário..." />
+          <CommandInput 
+            placeholder="Buscar usuário..." 
+            className="border-0 focus:ring-0 focus:ring-offset-0" 
+          />
           <CommandList>
             <CommandEmpty>
               {loading ? "Carregando..." : "Nenhum usuário encontrado"}
