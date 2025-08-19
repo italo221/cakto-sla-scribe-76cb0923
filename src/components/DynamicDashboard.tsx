@@ -502,14 +502,14 @@ export default function DynamicDashboard() {
     switch (widget.id) {
       case 'total-tickets':
         value = dashboardData.totalTickets;
-        subtitle = 'Total de tickets no período';
+        subtitle = ''; // Removido: 'Total de tickets no período'
         glowColor = 'total';
         accentColor = 'from-kpi-total/20 via-kpi-total/10 to-transparent';
         shadowColor = 'shadow-kpi-total/10';
         break;
       case 'open-tickets':
         value = dashboardData.openTickets;
-        subtitle = 'Tickets em aberto';
+        subtitle = ''; // Removido: 'Tickets em aberto'
         glowColor = 'open';
         accentColor = 'from-kpi-open/20 via-kpi-open/10 to-transparent';
         shadowColor = 'shadow-kpi-open/10';
@@ -517,9 +517,7 @@ export default function DynamicDashboard() {
       case 'sla-compliance':
         value = Math.round(dashboardData.slaCompliance);
         const totalResolvedForSubtitle = dashboardData.resolvedTickets + dashboardData.closedTickets;
-        subtitle = totalResolvedForSubtitle === 0 
-          ? 'Nenhum ticket resolvido ainda' 
-          : `${value}% de cumprimento do SLA`;
+        subtitle = ''; // Removido o subtitle do SLA
         
         if (value >= 95) {
           glowColor = 'resolved';
