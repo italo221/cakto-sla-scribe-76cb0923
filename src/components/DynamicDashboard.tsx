@@ -578,9 +578,11 @@ export default function DynamicDashboard() {
         ) : (
           <TrendingDown className="w-4 h-4 text-kpi-overdue drop-shadow-[0_0_4px_hsl(var(--kpi-overdue)/0.3)]" />
         )}
-        <span className={trendValue === 0 ? 'text-dashboard-muted' : isPositive ? 'text-kpi-resolved' : 'text-kpi-overdue'}>
-          {trendValue === 0 ? '0%' : `${Math.abs(trendValue)}%`}
-        </span>
+        {trendValue !== 0 && (
+          <span className={isPositive ? 'text-kpi-resolved' : 'text-kpi-overdue'}>
+            {`${Math.abs(trendValue)}%`}
+          </span>
+        )}
       </div>
     );
 
