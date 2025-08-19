@@ -55,7 +55,6 @@ export const TicketAssigneeSelector: React.FC<TicketAssigneeSelectorProps> = ({
       let query = supabase
         .from('profiles')
         .select(`
-          id,
           user_id,
           nome_completo,
           email,
