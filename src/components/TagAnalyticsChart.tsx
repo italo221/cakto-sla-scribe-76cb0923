@@ -138,7 +138,7 @@ export const TagAnalyticsChart = ({ dateFilter, selectedSetor, setores }: TagAna
   };
 
   return (
-    <Card className="bg-card border-border">
+    <Card className="bg-card border-border col-span-full">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div>
@@ -204,52 +204,51 @@ export const TagAnalyticsChart = ({ dateFilter, selectedSetor, setores }: TagAna
           </div>
         ) : (
           <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={tagData}
-                layout="horizontal"
-                margin={{ top: 5, right: 50, left: 10, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  type="number" 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis 
-                  type="category" 
-                  dataKey="tag"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  width={100}
-                />
-                <Tooltip
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload as TagData;
-                      return (
-                        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-                          <p className="font-medium text-foreground">{label}</p>
-                          <p className="text-sm text-muted-foreground">
-                            <span className="font-medium text-foreground">{data.count}</span> tickets
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            <span className="font-medium text-foreground">{data.percentage.toFixed(1)}%</span> do total
-                          </p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Bar 
-                  dataKey="count" 
-                  fill="hsl(var(--primary))"
-                  radius={[0, 4, 4, 0]}
-                  label={{ position: 'right', fontSize: 12, fill: 'hsl(var(--foreground))' }}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={tagData}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 60 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="tag" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                    interval={0}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload as TagData;
+                        return (
+                          <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
+                            <p className="font-medium text-foreground">{label}</p>
+                            <p className="text-sm text-muted-foreground">
+                              <span className="font-medium text-foreground">{data.count}</span> tickets
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              <span className="font-medium text-foreground">{data.percentage.toFixed(1)}%</span> do total
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar 
+                    dataKey="count" 
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
           </div>
         )}
       </CardContent>

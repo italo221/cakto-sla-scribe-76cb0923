@@ -1023,16 +1023,31 @@ export default function DynamicDashboard() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {visibleWidgets.map((widget) => {
-            if (widget.type === 'kpi') {
-              return renderKPICard(widget);
-            } else if (widget.type === 'chart') {
-              return renderChart(widget);
-            }
-            return null;
-          })}
-        </div>
+        <>
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {visibleWidgets.filter(w => w.type === 'kpi').map((widget) => renderKPICard(widget))}
+          </div>
+
+          {/* SLA Resolution Time Chart - First */}
+          {visibleWidgets.find(w => w.id === 'sla-resolution-time')?.visible && (
+            <div className="mt-6">
+              {renderChart(visibleWidgets.find(w => w.id === 'sla-resolution-time')!)}
+            </div>
+          )}
+
+          {/* Tag Analytics Chart - Second */}
+          {visibleWidgets.find(w => w.id === 'tag-analytics')?.visible && (
+            <div className="mt-6">
+              {renderChart(visibleWidgets.find(w => w.id === 'tag-analytics')!)}
+            </div>
+          )}
+
+          {/* Other charts in a 2-column grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-6">
+            {visibleWidgets.filter(w => w.type === 'chart' && !['sla-resolution-time', 'tag-analytics'].includes(w.id)).map((widget) => renderChart(widget))}
+          </div>
+        </>
       )}
 
       {/* Tag Trend Chart - positioned between widgets and team chart */}
