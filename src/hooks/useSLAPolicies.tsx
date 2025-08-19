@@ -62,12 +62,6 @@ export const useSLAPolicies = () => {
   const { toast } = useToast();
 
   const fetchPolicies = async (retryCount = 0) => {
-    // Evitar múltiplas chamadas simultâneas
-    if (isRetrying && retryCount === 0) {
-      console.log('🔄 Fetch already in progress, skipping...');
-      return;
-    }
-
     try {
       setLoading(true);
       if (retryCount === 0) {
@@ -238,18 +232,26 @@ export const useSLAPolicies = () => {
 
   useEffect(() => {
     // Carregar políticas apenas uma vez na montagem do componente
-    fetchPolicies();
+    let mounted = true;
+    
+    const loadPolicies = async () => {
+      if (mounted) {
+        await fetchPolicies();
+      }
+    };
+    
+    loadPolicies();
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return {
     policies,
     loading,
     error,
-    fetchPolicies: () => {
-      if (!isRetrying) {
-        fetchPolicies(0);
-      }
-    },
+    fetchPolicies: () => fetchPolicies(0),
     updatePolicy,
     createPolicy,
     getPolicyBySetor,
