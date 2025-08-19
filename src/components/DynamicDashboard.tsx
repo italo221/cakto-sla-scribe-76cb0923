@@ -298,9 +298,11 @@ export default function DynamicDashboard() {
       }).length || 0;
 
       // SLA Compliance = tickets resolvidos dentro do prazo / total de tickets resolvidos
-      // Se não há tickets resolvidos, mostra 0% para ser mais realista
+      // Se não há tickets resolvidos, mas também não há atrasados, mostra 100%
       const totalResolvedTickets = resolvedTickets + closedTickets;
-      const slaCompliance = totalResolvedTickets > 0 ? (resolvedTicketsOnTime / totalResolvedTickets) * 100 : 0;
+      const slaCompliance = totalResolvedTickets > 0 
+        ? (resolvedTicketsOnTime / totalResolvedTickets) * 100 
+        : (overdueTickets === 0 ? 100 : 0);
 
 
       // Status data with padronized colors as requested
