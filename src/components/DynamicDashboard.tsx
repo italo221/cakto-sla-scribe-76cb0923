@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -99,6 +99,7 @@ export default function DynamicDashboard() {
   const [dateFilter, setDateFilter] = useState('30days');
   const [teamDateFilter, setTeamDateFilter] = useState('30days');
   const [teamData, setTeamData] = useState<Array<{ name: string; tickets: number; color: string }>>([]);
+  const [slaTrend, setSlaTrend] = useState<number>(0);
 
   const { user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
@@ -129,6 +130,74 @@ export default function DynamicDashboard() {
       console.error('Erro ao carregar políticas SLA:', error);
     }
   };
+
+  // Função para calcular tendência SLA
+  const calculateSLATrend = useCallback(async () => {
+    try {
+      if (policies.length === 0) return;
+      
+      const endDate = new Date();
+      const startCurrentPeriod = new Date();
+      startCurrentPeriod.setDate(endDate.getDate() - 30); // Últimos 30 dias
+      
+      const startPreviousPeriod = new Date(startCurrentPeriod);
+      startPreviousPeriod.setDate(startCurrentPeriod.getDate() - 30); // 30 dias anteriores
+      const endPreviousPeriod = new Date(startCurrentPeriod);
+
+      // Buscar tickets do período anterior
+      const { data: previousTickets } = await supabase
+        .from('sla_demandas')
+        .select('*')
+        .gte('data_criacao', startPreviousPeriod.toISOString())
+        .lt('data_criacao', endPreviousPeriod.toISOString());
+
+      if (previousTickets && previousTickets.length > 0) {
+        // Calcular SLA compliance do período anterior usando a mesma lógica
+        const previousResolvedTickets = previousTickets.filter(t => 
+          ['resolvido', 'fechado'].includes(t.status?.toString()?.toLowerCase())
+        );
+        
+        if (previousResolvedTickets.length > 0) {
+          const previousOnTimeTickets = previousResolvedTickets.filter(t => {
+            const createdAt = new Date(t.data_criacao);
+            const resolvedAt = new Date(t.updated_at);
+            
+            if (t.prazo_interno) {
+              return resolvedAt <= new Date(t.prazo_interno);
+            }
+            
+            const setorPolicy = policies.find(p => p.setor_id === t.setor_id);
+            let slaHours = 168;
+            
+            if (setorPolicy) {
+              slaHours = {
+                'P0': setorPolicy.p0_hours,
+                'P1': setorPolicy.p1_hours,
+                'P2': setorPolicy.p2_hours,
+                'P3': setorPolicy.p3_hours
+              }[t.nivel_criticidade] || setorPolicy.p3_hours;
+            } else {
+              slaHours = {
+                'P0': 4, 'P1': 24, 'P2': 72, 'P3': 168
+              }[t.nivel_criticidade] || 168;
+            }
+            
+            const slaDeadline = new Date(createdAt.getTime() + slaHours * 60 * 60 * 1000);
+            return resolvedAt <= slaDeadline;
+          });
+          
+          const previousSLACompliance = (previousOnTimeTickets.length / previousResolvedTickets.length) * 100;
+          const currentSLACompliance = dashboardData.slaCompliance;
+          const trend = currentSLACompliance - previousSLACompliance;
+          
+          setSlaTrend(Math.round(trend * 10) / 10);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao calcular tendência SLA:', error);
+      setSlaTrend(0);
+    }
+  }, [policies, dashboardData.slaCompliance]);
 
   const loadDashboardData = async () => {
     try {
@@ -233,6 +302,7 @@ export default function DynamicDashboard() {
       const totalResolvedTickets = resolvedTickets + closedTickets;
       const slaCompliance = totalResolvedTickets > 0 ? (resolvedTicketsOnTime / totalResolvedTickets) * 100 : 0;
 
+
       // Status data with semantic colors
       const statusData = [
         { name: 'Abertos', value: openTickets, color: 'hsl(var(--kpi-open))' },
@@ -295,6 +365,13 @@ export default function DynamicDashboard() {
       setLoading(false);
     }
   };
+
+  // Usar useEffect para calcular tendência quando dados mudarem
+  useEffect(() => {
+    if (policies.length > 0 && dashboardData.slaCompliance >= 0) {
+      calculateSLATrend();
+    }
+  }, [calculateSLATrend]);
 
   const loadTeamData = async () => {
     try {
@@ -418,8 +495,8 @@ export default function DynamicDashboard() {
     let accentColor = '';
     let shadowColor = '';
     
-    // Generate mock trend data (replace with real data when available)
-    const trendValue = Math.random() > 0.5 ? Math.floor(Math.random() * 15) + 1 : -(Math.floor(Math.random() * 15) + 1);
+    // Tendência real para SLA, sem tendência para outros widgets por enquanto
+    const trendValue = widget.id === 'sla-compliance' ? slaTrend : 0;
     const isPositive = trendValue > 0;
 
     switch (widget.id) {
