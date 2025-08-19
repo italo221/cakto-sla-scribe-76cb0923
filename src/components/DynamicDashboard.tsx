@@ -638,12 +638,13 @@ export default function DynamicDashboard() {
     switch (widget.id) {
       case 'tag-analytics':
         return (
-          <TagAnalyticsChart 
-            key={widget.id}
-            dateFilter={dateFilter}
-            selectedSetor={undefined}
-            setores={[]}
-          />
+          <div key={widget.id} className="col-span-full">
+            <TagAnalyticsChart 
+              dateFilter={dateFilter}
+              selectedSetor={undefined}
+              setores={[]}
+            />
+          </div>
         );
 
       case 'sla-resolution-time':

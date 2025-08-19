@@ -211,7 +211,7 @@ export const SLAResolutionTimeChart = ({ dateFilter, selectedSetor, setores }: S
   };
 
   return (
-    <Card className="bg-card border-border">
+    <Card className="bg-card border-border col-span-full">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div>
@@ -220,9 +220,6 @@ export const SLAResolutionTimeChart = ({ dateFilter, selectedSetor, setores }: S
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
               Considerando tickets que entraram em andamento e foram resolvidos no período
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {getPeriodLabel(dateFilter)} • {localSetor === "all" ? "Todos os setores" : setores.find(s => s.id === localSetor)?.nome}
             </p>
           </div>
           
@@ -268,48 +265,17 @@ export const SLAResolutionTimeChart = ({ dateFilter, selectedSetor, setores }: S
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
-            {/* Tempo médio geral */}
-            <div className="text-center p-6 bg-muted/20 rounded-lg">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Clock className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium text-muted-foreground">Tempo Médio Geral</span>
-              </div>
-              <div className="text-3xl font-bold text-foreground mb-1">
-                {resolutionData.averageFormatted}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {resolutionData.ticketCount} tickets considerados
-              </div>
+          <div className="text-center p-8 bg-muted/20 rounded-lg">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Clock className="h-6 w-6 text-primary" />
+              <span className="text-base font-medium text-muted-foreground">Tempo Médio de Resolução</span>
             </div>
-
-            {/* Breakdown por prioridade */}
-            {resolutionData.byPriority.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-foreground mb-3">Breakdown por Criticidade</h4>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  {resolutionData.byPriority.map((item) => (
-                    <div
-                      key={item.priority}
-                      className="p-3 bg-muted/20 rounded-lg text-center"
-                    >
-                      <Badge
-                        className={`${getPriorityColor(item.priority)} mb-2`}
-                        variant="secondary"
-                      >
-                        {item.priority}
-                      </Badge>
-                      <div className="text-lg font-semibold text-foreground">
-                        {item.averageFormatted}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {item.count} tickets
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="text-5xl font-bold text-foreground mb-2">
+              {resolutionData.averageFormatted}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {resolutionData.ticketCount} tickets • {getPeriodLabel(dateFilter)} • {localSetor === "all" ? "Todos os setores" : setores.find(s => s.id === localSetor)?.nome}
+            </div>
           </div>
         )}
       </CardContent>
