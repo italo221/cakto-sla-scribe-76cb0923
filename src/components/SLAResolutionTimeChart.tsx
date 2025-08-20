@@ -37,6 +37,9 @@ interface SLAResolutionTimeProps {
 }
 
 export const SLAResolutionTimeChart = ({ dateFilter, selectedSetor, setores }: SLAResolutionTimeProps) => {
+  // Data de corte para considerar apenas tickets a partir de 20/08/2025
+  const CUTOVER_DATE = new Date('2025-08-20T00:00:00Z');
+  
   const [resolutionData, setResolutionData] = useState<ResolutionTimeData | null>(null);
   const [tagResolutionData, setTagResolutionData] = useState<TagResolutionData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,6 +87,8 @@ export const SLAResolutionTimeChart = ({ dateFilter, selectedSetor, setores }: S
         .from('sla_demandas')
         .select('first_in_progress_at, resolved_at, nivel_criticidade, setor_id, tags')
         .gte('resolved_at', startDate.toISOString())
+        .gte('first_in_progress_at', CUTOVER_DATE.toISOString())
+        .gte('resolved_at', CUTOVER_DATE.toISOString())
         .in('status', ['resolvido', 'fechado'])
         .not('first_in_progress_at', 'is', null)
         .not('resolved_at', 'is', null);
