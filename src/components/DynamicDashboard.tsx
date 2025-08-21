@@ -659,7 +659,7 @@ export default function DynamicDashboard() {
 
       case 'status-chart':
         return (
-          <div key={widget.id} className="col-span-full md:col-span-2 relative overflow-hidden rounded-2xl backdrop-blur-md bg-background/60 border border-white/20 dark:border-white/10 shadow-2xl hover:shadow-primary/20 transition-all duration-500">
+          <div key={widget.id} className="relative overflow-hidden rounded-2xl backdrop-blur-md bg-background/60 border border-white/20 dark:border-white/10 shadow-2xl hover:shadow-primary/20 transition-all duration-500">
             {/* Glassmorphism gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 pointer-events-none" />
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10 pointer-events-none" />
@@ -726,7 +726,7 @@ export default function DynamicDashboard() {
 
       case 'priority-chart':
         return (
-          <div key={widget.id} className="col-span-full md:col-span-2 relative overflow-hidden rounded-2xl backdrop-blur-md bg-background/60 border border-white/20 dark:border-white/10 shadow-2xl hover:shadow-primary/20 transition-all duration-500">
+          <div key={widget.id} className="relative overflow-hidden rounded-2xl backdrop-blur-md bg-background/60 border border-white/20 dark:border-white/10 shadow-2xl hover:shadow-primary/20 transition-all duration-500">
             {/* Glassmorphism gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-secondary/5 pointer-events-none" />
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10 pointer-events-none" />
