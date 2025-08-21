@@ -1045,7 +1045,7 @@ export default function DynamicDashboard() {
 
           {/* Status and Priority charts side by side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-6">
-            {visibleWidgets.filter(w => w.type === 'chart' && !['sla-resolution-time', 'tag-analytics'].includes(w.id)).map((widget) => renderChart(widget))}
+            {visibleWidgets.filter(w => w.type === 'chart' && ['status-chart', 'priority-chart'].includes(w.id)).map((widget) => renderChart(widget))}
           </div>
         </>
       )}
