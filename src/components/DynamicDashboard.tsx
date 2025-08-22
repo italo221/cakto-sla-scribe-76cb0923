@@ -439,13 +439,13 @@ export default function DynamicDashboard() {
       }
 
 
-      // Status data with padronized colors as requested
+      // Status data with semantic colors from design system
       const statusData = [
-        { name: 'Abertos', value: openTickets, color: 'hsl(0 0% 100%)' }, // branco
-        { name: 'Em Andamento', value: inProgressTickets, color: 'hsl(221 83% 53%)' }, // azul
-        { name: 'Resolvidos', value: resolvedTickets, color: 'hsl(142 76% 36%)' }, // verde
-        { name: 'Fechados', value: closedTickets, color: 'hsl(215 28% 17%)' }, // tom escuro (cinza/charcoal)
-        { name: 'Atrasados', value: overdueTickets, color: 'hsl(0 84% 60%)' }, // vermelho
+        { name: 'Abertos', value: openTickets, color: 'hsl(var(--kpi-open))' },
+        { name: 'Em Andamento', value: inProgressTickets, color: 'hsl(var(--kpi-progress))' },
+        { name: 'Resolvidos', value: resolvedTickets, color: 'hsl(var(--kpi-resolved))' },
+        { name: 'Fechados', value: closedTickets, color: 'hsl(var(--muted-foreground))' },
+        { name: 'Atrasados', value: overdueTickets, color: 'hsl(var(--kpi-overdue))' },
       ].filter(item => item.value > 0);
 
       // Priority data with semantic colors
@@ -1169,20 +1169,20 @@ export default function DynamicDashboard() {
         /* TV Mode Layout - Fixed Grid Structure */
         <div className={`tv-dashboard-grid ${isFullscreen ? 'fullscreen' : 'fixed-size'}`}>
           {/* Linha 1 - Cards KPIs */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 gap-4 h-full">
             {visibleWidgets.filter(w => w.type === 'kpi').map((widget) => (
-              <div key={widget.id} className="tv-kpi-card">
+              <div key={widget.id} className="tv-kpi-card h-full">
                 {(() => {
                   const kpiCard = renderKPICard(widget);
                   if (!kpiCard || !kpiCard.props) return kpiCard;
                   const currentClassName = kpiCard.props.className || '';
                   const newClassName = currentClassName
-                    .replace(/p-6/g, 'p-4')
-                    .replace(/text-4xl/g, 'text-3xl') 
-                    .replace(/space-y-3/g, 'space-y-2')
-                    .replace(/h-full/g, 'h-full min-h-[120px]');
+                    .replace(/p-6/g, 'p-3')
+                    .replace(/text-4xl/g, 'text-2xl lg:text-3xl') 
+                    .replace(/space-y-3/g, 'space-y-1')
+                    .replace(/h-full/g, 'h-full');
                   return React.cloneElement(kpiCard, {
-                    className: newClassName
+                    className: `${newClassName} h-full`
                   });
                 })()}
               </div>
@@ -1191,7 +1191,7 @@ export default function DynamicDashboard() {
 
           {/* Linha 2 - Tempo de Resolução (full width) */}
           {visibleWidgets.find(w => w.id === 'sla-resolution-time')?.visible && (
-            <div className="tv-sla-chart">
+            <div className="tv-sla-chart h-full">
               {(() => {
                 const chart = renderChart(visibleWidgets.find(w => w.id === 'sla-resolution-time')!);
                 if (!chart) return chart;
@@ -1204,7 +1204,7 @@ export default function DynamicDashboard() {
 
           {/* Linha 3 - Tags (full width) */}
           {visibleWidgets.find(w => w.id === 'tag-analytics')?.visible && (
-            <div className="tv-tags-chart">
+            <div className="tv-tags-chart h-full">
               {(() => {
                 const chart = renderChart(visibleWidgets.find(w => w.id === 'tag-analytics')!);
                 if (!chart) return chart;
@@ -1216,17 +1216,17 @@ export default function DynamicDashboard() {
           )}
 
           {/* Linha 4 - Status e Prioridade (2 colunas) */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 h-full">
             {visibleWidgets.filter(w => w.type === 'chart' && ['status-chart', 'priority-chart'].includes(w.id)).map((widget) => (
-              <div key={widget.id} className="tv-bottom-chart">
+              <div key={widget.id} className="tv-bottom-chart h-full">
                 {(() => {
                   const chart = renderChart(widget);
                   if (!chart || !chart.props || !chart.props.children || !chart.props.children.props) return chart;
                   
                   const currentChildClassName = chart.props.children.props.className || '';
                   const newChildClassName = currentChildClassName
-                    .replace(/p-6/g, 'p-4')
-                    .replace(/mb-6/g, 'mb-3');
+                    .replace(/p-6/g, 'p-3')
+                    .replace(/mb-6/g, 'mb-2');
                     
                   return React.cloneElement(chart, {
                     className: "h-full tv-chart-compact",

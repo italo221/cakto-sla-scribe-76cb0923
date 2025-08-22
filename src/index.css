@@ -216,10 +216,10 @@
 .tv-dashboard-grid {
   display: grid;
   grid-template-rows: 
-    140px    /* Linha 1: KPIs */
-    200px    /* Linha 2: SLA Resolution Time */
-    300px    /* Linha 3: Tags */
-    280px;   /* Linha 4: Status + Priority */
+    130px    /* Linha 1: KPIs */
+    180px    /* Linha 2: SLA Resolution Time */
+    280px    /* Linha 3: Tags */
+    260px;   /* Linha 4: Status + Priority */
   gap: 16px;
   height: calc(100vh - 72px);
   height: calc(var(--tv-mode-height, 100vh) - 72px);
@@ -268,8 +268,30 @@
 .tv-mode-wrapper select,
 .tv-mode-wrapper .badge:not(.tv-filter),
 .tv-mode-wrapper .chip-container,
-.tv-mode-wrapper .filter-controls:not(.tv-header .filter-controls) {
+.tv-mode-wrapper .filter-controls:not(.tv-header .filter-controls),
+.tv-mode .breadcrumb,
+.tv-mode .navigation,
+.tv-mode h1:first-child,
+.tv-mode p:first-of-type {
   display: none !important;
+}
+
+/* TV Mode improvements for charts */
+.tv-chart-compact .recharts-wrapper {
+  max-height: 100% !important;
+}
+
+.tv-chart-compact .recharts-surface {
+  overflow: visible !important;
+}
+
+/* Better text handling in TV mode */
+.tv-mode-wrapper .recharts-text {
+  font-size: 12px !important;
+}
+
+.tv-mode-wrapper .recharts-cartesian-axis-tick-value {
+  font-size: 11px !important;
 }
 
 /* Typography adjustments for TV Mode */
