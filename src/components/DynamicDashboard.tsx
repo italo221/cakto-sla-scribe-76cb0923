@@ -128,8 +128,8 @@ export default function DynamicDashboard() {
     setIsTVMode(true);
     localStorage.setItem('dashboard-tv-mode', 'true');
 
-    // Apply TV density class to body
-    document.body.classList.add('tv-density');
+    // Apply TV mode class to body
+    document.body.classList.add('tv-mode');
     
     // Hide navigation elements
     const appLayout = document.querySelector('[data-app-layout]');
@@ -151,8 +151,8 @@ export default function DynamicDashboard() {
     setIsTVMode(false);
     localStorage.setItem('dashboard-tv-mode', 'false');
 
-    // Remove TV density class from body
-    document.body.classList.remove('tv-density');
+    // Remove TV mode class from body
+    document.body.classList.remove('tv-mode');
 
     // Restore navigation elements
     const appLayout = document.querySelector('[data-app-layout]');
@@ -213,13 +213,6 @@ export default function DynamicDashboard() {
     let interval: NodeJS.Timeout;
     
     if (isTVMode) {
-      // Apply TV mode styling and density
-      document.body.classList.add('tv-density');
-      const appLayout = document.querySelector('[data-app-layout]');
-      if (appLayout) {
-        appLayout.classList.add('tv-mode');
-      }
-      
       // Auto-refresh a cada 60 segundos
       interval = setInterval(() => {
         loadDashboardData();
@@ -1030,23 +1023,15 @@ export default function DynamicDashboard() {
 
   return (
     <div className={`${isTVMode ? 'tv-mode-wrapper' : 'space-y-4 sm:space-y-6 p-2 sm:p-0'}`}>
-      {/* Header with controls */}
-      <div className={`${isTVMode ? 'tv-header' : 'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'}`}>
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Dashboard Dinâmico</h2>
-          <p className="text-muted-foreground">Configure e visualize suas métricas principais</p>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-2">
-          {isTVMode && (
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>Últimos 30 dias</span>
-              <span>•</span>
-              <span>Todos os setores</span>
-            </div>
-          )}
+      {/* Header with controls - hide in TV mode */}
+      {!isTVMode && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Dashboard Dinâmico</h2>
+            <p className="text-muted-foreground">Configure e visualize suas métricas principais</p>
+          </div>
           
-          {!isTVMode && (
+          <div className="flex flex-wrap items-center gap-2">
             <Select value={dateFilter} onValueChange={setDateFilter}>
               <SelectTrigger className="w-32 sm:w-40">
                 <SelectValue />
@@ -1057,63 +1042,69 @@ export default function DynamicDashboard() {
                 <SelectItem value="90days">Últimos 90 dias</SelectItem>
               </SelectContent>
             </Select>
-          )}
-          
-          {/* Filtros mini no modo TV */}
-          {isTVMode && (
-            <div className="tv-mini-filters">
-              <Button variant="ghost" size="sm" onClick={loadDashboardData} disabled={loading}>
-                <RefreshCw className={`${loading ? 'animate-spin' : ''}`} />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <BarChart3 />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Settings />
-              </Button>
-            </div>
-          )}
-          
-          <Button
-            variant={isTVMode ? "default" : "outline"}
-            size="sm"
-            onClick={handleTVModeToggle}
-            className="gap-2"
-          >
-            <Monitor className="w-4 h-4" />
-            {isTVMode ? "Sair do Modo TV" : "Modo TV"}
-          </Button>
-          
-          {!isTVMode && isSuperAdmin && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCustomizer(true)}
-                className="gap-2"
-              >
-                <Palette className="w-4 h-4" />
-                Editar Dashboard
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSettings(!showSettings)}
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Configurar
-              </Button>
-            </>
-          )}
-          
-          {!isTVMode && (
+            
+            <Button
+              variant={isTVMode ? "default" : "outline"}
+              size="sm"
+              onClick={handleTVModeToggle}
+              className="gap-2"
+            >
+              <Monitor className="w-4 h-4" />
+              {isTVMode ? "Sair do Modo TV" : "Modo TV"}
+            </Button>
+            
+            {isSuperAdmin && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCustomizer(true)}
+                  className="gap-2"
+                >
+                  <Palette className="w-4 h-4" />
+                  Editar Dashboard
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSettings(!showSettings)}
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configurar
+                </Button>
+              </>
+            )}
+            
             <Button onClick={loadDashboardData} variant="outline" size="sm" disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* TV Mode Mini Controls */}
+      {isTVMode && (
+        <div className="tv-mini-controls">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleTVModeToggle}
+            className="tv-exit-button"
+          >
+            <Monitor className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={loadDashboardData}
+            disabled={loading}
+            className="tv-refresh-button"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+      )}
 
       {/* Settings Panel */}
       {!isTVMode && showSettings && (
@@ -1184,39 +1175,55 @@ export default function DynamicDashboard() {
           ))}
         </div>
       ) : isTVMode ? (
-        /* TV Mode Layout - Grade fixa otimizada para 1920x1080 */
-        <div className="tv-dashboard-grid">
-          {/* Linha 1 - 4 Cards KPIs (altura 120px) */}
-          <div className="grid grid-cols-4 gap-3">
-            {visibleWidgets.filter(w => w.type === 'kpi').slice(0, 4).map((widget) => (
-              <div key={widget.id} className="tv-kpi-card">
-                {renderKPICard(widget)}
-              </div>
-            ))}
+        /* TV Mode Layout - Grade CSS específica para 1920x1080 */
+        <div className="tv-grid">
+          {/* card1 - Total de Tickets */}
+          <div className="tv-area-card1">
+            {renderKPICard(visibleWidgets.find(w => w.id === 'total-tickets')!)}
           </div>
 
-          {/* Linha 2 - Tempo de Resolução SLA (altura 160px) */}
+          {/* card2 - Tickets Abertos */}
+          <div className="tv-area-card2">
+            {renderKPICard(visibleWidgets.find(w => w.id === 'open-tickets')!)}
+          </div>
+
+          {/* card3 - Cumprimento SLA */}
+          <div className="tv-area-card3">
+            {renderKPICard(visibleWidgets.find(w => w.id === 'sla-compliance')!)}
+          </div>
+
+          {/* card4 - Tickets Atrasados */}
+          <div className="tv-area-card4">
+            {renderKPICard(visibleWidgets.find(w => w.id === 'overdue-tickets')!)}
+          </div>
+
+          {/* time - Tempo de Resolução do SLA */}
           {visibleWidgets.find(w => w.id === 'sla-resolution-time')?.visible && (
-            <div className="tv-sla-chart">
+            <div className="tv-area-time">
               {renderChart(visibleWidgets.find(w => w.id === 'sla-resolution-time')!)}
             </div>
           )}
 
-          {/* Linha 3 - Tags Volume (altura 260px) */}
+          {/* tags - Tags Volume de Tickets */}
           {visibleWidgets.find(w => w.id === 'tag-analytics')?.visible && (
-            <div className="tv-tags-chart">
+            <div className="tv-area-tags">
               {renderChart(visibleWidgets.find(w => w.id === 'tag-analytics')!)}
             </div>
           )}
 
-          {/* Linha 4 - Status e Prioridade lado a lado (altura 260px cada) */}
-          <div className="grid grid-cols-2 gap-3">
-            {visibleWidgets.filter(w => ['status-chart', 'priority-chart'].includes(w.id)).map((widget) => (
-              <div key={widget.id} className="tv-bottom-chart">
-                {renderChart(widget)}
-              </div>
-            ))}
-          </div>
+          {/* status - Distribuição por Status (donut) */}
+          {visibleWidgets.find(w => w.id === 'status-chart')?.visible && (
+            <div className="tv-area-status">
+              {renderChart(visibleWidgets.find(w => w.id === 'status-chart')!)}
+            </div>
+          )}
+
+          {/* prio - Tickets por Prioridade (barras) */}
+          {visibleWidgets.find(w => w.id === 'priority-chart')?.visible && (
+            <div className="tv-area-prio">
+              {renderChart(visibleWidgets.find(w => w.id === 'priority-chart')!)}
+            </div>
+          )}
         </div>
       ) : (
         <>

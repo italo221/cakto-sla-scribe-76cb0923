@@ -28,7 +28,7 @@ export const TagAnalyticsChart = ({ dateFilter, selectedSetor, setores }: TagAna
   const [viewType, setViewType] = useState<string>("bars");
   
   // Detectar se está em modo TV através do body class
-  const isTVMode = document.body.classList.contains('tv-density');
+  const isTVMode = document.body.classList.contains('tv-mode');
 
   const getDateRange = (filter: string) => {
     const now = new Date();
@@ -156,43 +156,45 @@ export const TagAnalyticsChart = ({ dateFilter, selectedSetor, setores }: TagAna
             </p>
           </div>
           
-          <div className="flex items-center gap-2">
-            <Select value={localSetor} onValueChange={setLocalSetor}>
-              <SelectTrigger className="w-40 h-8">
-                <Filter className="h-3 w-3 mr-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os setores</SelectItem>
-                {setores.map(setor => (
-                  <SelectItem key={setor.id} value={setor.id}>
-                    {setor.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {!isTVMode && (
+            <div className="flex items-center gap-2">
+              <Select value={localSetor} onValueChange={setLocalSetor}>
+                <SelectTrigger className="w-40 h-8">
+                  <Filter className="h-3 w-3 mr-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os setores</SelectItem>
+                  {setores.map(setor => (
+                    <SelectItem key={setor.id} value={setor.id}>
+                      {setor.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <Select value={topCount} onValueChange={setTopCount}>
-              <SelectTrigger className="w-24 h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">Top 10</SelectItem>
-                <SelectItem value="20">Top 20</SelectItem>
-                <SelectItem value="all">Todas</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select value={topCount} onValueChange={setTopCount}>
+                <SelectTrigger className="w-24 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">Top 10</SelectItem>
+                  <SelectItem value="20">Top 20</SelectItem>
+                  <SelectItem value="all">Todas</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={exportCSV}
-              disabled={tagData.length === 0}
-              className="h-8 px-2"
-            >
-              <Download className="h-3 w-3" />
-            </Button>
-          </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportCSV}
+                disabled={tagData.length === 0}
+                className="h-8 px-2"
+              >
+                <Download className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
         </div>
       </CardHeader>
 
