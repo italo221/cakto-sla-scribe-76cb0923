@@ -1165,6 +1165,45 @@ export type Database = {
           },
         ]
       }
+      ticket_links: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          source_ticket_id: string
+          target_ticket_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          source_ticket_id: string
+          target_ticket_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          source_ticket_id?: string
+          target_ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_links_source_fkey"
+            columns: ["source_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_links_target_fkey"
+            columns: ["target_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ticket_sla_events: {
         Row: {
           action: Database["public"]["Enums"]["sla_event_action"]
