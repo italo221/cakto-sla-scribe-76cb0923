@@ -31,7 +31,8 @@ import {
   RefreshCw,
   Palette,
   TrendingDown,
-  Minus
+  Minus,
+  Monitor
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -104,6 +105,7 @@ export default function DynamicDashboard() {
   const [teamDateFilter, setTeamDateFilter] = useState('30days');
   const [teamData, setTeamData] = useState<Array<{ name: string; tickets: number; color: string }>>([]);
   const [slaTrend, setSlaTrend] = useState<number>(0);
+  const [tvMode, setTvMode] = useState(false);
 
   const { user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
@@ -914,18 +916,30 @@ export default function DynamicDashboard() {
         </div>
         
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger className="w-32 sm:w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7days">Últimos 7 dias</SelectItem>
-              <SelectItem value="30days">Últimos 30 dias</SelectItem>
-              <SelectItem value="90days">Últimos 90 dias</SelectItem>
-            </SelectContent>
-          </Select>
+          {!tvMode && (
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger className="w-32 sm:w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7days">Últimos 7 dias</SelectItem>
+                <SelectItem value="30days">Últimos 30 dias</SelectItem>
+                <SelectItem value="90days">Últimos 90 dias</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
           
-          {isSuperAdmin && (
+          <Button
+            variant={tvMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => setTvMode(!tvMode)}
+            className="gap-2"
+          >
+            <Monitor className="w-4 h-4" />
+            {tvMode ? "Sair do Modo TV" : "Modo TV"}
+          </Button>
+          
+          {!tvMode && isSuperAdmin && (
             <>
               <Button
                 variant="outline"
@@ -947,15 +961,17 @@ export default function DynamicDashboard() {
             </>
           )}
           
-          <Button onClick={loadDashboardData} variant="outline" size="sm" disabled={loading}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Atualizar
-          </Button>
+          {!tvMode && (
+            <Button onClick={loadDashboardData} variant="outline" size="sm" disabled={loading}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Settings Panel */}
-      {showSettings && (
+      {!tvMode && showSettings && (
         <div className="bg-gradient-to-br from-card to-card/50 rounded-2xl p-6 shadow-lg border border-border/50 backdrop-blur-sm animate-fade-in">
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-2">
@@ -1022,6 +1038,58 @@ export default function DynamicDashboard() {
             </Card>
           ))}
         </div>
+      ) : tvMode ? (
+        /* TV Mode Layout */
+        <div className="space-y-3 h-screen overflow-hidden">
+          {/* Linha 1 - Cards principais compactos */}
+          <div className="grid grid-cols-4 gap-3 h-32">
+            {visibleWidgets.filter(w => w.type === 'kpi').map((widget) => (
+              <div key={widget.id} className="h-full">
+                {(() => {
+                  const kpiCard = renderKPICard(widget);
+                  return React.cloneElement(kpiCard, {
+                    className: kpiCard.props.className.replace(/p-6/, 'p-3').replace(/text-4xl/, 'text-2xl').replace(/space-y-3/, 'space-y-1')
+                  });
+                })()}
+              </div>
+            ))}
+          </div>
+
+          {/* Linha 2 - Tempo de Resolução compacto */}
+          {visibleWidgets.find(w => w.id === 'sla-resolution-time')?.visible && (
+            <div className="h-48">
+              <div className="h-full">
+                {renderChart(visibleWidgets.find(w => w.id === 'sla-resolution-time')!)}
+              </div>
+            </div>
+          )}
+
+          {/* Linha 3 - Tags compacto */}
+          {visibleWidgets.find(w => w.id === 'tag-analytics')?.visible && (
+            <div className="h-48">
+              <div className="h-full">
+                {renderChart(visibleWidgets.find(w => w.id === 'tag-analytics')!)}
+              </div>
+            </div>
+          )}
+
+          {/* Linha 4 - Status e Prioridade lado a lado compactos */}
+          <div className="grid grid-cols-2 gap-3 h-64">
+            {visibleWidgets.filter(w => w.type === 'chart' && ['status-chart', 'priority-chart'].includes(w.id)).map((widget) => (
+              <div key={widget.id} className="h-full">
+                {(() => {
+                  const chart = renderChart(widget);
+                  return React.cloneElement(chart, {
+                    className: chart.props.className,
+                    children: React.cloneElement(chart.props.children, {
+                      className: chart.props.children.props.className.replace(/p-6/, 'p-3').replace(/mb-6/, 'mb-3')
+                    })
+                  });
+                })()}
+              </div>
+            ))}
+          </div>
+        </div>
       ) : (
         <>
           {/* KPI Cards */}
@@ -1050,8 +1118,8 @@ export default function DynamicDashboard() {
         </>
       )}
 
-      {/* Tag Trend Chart - positioned between widgets and team chart */}
-      {!loading && (
+      {/* Tag Trend Chart - positioned between widgets and team chart (only in normal mode) */}
+      {!loading && !tvMode && (
         <div className="mt-6">
           <TagTrendChart />
         </div>
