@@ -116,15 +116,6 @@ export default function DynamicDashboard() {
 
   // TV Mode functions
   const enterTVMode = useCallback(async () => {
-    try {
-      // Try to enter fullscreen
-      await document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } catch (error) {
-      console.log('Fullscreen not available, using fallback');
-      setIsFullscreen(false);
-    }
-    
     setIsTVMode(true);
     localStorage.setItem('dashboard-tv-mode', 'true');
 
@@ -132,6 +123,26 @@ export default function DynamicDashboard() {
     const appLayout = document.querySelector('[data-app-layout]');
     if (appLayout) {
       appLayout.classList.add('tv-mode');
+    }
+
+    // Try fullscreen API
+    try {
+      await document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } catch (error) {
+      // Fallback: use visual viewport height
+      console.log('Fullscreen not supported, using viewport fallback');
+      setIsFullscreen(false);
+      
+      // Force height calculation based on visual viewport
+      const updateHeight = () => {
+        const vh = window.visualViewport?.height || window.innerHeight;
+        document.documentElement.style.setProperty('--tv-mode-height', `${vh}px`);
+      };
+      
+      updateHeight();
+      window.visualViewport?.addEventListener('resize', updateHeight);
+      window.addEventListener('resize', updateHeight);
     }
   }, []);
 
@@ -153,6 +164,12 @@ export default function DynamicDashboard() {
     if (appLayout) {
       appLayout.classList.remove('tv-mode');
     }
+
+    // Clean up viewport listeners
+    const updateHeight = () => {
+      document.documentElement.style.removeProperty('--tv-mode-height');
+    };
+    updateHeight();
   }, []);
 
   const handleTVModeToggle = useCallback(() => {
@@ -190,16 +207,16 @@ export default function DynamicDashboard() {
   // Trigger chart resize when entering/exiting TV mode
   useEffect(() => {
     const triggerResize = () => {
+      // Multiple resize events to ensure charts redraw
       window.dispatchEvent(new Event('resize'));
-      // Additional trigger for chart libraries
       setTimeout(() => {
         window.dispatchEvent(new Event('resize'));
       }, 100);
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 300);
     };
 
-    if (isTVMode || !isTVMode) {
-      triggerResize();
-    }
   }, [isTVMode]);
 
   // Initialize TV mode on component mount if previously enabled
