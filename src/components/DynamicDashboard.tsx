@@ -98,6 +98,10 @@ export default function DynamicDashboard() {
     teamData: []
   });
   const [loading, setLoading] = useState(true);
+  const [isTVMode, setIsTVMode] = useState(() => 
+    localStorage.getItem('dashboard-tv-mode') === 'true'
+  );
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [policies, setPolicies] = useState<Array<{setor_id: string; p0_hours: number; p1_hours: number; p2_hours: number; p3_hours: number}>>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showCustomizer, setShowCustomizer] = useState(false);
@@ -105,11 +109,109 @@ export default function DynamicDashboard() {
   const [teamDateFilter, setTeamDateFilter] = useState('30days');
   const [teamData, setTeamData] = useState<Array<{ name: string; tickets: number; color: string }>>([]);
   const [slaTrend, setSlaTrend] = useState<number>(0);
-  const [tvMode, setTvMode] = useState(false);
 
   const { user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  // TV Mode functions
+  const enterTVMode = useCallback(async () => {
+    try {
+      // Try to enter fullscreen
+      await document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } catch (error) {
+      console.log('Fullscreen not available, using fallback');
+      setIsFullscreen(false);
+    }
+    
+    setIsTVMode(true);
+    localStorage.setItem('dashboard-tv-mode', 'true');
+
+    // Hide navigation elements
+    const appLayout = document.querySelector('[data-app-layout]');
+    if (appLayout) {
+      appLayout.classList.add('tv-mode');
+    }
+  }, []);
+
+  const exitTVMode = useCallback(async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+    } catch (error) {
+      console.log('Error exiting fullscreen');
+    }
+    
+    setIsFullscreen(false);
+    setIsTVMode(false);
+    localStorage.setItem('dashboard-tv-mode', 'false');
+
+    // Restore navigation elements
+    const appLayout = document.querySelector('[data-app-layout]');
+    if (appLayout) {
+      appLayout.classList.remove('tv-mode');
+    }
+  }, []);
+
+  const handleTVModeToggle = useCallback(() => {
+    if (isTVMode) {
+      exitTVMode();
+    } else {
+      enterTVMode();
+    }
+  }, [isTVMode, enterTVMode, exitTVMode]);
+
+  // Handle ESC key to exit TV mode
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isTVMode) {
+        exitTVMode();
+      }
+    };
+
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isTVMode) {
+        // User exited fullscreen via browser controls
+        exitTVMode();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [isTVMode, exitTVMode]);
+
+  // Trigger chart resize when entering/exiting TV mode
+  useEffect(() => {
+    const triggerResize = () => {
+      window.dispatchEvent(new Event('resize'));
+      // Additional trigger for chart libraries
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 100);
+    };
+
+    if (isTVMode || !isTVMode) {
+      triggerResize();
+    }
+  }, [isTVMode]);
+
+  // Initialize TV mode on component mount if previously enabled
+  useEffect(() => {
+    if (isTVMode) {
+      // Apply TV mode styling without fullscreen on page load
+      const appLayout = document.querySelector('[data-app-layout]');
+      if (appLayout) {
+        appLayout.classList.add('tv-mode');
+      }
+    }
+  }, []);
 
   useEffect(() => {
     loadSLAPolicies();
@@ -907,16 +1009,24 @@ export default function DynamicDashboard() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
+    <div className={`${isTVMode ? 'tv-mode-wrapper' : 'space-y-4 sm:space-y-6 p-2 sm:p-0'}`}>
       {/* Header with controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className={`${isTVMode ? 'tv-header' : 'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'}`}>
         <div>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Dashboard Dinâmico</h2>
           <p className="text-muted-foreground">Configure e visualize suas métricas principais</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-2">
-          {!tvMode && (
+          {isTVMode && (
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <span>Últimos 30 dias</span>
+              <span>•</span>
+              <span>Todos os setores</span>
+            </div>
+          )}
+          
+          {!isTVMode && (
             <Select value={dateFilter} onValueChange={setDateFilter}>
               <SelectTrigger className="w-32 sm:w-40">
                 <SelectValue />
@@ -930,16 +1040,16 @@ export default function DynamicDashboard() {
           )}
           
           <Button
-            variant={tvMode ? "default" : "outline"}
+            variant={isTVMode ? "default" : "outline"}
             size="sm"
-            onClick={() => setTvMode(!tvMode)}
+            onClick={handleTVModeToggle}
             className="gap-2"
           >
             <Monitor className="w-4 h-4" />
-            {tvMode ? "Sair do Modo TV" : "Modo TV"}
+            {isTVMode ? "Sair do Modo TV" : "Modo TV"}
           </Button>
           
-          {!tvMode && isSuperAdmin && (
+          {!isTVMode && isSuperAdmin && (
             <>
               <Button
                 variant="outline"
@@ -961,7 +1071,7 @@ export default function DynamicDashboard() {
             </>
           )}
           
-          {!tvMode && (
+          {!isTVMode && (
             <Button onClick={loadDashboardData} variant="outline" size="sm" disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
@@ -971,7 +1081,7 @@ export default function DynamicDashboard() {
       </div>
 
       {/* Settings Panel */}
-      {!tvMode && showSettings && (
+      {!isTVMode && showSettings && (
         <div className="bg-gradient-to-br from-card to-card/50 rounded-2xl p-6 shadow-lg border border-border/50 backdrop-blur-sm animate-fade-in">
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-2">
@@ -1038,21 +1148,22 @@ export default function DynamicDashboard() {
             </Card>
           ))}
         </div>
-      ) : tvMode ? (
-        /* TV Mode Layout */
-        <div className="space-y-3 h-screen overflow-hidden">
-          {/* Linha 1 - Cards principais compactos */}
-          <div className="grid grid-cols-4 gap-3 h-32">
+      ) : isTVMode ? (
+        /* TV Mode Layout - Fixed Grid Structure */
+        <div className={`tv-dashboard-grid ${isFullscreen ? 'fullscreen' : 'fixed-size'}`}>
+          {/* Linha 1 - Cards KPIs */}
+          <div className="grid grid-cols-4 gap-4">
             {visibleWidgets.filter(w => w.type === 'kpi').map((widget) => (
-              <div key={widget.id} className="h-full">
+              <div key={widget.id} className="tv-kpi-card">
                 {(() => {
                   const kpiCard = renderKPICard(widget);
                   if (!kpiCard || !kpiCard.props) return kpiCard;
                   const currentClassName = kpiCard.props.className || '';
                   const newClassName = currentClassName
-                    .replace(/p-6/g, 'p-3')
-                    .replace(/text-4xl/g, 'text-2xl') 
-                    .replace(/space-y-3/g, 'space-y-1');
+                    .replace(/p-6/g, 'p-4')
+                    .replace(/text-4xl/g, 'text-3xl') 
+                    .replace(/space-y-3/g, 'space-y-2')
+                    .replace(/h-full/g, 'h-full min-h-[120px]');
                   return React.cloneElement(kpiCard, {
                     className: newClassName
                   });
@@ -1061,39 +1172,47 @@ export default function DynamicDashboard() {
             ))}
           </div>
 
-          {/* Linha 2 - Tempo de Resolução compacto */}
+          {/* Linha 2 - Tempo de Resolução (full width) */}
           {visibleWidgets.find(w => w.id === 'sla-resolution-time')?.visible && (
-            <div className="h-48">
-              <div className="h-full">
-                {renderChart(visibleWidgets.find(w => w.id === 'sla-resolution-time')!)}
-              </div>
+            <div className="tv-sla-chart">
+              {(() => {
+                const chart = renderChart(visibleWidgets.find(w => w.id === 'sla-resolution-time')!);
+                if (!chart) return chart;
+                return React.cloneElement(chart, {
+                  className: "h-full tv-chart-compact"
+                });
+              })()}
             </div>
           )}
 
-          {/* Linha 3 - Tags compacto */}
+          {/* Linha 3 - Tags (full width) */}
           {visibleWidgets.find(w => w.id === 'tag-analytics')?.visible && (
-            <div className="h-48">
-              <div className="h-full">
-                {renderChart(visibleWidgets.find(w => w.id === 'tag-analytics')!)}
-              </div>
+            <div className="tv-tags-chart">
+              {(() => {
+                const chart = renderChart(visibleWidgets.find(w => w.id === 'tag-analytics')!);
+                if (!chart) return chart;
+                return React.cloneElement(chart, {
+                  className: "h-full tv-chart-compact"
+                });
+              })()}
             </div>
           )}
 
-          {/* Linha 4 - Status e Prioridade lado a lado compactos */}
-          <div className="grid grid-cols-2 gap-3 h-64">
+          {/* Linha 4 - Status e Prioridade (2 colunas) */}
+          <div className="grid grid-cols-2 gap-4">
             {visibleWidgets.filter(w => w.type === 'chart' && ['status-chart', 'priority-chart'].includes(w.id)).map((widget) => (
-              <div key={widget.id} className="h-full">
+              <div key={widget.id} className="tv-bottom-chart">
                 {(() => {
                   const chart = renderChart(widget);
                   if (!chart || !chart.props || !chart.props.children || !chart.props.children.props) return chart;
                   
                   const currentChildClassName = chart.props.children.props.className || '';
                   const newChildClassName = currentChildClassName
-                    .replace(/p-6/g, 'p-3')
+                    .replace(/p-6/g, 'p-4')
                     .replace(/mb-6/g, 'mb-3');
                     
                   return React.cloneElement(chart, {
-                    className: chart.props.className,
+                    className: "h-full tv-chart-compact",
                     children: React.cloneElement(chart.props.children, {
                       className: newChildClassName
                     })
@@ -1132,7 +1251,7 @@ export default function DynamicDashboard() {
       )}
 
       {/* Tag Trend Chart - positioned between widgets and team chart (only in normal mode) */}
-      {!loading && !tvMode && (
+      {!loading && !isTVMode && (
         <div className="mt-6">
           <TagTrendChart />
         </div>

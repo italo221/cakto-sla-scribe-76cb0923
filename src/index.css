@@ -498,6 +498,122 @@ All colors MUST be HSL.
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background: hsl(var(--muted));
     border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
+
+/* TV Mode Styles */
+[data-app-layout].tv-mode {
+  /* Hide navigation elements */
+  header, nav, aside, .lateral-sidebar, .breadcrumb {
+    display: none !important;
+  }
+  
+  /* Hide main padding/margins */
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+.tv-mode-wrapper {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  background: hsl(var(--background));
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.tv-header {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.tv-dashboard-grid {
+  display: grid;
+  grid-template-rows: auto auto auto auto;
+  gap: 16px;
+  height: calc(100vh - 80px);
+  margin-top: 60px;
+  position: static;
+  z-index: auto;
+}
+
+.tv-dashboard-grid.fullscreen {
+  height: calc(100vh - 32px);
+  margin-top: 0;
+}
+
+.tv-kpi-card {
+  height: 140px;
+  position: static;
+  z-index: auto;
+}
+
+.tv-sla-chart {
+  height: 200px;
+  position: static;
+  z-index: auto;
+}
+
+.tv-tags-chart {
+  height: 200px;
+  position: static;
+  z-index: auto;
+}
+
+.tv-bottom-chart {
+  height: 280px;
+  position: static;
+  z-index: auto;
+}
+
+.tv-chart-compact {
+  position: static !important;
+  z-index: auto !important;
+}
+
+.tv-chart-compact .recharts-responsive-container {
+  position: static !important;
+}
+
+.tv-chart-compact .recharts-wrapper {
+  position: static !important;
+}
+
+/* Ensure all dropdowns and overlays have proper z-index in TV mode */
+.tv-mode-wrapper .radix-popover-content,
+.tv-mode-wrapper .radix-dropdown-menu-content,
+.tv-mode-wrapper .radix-select-content {
+  z-index: 10000;
+}
+
+/* Typography adjustments for TV mode */
+.tv-mode-wrapper h1,
+.tv-mode-wrapper h2,
+.tv-mode-wrapper h3 {
+  font-size: clamp(1rem, 2vw, 1.5rem);
+}
+
+.tv-mode-wrapper .text-4xl {
+  font-size: clamp(1.5rem, 3vw, 2.5rem) !important;
+}
+
+.tv-mode-wrapper .text-3xl {
+  font-size: clamp(1.25rem, 2.5vw, 2rem) !important;
     border: 1px solid hsl(var(--border));
   }
 

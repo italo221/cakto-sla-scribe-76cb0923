@@ -29,7 +29,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   if (settings.navbar_position === 'left') {
     return (
       <SLAPoliciesProvider>
-        <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5" data-app-layout>
           <LateralSidebar glassEffect={settings.navbar_glass} />
           <main className="ml-16 transition-all duration-300">
             <div className="p-4">
@@ -44,7 +44,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   // Default top navigation
   return (
     <SLAPoliciesProvider>
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5" data-app-layout>
         <Navigation />
         <main className="relative">
           {children}
