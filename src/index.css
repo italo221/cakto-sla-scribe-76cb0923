@@ -225,6 +225,75 @@ All colors MUST be HSL.
     background-color: hsl(var(--primary) / 0.3);
     border-color: hsl(var(--primary) / 0.5);
   }
+
+  /* TV Mode styles */
+  .tv-mode {
+    padding: 16px 20px;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .tv-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: 140px auto 180px 280px 260px;
+    grid-template-areas:
+      "card1 card1 card1 card2 card2 card2 card3 card3 card3 card4 card4 card4"
+      "filters filters filters filters filters filters filters filters filters filters filters filters"
+      "sla sla sla sla sla sla sla sla sla sla sla sla"
+      "tags tags tags tags tags tags tags tags tags tags tags tags"
+      "status status status status status status priority priority priority priority priority priority";
+    gap: 16px;
+    height: 100%;
+  }
+
+  .tv-card-kpi {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tv-card-kpi:nth-child(1) { grid-area: card1; }
+  .tv-card-kpi:nth-child(2) { grid-area: card2; }
+  .tv-card-kpi:nth-child(3) { grid-area: card3; }
+  .tv-card-kpi:nth-child(4) { grid-area: card4; }
+
+  .tv-filters {
+    grid-area: filters;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 8px 0;
+  }
+
+  .tv-sla-time {
+    grid-area: sla;
+  }
+
+  .tv-tags-volume {
+    grid-area: tags;
+  }
+
+  .tv-status-chart {
+    grid-area: status;
+  }
+
+  .tv-priority-chart {
+    grid-area: priority;
+  }
+
+  /* Responsive scaling for smaller screens */
+  @media (max-width: 1366px) {
+    .tv-grid {
+      grid-template-rows: 120px auto 150px 240px 220px;
+      transform: scale(0.9);
+      transform-origin: top left;
+    }
+    
+    .tv-mode {
+      padding: 12px 16px;
+    }
+  }
 }
 
 @layer base {

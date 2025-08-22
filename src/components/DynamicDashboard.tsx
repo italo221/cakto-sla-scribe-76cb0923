@@ -1044,13 +1044,13 @@ export default function DynamicDashboard() {
             </Select>
             
             <Button
-              variant={isTVMode ? "default" : "outline"}
+              variant="outline"
               size="sm"
-              onClick={handleTVModeToggle}
+              onClick={() => window.open('/dashboard/tv', '_blank')}
               className="gap-2"
             >
               <Monitor className="w-4 h-4" />
-              {isTVMode ? "Sair do Modo TV" : "Modo TV"}
+              Modo TV
             </Button>
             
             {isSuperAdmin && (
