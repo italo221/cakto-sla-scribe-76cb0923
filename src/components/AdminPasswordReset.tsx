@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const AdminPasswordReset = () => {
   const [email, setEmail] = useState('ulisses@cakto.com.br');
-  const [newPassword, setNewPassword] = useState('cakto123');
+  const [newPassword, setNewPassword] = useState('K8mP#nQ2vL9x');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
