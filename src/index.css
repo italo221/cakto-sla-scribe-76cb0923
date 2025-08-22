@@ -1098,31 +1098,134 @@ All colors MUST be HSL.
   font-size: 11px !important;
 }
 
-/* Responsive para 1366x768 */
-@media screen and (max-width: 1366px) and (max-height: 768px) {
+/* TV Mode Styles */
+.tv-mode-container {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: hsl(var(--background));
+}
+
+.tv-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: 120px 50px 170px 310px 270px;
+  grid-template-areas:
+    "kpi1 kpi2 kpi3 kpi4"
+    "filters filters filters filters"
+    "sla sla sla sla"
+    "tags tags tags tags"
+    "status status priority priority";
+  gap: 16px;
+  padding: 16px;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+/* KPI Cards */
+.tv-kpi-card {
+  grid-area: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tv-kpi-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px;
+  height: 100%;
+}
+
+.tv-kpi-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 8px;
+}
+
+.tv-kpi-value {
+  font-size: 42px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+/* Filters Bar */
+.tv-filters-bar {
+  grid-area: filters;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 8px 16px;
+}
+
+/* Chart Cards */
+.tv-sla-card {
+  grid-area: sla;
+}
+
+.tv-tags-card {
+  grid-area: tags;
+}
+
+.tv-status-card {
+  grid-area: status;
+}
+
+.tv-priority-card {
+  grid-area: priority;
+}
+
+.tv-card-header {
+  padding: 16px 16px 8px 16px;
+}
+
+.tv-card-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.tv-sla-content {
+  padding: 8px 16px 16px 16px;
+  height: calc(100% - 60px);
+}
+
+.tv-tags-content {
+  padding: 8px 16px 16px 16px;
+  height: calc(100% - 60px);
+}
+
+.tv-status-content {
+  padding: 8px 16px 16px 16px;
+  height: calc(100% - 60px);
+  display: flex;
+  flex-direction: column;
+}
+
+.tv-priority-content {
+  padding: 8px 16px 16px 16px;
+  height: calc(100% - 60px);
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 1366px) {
   .tv-grid {
-    grid-template-rows: 100px 120px 200px 180px;
-    gap: 6px;
-    padding: 8px 12px;
+    grid-template-rows: 100px 45px 150px 260px 230px;
+    gap: 12px;
+    padding: 12px;
   }
   
-  .tv-mode .kpi-value {
-    font-size: 40px !important;
+  .tv-kpi-value {
+    font-size: 36px;
   }
   
-  .tv-mode .sla-big-number {
-    font-size: 48px !important;
-  }
-  
-  .tv-mode .card-title {
-    font-size: 14px !important;
-  }
-  
-  .tv-mode .chart-title {
-    font-size: 14px !important;
-  }
-  
-  .tv-mode .recharts-text {
-    font-size: 9px !important;
+  .tv-card-title {
+    font-size: 16px;
   }
 }
