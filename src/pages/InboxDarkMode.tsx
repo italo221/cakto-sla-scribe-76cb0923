@@ -455,6 +455,29 @@ export default function Inbox() {
     setSelectedTicket(ticket);
     setModalOpen(true);
   };
+  
+  const handleOpenTicketById = async (ticketId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('sla_demandas')
+        .select('*')
+        .eq('id', ticketId)
+        .single();
+        
+      if (error) throw error;
+      if (data) {
+        setSelectedTicket(data as Ticket);
+        setModalOpen(true);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar ticket:', error);
+      toast({
+        title: "Erro",
+        description: "Falha ao carregar detalhes do ticket",
+        variant: "destructive"
+      });
+    }
+  };
   const handleEditTicket = (ticket: Ticket) => {
     setSelectedTicketForEdit(ticket);
     setEditModalOpen(true);

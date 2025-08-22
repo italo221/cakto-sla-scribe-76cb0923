@@ -35,6 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { extractCleanTextWithMentions, formatMentionsForDisplay } from "@/utils/textFormatting";
 import { extractMentions, findMentionedUsers, notifyUserMention } from "@/utils/notificationService";
 import { useFileUpload } from "@/hooks/useFileUpload";
+import TicketLinksPanel from "@/components/TicketLinksPanel";
 
 interface SLA {
   id: string;
@@ -1867,6 +1868,24 @@ const toggleCommentsFocusMode = () => {
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* Painel de Tickets Vinculados */}
+          {!isCommentsFocusMode && currentSLA && (
+            <TicketLinksPanel 
+              ticketId={currentSLA.id}
+              onTicketOpen={(ticketId) => {
+                // Fechar modal atual e abrir novo ticket
+                onClose();
+                // Aguardar fechamento do modal antes de abrir o novo
+                setTimeout(() => {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('ticket', ticketId);
+                  window.history.pushState({}, '', url.toString());
+                  window.location.reload();
+                }, 100);
+              }}
+            />
           )}
         </div>
       </DialogContent>
