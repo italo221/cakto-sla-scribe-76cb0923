@@ -1047,8 +1047,14 @@ export default function DynamicDashboard() {
               <div key={widget.id} className="h-full">
                 {(() => {
                   const kpiCard = renderKPICard(widget);
+                  if (!kpiCard || !kpiCard.props) return kpiCard;
+                  const currentClassName = kpiCard.props.className || '';
+                  const newClassName = currentClassName
+                    .replace(/p-6/g, 'p-3')
+                    .replace(/text-4xl/g, 'text-2xl') 
+                    .replace(/space-y-3/g, 'space-y-1');
                   return React.cloneElement(kpiCard, {
-                    className: kpiCard.props.className.replace(/p-6/, 'p-3').replace(/text-4xl/, 'text-2xl').replace(/space-y-3/, 'space-y-1')
+                    className: newClassName
                   });
                 })()}
               </div>
@@ -1079,10 +1085,17 @@ export default function DynamicDashboard() {
               <div key={widget.id} className="h-full">
                 {(() => {
                   const chart = renderChart(widget);
+                  if (!chart || !chart.props || !chart.props.children || !chart.props.children.props) return chart;
+                  
+                  const currentChildClassName = chart.props.children.props.className || '';
+                  const newChildClassName = currentChildClassName
+                    .replace(/p-6/g, 'p-3')
+                    .replace(/mb-6/g, 'mb-3');
+                    
                   return React.cloneElement(chart, {
                     className: chart.props.className,
                     children: React.cloneElement(chart.props.children, {
-                      className: chart.props.children.props.className.replace(/p-6/, 'p-3').replace(/mb-6/, 'mb-3')
+                      className: newChildClassName
                     })
                   });
                 })()}
