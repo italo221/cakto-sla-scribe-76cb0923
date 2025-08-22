@@ -26,6 +26,9 @@ export const TagAnalyticsChart = ({ dateFilter, selectedSetor, setores }: TagAna
   const [localSetor, setLocalSetor] = useState<string>(selectedSetor || "all");
   const [topCount, setTopCount] = useState<string>("10");
   const [viewType, setViewType] = useState<string>("bars");
+  
+  // Detectar se está em modo TV através do body class
+  const isTVMode = document.body.classList.contains('tv-density');
 
   const getDateRange = (filter: string) => {
     const now = new Date();
@@ -88,9 +91,12 @@ export const TagAnalyticsChart = ({ dateFilter, selectedSetor, setores }: TagAna
         }))
         .sort((a, b) => b.count - a.count);
 
-      // Aplicar limite de top tags
-      const limit = topCount === "all" ? tagArray.length : parseInt(topCount);
-      setTagData(tagArray.slice(0, limit));
+       // Aplicar limite de top tags (máximo 10 no modo TV)
+       let limit = topCount === "all" ? tagArray.length : parseInt(topCount);
+       if (isTVMode) {
+         limit = Math.min(limit, 10);
+       }
+       setTagData(tagArray.slice(0, limit));
 
     } catch (error) {
       console.error('Erro ao carregar analytics de tags:', error);
@@ -203,29 +209,54 @@ export const TagAnalyticsChart = ({ dateFilter, selectedSetor, setores }: TagAna
             </div>
           </div>
         ) : (
-          <div className="h-80">
+          <div className={isTVMode ? "h-full" : "h-80"}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={tagData}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 60 }}
+                  margin={{ 
+                    top: 5, 
+                    right: isTVMode ? 20 : 30, 
+                    left: isTVMode ? 15 : 20, 
+                    bottom: isTVMode ? 50 : 60 
+                  }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
                     dataKey="tag" 
                     stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    angle={-45}
+                    fontSize={isTVMode ? 11 : 12}
+                    angle={isTVMode ? -20 : -45}
                     textAnchor="end"
-                    height={60}
+                    height={isTVMode ? 45 : 60}
                     interval={0}
+                    tick={(props) => {
+                      // Truncar tags longas no modo TV
+                      if (isTVMode && props.payload.value.length > 12) {
+                        props.payload.value = props.payload.value.substring(0, 12) + '...';
+                      }
+                      return <g transform={`translate(${props.x},${props.y})`}>
+                        <text 
+                          x={0} 
+                          y={0} 
+                          dy={16} 
+                          textAnchor={props.textAnchor} 
+                          fill={props.fill}
+                          fontSize={props.fontSize}
+                          transform={`rotate(${props.angle || 0})`}
+                        >
+                          {props.payload.value}
+                        </text>
+                      </g>;
+                    }}
                   />
                   <YAxis 
                     stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
+                    fontSize={isTVMode ? 11 : 12}
+                    tickCount={isTVMode ? 4 : 5}
                   />
                   <Tooltip
                     content={({ active, payload, label }) => {
-                      if (active && payload && payload.length) {
+                      if (active && payload && payload.length && !isTVMode) {
                         const data = payload[0].payload as TagData;
                         return (
                           <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
@@ -245,7 +276,8 @@ export const TagAnalyticsChart = ({ dateFilter, selectedSetor, setores }: TagAna
                   <Bar 
                     dataKey="count" 
                     fill="hsl(var(--primary))"
-                    radius={[4, 4, 0, 0]}
+                    radius={[isTVMode ? 2 : 4, isTVMode ? 2 : 4, 0, 0]}
+                    maxBarSize={isTVMode ? 16 : undefined}
                   />
                 </BarChart>
               </ResponsiveContainer>

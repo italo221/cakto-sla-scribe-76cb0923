@@ -128,6 +128,9 @@ export default function DynamicDashboard() {
     setIsTVMode(true);
     localStorage.setItem('dashboard-tv-mode', 'true');
 
+    // Apply TV density class to body
+    document.body.classList.add('tv-density');
+    
     // Hide navigation elements
     const appLayout = document.querySelector('[data-app-layout]');
     if (appLayout) {
@@ -147,6 +150,9 @@ export default function DynamicDashboard() {
     setIsFullscreen(false);
     setIsTVMode(false);
     localStorage.setItem('dashboard-tv-mode', 'false');
+
+    // Remove TV density class from body
+    document.body.classList.remove('tv-density');
 
     // Restore navigation elements
     const appLayout = document.querySelector('[data-app-layout]');
@@ -202,16 +208,30 @@ export default function DynamicDashboard() {
     }
   }, [isTVMode]);
 
-  // Initialize TV mode on component mount if previously enabled
+  // Auto-refresh em TV mode
   useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
     if (isTVMode) {
-      // Apply TV mode styling without fullscreen on page load
+      // Apply TV mode styling and density
+      document.body.classList.add('tv-density');
       const appLayout = document.querySelector('[data-app-layout]');
       if (appLayout) {
         appLayout.classList.add('tv-mode');
       }
+      
+      // Auto-refresh a cada 60 segundos
+      interval = setInterval(() => {
+        loadDashboardData();
+      }, 60000);
     }
-  }, []);
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isTVMode]);
 
   useEffect(() => {
     loadSLAPolicies();
@@ -1039,6 +1059,21 @@ export default function DynamicDashboard() {
             </Select>
           )}
           
+          {/* Filtros mini no modo TV */}
+          {isTVMode && (
+            <div className="tv-mini-filters">
+              <Button variant="ghost" size="sm" onClick={loadDashboardData} disabled={loading}>
+                <RefreshCw className={`${loading ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button variant="ghost" size="sm">
+                <BarChart3 />
+              </Button>
+              <Button variant="ghost" size="sm">
+                <Settings />
+              </Button>
+            </div>
+          )}
+          
           <Button
             variant={isTVMode ? "default" : "outline"}
             size="sm"
@@ -1149,75 +1184,36 @@ export default function DynamicDashboard() {
           ))}
         </div>
       ) : isTVMode ? (
-        /* TV Mode Layout - Fixed Grid Structure */
-        <div className={`tv-dashboard-grid ${isFullscreen ? 'fullscreen' : 'fixed-size'}`}>
-          {/* Linha 1 - Cards KPIs */}
-          <div className="grid grid-cols-4 gap-4">
-            {visibleWidgets.filter(w => w.type === 'kpi').map((widget) => (
+        /* TV Mode Layout - Grade fixa otimizada para 1920x1080 */
+        <div className="tv-dashboard-grid">
+          {/* Linha 1 - 4 Cards KPIs (altura 120px) */}
+          <div className="grid grid-cols-4 gap-3">
+            {visibleWidgets.filter(w => w.type === 'kpi').slice(0, 4).map((widget) => (
               <div key={widget.id} className="tv-kpi-card">
-                {(() => {
-                  const kpiCard = renderKPICard(widget);
-                  if (!kpiCard || !kpiCard.props) return kpiCard;
-                  const currentClassName = kpiCard.props.className || '';
-                  const newClassName = currentClassName
-                    .replace(/p-6/g, 'p-4')
-                    .replace(/text-4xl/g, 'text-3xl') 
-                    .replace(/space-y-3/g, 'space-y-2')
-                    .replace(/h-full/g, 'h-full min-h-[120px]');
-                  return React.cloneElement(kpiCard, {
-                    className: newClassName
-                  });
-                })()}
+                {renderKPICard(widget)}
               </div>
             ))}
           </div>
 
-          {/* Linha 2 - Tempo de Resolução (full width) */}
+          {/* Linha 2 - Tempo de Resolução SLA (altura 160px) */}
           {visibleWidgets.find(w => w.id === 'sla-resolution-time')?.visible && (
             <div className="tv-sla-chart">
-              {(() => {
-                const chart = renderChart(visibleWidgets.find(w => w.id === 'sla-resolution-time')!);
-                if (!chart) return chart;
-                return React.cloneElement(chart, {
-                  className: "h-full tv-chart-compact"
-                });
-              })()}
+              {renderChart(visibleWidgets.find(w => w.id === 'sla-resolution-time')!)}
             </div>
           )}
 
-          {/* Linha 3 - Tags (full width) */}
+          {/* Linha 3 - Tags Volume (altura 260px) */}
           {visibleWidgets.find(w => w.id === 'tag-analytics')?.visible && (
             <div className="tv-tags-chart">
-              {(() => {
-                const chart = renderChart(visibleWidgets.find(w => w.id === 'tag-analytics')!);
-                if (!chart) return chart;
-                return React.cloneElement(chart, {
-                  className: "h-full tv-chart-compact"
-                });
-              })()}
+              {renderChart(visibleWidgets.find(w => w.id === 'tag-analytics')!)}
             </div>
           )}
 
-          {/* Linha 4 - Status e Prioridade (2 colunas) */}
-          <div className="grid grid-cols-2 gap-4">
-            {visibleWidgets.filter(w => w.type === 'chart' && ['status-chart', 'priority-chart'].includes(w.id)).map((widget) => (
+          {/* Linha 4 - Status e Prioridade lado a lado (altura 260px cada) */}
+          <div className="grid grid-cols-2 gap-3">
+            {visibleWidgets.filter(w => ['status-chart', 'priority-chart'].includes(w.id)).map((widget) => (
               <div key={widget.id} className="tv-bottom-chart">
-                {(() => {
-                  const chart = renderChart(widget);
-                  if (!chart || !chart.props || !chart.props.children || !chart.props.children.props) return chart;
-                  
-                  const currentChildClassName = chart.props.children.props.className || '';
-                  const newChildClassName = currentChildClassName
-                    .replace(/p-6/g, 'p-4')
-                    .replace(/mb-6/g, 'mb-3');
-                    
-                  return React.cloneElement(chart, {
-                    className: "h-full tv-chart-compact",
-                    children: React.cloneElement(chart.props.children, {
-                      className: newChildClassName
-                    })
-                  });
-                })()}
+                {renderChart(widget)}
               </div>
             ))}
           </div>

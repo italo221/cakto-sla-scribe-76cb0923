@@ -505,93 +505,249 @@ All colors MUST be HSL.
   }
 }
 
-/* TV Mode Styles */
+/* TV Mode Styles - Layout Otimizado para 1920x1080 */
+.tv-mode {
+  background: var(--background);
+  overflow-y: hidden;
+  
+  .main-content {
+    padding-top: 0;
+  }
+  
+  nav {
+    display: none;
+  }
+}
+
+/* TV Density - Classe global para modo compacto */
+.tv-density {
+  overflow-y: hidden;
+  height: 100vh;
+}
+
+.tv-density .tv-mode-wrapper {
+  padding: 20px;
+  background: var(--background);
+  height: 100vh;
+  overflow-y: hidden;
+}
+
+.tv-density .tv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0;
+  height: 40px;
+}
+
+.tv-density .tv-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.tv-density .tv-header p {
+  font-size: 12px;
+  margin: 0;
+}
+
+/* Grade principal para 1920x1080 */
+.tv-density .tv-dashboard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: calc(100vh - 92px);
+  overflow: hidden;
+}
+
+/* Linha 1 - 4 Cards KPI (altura 120px) */
+.tv-density .tv-kpi-card {
+  height: 120px;
+  overflow: hidden;
+}
+
+.tv-density .tv-kpi-card .card-content {
+  padding: 12px;
+}
+
+.tv-density .tv-kpi-card .lucide {
+  width: 24px;
+  height: 24px;
+}
+
+.tv-density .tv-kpi-card .text-3xl {
+  font-size: 48px;
+  line-height: 1.1;
+}
+
+.tv-density .tv-kpi-card .text-sm {
+  font-size: 12px;
+}
+
+/* Linha 2 - Tempo de Resolução SLA (altura 160px) */
+.tv-density .tv-sla-chart {
+  height: 160px;
+}
+
+.tv-density .tv-sla-chart .card-header {
+  padding: 8px 12px;
+  padding-bottom: 0;
+}
+
+.tv-density .tv-sla-chart .card-content {
+  padding: 12px;
+  padding-top: 8px;
+}
+
+.tv-density .tv-sla-chart h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.tv-density .tv-sla-chart .text-6xl {
+  font-size: 56px;
+  line-height: 1;
+}
+
+.tv-density .tv-sla-chart .text-xs {
+  font-size: 12px;
+}
+
+/* Linha 3 - Tags Volume (altura 260px) */
+.tv-density .tv-tags-chart {
+  height: 260px;
+}
+
+.tv-density .tv-tags-chart .card-header {
+  padding: 8px 12px;
+  height: 32px;
+}
+
+.tv-density .tv-tags-chart .card-content {
+  padding: 12px;
+  padding-top: 0;
+}
+
+.tv-density .tv-tags-chart h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Configurações dos gráficos de tags */
+.tv-density .recharts-text {
+  font-size: 11px;
+}
+
+.tv-density .recharts-cartesian-axis-tick-value {
+  font-size: 11px;
+}
+
+.tv-density .recharts-tooltip-wrapper {
+  font-size: 11px;
+}
+
+/* Linha 4 - Status e Prioridade (altura 260px cada) */
+.tv-density .tv-bottom-chart {
+  height: 260px;
+}
+
+.tv-density .tv-bottom-chart .card-header {
+  padding: 8px 12px;
+  height: 32px;
+}
+
+.tv-density .tv-bottom-chart .card-content {
+  padding: 12px;
+  padding-top: 0;
+}
+
+.tv-density .tv-bottom-chart h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Configurações do gráfico donut */
+.tv-density .recharts-pie-sector {
+  stroke-width: 20px;
+}
+
+.tv-density .recharts-legend-item-text {
+  font-size: 11px;
+}
+
+/* Filtros mini no modo TV */
+.tv-density .tv-mini-filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tv-density .tv-mini-filters .lucide {
+  width: 14px;
+  height: 14px;
+}
+
+.tv-density .tv-mini-filters button {
+  padding: 4px 6px;
+  font-size: 0;
+}
+
+/* Escalonamento para 1366x768 */
+@media (max-width: 1400px) {
+  .tv-density .tv-dashboard-grid {
+    transform: scale(0.9);
+    transform-origin: top left;
+    width: 111.11%;
+    height: calc(111.11vh - 102px);
+  }
+  
+  .tv-density .tv-kpi-card {
+    height: 104px;
+  }
+  
+  .tv-density .tv-sla-chart {
+    height: 140px;
+  }
+  
+  .tv-density .tv-tags-chart {
+    height: 220px;
+  }
+  
+  .tv-density .tv-bottom-chart {
+    height: 220px;
+  }
+  
+  .tv-density .tv-sla-chart .text-6xl {
+    font-size: 48px;
+  }
+  
+  .tv-density .tv-kpi-card .text-3xl {
+    font-size: 42px;
+  }
+  
+  .tv-density .tv-header h2 {
+    font-size: 16px;
+  }
+  
+  .tv-density .recharts-text {
+    font-size: 10px;
+  }
+}
+
+/* Compatibilidade com navegação escondida */
 [data-app-layout].tv-mode {
-  /* Hide navigation elements */
   header, nav, aside, .lateral-sidebar, .breadcrumb {
     display: none !important;
   }
   
-  /* Hide main padding/margins */
   main {
     margin: 0 !important;
     padding: 0 !important;
   }
-}
-
-.tv-mode-wrapper {
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 9999;
-  background: hsl(var(--background));
-  padding: 16px;
-  box-sizing: border-box;
-}
-
-.tv-header {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.tv-dashboard-grid {
-  display: grid;
-  grid-template-rows: auto auto auto auto;
-  gap: 16px;
-  height: calc(100vh - 80px);
-  margin-top: 60px;
-  position: static;
-  z-index: auto;
-}
-
-.tv-dashboard-grid.fullscreen {
-  height: calc(100vh - 32px);
-  margin-top: 0;
-}
-
-.tv-kpi-card {
-  height: 140px;
-  position: static;
-  z-index: auto;
-}
-
-.tv-sla-chart {
-  height: 200px;
-  position: static;
-  z-index: auto;
-}
-
-.tv-tags-chart {
-  height: 200px;
-  position: static;
-  z-index: auto;
-}
-
-.tv-bottom-chart {
-  height: 280px;
-  position: static;
-  z-index: auto;
-}
-
-.tv-chart-compact {
-  position: static !important;
-  z-index: auto !important;
-}
-
-.tv-chart-compact .recharts-responsive-container {
-  position: static !important;
-}
-
-.tv-chart-compact .recharts-wrapper {
-  position: static !important;
 }
 
 /* Ensure all dropdowns and overlays have proper z-index in TV mode */
