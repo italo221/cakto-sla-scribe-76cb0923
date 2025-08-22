@@ -614,19 +614,14 @@ All colors MUST be HSL.
 
 .tv-mode-wrapper .text-3xl {
   font-size: clamp(1.25rem, 2.5vw, 2rem) !important;
-    border: 1px solid hsl(var(--border));
-  }
+}
 
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground));
-  }
-
-  /* Melhorias de texto e responsividade */
-  .break-words {
-    word-wrap: break-word;
-    word-break: break-word;
-    hyphens: auto;
-  }
+/* Melhorias de texto e responsividade */
+.break-words {
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
 
   /* Hover states minimalistas */
   .card-hover-lift {
