@@ -1213,6 +1213,285 @@ All colors MUST be HSL.
   height: calc(100% - 60px);
 }
 
+/* TV Dashboard Mode Styles */
+.tv-dashboard-container {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: hsl(var(--background));
+  padding: 16px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.tv-dashboard-buttons {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 50;
+  display: flex;
+  gap: 8px;
+}
+
+.tv-button {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.tv-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  height: calc(100vh - 32px);
+  grid-template-rows: 
+    minmax(10vh, 12vh)     /* Row 1: KPI Cards */
+    minmax(14vh, 16vh)     /* Row 2: SLA Resolution */
+    minmax(26vh, 30vh)     /* Row 3: Tags Volume */
+    minmax(22vh, 24vh);    /* Row 4: Status + Priority */
+}
+
+/* Row 1: KPI Cards */
+.tv-kpi-card {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tv-kpi-content {
+  text-align: center;
+  padding: 12px !important;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+}
+
+.tv-kpi-title {
+  font-size: 14px;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.tv-kpi-value {
+  font-size: clamp(24px, 4vw, 48px);
+  font-weight: bold;
+  color: hsl(var(--foreground));
+  line-height: 1;
+}
+
+.tv-kpi-value-primary {
+  color: hsl(var(--primary));
+}
+
+.tv-kpi-value-success {
+  color: hsl(var(--success));
+}
+
+.tv-kpi-value-destructive {
+  color: hsl(var(--destructive));
+}
+
+/* Row 2: SLA Resolution Time */
+.tv-sla-card {
+  grid-column: 1 / -1;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  border-radius: 8px;
+}
+
+.tv-sla-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 16px !important;
+}
+
+.tv-sla-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.tv-sla-header > span {
+  font-size: 18px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  flex: 1;
+}
+
+.tv-sla-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.tv-filter-select {
+  height: 32px;
+  width: 100px;
+  font-size: 12px;
+}
+
+.tv-sla-value {
+  text-align: center;
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: bold;
+  color: hsl(var(--primary));
+  margin: 8px 0;
+}
+
+.tv-sla-subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: hsl(var(--muted-foreground));
+  margin-top: 8px;
+}
+
+/* Row 3: Tags Volume */
+.tv-tags-card {
+  grid-column: 1 / -1;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  border-radius: 8px;
+}
+
+.tv-tags-content {
+  height: 100%;
+  padding: 16px !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.tv-tags-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.tv-tags-header > span {
+  font-size: 18px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  flex: 1;
+}
+
+.tv-tags-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.tv-tags-chart {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Row 4: Status Distribution + Priority */
+.tv-status-card,
+.tv-priority-card {
+  grid-column: span 2;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  border-radius: 8px;
+}
+
+.tv-status-content,
+.tv-priority-content {
+  height: 100%;
+  padding: 16px !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.tv-chart-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tv-chart-header > span {
+  font-size: 16px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.tv-chart-container {
+  flex: 1;
+  min-height: 0;
+  margin-bottom: 8px;
+}
+
+.tv-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.tv-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tv-legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.tv-legend-text {
+  font-size: 12px;
+  color: hsl(var(--foreground));
+  white-space: nowrap;
+}
+
+/* Responsive adjustments for 1366x768 */
+@media (max-width: 1400px) {
+  .tv-dashboard-grid {
+    grid-template-rows: 
+      minmax(12vh, 14vh)     /* KPI Cards */
+      minmax(14vh, 16vh)     /* SLA Resolution */
+      minmax(28vh, 32vh)     /* Tags Volume */
+      minmax(24vh, 26vh);    /* Status + Priority */
+  }
+  
+  .tv-kpi-title {
+    font-size: 12px;
+  }
+  
+  .tv-sla-header > span,
+  .tv-tags-header > span {
+    font-size: 16px;
+  }
+  
+  .tv-chart-header > span {
+    font-size: 14px;
+  }
+  
+  .tv-filter-select {
+    width: 80px;
+    font-size: 11px;
+  }
+  
+  .tv-legend-text {
+    font-size: 11px;
+  }
+}
+
 /* Responsive adjustments for smaller screens */
 @media (max-width: 1366px) {
   .tv-grid {
