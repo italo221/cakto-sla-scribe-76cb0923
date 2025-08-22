@@ -226,72 +226,251 @@ All colors MUST be HSL.
     border-color: hsl(var(--primary) / 0.5);
   }
 
-  /* TV Mode styles */
-  .tv-mode {
-    padding: 16px 20px;
-    height: 100vh;
-    overflow: hidden;
+  /* TV Dashboard Styles */
+  .tv-dashboard-container {
+    @apply w-screen h-screen bg-background overflow-hidden relative;
+    padding: 16px;
   }
 
-  .tv-grid {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    grid-template-rows: 140px auto 180px 280px 260px;
-    grid-template-areas:
-      "card1 card1 card1 card2 card2 card2 card3 card3 card3 card4 card4 card4"
-      "filters filters filters filters filters filters filters filters filters filters filters filters"
-      "sla sla sla sla sla sla sla sla sla sla sla sla"
-      "tags tags tags tags tags tags tags tags tags tags tags tags"
-      "status status status status status status priority priority priority priority priority priority";
+  .tv-dashboard-buttons {
+    @apply absolute top-4 right-4 z-50 flex gap-2;
+  }
+
+  .tv-button {
+    @apply bg-background/80 backdrop-blur-sm border-border hover:bg-accent hover:text-accent-foreground;
+  }
+
+  /* TV Dashboard Grid - Proportional heights */
+  .tv-dashboard-grid {
+    @apply w-full h-full flex flex-col;
     gap: 16px;
-    height: 100%;
+    padding-top: 48px; /* Space for top buttons */
   }
 
-  .tv-card-kpi {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  /* Row 1: KPIs - 15% height */
+  .tv-row-kpis {
+    @apply flex gap-4;
+    height: 15vh;
   }
 
-  .tv-card-kpi:nth-child(1) { grid-area: card1; }
-  .tv-card-kpi:nth-child(2) { grid-area: card2; }
-  .tv-card-kpi:nth-child(3) { grid-area: card3; }
-  .tv-card-kpi:nth-child(4) { grid-area: card4; }
-
-  .tv-filters {
-    grid-area: filters;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 8px 0;
+  .tv-kpi-card {
+    @apply flex-1 border-border shadow-sm bg-card;
   }
 
-  .tv-sla-time {
-    grid-area: sla;
+  .tv-kpi-content {
+    @apply p-4 h-full flex flex-col justify-center items-center text-center relative;
   }
 
-  .tv-tags-volume {
-    grid-area: tags;
+  .tv-kpi-title {
+    @apply text-lg font-medium text-muted-foreground mb-2;
   }
 
-  .tv-status-chart {
-    grid-area: status;
+  .tv-kpi-value {
+    @apply text-4xl font-bold text-foreground;
   }
 
-  .tv-priority-chart {
-    grid-area: priority;
+  .tv-kpi-value-primary {
+    @apply text-primary;
   }
 
-  /* Responsive scaling for smaller screens */
-  @media (max-width: 1366px) {
-    .tv-grid {
-      grid-template-rows: 120px auto 150px 240px 220px;
-      transform: scale(0.9);
-      transform-origin: top left;
+  .tv-kpi-value-success {
+    @apply text-success;
+  }
+
+  .tv-kpi-value-destructive {
+    @apply text-destructive;
+  }
+
+  /* Row 2: SLA Time - 18-20% height */
+  .tv-sla-card {
+    @apply border-border shadow-sm bg-card;
+    height: 19vh;
+  }
+
+  .tv-sla-content {
+    @apply p-4 h-full flex flex-col justify-center;
+  }
+
+  .tv-sla-header {
+    @apply flex items-center justify-between mb-2;
+  }
+
+  .tv-sla-title-section {
+    @apply flex items-center gap-2;
+  }
+
+  .tv-sla-title {
+    @apply text-xl font-semibold text-foreground;
+  }
+
+  .tv-sla-filters {
+    @apply flex gap-2;
+  }
+
+  .tv-filter-select {
+    @apply h-8 text-sm min-w-[120px];
+  }
+
+  .tv-sla-subtitle {
+    @apply text-sm text-muted-foreground text-center mb-3;
+  }
+
+  .tv-sla-value {
+    @apply text-5xl font-bold text-primary text-center mb-2;
+  }
+
+  .tv-sla-summary {
+    @apply text-sm text-muted-foreground text-center;
+  }
+
+  /* Row 3: Tags - 35% height */
+  .tv-tags-card {
+    @apply border-border shadow-sm bg-card;
+    height: 35vh;
+  }
+
+  .tv-tags-content {
+    @apply p-4 h-full flex flex-col;
+  }
+
+  .tv-tags-header {
+    @apply flex items-center justify-between mb-2;
+  }
+
+  .tv-tags-title-section {
+    @apply flex items-center gap-2;
+  }
+
+  .tv-tags-title {
+    @apply text-xl font-semibold text-foreground;
+  }
+
+  .tv-tags-filters {
+    @apply flex gap-2;
+  }
+
+  .tv-tags-subtitle {
+    @apply text-sm text-muted-foreground mb-2;
+  }
+
+  .tv-tags-chart {
+    @apply flex-1 min-h-0;
+  }
+
+  /* Row 4: Two charts side by side - 30-32% height */
+  .tv-row-charts {
+    @apply flex gap-4;
+    height: 31vh;
+  }
+
+  .tv-status-card,
+  .tv-priority-card {
+    @apply flex-1 border-border shadow-sm bg-card;
+  }
+
+  .tv-status-content,
+  .tv-priority-content {
+    @apply p-4 h-full flex flex-col;
+  }
+
+  .tv-chart-header {
+    @apply flex items-center gap-2 mb-3;
+  }
+
+  .tv-chart-title {
+    @apply text-lg font-semibold text-foreground;
+  }
+
+  .tv-chart-container {
+    @apply flex-1 min-h-0;
+  }
+
+  .tv-chart-legend {
+    @apply mt-2 flex flex-wrap gap-3 text-sm;
+  }
+
+  .tv-legend-item {
+    @apply flex items-center gap-2;
+  }
+
+  .tv-legend-color {
+    @apply w-3 h-3 rounded-full;
+  }
+
+  .tv-legend-text {
+    @apply text-muted-foreground;
+  }
+
+  /* 1366x768 responsive adjustments - reduce sizes by 10-15% */
+  @media (max-width: 1366px) and (max-height: 768px) {
+    .tv-dashboard-container {
+      padding: 12px;
     }
     
-    .tv-mode {
-      padding: 12px 16px;
+    .tv-dashboard-grid {
+      gap: 12px;
+      padding-top: 40px;
+    }
+    
+    /* Reduce heights proportionally */
+    .tv-row-kpis {
+      height: 13vh;
+      gap: 12px;
+    }
+    
+    .tv-sla-card {
+      height: 17vh;
+    }
+    
+    .tv-tags-card {
+      height: 33vh;
+    }
+    
+    .tv-row-charts {
+      height: 29vh;
+      gap: 12px;
+    }
+    
+    /* Reduce font sizes */
+    .tv-kpi-content {
+      @apply p-3;
+    }
+    
+    .tv-kpi-title {
+      @apply text-base mb-1;
+    }
+    
+    .tv-kpi-value {
+      @apply text-3xl;
+    }
+    
+    .tv-sla-content,
+    .tv-tags-content,
+    .tv-status-content,
+    .tv-priority-content {
+      @apply p-3;
+    }
+    
+    .tv-sla-title,
+    .tv-tags-title,
+    .tv-chart-title {
+      @apply text-lg;
+    }
+    
+    .tv-sla-value {
+      @apply text-4xl;
+    }
+    
+    .tv-filter-select {
+      @apply h-7 text-xs min-w-[100px];
+    }
+    
+    .tv-chart-legend {
+      @apply text-xs gap-2;
+    }
+    
+    .tv-legend-color {
+      @apply w-2 h-2;
     }
   }
 }

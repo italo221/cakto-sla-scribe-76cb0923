@@ -180,45 +180,49 @@ const DashboardTV = () => {
           </Button>
         </div>
 
-        {/* Grid Container */}
+        {/* TV Dashboard Grid */}
         <div className="tv-dashboard-grid">
-          {/* Row 1: KPI Cards */}
-          <Card className="tv-kpi-card">
-            <CardContent className="tv-kpi-content">
-              <div className="tv-kpi-title">Total de Tickets</div>
-              <div className="tv-kpi-value">{stats.total}</div>
-            </CardContent>
-          </Card>
+          {/* Row 1: KPI Cards - 15% height */}
+          <div className="tv-row-kpis">
+            <Card className="tv-kpi-card">
+              <CardContent className="tv-kpi-content">
+                <div className="tv-kpi-title">Total de Tickets</div>
+                <div className="tv-kpi-value">{stats.total}</div>
+              </CardContent>
+            </Card>
 
-          <Card className="tv-kpi-card">
-            <CardContent className="tv-kpi-content">
-              <div className="tv-kpi-title">Tickets Abertos</div>
-              <div className="tv-kpi-value tv-kpi-value-primary">{stats.abertos}</div>
-            </CardContent>
-          </Card>
+            <Card className="tv-kpi-card">
+              <CardContent className="tv-kpi-content">
+                <div className="tv-kpi-title">Tickets Abertos</div>
+                <div className="tv-kpi-value tv-kpi-value-primary">{stats.abertos}</div>
+              </CardContent>
+            </Card>
 
-          <Card className="tv-kpi-card">
-            <CardContent className="tv-kpi-content">
-              <div className="tv-kpi-title">Cumprimento SLA</div>
-              <div className="tv-kpi-value tv-kpi-value-success">
-                {stats.total > 0 ? Math.round(((stats.total - stats.atrasados) / stats.total) * 100) : 0}%
-              </div>
-            </CardContent>
-          </Card>
+            <Card className="tv-kpi-card">
+              <CardContent className="tv-kpi-content">
+                <div className="tv-kpi-title">Cumprimento SLA</div>
+                <div className="tv-kpi-value tv-kpi-value-success">
+                  {stats.total > 0 ? Math.round(((stats.total - stats.atrasados) / stats.total) * 100) : 0}%
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card className="tv-kpi-card">
-            <CardContent className="tv-kpi-content">
-              <div className="tv-kpi-title">Tickets Atrasados</div>
-              <div className="tv-kpi-value tv-kpi-value-destructive">{stats.atrasados}</div>
-            </CardContent>
-          </Card>
+            <Card className="tv-kpi-card">
+              <CardContent className="tv-kpi-content">
+                <div className="tv-kpi-title">Tickets Atrasados</div>
+                <div className="tv-kpi-value tv-kpi-value-destructive">{stats.atrasados}</div>
+              </CardContent>
+            </Card>
+          </div>
 
-          {/* Row 2: SLA Resolution Time */}
+          {/* Row 2: SLA Resolution Time - 18-20% height */}
           <Card className="tv-sla-card">
             <CardContent className="tv-sla-content">
               <div className="tv-sla-header">
-                <Clock className="h-5 w-5" />
-                <span>Tempo de Resolução do SLA</span>
+                <div className="tv-sla-title-section">
+                  <Clock className="h-5 w-5" />
+                  <span className="tv-sla-title">Tempo de Resolução do SLA</span>
+                </div>
                 <div className="tv-sla-filters">
                   <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
                     <SelectTrigger className="tv-filter-select">
@@ -245,19 +249,24 @@ const DashboardTV = () => {
                   </Select>
                 </div>
               </div>
-              <div className="tv-sla-value">{avgResolutionTime}</div>
               <div className="tv-sla-subtitle">
-                {getPeriodLabel()} • {getSetorLabel()} • {stats.resolvidos} tickets
+                Considerando tickets que entraram em andamento e foram resolvidos no período
+              </div>
+              <div className="tv-sla-value">{avgResolutionTime}</div>
+              <div className="tv-sla-summary">
+                {stats.resolvidos} tickets • {getPeriodLabel()} • {getSetorLabel()}
               </div>
             </CardContent>
           </Card>
 
-          {/* Row 3: Tags Volume */}
+          {/* Row 3: Tags Volume - 35% height */}
           <Card className="tv-tags-card">
             <CardContent className="tv-tags-content">
               <div className="tv-tags-header">
-                <Tag className="h-5 w-5" />
-                <span>Tags – Volume de Tickets</span>
+                <div className="tv-tags-title-section">
+                  <Tag className="h-5 w-5" />
+                  <span className="tv-tags-title">Tags – Volume de Tickets</span>
+                </div>
                 <div className="tv-tags-filters">
                   <Select value={selectedSetor} onValueChange={setSelectedSetor}>
                     <SelectTrigger className="tv-filter-select">
@@ -277,12 +286,17 @@ const DashboardTV = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="5">Top 5</SelectItem>
                       <SelectItem value="10">Top 10</SelectItem>
-                      <SelectItem value="15">Top 15</SelectItem>
-                      <SelectItem value="20">Top 20</SelectItem>
                     </SelectContent>
                   </Select>
+                  <Button variant="outline" size="sm" className="tv-filter-select">
+                    <Download className="h-4 w-4" />
+                  </Button>
                 </div>
+              </div>
+              <div className="tv-tags-subtitle">
+                {getPeriodLabel()} • {getSetorLabel()}
               </div>
               <div className="tv-tags-chart">
                 <TagAnalyticsChart 
@@ -294,82 +308,85 @@ const DashboardTV = () => {
             </CardContent>
           </Card>
 
-          {/* Row 4: Status Distribution */}
-          <Card className="tv-status-card">
-            <CardContent className="tv-status-content">
-              <div className="tv-chart-header">
-                <PieChart className="h-4 w-4" />
-                <span>Distribuição por Status</span>
-              </div>
-              <div className="tv-chart-container">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPieChart>
-                    <Pie
-                      data={statusData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={30}
-                      outerRadius={60}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      {statusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip />
-                  </RechartsPieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="tv-chart-legend">
-                {statusData.map((entry, index) => (
-                  <div key={index} className="tv-legend-item">
-                    <div className="tv-legend-color" style={{ backgroundColor: entry.color }} />
-                    <span className="tv-legend-text">{entry.name}: {entry.value}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Row 4: Two blocks side by side - 30-32% height */}
+          <div className="tv-row-charts">
+            {/* Status Distribution */}
+            <Card className="tv-status-card">
+              <CardContent className="tv-status-content">
+                <div className="tv-chart-header">
+                  <PieChart className="h-4 w-4" />
+                  <span className="tv-chart-title">Distribuição por Status</span>
+                </div>
+                <div className="tv-chart-container">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPieChart>
+                      <Pie
+                        data={statusData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={30}
+                        outerRadius={60}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {statusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="tv-chart-legend">
+                  {statusData.map((entry, index) => (
+                    <div key={index} className="tv-legend-item">
+                      <div className="tv-legend-color" style={{ backgroundColor: entry.color }} />
+                      <span className="tv-legend-text">{entry.name}: {entry.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Row 4: Priority Chart */}
-          <Card className="tv-priority-card">
-            <CardContent className="tv-priority-content">
-              <div className="tv-chart-header">
-                <BarChart3 className="h-4 w-4" />
-                <span>Tickets por Prioridade</span>
-              </div>
-              <div className="tv-chart-container">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsBarChart data={priorityData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="name" 
-                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                      axisLine={{ stroke: 'hsl(var(--border))' }}
-                    />
-                    <YAxis 
-                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                      axisLine={{ stroke: 'hsl(var(--border))' }}
-                    />
-                    <RechartsTooltip 
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '6px',
-                        fontSize: '12px'
-                      }}
-                    />
-                    <Bar dataKey="value" radius={[2, 2, 0, 0]}>
-                      {priorityData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </RechartsBarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+            {/* Priority Chart */}
+            <Card className="tv-priority-card">
+              <CardContent className="tv-priority-content">
+                <div className="tv-chart-header">
+                  <BarChart3 className="h-4 w-4" />
+                  <span className="tv-chart-title">Tickets por Prioridade</span>
+                </div>
+                <div className="tv-chart-container">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsBarChart data={priorityData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis 
+                        dataKey="name" 
+                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                        axisLine={{ stroke: 'hsl(var(--border))' }}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                        axisLine={{ stroke: 'hsl(var(--border))' }}
+                      />
+                      <RechartsTooltip 
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '6px',
+                          fontSize: '12px'
+                        }}
+                      />
+                      <Bar dataKey="value" radius={[2, 2, 0, 0]}>
+                        {priorityData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </RechartsBarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </TooltipProvider>
