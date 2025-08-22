@@ -116,6 +116,15 @@ export default function DynamicDashboard() {
 
   // TV Mode functions
   const enterTVMode = useCallback(async () => {
+    try {
+      // Try to enter fullscreen
+      await document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } catch (error) {
+      console.log('Fullscreen not available, using fallback');
+      setIsFullscreen(false);
+    }
+    
     setIsTVMode(true);
     localStorage.setItem('dashboard-tv-mode', 'true');
 
@@ -123,26 +132,6 @@ export default function DynamicDashboard() {
     const appLayout = document.querySelector('[data-app-layout]');
     if (appLayout) {
       appLayout.classList.add('tv-mode');
-    }
-
-    // Try fullscreen API
-    try {
-      await document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } catch (error) {
-      // Fallback: use visual viewport height
-      console.log('Fullscreen not supported, using viewport fallback');
-      setIsFullscreen(false);
-      
-      // Force height calculation based on visual viewport
-      const updateHeight = () => {
-        const vh = window.visualViewport?.height || window.innerHeight;
-        document.documentElement.style.setProperty('--tv-mode-height', `${vh}px`);
-      };
-      
-      updateHeight();
-      window.visualViewport?.addEventListener('resize', updateHeight);
-      window.addEventListener('resize', updateHeight);
     }
   }, []);
 
@@ -164,12 +153,6 @@ export default function DynamicDashboard() {
     if (appLayout) {
       appLayout.classList.remove('tv-mode');
     }
-
-    // Clean up viewport listeners
-    const updateHeight = () => {
-      document.documentElement.style.removeProperty('--tv-mode-height');
-    };
-    updateHeight();
   }, []);
 
   const handleTVModeToggle = useCallback(() => {
@@ -207,16 +190,16 @@ export default function DynamicDashboard() {
   // Trigger chart resize when entering/exiting TV mode
   useEffect(() => {
     const triggerResize = () => {
-      // Multiple resize events to ensure charts redraw
       window.dispatchEvent(new Event('resize'));
+      // Additional trigger for chart libraries
       setTimeout(() => {
         window.dispatchEvent(new Event('resize'));
       }, 100);
-      setTimeout(() => {
-        window.dispatchEvent(new Event('resize'));
-      }, 300);
     };
 
+    if (isTVMode || !isTVMode) {
+      triggerResize();
+    }
   }, [isTVMode]);
 
   // Initialize TV mode on component mount if previously enabled
@@ -439,13 +422,13 @@ export default function DynamicDashboard() {
       }
 
 
-      // Status data with semantic colors from design system
+      // Status data with padronized colors as requested
       const statusData = [
-        { name: 'Abertos', value: openTickets, color: 'hsl(var(--kpi-open))' },
-        { name: 'Em Andamento', value: inProgressTickets, color: 'hsl(var(--kpi-progress))' },
-        { name: 'Resolvidos', value: resolvedTickets, color: 'hsl(var(--kpi-resolved))' },
-        { name: 'Fechados', value: closedTickets, color: 'hsl(var(--muted-foreground))' },
-        { name: 'Atrasados', value: overdueTickets, color: 'hsl(var(--kpi-overdue))' },
+        { name: 'Abertos', value: openTickets, color: 'hsl(0 0% 100%)' }, // branco
+        { name: 'Em Andamento', value: inProgressTickets, color: 'hsl(221 83% 53%)' }, // azul
+        { name: 'Resolvidos', value: resolvedTickets, color: 'hsl(142 76% 36%)' }, // verde
+        { name: 'Fechados', value: closedTickets, color: 'hsl(215 28% 17%)' }, // tom escuro (cinza/charcoal)
+        { name: 'Atrasados', value: overdueTickets, color: 'hsl(0 84% 60%)' }, // vermelho
       ].filter(item => item.value > 0);
 
       // Priority data with semantic colors
@@ -1169,20 +1152,20 @@ export default function DynamicDashboard() {
         /* TV Mode Layout - Fixed Grid Structure */
         <div className={`tv-dashboard-grid ${isFullscreen ? 'fullscreen' : 'fixed-size'}`}>
           {/* Linha 1 - Cards KPIs */}
-          <div className="grid grid-cols-4 gap-4 h-full">
+          <div className="grid grid-cols-4 gap-4">
             {visibleWidgets.filter(w => w.type === 'kpi').map((widget) => (
-              <div key={widget.id} className="tv-kpi-card h-full">
+              <div key={widget.id} className="tv-kpi-card">
                 {(() => {
                   const kpiCard = renderKPICard(widget);
                   if (!kpiCard || !kpiCard.props) return kpiCard;
                   const currentClassName = kpiCard.props.className || '';
                   const newClassName = currentClassName
-                    .replace(/p-6/g, 'p-3')
-                    .replace(/text-4xl/g, 'text-2xl lg:text-3xl') 
-                    .replace(/space-y-3/g, 'space-y-1')
-                    .replace(/h-full/g, 'h-full');
+                    .replace(/p-6/g, 'p-4')
+                    .replace(/text-4xl/g, 'text-3xl') 
+                    .replace(/space-y-3/g, 'space-y-2')
+                    .replace(/h-full/g, 'h-full min-h-[120px]');
                   return React.cloneElement(kpiCard, {
-                    className: `${newClassName} h-full`
+                    className: newClassName
                   });
                 })()}
               </div>
@@ -1191,7 +1174,7 @@ export default function DynamicDashboard() {
 
           {/* Linha 2 - Tempo de Resolução (full width) */}
           {visibleWidgets.find(w => w.id === 'sla-resolution-time')?.visible && (
-            <div className="tv-sla-chart h-full">
+            <div className="tv-sla-chart">
               {(() => {
                 const chart = renderChart(visibleWidgets.find(w => w.id === 'sla-resolution-time')!);
                 if (!chart) return chart;
@@ -1204,7 +1187,7 @@ export default function DynamicDashboard() {
 
           {/* Linha 3 - Tags (full width) */}
           {visibleWidgets.find(w => w.id === 'tag-analytics')?.visible && (
-            <div className="tv-tags-chart h-full">
+            <div className="tv-tags-chart">
               {(() => {
                 const chart = renderChart(visibleWidgets.find(w => w.id === 'tag-analytics')!);
                 if (!chart) return chart;
@@ -1216,17 +1199,17 @@ export default function DynamicDashboard() {
           )}
 
           {/* Linha 4 - Status e Prioridade (2 colunas) */}
-          <div className="grid grid-cols-2 gap-4 h-full">
+          <div className="grid grid-cols-2 gap-4">
             {visibleWidgets.filter(w => w.type === 'chart' && ['status-chart', 'priority-chart'].includes(w.id)).map((widget) => (
-              <div key={widget.id} className="tv-bottom-chart h-full">
+              <div key={widget.id} className="tv-bottom-chart">
                 {(() => {
                   const chart = renderChart(widget);
                   if (!chart || !chart.props || !chart.props.children || !chart.props.children.props) return chart;
                   
                   const currentChildClassName = chart.props.children.props.className || '';
                   const newChildClassName = currentChildClassName
-                    .replace(/p-6/g, 'p-3')
-                    .replace(/mb-6/g, 'mb-2');
+                    .replace(/p-6/g, 'p-4')
+                    .replace(/mb-6/g, 'mb-3');
                     
                   return React.cloneElement(chart, {
                     className: "h-full tv-chart-compact",
