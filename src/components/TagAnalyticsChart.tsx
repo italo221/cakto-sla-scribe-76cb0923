@@ -226,15 +226,15 @@ export const TagAnalyticsChart = ({ dateFilter, selectedSetor, setores }: TagAna
                   <XAxis 
                     dataKey="tag" 
                     stroke="hsl(var(--muted-foreground))"
-                    fontSize={isTVMode ? 11 : 12}
-                    angle={isTVMode ? -20 : -45}
+                    fontSize={isTVMode ? 10 : 12}
+                    angle={isTVMode ? -15 : -45}
                     textAnchor="end"
-                    height={isTVMode ? 45 : 60}
+                    height={isTVMode ? 35 : 60}
                     interval={0}
                     tick={(props) => {
                       // Truncar tags longas no modo TV
-                      if (isTVMode && props.payload.value.length > 12) {
-                        props.payload.value = props.payload.value.substring(0, 12) + '...';
+                      if (isTVMode && props.payload.value.length > 10) {
+                        props.payload.value = props.payload.value.substring(0, 8) + '...';
                       }
                       return <g transform={`translate(${props.x},${props.y})`}>
                         <text 
@@ -253,8 +253,9 @@ export const TagAnalyticsChart = ({ dateFilter, selectedSetor, setores }: TagAna
                   />
                   <YAxis 
                     stroke="hsl(var(--muted-foreground))"
-                    fontSize={isTVMode ? 11 : 12}
-                    tickCount={isTVMode ? 4 : 5}
+                    fontSize={isTVMode ? 10 : 12}
+                    tickCount={isTVMode ? 3 : 5}
+                    width={isTVMode ? 30 : 40}
                   />
                   <Tooltip
                     content={({ active, payload, label }) => {
@@ -278,8 +279,8 @@ export const TagAnalyticsChart = ({ dateFilter, selectedSetor, setores }: TagAna
                   <Bar 
                     dataKey="count" 
                     fill="hsl(var(--primary))"
-                    radius={[isTVMode ? 2 : 4, isTVMode ? 2 : 4, 0, 0]}
-                    maxBarSize={isTVMode ? 16 : undefined}
+                    radius={[isTVMode ? 1 : 4, isTVMode ? 1 : 4, 0, 0]}
+                    maxBarSize={isTVMode ? 12 : undefined}
                   />
                 </BarChart>
               </ResponsiveContainer>

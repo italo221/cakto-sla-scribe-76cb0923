@@ -1022,7 +1022,7 @@ export default function DynamicDashboard() {
   };
 
   return (
-    <div className={`${isTVMode ? 'tv-mode-wrapper' : 'space-y-4 sm:space-y-6 p-2 sm:p-0'}`}>
+    <div className={`${isTVMode ? 'tv-mode-wrapper overflow-hidden' : 'space-y-4 sm:space-y-6 p-2 sm:p-0'}`}>
       {/* Header with controls - hide in TV mode */}
       {!isTVMode && (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
