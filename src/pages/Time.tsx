@@ -466,22 +466,10 @@ export default function Time() {
 
   // Multi-select handlers para Super Admin
   const handleTeamSelection = (setorId: string, checked: boolean) => {
-    if (checked) {
-      // Quando selecionando um time específico, selecionar APENAS esse time
-      setSelectedSetores([setorId]);
-      setAllTeamsSelected(false);
-    } else {
-      // Quando desmarcando um time, se for o único selecionado, voltar para "Todos os times"
-      if (selectedSetores.length === 1 && selectedSetores[0] === setorId) {
-        setSelectedSetores(availableSetores.map(s => s.id));
-        setAllTeamsSelected(true);
-      } else {
-        // Se há múltiplos selecionados, apenas remover este
-        const newSelection = selectedSetores.filter(id => id !== setorId);
-        setSelectedSetores(newSelection);
-        setAllTeamsSelected(false);
-      }
-    }
+    // Quando clicar em um time específico, SEMPRE selecionar APENAS esse time
+    // independente do estado atual (checked true ou false)
+    setSelectedSetores([setorId]);
+    setAllTeamsSelected(false);
   };
 
   const handleAllTeamsToggle = (checked: boolean) => {
@@ -983,8 +971,8 @@ export default function Time() {
                 {availableSetores.map(setor => (
                   <DropdownMenuCheckboxItem
                     key={setor.id}
-                    checked={selectedSetores.includes(setor.id)}
-                    onCheckedChange={(checked) => handleTeamSelection(setor.id, checked)}
+                    checked={!allTeamsSelected && selectedSetores.length === 1 && selectedSetores.includes(setor.id)}
+                    onCheckedChange={() => handleTeamSelection(setor.id, false)}
                   >
                     {setor.nome}
                   </DropdownMenuCheckboxItem>
