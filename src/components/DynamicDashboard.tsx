@@ -32,7 +32,6 @@ import {
   Palette,
   TrendingDown,
   Minus,
-  Monitor
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -98,10 +97,6 @@ export default function DynamicDashboard() {
     teamData: []
   });
   const [loading, setLoading] = useState(true);
-  const [isTVMode, setIsTVMode] = useState(() => 
-    localStorage.getItem('dashboard-tv-mode') === 'true'
-  );
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [policies, setPolicies] = useState<Array<{setor_id: string; p0_hours: number; p1_hours: number; p2_hours: number; p3_hours: number}>>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showCustomizer, setShowCustomizer] = useState(false);
@@ -114,117 +109,6 @@ export default function DynamicDashboard() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  // TV Mode functions
-  const enterTVMode = useCallback(async () => {
-    try {
-      // Try to enter fullscreen
-      await document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } catch (error) {
-      console.log('Fullscreen not available, using fallback');
-      setIsFullscreen(false);
-    }
-    
-    setIsTVMode(true);
-    localStorage.setItem('dashboard-tv-mode', 'true');
-
-    // Apply TV mode class to body
-    document.body.classList.add('tv-mode');
-    
-    // Hide navigation elements
-    const appLayout = document.querySelector('[data-app-layout]');
-    if (appLayout) {
-      appLayout.classList.add('tv-mode');
-    }
-  }, []);
-
-  const exitTVMode = useCallback(async () => {
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-      }
-    } catch (error) {
-      console.log('Error exiting fullscreen');
-    }
-    
-    setIsFullscreen(false);
-    setIsTVMode(false);
-    localStorage.setItem('dashboard-tv-mode', 'false');
-
-    // Remove TV mode class from body
-    document.body.classList.remove('tv-mode');
-
-    // Restore navigation elements
-    const appLayout = document.querySelector('[data-app-layout]');
-    if (appLayout) {
-      appLayout.classList.remove('tv-mode');
-    }
-  }, []);
-
-  const handleTVModeToggle = useCallback(() => {
-    if (isTVMode) {
-      exitTVMode();
-    } else {
-      enterTVMode();
-    }
-  }, [isTVMode, enterTVMode, exitTVMode]);
-
-  // Handle ESC key to exit TV mode
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isTVMode) {
-        exitTVMode();
-      }
-    };
-
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement && isTVMode) {
-        // User exited fullscreen via browser controls
-        exitTVMode();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyPress);
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyPress);
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
-  }, [isTVMode, exitTVMode]);
-
-  // Trigger chart resize when entering/exiting TV mode
-  useEffect(() => {
-    const triggerResize = () => {
-      window.dispatchEvent(new Event('resize'));
-      // Additional trigger for chart libraries
-      setTimeout(() => {
-        window.dispatchEvent(new Event('resize'));
-      }, 100);
-    };
-
-    if (isTVMode || !isTVMode) {
-      triggerResize();
-    }
-  }, [isTVMode]);
-
-  // Auto-refresh em TV mode
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
-    if (isTVMode) {
-      // Auto-refresh a cada 60 segundos
-      interval = setInterval(() => {
-        loadDashboardData();
-      }, 60000);
-    }
-    
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [isTVMode]);
 
   useEffect(() => {
     loadSLAPolicies();
@@ -1022,9 +906,10 @@ export default function DynamicDashboard() {
   };
 
   return (
-    <div className={`${isTVMode ? 'tv-mode-wrapper overflow-hidden' : 'space-y-4 sm:space-y-6 p-2 sm:p-0'}`}>
-      {/* Header with controls - hide in TV mode */}
-      {!isTVMode && (
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
+      {/* Header with controls */}
+      <div className="block">
+        {/* Header Content */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Dashboard Dinâmico</h2>
@@ -1043,15 +928,6 @@ export default function DynamicDashboard() {
               </SelectContent>
             </Select>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.open('/dashboard/tv', '_blank')}
-              className="gap-2"
-            >
-              <Monitor className="w-4 h-4" />
-              Modo TV
-            </Button>
             
             {isSuperAdmin && (
               <>
@@ -1081,33 +957,10 @@ export default function DynamicDashboard() {
             </Button>
           </div>
         </div>
-      )}
-
-      {/* TV Mode Mini Controls */}
-      {isTVMode && (
-        <div className="tv-mini-controls">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleTVModeToggle}
-            className="tv-exit-button"
-          >
-            <Monitor className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={loadDashboardData}
-            disabled={loading}
-            className="tv-refresh-button"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-      )}
+      </div>
 
       {/* Settings Panel */}
-      {!isTVMode && showSettings && (
+      {showSettings && (
         <div className="bg-gradient-to-br from-card to-card/50 rounded-2xl p-6 shadow-lg border border-border/50 backdrop-blur-sm animate-fade-in">
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-2">
@@ -1174,57 +1027,6 @@ export default function DynamicDashboard() {
             </Card>
           ))}
         </div>
-      ) : isTVMode ? (
-        /* TV Mode Layout - Grade CSS específica para 1920x1080 */
-        <div className="tv-grid">
-          {/* card1 - Total de Tickets */}
-          <div className="tv-area-card1">
-            {renderKPICard(visibleWidgets.find(w => w.id === 'total-tickets')!)}
-          </div>
-
-          {/* card2 - Tickets Abertos */}
-          <div className="tv-area-card2">
-            {renderKPICard(visibleWidgets.find(w => w.id === 'open-tickets')!)}
-          </div>
-
-          {/* card3 - Cumprimento SLA */}
-          <div className="tv-area-card3">
-            {renderKPICard(visibleWidgets.find(w => w.id === 'sla-compliance')!)}
-          </div>
-
-          {/* card4 - Tickets Atrasados */}
-          <div className="tv-area-card4">
-            {renderKPICard(visibleWidgets.find(w => w.id === 'overdue-tickets')!)}
-          </div>
-
-          {/* time - Tempo de Resolução do SLA */}
-          {visibleWidgets.find(w => w.id === 'sla-resolution-time')?.visible && (
-            <div className="tv-area-time">
-              {renderChart(visibleWidgets.find(w => w.id === 'sla-resolution-time')!)}
-            </div>
-          )}
-
-          {/* tags - Tags Volume de Tickets */}
-          {visibleWidgets.find(w => w.id === 'tag-analytics')?.visible && (
-            <div className="tv-area-tags">
-              {renderChart(visibleWidgets.find(w => w.id === 'tag-analytics')!)}
-            </div>
-          )}
-
-          {/* status - Distribuição por Status (donut) */}
-          {visibleWidgets.find(w => w.id === 'status-chart')?.visible && (
-            <div className="tv-area-status">
-              {renderChart(visibleWidgets.find(w => w.id === 'status-chart')!)}
-            </div>
-          )}
-
-          {/* prio - Tickets por Prioridade (barras) */}
-          {visibleWidgets.find(w => w.id === 'priority-chart')?.visible && (
-            <div className="tv-area-prio">
-              {renderChart(visibleWidgets.find(w => w.id === 'priority-chart')!)}
-            </div>
-          )}
-        </div>
       ) : (
         <>
           {/* KPI Cards */}
@@ -1253,8 +1055,8 @@ export default function DynamicDashboard() {
         </>
       )}
 
-      {/* Tag Trend Chart - positioned between widgets and team chart (only in normal mode) */}
-      {!loading && !isTVMode && (
+      {/* Tag Trend Chart - positioned between widgets and team chart */}
+      {!loading && (
         <div className="mt-6">
           <TagTrendChart />
         </div>
