@@ -589,7 +589,14 @@ export default function TvDashboard() {
                       formatter={(value) => [formatNumber(value as number), 'Tickets']}
                       labelFormatter={(label) => `Tag: ${label}`}
                     />
-                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
+                     <Bar dataKey="count" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]}>
+                       <LabelList 
+                         dataKey="count" 
+                         position="top" 
+                         style={{ fontSize: 12, fill: 'hsl(var(--foreground))', fontWeight: 'bold' }}
+                         formatter={(value: number) => value > 0 ? value : ''}
+                       />
+                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
