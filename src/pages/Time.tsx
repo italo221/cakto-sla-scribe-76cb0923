@@ -440,8 +440,7 @@ export default function Time() {
             prazo_interno,
             prioridade_operacional,
             tags,
-            setores(nome),
-            sla_comentarios_internos!sla_comentarios_internos_sla_id_fkey(comentario)
+            setores(nome)
           `);
 
         // Filtro por setores selecionados (apenas se não for "Todos os times")
@@ -464,7 +463,36 @@ export default function Time() {
 
         const { data, error } = await query.order('data_criacao', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Query error:', error);
+          throw error;
+        }
+
+        // Carregar comentários separadamente para todos os tickets
+        const ticketIds = data?.map(ticket => ticket.id) || [];
+        let commentsData: any[] = [];
+        
+        if (ticketIds.length > 0) {
+          const { data: comments, error: commentsError } = await supabase
+            .from('sla_comentarios_internos')
+            .select('sla_id, comentario')
+            .in('sla_id', ticketIds);
+          
+          if (commentsError) {
+            console.error('Error loading comments:', commentsError);
+          } else {
+            commentsData = comments || [];
+          }
+        }
+
+        // Agrupar comentários por ticket ID
+        const commentsByTicket = commentsData.reduce((acc: any, comment: any) => {
+          if (!acc[comment.sla_id]) {
+            acc[comment.sla_id] = [];
+          }
+          acc[comment.sla_id].push({ comentario: comment.comentario });
+          return acc;
+        }, {});
         
         // Processar dados
         const processedTickets: TeamTicket[] = (data || []).map(ticket => ({
@@ -478,7 +506,8 @@ export default function Time() {
           pontuacao_urgencia: ticket.pontuacao_urgencia || 0,
           pontuacao_operacional: ticket.pontuacao_operacional || 0,
           age_days: Math.floor((new Date().getTime() - new Date(ticket.data_criacao).getTime()) / (1000 * 60 * 60 * 24)),
-          is_overdue: ticket.prazo_interno ? new Date(ticket.prazo_interno) < new Date() && !['resolvido', 'fechado'].includes(ticket.status) : false
+          is_overdue: ticket.prazo_interno ? new Date(ticket.prazo_interno) < new Date() && !['resolvido', 'fechado'].includes(ticket.status) : false,
+          sla_comentarios_internos: commentsByTicket[ticket.id] || []
         }));
         
         setTickets(processedTickets);
