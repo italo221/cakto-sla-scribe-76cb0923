@@ -133,14 +133,14 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 0 0% 14.5%;
+    --background: 0 0% 7%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 0 0% 7%;
     --card-foreground: 210 40% 98%;
-    --card-hover: 222.2 84% 6%;
+    --card-hover: 0 0% 9%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 0 0% 7%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 142 76% 42%;
@@ -169,7 +169,7 @@ All colors MUST be HSL.
     --success-light: 142 76% 15%;
 
     --warning: 45 93% 47%;
-    --warning-foreground: 222.2 84% 4.9%;
+    --warning-foreground: 0 0% 7%;
     --warning-light: 45 93% 15%;
 
     --info: 158 64% 52%;
