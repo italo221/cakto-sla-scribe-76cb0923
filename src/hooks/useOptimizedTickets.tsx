@@ -33,6 +33,7 @@ interface Ticket {
     email: string;
     avatar_url?: string;
   } | null;
+  sla_comentarios_internos?: Array<{ comentario: string }>;
 }
 
 interface UseOptimizedTicketsOptions {
@@ -167,11 +168,38 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
           }
         }
         
-        // Combinar dados dos tickets com informações dos responsáveis
+        // Carregar comentários separadamente para todos os tickets
+        const ticketIds = data.map(ticket => ticket.id);
+        let commentsData: any[] = [];
+        
+        if (ticketIds.length > 0) {
+          const { data: comments, error: commentsError } = await supabase
+            .from('sla_comentarios_internos')
+            .select('sla_id, comentario')
+            .in('sla_id', ticketIds);
+          
+          if (commentsError) {
+            console.error('Error loading comments:', commentsError);
+          } else {
+            commentsData = comments || [];
+          }
+        }
+
+        // Agrupar comentários por ticket ID
+        const commentsByTicket = commentsData.reduce((acc: any, comment: any) => {
+          if (!acc[comment.sla_id]) {
+            acc[comment.sla_id] = [];
+          }
+          acc[comment.sla_id].push({ comentario: comment.comentario });
+          return acc;
+        }, {});
+        
+        // Combinar dados dos tickets com informações dos responsáveis e comentários
         data.forEach((ticket: any) => {
           ticketsData.push({
             ...ticket,
-            assignee: ticket.assignee_user_id ? assigneeMap[ticket.assignee_user_id] || null : null
+            assignee: ticket.assignee_user_id ? assigneeMap[ticket.assignee_user_id] || null : null,
+            sla_comentarios_internos: commentsByTicket[ticket.id] || []
           });
         });
       }
@@ -326,13 +354,20 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
         ...(ticket.tags || [])
       ].filter(Boolean).map(field => field.toLowerCase());
 
+      // Buscar nos comentários
+      const commentFields = (ticket.sla_comentarios_internos || [])
+        .map(comment => comment.comentario.toLowerCase())
+        .filter(Boolean);
+
       // Busca exata primeiro (mais rápida)
-      const exactMatch = searchFields.some(field => field.includes(lowerTerm));
+      const exactMatch = searchFields.some(field => field.includes(lowerTerm)) ||
+                         commentFields.some(field => field.includes(lowerTerm));
       if (exactMatch) return true;
 
       // Busca por palavras parciais
       return termWords.every(word => 
-        searchFields.some(field => field.includes(word))
+        searchFields.some(field => field.includes(word)) ||
+        commentFields.some(field => field.includes(word))
       );
     });
   }, []);
