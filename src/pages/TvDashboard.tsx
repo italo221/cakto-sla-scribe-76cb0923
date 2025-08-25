@@ -26,7 +26,8 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend
+  Legend,
+  LabelList
 } from "recharts";
 
 interface TagVolumeData {
@@ -458,106 +459,129 @@ export default function TvDashboard() {
       </div>
 
       {/* Layout principal */}
-      <div className="grid grid-cols-12 gap-4 h-[calc(100vh-140px)]">
-        {/* KPIs - Canto superior esquerdo */}
-        <div className="col-span-8 grid grid-cols-3 gap-3 h-fit">
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Activity className="h-5 w-5 text-primary" />
+      <div className="grid grid-cols-12 gap-3 h-[calc(100vh-140px)]">
+        {/* KPIs e Gráficos superiores */}
+        <div className="col-span-12 grid grid-cols-12 gap-3 h-fit mb-2">
+          {/* KPIs - Canto superior esquerdo */}
+          <div className="col-span-8 grid grid-cols-3 gap-3">
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Activity className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium">Total de Tickets</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {formatNumber(dashboardData.totalTickets)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Total de Tickets</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {formatNumber(dashboardData.totalTickets)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-500/10 rounded-lg">
-                  <Target className="h-5 w-5 text-green-600" />
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-500/10 rounded-lg">
+                    <Target className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium">Cumprimento SLA</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {formatPercentage(dashboardData.slaCompliance)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Cumprimento SLA</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {formatPercentage(dashboardData.slaCompliance)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-500/10 rounded-lg">
-                  <Clock className="h-5 w-5 text-red-600" />
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-500/10 rounded-lg">
+                    <Clock className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium">Tickets Atrasados</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {formatNumber(dashboardData.overdueTickets)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Tickets Atrasados</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {formatNumber(dashboardData.overdueTickets)}
-                  </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Gráficos - Canto superior direito */}
+          <div className="col-span-4 grid grid-rows-2 gap-3">
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+              <CardHeader className="pb-2 p-3">
+                <CardTitle className="text-sm font-semibold">Distribuição por Status</CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <ResponsiveContainer width="100%" height={100}>
+                  <RechartsPieChart>
+                    <Pie
+                      data={dashboardData.statusData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={20}
+                      outerRadius={40}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {dashboardData.statusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [formatNumber(value as number), 'Tickets']} />
+                  </RechartsPieChart>
+                </ResponsiveContainer>
+                {/* Legendas do Status */}
+                <div className="flex flex-wrap gap-2 justify-center mt-2">
+                  {dashboardData.statusData.map((entry, index) => (
+                    <div key={index} className="flex items-center gap-1">
+                      <div 
+                        className="w-2 h-2 rounded-full" 
+                        style={{ backgroundColor: entry.color }}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {entry.name} ({entry.value})
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
 
-        {/* Gráficos - Canto superior direito */}
-        <div className="col-span-4 grid grid-rows-2 gap-3 h-fit">
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-            <CardHeader className="pb-2 p-3">
-              <CardTitle className="text-sm font-semibold">Distribuição por Status</CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 pt-0">
-              <ResponsiveContainer width="100%" height={120}>
-                <RechartsPieChart>
-                  <Pie
-                    data={dashboardData.statusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={25}
-                    outerRadius={50}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {dashboardData.statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => [formatNumber(value as number), 'Tickets']} />
-                </RechartsPieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-            <CardHeader className="pb-2 p-3">
-              <CardTitle className="text-sm font-semibold">Tickets por Prioridade</CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 pt-0">
-              <ResponsiveContainer width="100%" height={120}>
-                <BarChart data={dashboardData.priorityData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip formatter={(value) => [formatNumber(value as number), 'Tickets']} />
-                  <Bar dataKey="value" fill="#8884d8">
-                    {dashboardData.priorityData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+              <CardHeader className="pb-2 p-3">
+                <CardTitle className="text-sm font-semibold">Tickets por Prioridade</CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <ResponsiveContainer width="100%" height={100}>
+                  <BarChart data={dashboardData.priorityData}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip formatter={(value) => [formatNumber(value as number), 'Tickets']} />
+                    <Bar dataKey="value" fill="#8884d8">
+                      <LabelList 
+                        dataKey="value" 
+                        position="top" 
+                        style={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
+                        formatter={(value: number) => value > 0 ? value : ''}
+                      />
+                      {dashboardData.priorityData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Tags - Volume Central */}
