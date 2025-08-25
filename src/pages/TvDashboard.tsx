@@ -566,16 +566,16 @@ export default function TvDashboard() {
         </div>
 
         {/* Segunda linha: Tags Volume + Gráfico de Prioridade + Lista Tempo Médio */}
-        <div className="grid grid-cols-12 gap-3 flex-1">
+        <div className="grid grid-cols-12 gap-3 flex-1 min-h-0">
           {/* Tags - Volume Central */}
           <div className="col-span-8">
             <Card className="bg-card/80 backdrop-blur-sm border-border/50 h-full">
               <CardHeader className="pb-3 p-4">
                 <CardTitle className="text-base font-semibold">Tags – Volume de Tickets</CardTitle>
               </CardHeader>
-              <CardContent className="p-4 pt-0 h-[calc(100%-4rem)]">
+              <CardContent className="p-4 pt-0 h-[calc(100%-4rem)] min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={tagVolumeData}>
+                  <BarChart data={tagVolumeData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                     <XAxis 
                       dataKey="tag" 
@@ -597,15 +597,15 @@ export default function TvDashboard() {
           </div>
 
           {/* Coluna direita: Gráfico de Prioridade e Lista Tempo Médio */}
-          <div className="col-span-4 grid grid-rows-2 gap-3">
+          <div className="col-span-4 flex flex-col gap-3 min-h-0">
             {/* Gráfico de Prioridade */}
-            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50 flex-shrink-0" style={{ height: '180px' }}>
               <CardHeader className="pb-2 p-3">
                 <CardTitle className="text-sm font-semibold">Tickets por Prioridade</CardTitle>
               </CardHeader>
-              <CardContent className="p-3 pt-0">
-                <ResponsiveContainer width="100%" height={100}>
-                  <BarChart data={dashboardData.priorityData}>
+              <CardContent className="p-3 pt-0 h-[calc(100%-3rem)]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dashboardData.priorityData} margin={{ top: 20, right: 10, left: 10, bottom: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                     <YAxis tick={{ fontSize: 10 }} />
@@ -627,11 +627,11 @@ export default function TvDashboard() {
             </Card>
 
             {/* Tempo médio por Tag */}
-            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-              <CardHeader className="pb-3 p-4">
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50 flex-1 min-h-0">
+              <CardHeader className="pb-3 p-4 flex-shrink-0">
                 <CardTitle className="text-base font-semibold">Tempo médio por Tag</CardTitle>
               </CardHeader>
-              <CardContent className="p-4 pt-0 overflow-y-auto">
+              <CardContent className="p-4 pt-0 flex-1 min-h-0 overflow-y-auto">
                 <div className="space-y-2">
                   {tagAvgTimeData.length > 0 ? (
                     tagAvgTimeData.map((item, index) => (
