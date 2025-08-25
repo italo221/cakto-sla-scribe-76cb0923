@@ -232,21 +232,21 @@ const JiraTicketCard = memo(({
 
         {/* Título principal - estilo Jira */}
         <div className="space-y-1">
-          <h3 className="font-bold text-gray-900 text-lg leading-tight line-clamp-2">
+          <h3 className="font-bold text-foreground text-lg leading-tight line-clamp-2">
             {ticket.titulo}
           </h3>
-          <p className="text-sm text-gray-600 line-clamp-1 leading-relaxed">
+          <p className="text-sm text-muted-foreground line-clamp-1 leading-relaxed">
             {ticket.descricao}
           </p>
         </div>
 
         {/* Tags discretas */}
         {ticket.tags && ticket.tags.length > 0 && <div className="flex gap-1 flex-wrap">
-            {ticket.tags.slice(0, 3).map((tag: string, index: number) => <div key={index} className="flex items-center gap-1 text-xs px-2 py-0.5 text-muted-foreground rounded-sm border border-border/50 bg-slate-50">
+            {ticket.tags.slice(0, 3).map((tag: string, index: number) => <div key={index} className="flex items-center gap-1 text-xs px-2 py-0.5 text-muted-foreground rounded-sm border border-border/50 bg-muted/30">
                 <Tag className="h-2.5 w-2.5" />
                 {tag}
               </div>)}
-            {ticket.tags.length > 3 && <div className="flex items-center gap-1 text-xs px-2 py-0.5 bg-muted/30 text-muted-foreground rounded-sm border border-border/30">
+            {ticket.tags.length > 3 && <div className="flex items-center gap-1 text-xs px-2 py-0.5 bg-muted/50 text-muted-foreground rounded-sm border border-border/30">
                 <Tag className="h-2.5 w-2.5" />
                 +{ticket.tags.length - 3}
               </div>}
@@ -256,25 +256,25 @@ const JiraTicketCard = memo(({
         <div className="grid grid-cols-2 gap-3 text-xs leading-relaxed">
           <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
-              <AvatarFallback className="text-xs text-gray-600 bg-gray-100">
+              <AvatarFallback className="text-xs text-muted-foreground bg-muted">
                 {ticket.solicitante.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <span className="text-gray-500">Solicitante</span>
-              <p className="font-medium text-gray-900 truncate" title={ticket.solicitante}>
+              <span className="text-muted-foreground">Solicitante</span>
+              <p className="font-medium text-foreground truncate" title={ticket.solicitante}>
                 {ticket.solicitante}
               </p>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center">
-              <User className="h-3 w-3 text-blue-600" />
+            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+              <User className="h-3 w-3 text-primary" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="text-gray-500">Time</span>
-              <p className="font-medium text-gray-900 truncate" title={ticket.time_responsavel}>
+              <span className="text-muted-foreground">Time</span>
+              <p className="font-medium text-foreground truncate" title={ticket.time_responsavel}>
                 {ticket.time_responsavel}
               </p>
             </div>
@@ -282,15 +282,15 @@ const JiraTicketCard = memo(({
         </div>
 
         {/* Footer - Data e pontuação */}
-        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-          <div className="flex items-center gap-3 text-xs text-gray-500">
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               <span>{formattedDate}</span>
             </div>
             <div className="flex items-center gap-1">
               <Target className="h-3 w-3" />
-              <span className={cn("font-medium", (ticket.nivel_criticidade === 'P0' || ticket.nivel_criticidade === 'P1') && "text-red-600")}>
+              <span className={cn("font-medium", (ticket.nivel_criticidade === 'P0' || ticket.nivel_criticidade === 'P1') && "text-destructive")}>
                 {ticket.pontuacao_total}pts
               </span>
             </div>
