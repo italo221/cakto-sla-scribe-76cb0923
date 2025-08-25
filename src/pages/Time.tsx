@@ -445,7 +445,7 @@ export default function Time() {
           `);
 
         // Filtro por setores selecionados (apenas se não for "Todos os times")
-        if (!isSuperAdmin || !allTeamsSelected) {
+        if (!allTeamsSelected && selectedSetores.length > 0) {
           query = query.in('setor_id', selectedSetores);
         }
 
