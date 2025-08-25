@@ -466,10 +466,34 @@ export default function Time() {
 
   // Multi-select handlers para Super Admin
   const handleTeamSelection = (setorId: string, checked: boolean) => {
-    // Quando clicar em um time específico, SEMPRE selecionar APENAS esse time
-    // independente do estado atual (checked true ou false)
-    setSelectedSetores([setorId]);
-    setAllTeamsSelected(false);
+    if (checked) {
+      // Se "Todos os times" estiver selecionado, selecionar apenas este time
+      if (allTeamsSelected) {
+        setSelectedSetores([setorId]);
+        setAllTeamsSelected(false);
+      } else {
+        // Adicionar este time à seleção existente
+        const newSelection = [...selectedSetores, setorId];
+        setSelectedSetores(newSelection);
+        
+        // Verificar se todos estão selecionados
+        if (newSelection.length === availableSetores.length) {
+          setAllTeamsSelected(true);
+        }
+      }
+    } else {
+      // Remover este time da seleção
+      const newSelection = selectedSetores.filter(id => id !== setorId);
+      
+      // Se não sobrar nenhum selecionado, voltar para "Todos os times"
+      if (newSelection.length === 0) {
+        setSelectedSetores(availableSetores.map(s => s.id));
+        setAllTeamsSelected(true);
+      } else {
+        setSelectedSetores(newSelection);
+        setAllTeamsSelected(false);
+      }
+    }
   };
 
   const handleAllTeamsToggle = (checked: boolean) => {
@@ -971,8 +995,8 @@ export default function Time() {
                 {availableSetores.map(setor => (
                   <DropdownMenuCheckboxItem
                     key={setor.id}
-                    checked={!allTeamsSelected && selectedSetores.length === 1 && selectedSetores.includes(setor.id)}
-                    onCheckedChange={() => handleTeamSelection(setor.id, false)}
+                    checked={selectedSetores.includes(setor.id) && !allTeamsSelected}
+                    onCheckedChange={(checked) => handleTeamSelection(setor.id, checked)}
                   >
                     {setor.nome}
                   </DropdownMenuCheckboxItem>
