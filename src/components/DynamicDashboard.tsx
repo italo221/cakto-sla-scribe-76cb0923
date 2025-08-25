@@ -32,6 +32,7 @@ import {
   Palette,
   TrendingDown,
   Minus,
+  Monitor,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -950,6 +951,16 @@ export default function DynamicDashboard() {
                 </Button>
               </>
             )}
+            
+            <Button 
+              onClick={() => window.open('/dashboard/tv', '_blank')}
+              variant="outline" 
+              size="sm"
+              className="gap-2"
+            >
+              <Monitor className="w-4 h-4" />
+              Modo TV
+            </Button>
             
             <Button onClick={loadDashboardData} variant="outline" size="sm" disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
