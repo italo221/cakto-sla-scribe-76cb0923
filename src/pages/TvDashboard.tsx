@@ -459,13 +459,13 @@ export default function TvDashboard() {
       </div>
 
       {/* Layout principal */}
-      <div className="grid grid-cols-12 gap-3 h-[calc(100vh-140px)]">
-        {/* KPIs e Gráficos superiores */}
-        <div className="col-span-12 grid grid-cols-12 gap-3 h-fit mb-2">
-          {/* KPIs - Canto superior esquerdo */}
+      <div className="space-y-3 h-[calc(100vh-140px)]">
+        {/* Primeira linha: KPIs + Gráfico de Status */}
+        <div className="grid grid-cols-12 gap-3">
+          {/* KPIs - 3 cards lado a lado */}
           <div className="col-span-8 grid grid-cols-3 gap-3">
-            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-              <CardContent className="p-4">
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50 h-full">
+              <CardContent className="p-4 h-full flex items-center">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-primary/10 rounded-lg">
                     <Activity className="h-5 w-5 text-primary" />
@@ -480,8 +480,8 @@ export default function TvDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-              <CardContent className="p-4">
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50 h-full">
+              <CardContent className="p-4 h-full flex items-center">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-green-500/10 rounded-lg">
                     <Target className="h-5 w-5 text-green-600" />
@@ -496,30 +496,38 @@ export default function TvDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-              <CardContent className="p-4">
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50 h-full">
+              <CardContent className="p-4 h-full flex items-center">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-red-500/10 rounded-lg">
                     <Clock className="h-5 w-5 text-red-600" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground font-medium">Tickets Atrasados</p>
-                    <p className="text-2xl font-bold text-foreground">
-                      {formatNumber(dashboardData.overdueTickets)}
-                    </p>
+                    <div className="flex flex-col">
+                      <p className="text-2xl font-bold text-foreground">
+                        {filteredTickets.length > 0 
+                          ? formatPercentage((dashboardData.overdueTickets / filteredTickets.length) * 100)
+                          : '0%'
+                        }
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        ({formatNumber(dashboardData.overdueTickets)} tickets)
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Gráficos - Canto superior direito */}
-          <div className="col-span-4 grid grid-rows-2 gap-3">
-            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+          {/* Gráfico de Status - alinhado à direita */}
+          <div className="col-span-4">
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50 h-full">
               <CardHeader className="pb-2 p-3">
                 <CardTitle className="text-sm font-semibold">Distribuição por Status</CardTitle>
               </CardHeader>
-              <CardContent className="p-3 pt-0">
+              <CardContent className="p-3 pt-0 flex flex-col justify-between h-[calc(100%-3rem)]">
                 <ResponsiveContainer width="100%" height={100}>
                   <RechartsPieChart>
                     <Pie
@@ -554,7 +562,43 @@ export default function TvDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </div>
 
+        {/* Segunda linha: Tags Volume + Gráfico de Prioridade + Lista Tempo Médio */}
+        <div className="grid grid-cols-12 gap-3 flex-1">
+          {/* Tags - Volume Central */}
+          <div className="col-span-8">
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50 h-full">
+              <CardHeader className="pb-3 p-4">
+                <CardTitle className="text-base font-semibold">Tags – Volume de Tickets</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0 h-[calc(100%-4rem)]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={tagVolumeData}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis 
+                      dataKey="tag" 
+                      tick={{ fontSize: 11 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip 
+                      formatter={(value) => [formatNumber(value as number), 'Tickets']}
+                      labelFormatter={(label) => `Tag: ${label}`}
+                    />
+                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Coluna direita: Gráfico de Prioridade e Lista Tempo Médio */}
+          <div className="col-span-4 grid grid-rows-2 gap-3">
+            {/* Gráfico de Prioridade */}
             <Card className="bg-card/80 backdrop-blur-sm border-border/50">
               <CardHeader className="pb-2 p-3">
                 <CardTitle className="text-sm font-semibold">Tickets por Prioridade</CardTitle>
@@ -581,66 +625,35 @@ export default function TvDashboard() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
+
+            {/* Tempo médio por Tag */}
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+              <CardHeader className="pb-3 p-4">
+                <CardTitle className="text-base font-semibold">Tempo médio por Tag</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0 overflow-y-auto">
+                <div className="space-y-2">
+                  {tagAvgTimeData.length > 0 ? (
+                    tagAvgTimeData.map((item, index) => (
+                      <div 
+                        key={index} 
+                        className="flex justify-between items-center p-2 bg-secondary/20 rounded text-sm"
+                      >
+                        <span className="font-medium">#{item.tag}</span>
+                        <span className="text-muted-foreground">
+                          {item.formatted}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-muted-foreground text-sm">
+                      Nenhum dado disponível
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-
-        {/* Tags - Volume Central */}
-        <div className="col-span-8">
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50 h-full">
-            <CardHeader className="pb-3 p-4">
-              <CardTitle className="text-base font-semibold">Tags – Volume de Tickets</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 h-[calc(100%-4rem)]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={tagVolumeData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis 
-                    dataKey="tag" 
-                    tick={{ fontSize: 11 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                  />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip 
-                    formatter={(value) => [formatNumber(value as number), 'Tickets']}
-                    labelFormatter={(label) => `Tag: ${label}`}
-                  />
-                  <Bar dataKey="count" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tempo médio por Tag - Canto inferior direito */}
-        <div className="col-span-4">
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50 h-full">
-            <CardHeader className="pb-3 p-4">
-              <CardTitle className="text-base font-semibold">Tempo médio por Tag</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 overflow-y-auto">
-              <div className="space-y-2">
-                {tagAvgTimeData.length > 0 ? (
-                  tagAvgTimeData.map((item, index) => (
-                    <div 
-                      key={index} 
-                      className="flex justify-between items-center p-2 bg-secondary/20 rounded text-sm"
-                    >
-                      <span className="font-medium">#{item.tag}</span>
-                      <span className="text-muted-foreground">
-                        {item.formatted} ({item.count} tickets)
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-center text-muted-foreground text-sm">
-                    Nenhum dado disponível
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
