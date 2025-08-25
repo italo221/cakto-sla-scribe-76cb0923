@@ -202,13 +202,13 @@ const JiraTicketCard = memo(({
     format(new Date(ticket.data_criacao), "dd/MM 'às' HH:mm", { locale: ptBR }),
     [ticket.data_criacao]
   );
-  return <Card className={cn("group macos-card border border-border bg-white",
+  return <Card className={cn("group macos-card border border-border bg-card",
   // Borda lateral para prioridade
   ticket.nivel_criticidade === 'P0' && "border-l-4 border-l-red-500", ticket.nivel_criticidade === 'P1' && "border-l-4 border-l-orange-500", ticket.nivel_criticidade === 'P2' && "border-l-4 border-l-yellow-500", ticket.nivel_criticidade === 'P3' && "border-l-4 border-l-blue-500",
   // Destaque sutil para tickets atrasados
-  isExpired && "bg-red-50/30",
+  isExpired && "bg-red-50/30 dark:bg-red-900/10",
   // Fundo verde claro para tickets resolvidos (apenas no modo lista)
-  ticket.status === 'resolvido' && "bg-green-50")} onClick={() => onOpenDetail(ticket)}>
+  ticket.status === 'resolvido' && "bg-green-50 dark:bg-green-900/10")} onClick={() => onOpenDetail(ticket)}>
       <CardContent className="py-3 px-4 space-y-3">
         {/* Header - Número e badges */}
         <div className="flex items-center justify-between">
