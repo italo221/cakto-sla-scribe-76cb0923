@@ -467,17 +467,20 @@ export default function Time() {
   // Multi-select handlers para Super Admin
   const handleTeamSelection = (setorId: string, checked: boolean) => {
     if (checked) {
-      const newSelection = [...selectedSetores, setorId];
-      setSelectedSetores(newSelection);
-      
-      // Verificar se todos estão selecionados
-      if (newSelection.length === availableSetores.length) {
-        setAllTeamsSelected(true);
-      }
-    } else {
-      const newSelection = selectedSetores.filter(id => id !== setorId);
-      setSelectedSetores(newSelection);
+      // Quando selecionando um time específico, selecionar APENAS esse time
+      setSelectedSetores([setorId]);
       setAllTeamsSelected(false);
+    } else {
+      // Quando desmarcando um time, se for o único selecionado, voltar para "Todos os times"
+      if (selectedSetores.length === 1 && selectedSetores[0] === setorId) {
+        setSelectedSetores(availableSetores.map(s => s.id));
+        setAllTeamsSelected(true);
+      } else {
+        // Se há múltiplos selecionados, apenas remover este
+        const newSelection = selectedSetores.filter(id => id !== setorId);
+        setSelectedSetores(newSelection);
+        setAllTeamsSelected(false);
+      }
     }
   };
 
