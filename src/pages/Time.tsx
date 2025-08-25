@@ -92,6 +92,7 @@ interface TeamTicket {
   tags?: string[];
   age_days: number;
   is_overdue: boolean;
+  sla_comentarios_internos?: Array<{ comentario: string }>;
 }
 
 interface Setor {
@@ -439,7 +440,8 @@ export default function Time() {
             prazo_interno,
             prioridade_operacional,
             tags,
-            setores(nome)
+            setores(nome),
+            sla_comentarios_internos(comentario)
           `);
 
         // Filtro por setores selecionados (apenas se não for "Todos os times")
@@ -552,12 +554,24 @@ export default function Time() {
     
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filteredTickets = filteredTickets.filter(ticket => 
-        ticket.titulo.toLowerCase().includes(term) ||
-        ticket.ticket_number.toLowerCase().includes(term) ||
-        ticket.solicitante.toLowerCase().includes(term) ||
-        (ticket.tags || []).some(tag => tag.toLowerCase().includes(term))
-      );
+      filteredTickets = filteredTickets.filter(ticket => {
+        // Buscar nos campos do ticket
+        const ticketMatch = 
+          ticket.titulo.toLowerCase().includes(term) ||
+          ticket.ticket_number.toLowerCase().includes(term) ||
+          ticket.solicitante.toLowerCase().includes(term) ||
+          (ticket.descricao && ticket.descricao.toLowerCase().includes(term)) ||
+          (ticket.observacoes && ticket.observacoes.toLowerCase().includes(term)) ||
+          (ticket.tags || []).some(tag => tag.toLowerCase().includes(term));
+        
+        // Buscar nos comentários
+        const commentsMatch = ticket.sla_comentarios_internos && 
+          ticket.sla_comentarios_internos.some(comment => 
+            comment.comentario && comment.comentario.toLowerCase().includes(term)
+          );
+        
+        return ticketMatch || commentsMatch;
+      });
     }
     
     if (priorityFilter.length > 0) {
@@ -612,12 +626,24 @@ export default function Time() {
     // Aplicar busca
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      allFiltered = allFiltered.filter(ticket => 
-        ticket.titulo.toLowerCase().includes(term) ||
-        ticket.ticket_number.toLowerCase().includes(term) ||
-        ticket.solicitante.toLowerCase().includes(term) ||
-        (ticket.tags || []).some(tag => tag.toLowerCase().includes(term))
-      );
+      allFiltered = allFiltered.filter(ticket => {
+        // Buscar nos campos do ticket
+        const ticketMatch = 
+          ticket.titulo.toLowerCase().includes(term) ||
+          ticket.ticket_number.toLowerCase().includes(term) ||
+          ticket.solicitante.toLowerCase().includes(term) ||
+          (ticket.descricao && ticket.descricao.toLowerCase().includes(term)) ||
+          (ticket.observacoes && ticket.observacoes.toLowerCase().includes(term)) ||
+          (ticket.tags || []).some(tag => tag.toLowerCase().includes(term));
+        
+        // Buscar nos comentários
+        const commentsMatch = ticket.sla_comentarios_internos && 
+          ticket.sla_comentarios_internos.some((comment: any) => 
+            comment.comentario && comment.comentario.toLowerCase().includes(term)
+          );
+        
+        return ticketMatch || commentsMatch;
+      });
     }
     
     // Aplicar filtros de prioridade
