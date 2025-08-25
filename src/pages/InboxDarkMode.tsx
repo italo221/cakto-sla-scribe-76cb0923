@@ -267,13 +267,22 @@ export default function Inbox() {
     const lowerTerm = term.toLowerCase();
     const searchFields = [ticket.titulo, ticket.descricao, ticket.solicitante, ticket.time_responsavel, ticket.ticket_number, ...(ticket.tags || [])].filter(Boolean).map(field => field.toLowerCase());
 
+    // Buscar nos comentários
+    const commentFields = (ticket.sla_comentarios_internos || [])
+      .map((comment: any) => comment.comentario.toLowerCase())
+      .filter(Boolean);
+
     // Busca exata
-    const exactMatch = searchFields.some(field => field.includes(lowerTerm));
+    const exactMatch = searchFields.some(field => field.includes(lowerTerm)) ||
+                       commentFields.some(field => field.includes(lowerTerm));
     if (exactMatch) return true;
 
     // Busca por palavras parciais (para busca inteligente tipo Google)
     const termWords = lowerTerm.split(' ').filter(word => word.length > 1);
-    const partialMatch = termWords.every(word => searchFields.some(field => field.includes(word)));
+    const partialMatch = termWords.every(word => 
+      searchFields.some(field => field.includes(word)) ||
+      commentFields.some(field => field.includes(word))
+    );
     return partialMatch;
   }, []);
 
