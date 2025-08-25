@@ -441,7 +441,7 @@ export default function Time() {
             prioridade_operacional,
             tags,
             setores(nome),
-            sla_comentarios_internos(comentario)
+            sla_comentarios_internos!sla_comentarios_internos_sla_id_fkey(comentario)
           `);
 
         // Filtro por setores selecionados (apenas se não for "Todos os times")
