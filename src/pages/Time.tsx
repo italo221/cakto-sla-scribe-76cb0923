@@ -312,23 +312,49 @@ export default function Time() {
         if (error) throw error;
         setSetores(data || []);
         
-        // Configurar seleção inicial
-        if (isSuperAdmin) {
-          // Super admin: "Todos os times" por padrão
-          setAllTeamsSelected(true);
-          setSelectedSetores((data || []).map(s => s.id));
-        } else if (userSetores.length > 0) {
-          // Usuário comum: apenas seus setores
-          const userSetorIds = userSetores.map(us => us.setor?.id).filter(Boolean) as string[];
-          setSelectedSetores(userSetorIds);
-          setAllTeamsSelected(false);
-          // Para compatibilidade com código existente
-          if (userSetorIds.length > 0) {
-            setSelectedSetor(userSetorIds[0]);
+        // Tentar restaurar seleção salva no localStorage
+        const savedSelection = localStorage.getItem('time-page-team-selection');
+        const savedAllTeamsSelected = localStorage.getItem('time-page-all-teams-selected');
+        
+        if (savedSelection && savedAllTeamsSelected !== null) {
+          // Restaurar seleção salva
+          const parsedSelection = JSON.parse(savedSelection);
+          const parsedAllTeams = JSON.parse(savedAllTeamsSelected);
+          
+          // Verificar se os setores salvos ainda existem
+          const validSetorIds = (data || []).map(s => s.id);
+          const validSelection = parsedSelection.filter((id: string) => validSetorIds.includes(id));
+          
+          if (validSelection.length > 0) {
+            setSelectedSetores(validSelection);
+            setAllTeamsSelected(parsedAllTeams);
+          } else {
+            // Se nenhum setor salvo é válido, usar configuração padrão
+            setDefaultSelection(data || []);
           }
+        } else {
+          // Configuração inicial padrão
+          setDefaultSelection(data || []);
         }
       } catch (error) {
         console.error('Erro ao carregar setores:', error);
+      }
+    };
+    
+    const setDefaultSelection = (setoresData: Setor[]) => {
+      if (isSuperAdmin) {
+        // Super admin: "Todos os times" por padrão
+        setAllTeamsSelected(true);
+        setSelectedSetores(setoresData.map(s => s.id));
+      } else if (userSetores.length > 0) {
+        // Usuário comum: apenas seus setores
+        const userSetorIds = userSetores.map(us => us.setor?.id).filter(Boolean) as string[];
+        setSelectedSetores(userSetorIds);
+        setAllTeamsSelected(false);
+        // Para compatibilidade com código existente
+        if (userSetorIds.length > 0) {
+          setSelectedSetor(userSetorIds[0]);
+        }
       }
     };
     
@@ -336,6 +362,14 @@ export default function Time() {
       loadSetores();
     }
   }, [user, isSuperAdmin, userSetores]);
+
+  // Salvar seleção de times no localStorage sempre que mudar
+  useEffect(() => {
+    if (selectedSetores.length > 0) {
+      localStorage.setItem('time-page-team-selection', JSON.stringify(selectedSetores));
+      localStorage.setItem('time-page-all-teams-selected', JSON.stringify(allTeamsSelected));
+    }
+  }, [selectedSetores, allTeamsSelected]);
 
   // Carregar métricas
   useEffect(() => {
@@ -502,6 +536,12 @@ export default function Time() {
       setSelectedSetores(availableSetores.map(s => s.id));
     } else {
       setSelectedSetores([]);
+    }
+    
+    // Salvar explicitamente no localStorage quando o usuário faz uma ação manual
+    if (isSuperAdmin) {
+      localStorage.setItem('time-page-team-selection', JSON.stringify(checked ? availableSetores.map(s => s.id) : []));
+      localStorage.setItem('time-page-all-teams-selected', JSON.stringify(checked));
     }
   };
 
