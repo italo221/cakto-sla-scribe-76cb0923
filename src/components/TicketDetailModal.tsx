@@ -1842,6 +1842,27 @@ const toggleCommentsFocusMode = () => {
                   </div>
                 </div>
                 
+                {/* Toggle para marcar como "Informação incompleta" */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label htmlFor="info-incompleta" className="text-sm font-medium flex items-center gap-2">
+                        <HelpCircle className="h-4 w-4 text-yellow-600" />
+                        Informação incompleta
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Marque quando o ticket precisa de mais informações para prosseguir
+                      </p>
+                    </div>
+                    <Switch
+                      id="info-incompleta"
+                      checked={currentSLA.tags?.includes("info-incompleta") || false}
+                      onCheckedChange={handleInfoIncompletaToggle}
+                      disabled={!canEditTicket(currentSLA as any)}
+                    />
+                  </div>
+                </div>
+
                 {/* Tags */}
                 {currentSLA.tags && currentSLA.tags.length > 0 && (
                   <div>
@@ -1865,26 +1886,6 @@ const toggleCommentsFocusMode = () => {
                     </div>
                   </div>
                 )}
-
-                {/* Toggle para marcar como "Informação incompleta" */}
-                <div className="border-t pt-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <Label htmlFor="info-incompleta" className="text-sm font-medium">
-                        Informação incompleta
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Marque quando o ticket precisa de mais informações para prosseguir
-                      </p>
-                    </div>
-                    <Switch
-                      id="info-incompleta"
-                      checked={currentSLA.tags?.includes("info-incompleta") || false}
-                      onCheckedChange={handleInfoIncompletaToggle}
-                      disabled={!canEditTicket(currentSLA as any)}
-                    />
-                  </div>
-                </div>
                 
                 {/* Anexos do Ticket (via tabela) */}
                 {dbAttachments.length > 0 && (
