@@ -917,6 +917,16 @@ const toggleCommentsFocusMode = () => {
   const handleInfoIncompletaToggle = async (checked: boolean) => {
     if (!currentSLA || !user) return;
 
+    // Verificar permissões antes de tentar atualizar
+    if (!canEditTicket(currentSLA as any)) {
+      toast({
+        title: "Acesso negado",
+        description: "Você não tem permissão para editar este ticket",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const currentTags = currentSLA.tags || [];
       let newTags: string[];
@@ -933,13 +943,20 @@ const toggleCommentsFocusMode = () => {
         newTags = currentTags.filter(tag => tag !== "info-incompleta");
       }
 
+      console.log('Atualizando tags:', { currentTags, newTags, ticketId: currentSLA.id });
+
       // Atualizar no banco
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('sla_demandas')
         .update({ tags: newTags })
         .eq('id', currentSLA.id);
 
-      if (error) throw error;
+      if (updateError) {
+        console.error('Erro ao atualizar tags no banco:', updateError);
+        throw updateError;
+      }
+
+      console.log('Tags atualizadas com sucesso');
 
       // Atualizar estado local
       setCurrentSLA(prev => prev ? { ...prev, tags: newTags } : null);
@@ -949,13 +966,18 @@ const toggleCommentsFocusMode = () => {
 
       // Registrar no histórico
       const userName = profile?.nome_completo || user.email || 'Usuário';
-      await supabase.rpc('log_sla_action', {
+      const { error: logError } = await supabase.rpc('log_sla_action', {
         p_sla_id: currentSLA.id,
         p_acao: checked ? 'marcar_info_incompleta' : 'desmarcar_info_incompleta',
         p_justificativa: `${userName} ${checked ? 'marcou' : 'desmarcou'} o ticket como "Informação incompleta"`,
         p_dados_anteriores: { tags: currentTags },
         p_dados_novos: { tags: newTags }
       });
+
+      if (logError) {
+        console.error('Erro ao registrar no histórico:', logError);
+        // Não falhar por causa do log, mas avisar no console
+      }
 
       onUpdate();
 
@@ -970,7 +992,7 @@ const toggleCommentsFocusMode = () => {
       console.error('Erro ao atualizar tag info-incompleta:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível atualizar a marcação",
+        description: `Não foi possível atualizar a marcação: ${error?.message || 'Erro desconhecido'}`,
         variant: "destructive"
       });
     }
