@@ -1143,6 +1143,16 @@ const toggleCommentsFocusMode = () => {
               <div className="flex flex-wrap gap-2">
                 {getStatusBadge(currentSLA.status)}
                 {getCriticalityBadge(currentSLA.nivel_criticidade)}
+                {/* Badge da tag Info Incompleta */}
+                {currentSLA.tags?.includes("info-incompleta") && (
+                  <Badge 
+                    variant="outline" 
+                    className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-600"
+                  >
+                    <HelpCircle className="h-3 w-3 mr-1" />
+                    Info incompleta
+                  </Badge>
+                )}
               </div>
             )}
         </DialogHeader>
@@ -1892,25 +1902,21 @@ const toggleCommentsFocusMode = () => {
                 </div>
 
                 {/* Tags */}
-                {currentSLA.tags && currentSLA.tags.length > 0 && (
+                {currentSLA.tags && currentSLA.tags.filter(tag => tag !== "info-incompleta").length > 0 && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Tags</label>
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {currentSLA.tags.map((tag, index) => (
-                        <Badge 
-                          key={index} 
-                          variant="outline" 
-                          className={cn(
-                            "text-xs",
-                            tag === "info-incompleta" && "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-600"
-                          )}
-                        >
-                          {tag === "info-incompleta" && (
-                            <HelpCircle className="h-3 w-3 mr-1" />
-                          )}
-                          {tag === "info-incompleta" ? "Info incompleta" : tag}
-                        </Badge>
-                      ))}
+                      {currentSLA.tags
+                        .filter(tag => tag !== "info-incompleta") // Excluir a tag info-incompleta desta seção
+                        .map((tag, index) => (
+                          <Badge 
+                            key={index} 
+                            variant="outline" 
+                            className="text-xs"
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
                     </div>
                   </div>
                 )}
