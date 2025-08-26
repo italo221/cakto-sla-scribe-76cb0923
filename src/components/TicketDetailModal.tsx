@@ -927,56 +927,54 @@ const toggleCommentsFocusMode = () => {
       return;
     }
 
-    try {
-      const currentTags = currentSLA.tags || [];
-      let newTags: string[];
+    const currentTags = currentSLA.tags || [];
+    let newTags: string[];
 
-      if (checked) {
-        // Adicionar a tag se não existir
-        if (!currentTags.includes("info-incompleta")) {
-          newTags = [...currentTags, "info-incompleta"];
-        } else {
-          return; // Tag já existe
-        }
+    if (checked) {
+      // Adicionar a tag se não existir
+      if (!currentTags.includes("info-incompleta")) {
+        newTags = [...currentTags, "info-incompleta"];
       } else {
-        // Remover a tag
-        newTags = currentTags.filter(tag => tag !== "info-incompleta");
+        return; // Tag já existe
       }
+    } else {
+      // Remover a tag
+      newTags = currentTags.filter(tag => tag !== "info-incompleta");
+    }
 
-      console.log('Atualizando tags:', { currentTags, newTags, ticketId: currentSLA.id });
+    // Atualização otimista - atualizar UI imediatamente
+    setCurrentSLA(prev => prev ? { ...prev, tags: newTags } : null);
+    if (setSelectedSLA) {
+      setSelectedSLA({ ...currentSLA, tags: newTags });
+    }
 
-      // Atualizar no banco
-      const { error: updateError } = await supabase
-        .from('sla_demandas')
-        .update({ tags: newTags })
-        .eq('id', currentSLA.id);
-
-      if (updateError) {
-        console.error('Erro ao atualizar tags no banco:', updateError);
-        throw updateError;
-      }
-
-      console.log('Tags atualizadas com sucesso');
-
-      // Atualizar estado local
-      setCurrentSLA(prev => prev ? { ...prev, tags: newTags } : null);
-      if (setSelectedSLA) {
-        setSelectedSLA({ ...currentSLA, tags: newTags });
-      }
-
-      // Registrar no histórico
+    try {
+      // Executar operações de banco em paralelo
       const userName = profile?.nome_completo || user.email || 'Usuário';
-      const { error: logError } = await supabase.rpc('log_sla_action', {
-        p_sla_id: currentSLA.id,
-        p_acao: checked ? 'marcar_info_incompleta' : 'desmarcar_info_incompleta',
-        p_justificativa: `${userName} ${checked ? 'marcou' : 'desmarcou'} o ticket como "Informação incompleta"`,
-        p_dados_anteriores: { tags: currentTags },
-        p_dados_novos: { tags: newTags }
-      });
+      
+      const [updateResult, logResult] = await Promise.allSettled([
+        supabase
+          .from('sla_demandas')
+          .update({ tags: newTags })
+          .eq('id', currentSLA.id),
+        supabase.rpc('log_sla_action', {
+          p_sla_id: currentSLA.id,
+          p_acao: checked ? 'marcar_info_incompleta' : 'desmarcar_info_incompleta',
+          p_justificativa: `${userName} ${checked ? 'marcou' : 'desmarcou'} o ticket como "Informação incompleta"`,
+          p_dados_anteriores: { tags: currentTags },
+          p_dados_novos: { tags: newTags }
+        })
+      ]);
 
-      if (logError) {
-        console.error('Erro ao registrar no histórico:', logError);
-        // Não falhar por causa do log, mas avisar no console
+      // Verificar se a atualização principal falhou
+      if (updateResult.status === 'rejected' || (updateResult.status === 'fulfilled' && updateResult.value.error)) {
+        const error = updateResult.status === 'rejected' ? updateResult.reason : updateResult.value.error;
+        throw error;
+      }
+
+      // Log de erro separado não falha a operação
+      if (logResult.status === 'rejected') {
+        console.warn('Erro ao registrar no histórico:', logResult.reason);
       }
 
       onUpdate();
@@ -990,6 +988,13 @@ const toggleCommentsFocusMode = () => {
 
     } catch (error: any) {
       console.error('Erro ao atualizar tag info-incompleta:', error);
+      
+      // Reverter atualização otimista em caso de erro
+      setCurrentSLA(prev => prev ? { ...prev, tags: currentTags } : null);
+      if (setSelectedSLA) {
+        setSelectedSLA({ ...currentSLA, tags: currentTags });
+      }
+      
       toast({
         title: "Erro",
         description: `Não foi possível atualizar a marcação: ${error?.message || 'Erro desconhecido'}`,
@@ -1865,14 +1870,14 @@ const toggleCommentsFocusMode = () => {
                 </div>
                 
                 {/* Toggle para marcar como "Informação incompleta" */}
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <Label htmlFor="info-incompleta" className="text-sm font-medium flex items-center gap-2">
-                        <HelpCircle className="h-4 w-4 text-yellow-600" />
+                      <Label htmlFor="info-incompleta" className="text-sm font-medium flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+                        <HelpCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                         Informação incompleta
                       </Label>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-yellow-700 dark:text-yellow-300">
                         Marque quando o ticket precisa de mais informações para prosseguir
                       </p>
                     </div>
@@ -1881,6 +1886,7 @@ const toggleCommentsFocusMode = () => {
                       checked={currentSLA.tags?.includes("info-incompleta") || false}
                       onCheckedChange={handleInfoIncompletaToggle}
                       disabled={!canEditTicket(currentSLA as any)}
+                      className="data-[state=checked]:bg-yellow-600 dark:data-[state=checked]:bg-yellow-500"
                     />
                   </div>
                 </div>
@@ -1896,7 +1902,7 @@ const toggleCommentsFocusMode = () => {
                           variant="outline" 
                           className={cn(
                             "text-xs",
-                            tag === "info-incompleta" && "bg-yellow-100 text-yellow-700 border-yellow-300"
+                            tag === "info-incompleta" && "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-600"
                           )}
                         >
                           {tag === "info-incompleta" && (
