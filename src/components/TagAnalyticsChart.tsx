@@ -75,8 +75,16 @@ export const TagAnalyticsChart = ({ dateFilter, selectedSetor, setores }: TagAna
           ticket.tags.forEach((tag: string) => {
             if (tag && tag.trim()) {
               const normalizedTag = tag.trim();
-              tagCounts[normalizedTag] = (tagCounts[normalizedTag] || 0) + 1;
-              totalTags++;
+              // Manter apenas tickets que ATUALMENTE têm a tag (comportamento efêmero)
+              if (normalizedTag === "info-incompleta") {
+                // Para tag especial, contar apenas se ticket tem a tag AGORA
+                tagCounts[normalizedTag] = (tagCounts[normalizedTag] || 0) + 1;
+                totalTags++;
+              } else {
+                // Para outras tags, comportamento normal
+                tagCounts[normalizedTag] = (tagCounts[normalizedTag] || 0) + 1;
+                totalTags++;
+              }
             }
           });
         }

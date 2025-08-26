@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Filter, Clock, AlertCircle, CheckCircle, X, Grid3X3, List, Star, User, MoreVertical, Play, Pause, CheckCircle2, XCircle, Eye, Columns3, AlertTriangle, Flag, Building, Target, Users, Activity, Inbox as InboxIcon, Circle, Info, Building2 } from "lucide-react";
+import { Search, Filter, Clock, AlertCircle, CheckCircle, X, Grid3X3, List, Star, User, MoreVertical, Play, Pause, CheckCircle2, XCircle, Eye, Columns3, AlertTriangle, Flag, Building, Target, Users, Activity, Inbox as InboxIcon, Circle, Info, Building2, HelpCircle } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -81,7 +81,7 @@ export default function Inbox() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'aberto' | 'em_andamento' | 'resolvido' | 'fechado' | 'atrasado' | 'critico'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'aberto' | 'em_andamento' | 'resolvido' | 'fechado' | 'atrasado' | 'critico' | 'info-incompleta'>('all');
   const [setorFilter, setSetorFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('todas');
   const [dateSort, setDateSort] = useState<'newest' | 'oldest' | 'none'>('none');
@@ -305,6 +305,8 @@ export default function Inbox() {
           case 'critico':
             return ticket.nivel_criticidade === 'P0' && 
                    ['aberto', 'em_andamento'].includes(ticketStatus);
+          case 'info-incompleta':
+            return ticket.tags?.includes("info-incompleta");
           default:
             // Remover a exclusão de tickets atrasados - eles devem aparecer na sua aba base
             return ticketStatus === activeFilter;
@@ -651,7 +653,7 @@ export default function Inbox() {
         </div>
 
         {/* Status Cards - Sistema de filtro unificado usando dados centralizados */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
           <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'aberto' ? 'ring-2 ring-slate-500 border-l-slate-500 bg-slate-50 dark:bg-slate-800' : 'border-l-slate-400 hover:border-l-slate-500')} onClick={() => setActiveFilter(activeFilter === 'aberto' ? 'all' : 'aberto')}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
@@ -711,6 +713,26 @@ export default function Inbox() {
                 {stats.criticos}
               </div>
               <div className="text-sm text-red-700 dark:text-red-400">Críticos</div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={cn(
+              "cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card",
+              activeFilter === 'info-incompleta' 
+                ? 'ring-2 ring-yellow-500 border-l-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' 
+                : 'border-l-yellow-400 hover:border-l-yellow-500'
+            )} 
+            onClick={() => setActiveFilter(activeFilter === 'info-incompleta' ? 'all' : 'info-incompleta')}
+          >
+            <CardContent className="p-4 text-center">
+              <div className="flex justify-center mb-2">
+                <HelpCircle className="h-6 w-6 text-yellow-600 dark:text-yellow-500" />
+              </div>
+              <div className="text-2xl font-bold text-yellow-800 dark:text-yellow-300">
+                {optimizedTicketsWithStatus.filter(ticket => ticket.tags?.includes("info-incompleta")).length}
+              </div>
+              <div className="text-sm text-yellow-700 dark:text-yellow-400">Info Incompleta</div>
             </CardContent>
           </Card>
         </div>

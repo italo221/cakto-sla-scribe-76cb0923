@@ -4,7 +4,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, HelpCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -181,6 +181,14 @@ const KanbanCard = memo(({
             })}
             </span>
           </div>
+
+          {/* Badge para info-incompleta */}
+          {ticket.tags?.includes("info-incompleta") && (
+            <div className="flex items-center gap-1 text-xs px-2 py-1 bg-yellow-100 text-yellow-700 border border-yellow-300 rounded">
+              <HelpCircle className="h-3 w-3" />
+              <span className="font-medium">Info incompleta</span>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>;

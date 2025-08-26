@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, Clock, Target, Building, Play, Pause, CheckCircle2, AlertTriangle, Circle, Activity, CheckCircle, X, Edit3, Trash2, Tag, MessageSquare } from "lucide-react";
+import { User, Clock, Target, Building, Play, Pause, CheckCircle2, AlertTriangle, Circle, Activity, CheckCircle, X, Edit3, Trash2, Tag, MessageSquare, HelpCircle } from "lucide-react";
 import { SetTicketDeadlineButton } from "@/components/SetTicketDeadlineButton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -242,10 +242,27 @@ const JiraTicketCard = memo(({
 
         {/* Tags discretas */}
         {ticket.tags && ticket.tags.length > 0 && <div className="flex gap-1 flex-wrap">
-            {ticket.tags.slice(0, 3).map((tag: string, index: number) => <div key={index} className="flex items-center gap-1 text-xs px-2 py-0.5 text-muted-foreground rounded-sm border border-border/50 bg-muted/30">
-                <Tag className="h-2.5 w-2.5" />
-                {tag}
-              </div>)}
+            {ticket.tags.slice(0, 3).map((tag: string, index: number) => {
+              const isInfoIncompleta = tag === "info-incompleta";
+              return (
+                <div 
+                  key={index} 
+                  className={cn(
+                    "flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm border",
+                    isInfoIncompleta 
+                      ? "bg-yellow-100 text-yellow-700 border-yellow-300" 
+                      : "text-muted-foreground border-border/50 bg-muted/30"
+                  )}
+                >
+                  {isInfoIncompleta ? (
+                    <HelpCircle className="h-2.5 w-2.5" />
+                  ) : (
+                    <Tag className="h-2.5 w-2.5" />
+                  )}
+                  {isInfoIncompleta ? "Info incompleta" : tag}
+                </div>
+              );
+            })}
             {ticket.tags.length > 3 && <div className="flex items-center gap-1 text-xs px-2 py-0.5 bg-muted/50 text-muted-foreground rounded-sm border border-border/30">
                 <Tag className="h-2.5 w-2.5" />
                 +{ticket.tags.length - 3}

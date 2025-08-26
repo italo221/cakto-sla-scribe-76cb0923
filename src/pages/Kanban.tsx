@@ -71,6 +71,7 @@ export default function KanbanPage() {
   const [setorFilter, setSetorFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('todas');
   const [criticalityFilter, setCriticalityFilter] = useState('all');
+  const [infoIncompletaFilter, setInfoIncompletaFilter] = useState(false);
   
   // Estados específicos do modo Tags
   const [viewMode, setViewMode] = useState<'status' | 'tags'>(() => {
@@ -179,8 +180,15 @@ export default function KanbanPage() {
       filtered = filtered.filter(ticket => ticket.nivel_criticidade === criticalityFilter);
     }
 
+    // Filtro por informação incompleta
+    if (infoIncompletaFilter) {
+      filtered = filtered.filter(ticket => 
+        ticket.tags?.includes("info-incompleta")
+      );
+    }
+
     return filtered;
-  }, [tickets, searchTerm, setorFilter, tagFilter, criticalityFilter, setores, viewMode]);
+  }, [tickets, searchTerm, setorFilter, tagFilter, criticalityFilter, infoIncompletaFilter, setores, viewMode]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -237,7 +245,7 @@ export default function KanbanPage() {
               </div>
               
               {viewMode === 'status' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   {/* Busca */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Buscar</label>
@@ -311,6 +319,23 @@ export default function KanbanPage() {
                         <SelectItem value="P3">P3 - Baixo</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* Filtro por Informação Incompleta */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Filtros Especiais</label>
+                    <div className="flex items-center space-x-2 p-2 border rounded">
+                      <input
+                        type="checkbox"
+                        id="info-incompleta-filter"
+                        checked={infoIncompletaFilter}
+                        onChange={(e) => setInfoIncompletaFilter(e.target.checked)}
+                        className="rounded border-border"
+                      />
+                      <label htmlFor="info-incompleta-filter" className="text-sm cursor-pointer">
+                        Somente Info Incompleta
+                      </label>
+                    </div>
                   </div>
                 </div>
               ) : (

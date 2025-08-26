@@ -36,6 +36,10 @@ import { extractCleanTextWithMentions, formatMentionsForDisplay } from "@/utils/
 import { extractMentions, findMentionedUsers, notifyUserMention } from "@/utils/notificationService";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import TicketLinksPanel from "@/components/TicketLinksPanel";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { HelpCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface SLA {
   id: string;
@@ -910,6 +914,68 @@ const toggleCommentsFocusMode = () => {
     );
   };
 
+  const handleInfoIncompletaToggle = async (checked: boolean) => {
+    if (!currentSLA || !user) return;
+
+    try {
+      const currentTags = currentSLA.tags || [];
+      let newTags: string[];
+
+      if (checked) {
+        // Adicionar a tag se não existir
+        if (!currentTags.includes("info-incompleta")) {
+          newTags = [...currentTags, "info-incompleta"];
+        } else {
+          return; // Tag já existe
+        }
+      } else {
+        // Remover a tag
+        newTags = currentTags.filter(tag => tag !== "info-incompleta");
+      }
+
+      // Atualizar no banco
+      const { error } = await supabase
+        .from('sla_demandas')
+        .update({ tags: newTags })
+        .eq('id', currentSLA.id);
+
+      if (error) throw error;
+
+      // Atualizar estado local
+      setCurrentSLA(prev => prev ? { ...prev, tags: newTags } : null);
+      if (setSelectedSLA) {
+        setSelectedSLA({ ...currentSLA, tags: newTags });
+      }
+
+      // Registrar no histórico
+      const userName = profile?.nome_completo || user.email || 'Usuário';
+      await supabase.rpc('log_sla_action', {
+        p_sla_id: currentSLA.id,
+        p_acao: checked ? 'marcar_info_incompleta' : 'desmarcar_info_incompleta',
+        p_justificativa: `${userName} ${checked ? 'marcou' : 'desmarcou'} o ticket como "Informação incompleta"`,
+        p_dados_anteriores: { tags: currentTags },
+        p_dados_novos: { tags: newTags }
+      });
+
+      onUpdate();
+
+      toast({
+        title: checked ? "Ticket marcado" : "Marcação removida",
+        description: checked 
+          ? "Ticket marcado como 'Informação incompleta'" 
+          : "Marcação 'Informação incompleta' removida"
+      });
+
+    } catch (error: any) {
+      console.error('Erro ao atualizar tag info-incompleta:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar a marcação",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (!currentSLA || !isOpen) return null;
 
   return (
@@ -1782,13 +1848,43 @@ const toggleCommentsFocusMode = () => {
                     <label className="text-sm font-medium text-muted-foreground">Tags</label>
                     <div className="flex flex-wrap gap-1 mt-2">
                       {currentSLA.tags.map((tag, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {tag}
+                        <Badge 
+                          key={index} 
+                          variant="outline" 
+                          className={cn(
+                            "text-xs",
+                            tag === "info-incompleta" && "bg-yellow-100 text-yellow-700 border-yellow-300"
+                          )}
+                        >
+                          {tag === "info-incompleta" && (
+                            <HelpCircle className="h-3 w-3 mr-1" />
+                          )}
+                          {tag === "info-incompleta" ? "Info incompleta" : tag}
                         </Badge>
                       ))}
                     </div>
                   </div>
                 )}
+
+                {/* Toggle para marcar como "Informação incompleta" */}
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label htmlFor="info-incompleta" className="text-sm font-medium">
+                        Informação incompleta
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Marque quando o ticket precisa de mais informações para prosseguir
+                      </p>
+                    </div>
+                    <Switch
+                      id="info-incompleta"
+                      checked={currentSLA.tags?.includes("info-incompleta") || false}
+                      onCheckedChange={handleInfoIncompletaToggle}
+                      disabled={!canEditTicket(currentSLA as any)}
+                    />
+                  </div>
+                </div>
                 
                 {/* Anexos do Ticket (via tabela) */}
                 {dbAttachments.length > 0 && (
