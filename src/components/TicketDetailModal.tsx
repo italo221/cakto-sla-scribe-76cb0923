@@ -19,7 +19,7 @@ import { useSLAPolicies } from "@/hooks/useSLAPolicies";
 import CommentEditModal from "@/components/CommentEditModal";
 import CommentReactions from "@/components/CommentReactions";
 import CommentDeleteModal from "@/components/CommentDeleteModal";
-import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit2, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown, Eye, Upload, Image, Video, Maximize, Minimize } from "lucide-react";
+import { MessageSquare, Send, ArrowRightLeft, Calendar, User, Building, Clock, AlertCircle, CheckCircle, X, FileText, Target, ThumbsUp, MoreHorizontal, Play, Pause, Square, RotateCcw, History, Reply, Heart, Share, Edit2, Smile, Paperclip, Download, Trash2, ExternalLink, Search, ChevronUp, ChevronDown, Eye, Upload, Image, Video, Maximize, Minimize, Share2 } from "lucide-react";
 import TicketAttachments from "@/components/TicketAttachments";
 import TicketEditModal from "@/components/TicketEditModal";
 import { SLADeadlineChip } from "@/components/SLADeadlineChip";
@@ -40,6 +40,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TicketShareModal } from "@/components/TicketShareModal";
 
 interface SLA {
   id: string;
@@ -172,6 +173,7 @@ export default function SLADetailModal({
 const scrollAreaRef = useRef<HTMLDivElement>(null);
 
 const [isCommentsFocusMode, setIsCommentsFocusMode] = useState(false);
+const [showShareModal, setShowShareModal] = useState(false);
 const preservedScrollTopRef = useRef(0);
 const toggleCommentsFocusMode = () => {
   const el = scrollAreaRef.current;
@@ -1029,6 +1031,20 @@ const toggleCommentsFocusMode = () => {
                   Editar
                 </Button>
               )}
+              
+              {/* Botão de Compartilhar */}
+              {!isCommentsFocusMode && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => setShowShareModal(true)}
+                >
+                  <Share2 className="h-4 w-4" />
+                  Compartilhar
+                </Button>
+              )}
+              
               {/* Botão Focar comentários */}
               <Button
                 size="sm"
@@ -2054,6 +2070,14 @@ const toggleCommentsFocusMode = () => {
           }
           setShowEditModal(false);
         }}
+      />
+
+      {/* Modal de compartilhamento */}
+      <TicketShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        ticketId={currentSLA?.id || ''}
+        ticketNumber={currentSLA?.ticket_number || currentSLA?.id?.slice(0, 8) || ''}
       />
     </Dialog>
   );
