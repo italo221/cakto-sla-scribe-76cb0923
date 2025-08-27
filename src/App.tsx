@@ -21,6 +21,7 @@ import Customization from "./pages/Customization";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { SharedTicket } from "./pages/SharedTicket";
+import { TicketPage } from "./pages/TicketPage";
 
 // Create query client outside component to prevent recreation
 const queryClient = new QueryClient({
@@ -45,6 +46,15 @@ function App() {
             <Routes>
               <Route path="/auth" element={<div className="animate-fade-in"><Auth /></div>} />
               <Route path="/share/:token" element={<SharedTicket />} />
+              <Route path="/ticket/:ticketNumber" element={
+                <AppLayout>
+                  <div className="animate-fade-in">
+                    <ProtectedRoute>
+                      <TicketPage />
+                    </ProtectedRoute>
+                  </div>
+                </AppLayout>
+              } />
               <Route path="/" element={<Index />} />
               <Route path="/dashboard" element={
                 <AppLayout>
