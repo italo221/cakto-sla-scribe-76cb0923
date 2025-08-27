@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -18,14 +18,55 @@ export const usePermissions = () => {
   const [userSetores, setUserSetores] = useState<UserSetor[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Cache global para evitar múltiplas chamadas simultâneas
+  const cacheRef = useRef<{
+    data: UserSetor[] | null;
+    loading: boolean;
+    lastFetch: number;
+  }>({
+    data: null,
+    loading: false,
+    lastFetch: 0
+  });
+
   useEffect(() => {
     if (user) {
       fetchUserSetores();
+    } else {
+      setUserSetores([]);
+      setLoading(false);
     }
-  }, [user]);
+  }, [user?.id]); // Mudança: usar user.id ao invés de user inteiro
 
   const fetchUserSetores = async () => {
     if (!user) return;
+
+    const now = Date.now();
+    const CACHE_DURATION = 5000; // 5 segundos de cache
+
+    // Se há dados em cache e são recentes, usar cache
+    if (cacheRef.current.data && (now - cacheRef.current.lastFetch) < CACHE_DURATION) {
+      setUserSetores(cacheRef.current.data);
+      setLoading(false);
+      return;
+    }
+
+    // Se já está carregando, aguardar
+    if (cacheRef.current.loading) {
+      const checkCache = () => {
+        if (!cacheRef.current.loading && cacheRef.current.data) {
+          setUserSetores(cacheRef.current.data);
+          setLoading(false);
+        } else {
+          setTimeout(checkCache, 100);
+        }
+      };
+      checkCache();
+      return;
+    }
+
+    // Marcar como carregando
+    cacheRef.current.loading = true;
 
     try {
       const { data, error } = await supabase
@@ -37,11 +78,21 @@ export const usePermissions = () => {
         .eq('user_id', user.id);
 
       if (error) throw error;
-      setUserSetores(data || []);
+
+      const setoresData = data || [];
+      
+      // Atualizar cache
+      cacheRef.current.data = setoresData;
+      cacheRef.current.lastFetch = now;
+      
+      setUserSetores(setoresData);
     } catch (error) {
       console.error('Erro ao buscar setores do usuário:', error);
+      // Em caso de erro, não atualizar o cache para tentar novamente
+      setUserSetores([]);
     } finally {
       setLoading(false);
+      cacheRef.current.loading = false;
     }
   };
 

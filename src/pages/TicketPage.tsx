@@ -41,25 +41,29 @@ export const TicketPage: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
+      console.log('Carregando ticket:', ticketNumber);
+
       const { data, error } = await supabase
         .from('sla_demandas')
         .select(`
           *,
-          setor:setores(nome),
-          assignee:profiles!sla_demandas_assignee_user_id_fkey(nome_completo, email)
+          setor:setores(nome)
         `)
         .eq('ticket_number', ticketNumber)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          setError('Ticket não encontrado.');
-        } else {
-          throw error;
-        }
+        console.error('Erro na consulta do ticket:', error);
+        setError('Erro ao carregar o ticket. Tente novamente.');
         return;
       }
 
+      if (!data) {
+        setError('Ticket não encontrado.');
+        return;
+      }
+
+      console.log('Ticket carregado:', data);
       setTicket(data);
     } catch (error) {
       console.error('Erro ao carregar ticket:', error);
