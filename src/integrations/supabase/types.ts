@@ -1165,6 +1165,89 @@ export type Database = {
           },
         ]
       }
+      ticket_external_link_views: {
+        Row: {
+          id: string
+          ip_address: unknown | null
+          link_id: string
+          success: boolean
+          user_agent: string | null
+          viewed_at: string
+        }
+        Insert: {
+          id?: string
+          ip_address?: unknown | null
+          link_id: string
+          success?: boolean
+          user_agent?: string | null
+          viewed_at?: string
+        }
+        Update: {
+          id?: string
+          ip_address?: unknown | null
+          link_id?: string
+          success?: boolean
+          user_agent?: string | null
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_external_link_views_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_external_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_external_links: {
+        Row: {
+          config: Json | null
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          has_password: boolean
+          id: string
+          include_attachments: boolean
+          last_viewed_at: string | null
+          password_hash: string | null
+          revoked_at: string | null
+          ticket_id: string
+          token: string
+          view_count: number
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          has_password?: boolean
+          id?: string
+          include_attachments?: boolean
+          last_viewed_at?: string | null
+          password_hash?: string | null
+          revoked_at?: string | null
+          ticket_id: string
+          token: string
+          view_count?: number
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          has_password?: boolean
+          id?: string
+          include_attachments?: boolean
+          last_viewed_at?: string | null
+          password_hash?: string | null
+          revoked_at?: string | null
+          ticket_id?: string
+          token?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
       ticket_links: {
         Row: {
           created_at: string
@@ -1420,6 +1503,10 @@ export type Database = {
         Args: { ticket_id: string }
         Returns: boolean
       }
+      generate_share_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_ticket_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1451,6 +1538,15 @@ export type Database = {
       }
       is_super_admin: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      log_external_link_access: {
+        Args: {
+          p_ip_address?: unknown
+          p_success?: boolean
+          p_token: string
+          p_user_agent?: string
+        }
         Returns: boolean
       }
       log_sla_action: {
@@ -1501,6 +1597,16 @@ export type Database = {
       user_has_setor_access: {
         Args: { setor_uuid: string; user_uuid?: string }
         Returns: boolean
+      }
+      validate_external_link: {
+        Args: { p_token: string }
+        Returns: {
+          has_password: boolean
+          include_attachments: boolean
+          password_hash: string
+          ticket_id: string
+          view_count: number
+        }[]
       }
     }
     Enums: {
