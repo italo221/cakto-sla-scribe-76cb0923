@@ -582,17 +582,25 @@ export default function Inbox() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input placeholder="Buscar tickets (títulos, solicitantes, setores...)" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onFocus={() => setShowSuggestions(searchTerm.length >= 2 && searchSuggestions.length > 0)} onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} className="pl-10 bg-background text-foreground border-border focus:border-primary" />
+              
+              {/* Dropdown de sugestões de busca */}
+              {showSuggestions && searchSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                  {searchSuggestions.map((suggestion, index) => (
+                    <div 
+                      key={index} 
+                      className="px-3 py-2 hover:bg-accent cursor-pointer text-sm" 
+                      onClick={() => {
+                        setSearchTerm(suggestion);
+                        setShowSuggestions(false);
+                      }}
+                    >
+                      {suggestion}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            
-            {/* Dropdown de sugestões de busca */}
-            {showSuggestions && searchSuggestions.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
-                {searchSuggestions.map((suggestion, index) => <div key={index} className="px-3 py-2 hover:bg-accent cursor-pointer text-sm" onClick={() => {
-              setSearchTerm(suggestion);
-              setShowSuggestions(false);
-            }}>
-                    {suggestion}
-                  </div>)}
-              </div>}
             
             <div className="flex gap-2 flex-wrap">
               <Select value={setorFilter} onValueChange={setSetorFilter}>
