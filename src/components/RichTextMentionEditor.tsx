@@ -190,15 +190,43 @@ export default function RichTextMentionEditor({
     const queryEndIndex = afterAt.indexOf('@') === 0 ? 1 + mentionQuery.length : mentionQuery.length;
     const afterQuery = afterAt.substring(queryEndIndex);
     
-    // Criar menção com dados estruturados para trigger detectar
-    const mentionSpan = `<span class="mention-highlight" data-user-id="${selectedUser.user_id}" data-user-name="${selectedUser.nome_completo}">@${selectedUser.nome_completo}</span>`;
+    // Criar menção com dados estruturados e adicionar espaço com formatação normal
+    const mentionSpan = `<span class="mention-highlight" data-user-id="${selectedUser.user_id}" data-user-name="${selectedUser.nome_completo}">@${selectedUser.nome_completo}</span>&nbsp;`;
     
-    const newValue = beforeAt + mentionSpan + ' ' + afterQuery;
+    const newValue = beforeAt + mentionSpan + afterQuery;
     onChange(newValue);
     
     setShowMentions(false);
     setMentionQuery('');
     setLastAtPosition(-1);
+    
+    // Posicionar cursor após a menção para evitar herdar formatação
+    setTimeout(() => {
+      if (editorRef.current) {
+        const editor = editorRef.current.querySelector('[contenteditable]') as HTMLElement;
+        if (editor) {
+          editor.focus();
+          
+          // Encontrar o span da menção recém-inserida e posicionar cursor após ele
+          const mentionSpans = editor.querySelectorAll('span[data-user-id]');
+          const lastMentionSpan = mentionSpans[mentionSpans.length - 1];
+          
+          if (lastMentionSpan) {
+            const range = document.createRange();
+            const selection = window.getSelection();
+            
+            // Posicionar cursor após o span da menção
+            range.setStartAfter(lastMentionSpan);
+            range.collapse(true);
+            
+            if (selection) {
+              selection.removeAllRanges();
+              selection.addRange(range);
+            }
+          }
+        }
+      }
+    }, 50);
   };
 
   // Navegação por teclado
