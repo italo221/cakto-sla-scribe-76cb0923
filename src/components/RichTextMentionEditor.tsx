@@ -60,57 +60,70 @@ export default function RichTextMentionEditor({
 
   // Detectar @ no texto
   const handleTextChange = (newValue: string) => {
-    console.log('🔍 RichTextMentionEditor - handleTextChange:', { 
-      newValue: newValue.substring(0, 100) + (newValue.length > 100 ? '...' : ''),
-      valueLength: newValue.length,
-      user: user?.email 
-    });
     onChange(newValue);
     
     // Trabalhar direto com o texto visível do editor
     let textContent = '';
     if (editorRef.current) {
       textContent = editorRef.current.textContent || editorRef.current.innerText || '';
-      console.log('🔍 Texto extraído diretamente do DOM:', { 
-        textContent: textContent.substring(0, 100) + (textContent.length > 100 ? '...' : ''),
-        contentLength: textContent.length
-      });
     } else {
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = newValue;
       textContent = tempDiv.textContent || tempDiv.innerText || '';
-      console.log('🔍 Texto extraído via tempDiv (fallback):', { 
-        textContent: textContent.substring(0, 100) + (textContent.length > 100 ? '...' : ''),
-        contentLength: textContent.length
-      });
+    }
+    
+    // Se o valor está vazio ou só tem BR, limpar tudo
+    if (!newValue || newValue === '<br>' || newValue === '<p></p>' || newValue.trim() === '') {
+      setShowMentions(false);
+      setMentionQuery('');
+      setLastAtPosition(-1);
+      setSelectedIndex(0);
+      return;
     }
     
     const lastAtIndex = textContent.lastIndexOf('@');
-    console.log('🔍 Último @ encontrado na posição:', lastAtIndex);
     
     if (lastAtIndex !== -1) {
+      // Verificar se o @ está dentro de uma menção válida (span com data-user-id)
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = newValue;
+      
+      // Buscar spans com data-user-id
+      const mentionSpans = tempDiv.querySelectorAll('span[data-user-id]');
+      let isInValidMention = false;
+      
+      mentionSpans.forEach(span => {
+        const spanText = span.textContent || '';
+        const spanStart = textContent.indexOf(spanText);
+        const spanEnd = spanStart + spanText.length;
+        
+        if (lastAtIndex >= spanStart && lastAtIndex < spanEnd) {
+          isInValidMention = true;
+        }
+      });
+      
+      // Se o @ está em uma menção válida, não abrir dropdown
+      if (isInValidMention) {
+        setShowMentions(false);
+        setMentionQuery('');
+        setLastAtPosition(-1);
+        setSelectedIndex(0);
+        return;
+      }
+      
       // Pegar o token imediatamente após o "@" até espaço/quebra
       const afterAtRaw = textContent.substring(lastAtIndex + 1);
-      console.log('🔍 Texto após @ (RAW):', { 
-        afterAt: JSON.stringify(afterAtRaw), 
-        length: afterAtRaw.length,
-        chars: afterAtRaw.split('').map(c => c.charCodeAt(0))
-      });
 
       // Extrair apenas o primeiro token (até espaço ou quebra de linha)
       let token = afterAtRaw.split(/\s|\n/)[0] ?? '';
 
-      // Remover artefatos visuais que alguns editores inserem (ex: "A↑A↓" no fim)
-      // Padrão: letra opcional + seta para cima + letra opcional + seta para baixo no FINAL do token
+      // Remover artefatos visuais que alguns editores inserem
       token = token.replace(/[A-Za-z]?\u2191[A-Za-z]?\u2193$/, '');
 
       // Sanitizar para manter apenas caracteres relevantes para nomes/emails
-      // Letras (inclui acentos), números, ponto, underscore, hífen, mais
       const sanitized = token.replace(/[^\p{L}\p{N}._+\-]/gu, '');
 
-      console.log('🔍 Token sanitizado para busca de menções:', { token, sanitized });
-
-      // Mostrar dropdown mesmo quando sanitized = '' (caso digite apenas "@")
+      // Mostrar dropdown apenas se não for uma menção completa e válida
       setLastAtPosition(lastAtIndex);
       setMentionQuery(sanitized);
       setShowMentions(true);
@@ -122,14 +135,12 @@ export default function RichTextMentionEditor({
         setMentionPosition({ top: rect.bottom + 5, left: rect.left + 10 });
       }
 
-      // Buscar usuários com a query sanitizada ('' lista até 50)
-      console.log('🔍 Chamando searchUsers com query (sanitized):', JSON.stringify(sanitized));
+      // Buscar usuários com a query sanitizada
       searchUsers(sanitized);
       return;
     }
     
     // Sem "@" válido no texto: limpar estado de menções
-    console.log('🔍 Limpando estado de menções - não há @ válido');
     setShowMentions(false);
     setMentionQuery('');
     setLastAtPosition(-1);
