@@ -4,11 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TagChipsPicker } from "@/components/ui/tag-chips-picker";
+import { TeamTagSelector } from "@/components/ui/team-tag-selector";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useTags } from "@/hooks/useTags";
+
 import { supabase } from "@/integrations/supabase/client";
 import SetorValidationAlert from "@/components/SetorValidationAlert";
 import FileUploader from "@/components/FileUploader";
@@ -80,7 +80,7 @@ const perguntasPorSetor = {
 export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCreatorProps) {
   const { user } = useAuth();
   const { canCreateTicket, getSetorValidationMessage } = usePermissions();
-  const { addTagToHistory } = useTags();
+  
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -324,8 +324,6 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
         console.warn('Erro ao persistir anexos:', attachError);
       }
 
-      // Adicionar novas tags ao histórico
-      selectedTags.forEach(tag => addTagToHistory(tag));
 
       setStep('complete');
       toast({
@@ -579,18 +577,17 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
             </p>
           </div>
 
-          {/* Tags */}
+          {/* Tags Organizadas por Time */}
           <div>
-            <label className="text-sm font-medium">Tags</label>
-            <TagChipsPicker
-              selected={selectedTags}
-              onChange={setSelectedTags}
-              maxSelected={5}
-              maxVisible={50}
-              placeholder="Busque uma tag ou crie e pressione Enter"
+            <TeamTagSelector
+              selectedTags={selectedTags}
+              onTagsChange={setSelectedTags}
+              placeholder="Selecione tags para categorizar o ticket..."
+              maxTags={5}
+              allowCreateTag={true}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Adicione tags para facilitar a organização e busca do ticket
+              Selecione primeiro um time, depois escolha as tags apropriadas para categorizar este ticket
             </p>
             {errors.tags && <p className="text-sm text-destructive mt-1">{errors.tags}</p>}
           </div>
