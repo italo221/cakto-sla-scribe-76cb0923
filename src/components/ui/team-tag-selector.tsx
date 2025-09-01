@@ -67,7 +67,11 @@ export const TeamTagSelector: React.FC<TeamTagSelectorProps> = ({
       return getAllAvailableTags();
     } else {
       // Modo team específico: mostrar apenas tags deste team + globais
-      return organizedTags.map(tag => tag.name);
+      // Filtrar apenas tags do team selecionado e globais
+      const teamTags = organizedTags.filter(tag => 
+        tag.team_id === selectedTeamId || tag.is_global
+      ).map(tag => tag.name);
+      return teamTags;
     }
   }, [selectedTeamId, organizedTags, getAllAvailableTags]);
 
@@ -181,10 +185,10 @@ export const TeamTagSelector: React.FC<TeamTagSelectorProps> = ({
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-full p-0" align="start">
-            <Command>
-              <CommandInput placeholder="Buscar time..." />
-              <CommandList>
+          <PopoverContent className="w-full p-0 bg-popover border shadow-md z-50" align="start">
+            <Command className="bg-popover">
+              <CommandInput placeholder="Buscar time..." className="bg-popover" />
+              <CommandList className="bg-popover">
                 <CommandEmpty>Nenhum time encontrado.</CommandEmpty>
                 <CommandGroup>
                   {teams.map((team) => (
@@ -192,6 +196,7 @@ export const TeamTagSelector: React.FC<TeamTagSelectorProps> = ({
                       key={team.id}
                       value={team.name}
                       onSelect={() => handleSelectTeam(team.id)}
+                      className="hover:bg-accent hover:text-accent-foreground cursor-pointer"
                     >
                       <Check
                         className={cn(
