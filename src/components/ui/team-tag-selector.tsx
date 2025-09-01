@@ -67,11 +67,13 @@ export const TeamTagSelector: React.FC<TeamTagSelectorProps> = ({
       return getAllAvailableTags();
     } else {
       // Modo team específico: mostrar apenas tags deste team + globais
-      // Filtrar apenas tags do team selecionado e globais
-      const teamTags = organizedTags.filter(tag => 
+      const teamSpecificTags = organizedTags.filter(tag => 
         tag.team_id === selectedTeamId || tag.is_global
-      ).map(tag => tag.name);
-      return teamTags;
+      );
+      
+      // Deduplificar por nome e retornar apenas os nomes
+      const uniqueTagNames = [...new Set(teamSpecificTags.map(tag => tag.name))];
+      return uniqueTagNames.sort();
     }
   }, [selectedTeamId, organizedTags, getAllAvailableTags]);
 
