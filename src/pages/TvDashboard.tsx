@@ -100,6 +100,8 @@ export default function TvDashboard() {
     organizedTags.forEach(tag => {
       map.set(tag.name.toLowerCase().trim(), tag);
     });
+    console.log('Tags organizadas carregadas:', organizedTags.length, organizedTags);
+    console.log('Mapa de tags criado:', Array.from(map.entries()));
     return map;
   }, [organizedTags]);
 
@@ -315,6 +317,8 @@ export default function TvDashboard() {
         // Buscar informações de time para a tag
         const tagWithTeam = tagTeamMap.get(tag) || { name: tag, teamName: null, team_id: null };
         const formattedTagName = formatTagLabel(tagWithTeam);
+        
+        console.log(`Tag processada: "${tag}" | Encontrada no mapa: ${tagTeamMap.has(tag)} | Formatada: "${formattedTagName}"`);
         
         return {
           tag,
