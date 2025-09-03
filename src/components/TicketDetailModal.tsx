@@ -1011,14 +1011,17 @@ const toggleCommentsFocusMode = () => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-4">
-          <div className="flex items-center justify-between">
-            {!isCommentsFocusMode && (
-              <DialogTitle className="text-xl font-bold">
+          {/* Título do ticket em linha própria */}
+          {!isCommentsFocusMode && (
+            <div className="w-full">
+              <DialogTitle className="text-xl font-bold break-words">
                 {currentSLA.ticket_number || `#${currentSLA.id.slice(0, 8)}`} - {currentSLA.titulo}
               </DialogTitle>
-            )}
-            
-            <div className="flex items-center gap-3 mr-4">
+            </div>
+          )}
+          
+          {/* Botões de ação em linha separada */}
+          <div className="flex items-center justify-end gap-3 flex-wrap">
               {/* Botão de Editar */}
               {canEditTicket(currentSLA as any) && !isCommentsFocusMode && (
                 <Button
@@ -1150,9 +1153,8 @@ const toggleCommentsFocusMode = () => {
                     variant="outline"
                     size="sm"
                   />
-                </>
-              )}
-            </div>
+                 </>
+               )}
           </div>
 
             {!isCommentsFocusMode && (
