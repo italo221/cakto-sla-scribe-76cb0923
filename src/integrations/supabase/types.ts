@@ -512,54 +512,6 @@ export type Database = {
         }
         Relationships: []
       }
-      organized_tags: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          is_global: boolean
-          name: string
-          sector_id: string | null
-          team_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_global?: boolean
-          name: string
-          sector_id?: string | null
-          team_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_global?: boolean
-          name?: string
-          sector_id?: string | null
-          team_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organized_tags_sector_id_fkey"
-            columns: ["sector_id"]
-            isOneToOne: false
-            referencedRelation: "setores"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organized_tags_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "setores"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       permissoes_cargo: {
         Row: {
           cargo_id: string
@@ -1563,23 +1515,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string[]
       }
-      get_organized_tags: {
-        Args: {
-          p_include_global?: boolean
-          p_sector_id?: string
-          p_team_id?: string
-        }
-        Returns: {
-          created_at: string
-          id: string
-          is_global: boolean
-          name: string
-          sector_id: string
-          sector_name: string
-          team_id: string
-          team_name: string
-        }[]
-      }
       get_user_stats: {
         Args: { user_email: string }
         Returns: {
@@ -1633,10 +1568,6 @@ export type Database = {
           nome_completo: string
           user_id: string
         }[]
-      }
-      migrate_existing_tags_to_organized: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
       }
       pin_ticket: {
         Args: { p_team_id: string; p_ticket_id: string }

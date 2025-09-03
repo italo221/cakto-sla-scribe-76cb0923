@@ -5,9 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { TeamTagSelector } from "@/components/ui/team-tag-selector";
+import { TagInput } from "@/components/ui/tag-input";
 import { useToast } from "@/hooks/use-toast";
-
+import { useTags } from "@/hooks/useTags";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -41,7 +41,7 @@ interface TicketEditModalProps {
 export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: TicketEditModalProps) {
   const { user } = useAuth();
   const { canEditTicket, getSetorValidationMessage } = usePermissions();
-  
+  const { allTags, addTagToHistory } = useTags();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -136,6 +136,8 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         updated_at: new Date().toISOString()
       };
 
+      // Adicionar novas tags ao histórico
+      selectedTags.forEach(tag => addTagToHistory(tag));
 
       const { error } = await supabase
         .from('sla_demandas')
@@ -325,18 +327,18 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
             />
           </div>
 
-          {/* Tags Organizadas por Time */}
+          {/* Tags */}
           <div>
             <Label>Tags</Label>
-            <TeamTagSelector
-              selectedTags={selectedTags}
+            <TagInput
+              tags={selectedTags}
               onTagsChange={setSelectedTags}
-              placeholder="Selecione tags para categorizar o ticket..."
+              suggestions={allTags}
+              placeholder="Digite uma tag e pressione Enter"
               maxTags={5}
-              allowCreateTag={true}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Selecione primeiro um time, depois escolha as tags apropriadas para categorizar este ticket
+              Adicione tags para facilitar a organização e busca do ticket
             </p>
           </div>
 

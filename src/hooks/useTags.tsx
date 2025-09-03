@@ -12,20 +12,6 @@ export const useTags = () => {
   const fetchAllTags = async () => {
     try {
       setLoading(true);
-      
-      // Primeiro tentar buscar tags organizadas
-      const { data: organizedTags, error: organizedError } = await supabase
-        .rpc('get_organized_tags', { 
-          p_team_id: null, 
-          p_include_global: true 
-        });
-
-      let organizedTagNames: string[] = [];
-      if (!organizedError && organizedTags) {
-        organizedTagNames = organizedTags.map((tag: any) => tag.name);
-      }
-
-      // Buscar tags dos tickets (sistema legado)
       const [ticketsRes, hiddenRes] = await Promise.all([
         supabase.from('sla_demandas').select('tags').not('tags', 'is', null),
         supabase.rpc('get_hidden_tags')
@@ -42,28 +28,22 @@ export const useTags = () => {
       const hiddenSet = new Set(hiddenArray.map(t => (t || '').trim().toLowerCase()));
 
       // Extrair todas as tags únicas dos tickets
-      const legacyTagsSet = new Set(DEFAULT_TAGS.map(t => t.trim().toLowerCase()));
+      const tagsSet = new Set(DEFAULT_TAGS.map(t => t.trim().toLowerCase()));
       ticketsRes.data?.forEach((ticket) => {
         if (ticket.tags && Array.isArray(ticket.tags)) {
           ticket.tags.forEach((tag: string) => {
             const clean = (tag || '').trim().toLowerCase();
             if (clean && !hiddenSet.has(clean)) {
-              legacyTagsSet.add(clean);
+              tagsSet.add(clean);
             }
           });
         }
       });
 
       // Remover tags padrão que estejam ocultas
-      hiddenSet.forEach((t) => legacyTagsSet.delete(t));
+      hiddenSet.forEach((t) => tagsSet.delete(t));
 
-      // Combinar tags organizadas + legadas, priorizando organizadas
-      const allTagsSet = new Set([
-        ...organizedTagNames,
-        ...Array.from(legacyTagsSet)
-      ]);
-
-      setAllTags(Array.from(allTagsSet).sort());
+      setAllTags(Array.from(tagsSet).sort());
     } catch (error) {
       console.error('Erro ao buscar tags:', error);
       // Manter tags padrão em caso de erro (sem ocultas)

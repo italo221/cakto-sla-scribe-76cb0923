@@ -22,7 +22,6 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { SharedTicket } from "./pages/SharedTicket";
 import { TicketPage } from "./pages/TicketPage";
-import TagDemo from "./pages/TagDemo";
 
 // Create query client outside component to prevent recreation
 const queryClient = new QueryClient({
@@ -132,15 +131,6 @@ function App() {
                   <div className="animate-fade-in">
                     <ProtectedRoute requireSuperAdmin>
                       <Customization />
-                    </ProtectedRoute>
-                  </div>
-                </AppLayout>
-              } />
-              <Route path="/tag-demo" element={
-                <AppLayout>
-                  <div className="animate-fade-in">
-                    <ProtectedRoute>
-                      <TagDemo />
                     </ProtectedRoute>
                   </div>
                 </AppLayout>
