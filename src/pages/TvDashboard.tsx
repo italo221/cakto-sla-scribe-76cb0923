@@ -5,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOptimizedTickets } from "@/hooks/useOptimizedTickets";
+import { useTags } from "@/hooks/useTags";
+import { formatTagLabel, TagWithTeam } from "@/utils/tagFormatting";
 import { useNavigate } from "react-router-dom";
 import {
   Activity,
@@ -41,6 +43,7 @@ interface TagAvgTimeData {
   avgSeconds: number;
   formatted: string;
   count: number;
+  formattedTagName?: string; // Nome formatado com time
 }
 
 interface Setor {
@@ -66,6 +69,7 @@ export default function TvDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { tickets, loading: ticketsLoading, reloadTickets } = useOptimizedTickets({ enableRealtime: true });
+  const { organizedTags, fetchOrganizedTags } = useTags();
 
   const [dateFilter, setDateFilter] = useState("30days");
   const [selectedSetor, setSelectedSetor] = useState<string>("all");
@@ -89,6 +93,15 @@ export default function TvDashboard() {
         return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     }
   };
+
+  // Criar mapa de tags organizadas para lookup rápido
+  const tagTeamMap = useMemo(() => {
+    const map = new Map<string, TagWithTeam>();
+    organizedTags.forEach(tag => {
+      map.set(tag.name.toLowerCase().trim(), tag);
+    });
+    return map;
+  }, [organizedTags]);
 
   const filteredTickets = useMemo(() => {
     let filtered = [...tickets];
@@ -298,12 +311,19 @@ export default function TvDashboard() {
         }
       };
 
-      let tagAvgArray = Object.entries(tagTimes).map(([tag, data]) => ({
-        tag,
-        avgSeconds: data.totalSeconds / data.count,
-        formatted: formatDuration(data.totalSeconds / data.count),
-        count: data.count
-      }));
+      let tagAvgArray = Object.entries(tagTimes).map(([tag, data]) => {
+        // Buscar informações de time para a tag
+        const tagWithTeam = tagTeamMap.get(tag) || { name: tag, teamName: null, team_id: null };
+        const formattedTagName = formatTagLabel(tagWithTeam);
+        
+        return {
+          tag,
+          avgSeconds: data.totalSeconds / data.count,
+          formatted: formatDuration(data.totalSeconds / data.count),
+          count: data.count,
+          formattedTagName
+        };
+      });
 
       tagAvgArray.sort((a, b) => b.avgSeconds - a.avgSeconds);
 
@@ -315,7 +335,7 @@ export default function TvDashboard() {
     } catch (error) {
       console.error('Erro ao carregar tempo médio por tag:', error);
     }
-  }, [dateFilter, selectedSetor, tagsFilter]);
+  }, [dateFilter, selectedSetor, tagsFilter, tagTeamMap]);
 
   const loadSetores = useCallback(async () => {
     try {
@@ -347,9 +367,10 @@ export default function TvDashboard() {
 
   const handleRefresh = useCallback(() => {
     reloadTickets();
+    fetchOrganizedTags(); // Atualizar informações das tags
     loadTagVolumeData();
     loadTagAvgTimeData();
-  }, [reloadTickets, loadTagVolumeData, loadTagAvgTimeData]);
+  }, [reloadTickets, fetchOrganizedTags, loadTagVolumeData, loadTagAvgTimeData]);
 
   // Auto-refresh a cada 60s
   useEffect(() => {
@@ -646,7 +667,7 @@ export default function TvDashboard() {
                         key={index} 
                         className="flex justify-between items-center p-2 bg-secondary/20 rounded text-sm"
                       >
-                        <span className="font-medium">#{item.tag}</span>
+                        <span className="font-medium">{item.formattedTagName || `#${item.tag}`}</span>
                         <span className="text-muted-foreground">
                           {item.formatted}
                         </span>
