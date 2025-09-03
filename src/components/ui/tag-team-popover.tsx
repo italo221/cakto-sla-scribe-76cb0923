@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import {
   Popover,
   PopoverContent,
@@ -29,7 +29,7 @@ interface TagTeamPopoverProps {
   currentTeamId?: string | null;
   currentTeamName?: string | null;
   onTeamUpdated: (teamId: string | null, teamName: string | null) => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function TagTeamPopover({
@@ -110,49 +110,47 @@ export function TagTeamPopover({
         <Command>
           <CommandInput placeholder="Buscar time..." />
           <CommandEmpty>Nenhum time encontrado.</CommandEmpty>
-          <CommandGroup>
-            {loading ? (
-              <div className="flex items-center justify-center p-4">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="ml-2 text-sm">Carregando times...</span>
-              </div>
-            ) : (
-              <>
+          {loading ? (
+            <div className="flex items-center justify-center p-4">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="ml-2 text-sm">Carregando times...</span>
+            </div>
+          ) : (
+            <CommandGroup>
+              <CommandItem
+                onSelect={() => handleTeamSelect(null)}
+                disabled={saving}
+              >
+                <div className="flex items-center">
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      !currentTeamId ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <span>Sem time</span>
+                </div>
+              </CommandItem>
+              {Array.isArray(teams) && teams.map((team) => (
                 <CommandItem
-                  onSelect={() => handleTeamSelect(null)}
+                  key={team.id}
+                  onSelect={() => handleTeamSelect(team.id)}
                   disabled={saving}
                 >
                   <div className="flex items-center">
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        !currentTeamId ? "opacity-100" : "opacity-0"
+                        currentTeamId === team.id ? "opacity-100" : "opacity-0"
                       )}
                     />
-                    <span>Sem time</span>
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>{team.nome}</span>
                   </div>
                 </CommandItem>
-                {teams.map((team) => (
-                  <CommandItem
-                    key={team.id}
-                    onSelect={() => handleTeamSelect(team.id)}
-                    disabled={saving}
-                  >
-                    <div className="flex items-center">
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          currentTeamId === team.id ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      <Users className="mr-2 h-4 w-4" />
-                      <span>{team.nome}</span>
-                    </div>
-                  </CommandItem>
-                ))}
-              </>
-            )}
-          </CommandGroup>
+              ))}
+            </CommandGroup>
+          )}
         </Command>
         {saving && (
           <div className="border-t p-2">

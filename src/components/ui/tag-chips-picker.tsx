@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, KeyboardEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTags } from "@/hooks/useTags";
@@ -51,11 +51,11 @@ export function TagChipsPicker({
 
   const filteredTags = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const base = organizedTags || [];
-    const list = q ? base.filter((t) => t.name.includes(q)) : base;
+    const base = Array.isArray(organizedTags) ? organizedTags : [];
+    const list = q ? base.filter((t) => t && t.name && t.name.includes(q)) : base;
     // Remover tags já selecionadas da lista sugerida (toggle UX)
     const withoutSelected = list.filter(
-      (t) => !normalizedSelected.includes((t.name || "").trim().toLowerCase())
+      (t) => t && t.name && !normalizedSelected.includes((t.name || "").trim().toLowerCase())
     );
     return withoutSelected.slice(0, maxVisible);
   }, [organizedTags, query, maxVisible, normalizedSelected]);
@@ -142,7 +142,7 @@ export function TagChipsPicker({
   }, [confirmTag, fetchAllTags, normalizedSelected, onChange, selected, toast]);
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
+    (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Enter") {
         e.preventDefault();
         addViaInput(query);
@@ -212,8 +212,10 @@ export function TagChipsPicker({
       <div className="flex flex-wrap gap-2 max-h-44 overflow-auto">
         {loading ? (
           <span className="text-sm text-muted-foreground">Carregando tags…</span>
-        ) : filteredTags.length > 0 ? (
+        ) : Array.isArray(filteredTags) && filteredTags.length > 0 ? (
           filteredTags.map((tagData) => {
+            if (!tagData || !tagData.name) return null;
+            
             const isActive = normalizedSelected.includes(tagData.name);
             const tagWithTeam = { ...tagData, ...getTagWithTeam(tagData.name) };
             const hasTeam = !!tagWithTeam.teamName;
@@ -250,7 +252,7 @@ export function TagChipsPicker({
                 </Button>
               </div>
             );
-          })
+          }).filter(Boolean)
         ) : (
           <span className="text-sm text-muted-foreground">Nenhuma tag encontrada.</span>
         )}

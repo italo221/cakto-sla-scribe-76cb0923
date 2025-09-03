@@ -29,16 +29,18 @@ export const useTags = () => {
 
       // Extrair todas as tags únicas dos tickets
       const tagsSet = new Set(DEFAULT_TAGS.map(t => t.trim().toLowerCase()));
-      ticketsRes.data?.forEach((ticket) => {
-        if (ticket.tags && Array.isArray(ticket.tags)) {
-          ticket.tags.forEach((tag: string) => {
-            const clean = (tag || '').trim().toLowerCase();
-            if (clean && !hiddenSet.has(clean)) {
-              tagsSet.add(clean);
-            }
-          });
-        }
-      });
+      if (ticketsRes.data && Array.isArray(ticketsRes.data)) {
+        ticketsRes.data.forEach((ticket) => {
+          if (ticket.tags && Array.isArray(ticket.tags)) {
+            ticket.tags.forEach((tag: string) => {
+              const clean = (tag || '').trim().toLowerCase();
+              if (clean && !hiddenSet.has(clean)) {
+                tagsSet.add(clean);
+              }
+            });
+          }
+        });
+      }
 
       // Criar tags organizadas (sem time por enquanto)
       const organized: TagWithTeam[] = Array.from(tagsSet).map(tag => ({
