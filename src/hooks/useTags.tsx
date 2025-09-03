@@ -131,7 +131,7 @@ export const useTags = () => {
           .insert({
             name: trimmedTag,
             is_global: true,
-            created_by: null // Tag global não tem criador específico
+            created_by: (await supabase.auth.getUser()).data.user?.id || null
           })
           .select()
           .single();
