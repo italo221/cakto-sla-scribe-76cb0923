@@ -60,22 +60,10 @@ export const TeamTagSelector: React.FC<TeamTagSelectorProps> = ({
     }
   }, [teams, selectedTeamId, showAllTags]);
 
-  // Determinar tags disponíveis baseado no team selecionado
+  // Sempre mostrar todas as tags disponíveis (formato original)
   const availableTags = useMemo(() => {
-    if (selectedTeamId === 'GERAL' || !selectedTeamId) {
-      // Modo GERAL: mostrar todas as tags (organizadas + legadas)
-      return getAllAvailableTags();
-    } else {
-      // Modo team específico: mostrar apenas tags deste team + globais
-      const teamSpecificTags = organizedTags.filter(tag => 
-        tag.team_id === selectedTeamId || tag.is_global
-      );
-      
-      // Deduplificar por nome e retornar apenas os nomes
-      const uniqueTagNames = [...new Set(teamSpecificTags.map(tag => tag.name))];
-      return uniqueTagNames.sort();
-    }
-  }, [selectedTeamId, organizedTags, getAllAvailableTags]);
+    return getAllAvailableTags();
+  }, [getAllAvailableTags]);
 
   // Filtrar tags baseado na busca
   const filteredTags = useMemo(() => {
