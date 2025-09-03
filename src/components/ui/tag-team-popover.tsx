@@ -5,15 +5,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Check, ChevronsUpDown, Users, Loader2 } from "lucide-react";
+import { Check, ChevronsUpDown, Users, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +36,7 @@ export function TagTeamPopover({
 }: TagTeamPopoverProps) {
   const [open, setOpen] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -49,6 +44,7 @@ export function TagTeamPopover({
   useEffect(() => {
     if (open) {
       loadTeams();
+      setSearchQuery("");
     }
   }, [open]);
 
@@ -73,6 +69,10 @@ export function TagTeamPopover({
       setLoading(false);
     }
   };
+
+  const filteredTeams = teams.filter(team => 
+    team.nome.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleTeamSelect = async (teamId: string | null) => {
     setSaving(true);
@@ -107,59 +107,86 @@ export function TagTeamPopover({
         {children}
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0">
-        <Command>
-          <CommandInput placeholder="Buscar time..." />
-          <CommandEmpty>Nenhum time encontrado.</CommandEmpty>
-          {loading ? (
-            <div className="flex items-center justify-center p-4">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="ml-2 text-sm">Carregando times...</span>
-            </div>
-          ) : (
-            <CommandGroup>
-              <CommandItem
-                onSelect={() => handleTeamSelect(null)}
-                disabled={saving}
-              >
-                <div className="flex items-center">
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      !currentTeamId ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <span>Sem time</span>
-                </div>
-              </CommandItem>
-              {Array.isArray(teams) && teams.map((team) => (
-                <CommandItem
-                  key={team.id}
-                  onSelect={() => handleTeamSelect(team.id)}
+        <div className="flex flex-col">
+          {/* Header with search */}
+          <div className="flex items-center border-b px-3">
+            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+            <Input
+              placeholder="Buscar time..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+          </div>
+
+          {/* Content */}
+          <div className="max-h-[300px] overflow-y-auto">
+            {loading ? (
+              <div className="flex items-center justify-center p-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="ml-2 text-sm">Carregando times...</span>
+              </div>
+            ) : (
+              <div className="p-1">
+                {/* Sem time option */}
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-auto p-2"
+                  onClick={() => handleTeamSelect(null)}
                   disabled={saving}
                 >
                   <div className="flex items-center">
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        currentTeamId === team.id ? "opacity-100" : "opacity-0"
+                        !currentTeamId ? "opacity-100" : "opacity-0"
                       )}
                     />
-                    <Users className="mr-2 h-4 w-4" />
-                    <span>{team.nome}</span>
+                    <span>Sem time</span>
                   </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
-        </Command>
-        {saving && (
-          <div className="border-t p-2">
-            <div className="flex items-center justify-center text-sm text-muted-foreground">
-              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-              Salvando...
-            </div>
+                </Button>
+
+                {/* Teams list */}
+                {filteredTeams.length === 0 && searchQuery ? (
+                  <div className="py-6 text-center text-sm text-muted-foreground">
+                    Nenhum time encontrado.
+                  </div>
+                ) : (
+                  filteredTeams.map((team) => (
+                    <Button
+                      key={team.id}
+                      variant="ghost"
+                      className="w-full justify-start h-auto p-2"
+                      onClick={() => handleTeamSelect(team.id)}
+                      disabled={saving}
+                    >
+                      <div className="flex items-center">
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            currentTeamId === team.id ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <Users className="mr-2 h-4 w-4" />
+                        <span>{team.nome}</span>
+                      </div>
+                    </Button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Footer */}
+          {saving && (
+            <div className="border-t p-2">
+              <div className="flex items-center justify-center text-sm text-muted-foreground">
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                Salvando...
+              </div>
+            </div>
+          )}
+        </div>
       </PopoverContent>
     </Popover>
   );
