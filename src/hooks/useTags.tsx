@@ -15,7 +15,17 @@ export const useTags = () => {
     try {
       setLoading(true);
       
-      // Primeiro buscar as tags dos tickets existentes
+      // Buscar tags organizadas com informações de time
+      const { data: organizedData, error: organizedError } = await supabase
+        .from('organized_tags')
+        .select(`
+          id,
+          name,
+          team_id,
+          setores!left(nome)
+        `);
+
+      // Buscar todas as tags dos tickets para garantir que não perdemos nenhuma
       const ticketsRes = await supabase.from('sla_demandas').select('tags').not('tags', 'is', null);
       const hiddenRes = await supabase.rpc('get_hidden_tags');
 
@@ -28,33 +38,58 @@ export const useTags = () => {
       const hiddenSet = new Set(hiddenArray.map(t => (t || '').trim().toLowerCase()));
 
       // Extrair todas as tags únicas dos tickets
-      const tagsSet = new Set(DEFAULT_TAGS.map(t => t.trim().toLowerCase()));
+      const tagsFromTickets = new Set<string>();
       if (ticketsRes.data && Array.isArray(ticketsRes.data)) {
         ticketsRes.data.forEach((ticket) => {
           if (ticket.tags && Array.isArray(ticket.tags)) {
             ticket.tags.forEach((tag: string) => {
               const clean = (tag || '').trim().toLowerCase();
               if (clean && !hiddenSet.has(clean)) {
-                tagsSet.add(clean);
+                tagsFromTickets.add(clean);
               }
             });
           }
         });
       }
 
-      // Criar tags organizadas (sem time por enquanto)
-      const organized: TagWithTeam[] = Array.from(tagsSet).map(tag => ({
-        name: tag,
+      // Adicionar tags padrão
+      DEFAULT_TAGS.forEach(tag => tagsFromTickets.add(tag.toLowerCase().trim()));
+
+      // Criar mapa de tags organizadas
+      const organizedMap = new Map<string, { teamId: string | null; teamName: string | null }>();
+      if (organizedData && Array.isArray(organizedData)) {
+        organizedData.forEach((tag: any) => {
+          if (!hiddenSet.has(tag.name.toLowerCase().trim())) {
+            organizedMap.set(tag.name.toLowerCase().trim(), {
+              teamId: tag.team_id,
+              teamName: tag.setores?.nome || null
+            });
+          }
+        });
+      }
+
+      // Criar lista final de tags organizadas
+      const organized: TagWithTeam[] = Array.from(tagsFromTickets).map(tagName => {
+        const organizedInfo = organizedMap.get(tagName);
+        return {
+          name: tagName,
+          teamName: organizedInfo?.teamName || null,
+          team_id: organizedInfo?.teamId || null,
+        };
+      });
+
+      setOrganizedTags(organized);
+      setAllTags(Array.from(tagsFromTickets).sort());
+    } catch (error) {
+      console.error('Erro ao buscar tags organizadas:', error);
+      // Fallback para tags básicas
+      const basicTags: TagWithTeam[] = DEFAULT_TAGS.map(tag => ({
+        name: tag.toLowerCase().trim(),
         teamName: null,
         team_id: null,
       }));
-
-      setOrganizedTags(organized);
-      setAllTags(Array.from(tagsSet).sort());
-    } catch (error) {
-      console.error('Erro ao buscar tags organizadas:', error);
+      setOrganizedTags(basicTags);
       setAllTags(DEFAULT_TAGS.map(t => t.trim().toLowerCase()).sort());
-      setOrganizedTags([]);
     } finally {
       setLoading(false);
     }

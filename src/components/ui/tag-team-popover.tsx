@@ -77,8 +77,27 @@ export function TagTeamPopover({
   const handleTeamSelect = async (teamId: string | null) => {
     setSaving(true);
     try {
-      // Por enquanto, apenas simular a atribuição localmente
-      // Em um cenário real, seria necessário ter uma estrutura de dados para mapear tags para teams
+      // Criar/atualizar a tag na tabela organized_tags
+      const { error } = await supabase.rpc('upsert_organized_tag', {
+        p_tag_name: tagName,
+        p_team_id: teamId
+      });
+
+      if (error) {
+        // Se a RPC não existir, usar SQL direto
+        const { error: sqlError } = await supabase
+          .from('organized_tags')
+          .upsert({
+            name: tagName.toLowerCase().trim(),
+            team_id: teamId,
+            is_global: !teamId
+          }, {
+            onConflict: 'name,team_id'
+          });
+        
+        if (sqlError) throw sqlError;
+      }
+
       const selectedTeam = teamId ? teams.find(t => t.id === teamId) : null;
       onTeamUpdated(teamId, selectedTeam?.nome || null);
       
@@ -94,6 +113,7 @@ export function TagTeamPopover({
       console.error('Erro ao atualizar time da tag:', error);
       toast({
         title: "Erro ao atualizar time",
+        description: "Não foi possível salvar a atribuição no banco de dados",
         variant: "destructive",
       });
     } finally {
