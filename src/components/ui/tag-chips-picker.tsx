@@ -92,16 +92,29 @@ export function TagChipsPicker({
 
   const handleTagTeamUpdate = useCallback((tagName: string, teamId: string | null, teamName: string | null) => {
     setTagTeamMap(prev => new Map(prev).set(tagName, { teamId, teamName }));
-  }, []);
+    // Recarregar tags organizadas para persistir mudanças
+    fetchOrganizedTags();
+  }, [fetchOrganizedTags]);
 
   const getTagWithTeam = useCallback((tagName: string): TagWithTeam => {
-    const teamInfo = tagTeamMap.get(tagName);
-    return {
+    // Primeiro tentar do mapa local (atualização em tempo real)
+    const localInfo = tagTeamMap.get(tagName);
+    if (localInfo) {
+      return {
+        name: tagName,
+        teamName: localInfo.teamName,
+        team_id: localInfo.teamId,
+      };
+    }
+    
+    // Depois buscar nas tags organizadas carregadas
+    const organizedTag = organizedTags.find(tag => tag.name === tagName);
+    return organizedTag || {
       name: tagName,
-      teamName: teamInfo?.teamName || null,
-      team_id: teamInfo?.teamId || null,
+      teamName: null,
+      team_id: null,
     };
-  }, [tagTeamMap]);
+  }, [tagTeamMap, organizedTags]);
 
   const requestDeleteTag = useCallback(
     (tag: string) => {

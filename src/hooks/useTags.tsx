@@ -15,17 +15,10 @@ export const useTags = () => {
     try {
       setLoading(true);
       
-      // Buscar tags organizadas com informações de time
-      const { data: organizedData, error: organizedError } = await supabase
-        .from('organized_tags')
-        .select(`
-          id,
-          name,
-          team_id,
-          setores!left(nome)
-        `);
-
-      // Buscar todas as tags dos tickets para garantir que não perdemos nenhuma
+      // Buscar atribuições de tags-times salvos
+      const { data: assignmentsData, error: assignmentsError } = await supabase.rpc('get_tag_team_assignments');
+      
+      // Buscar todas as tags dos tickets
       const ticketsRes = await supabase.from('sla_demandas').select('tags').not('tags', 'is', null);
       const hiddenRes = await supabase.rpc('get_hidden_tags');
 
@@ -55,26 +48,35 @@ export const useTags = () => {
       // Adicionar tags padrão
       DEFAULT_TAGS.forEach(tag => tagsFromTickets.add(tag.toLowerCase().trim()));
 
-      // Criar mapa de tags organizadas
-      const organizedMap = new Map<string, { teamId: string | null; teamName: string | null }>();
-      if (organizedData && Array.isArray(organizedData)) {
-        organizedData.forEach((tag: any) => {
-          if (!hiddenSet.has(tag.name.toLowerCase().trim())) {
-            organizedMap.set(tag.name.toLowerCase().trim(), {
-              teamId: tag.team_id,
-              teamName: tag.setores?.nome || null
-            });
-          }
-        });
+      // Processar atribuições salvas
+      const assignments = assignmentsData || {};
+      
+      // Buscar nomes dos times das atribuições
+      const teamIds = Object.values(assignments).filter(Boolean) as string[];
+      let teamsMap = new Map<string, string>();
+      
+      if (teamIds.length > 0) {
+        const { data: teamsData } = await supabase
+          .from('setores')
+          .select('id, nome')
+          .in('id', teamIds);
+        
+        if (teamsData) {
+          teamsData.forEach(team => {
+            teamsMap.set(team.id, team.nome);
+          });
+        }
       }
 
       // Criar lista final de tags organizadas
       const organized: TagWithTeam[] = Array.from(tagsFromTickets).map(tagName => {
-        const organizedInfo = organizedMap.get(tagName);
+        const teamId = assignments[tagName] || null;
+        const teamName = teamId ? teamsMap.get(teamId) || null : null;
+        
         return {
           name: tagName,
-          teamName: organizedInfo?.teamName || null,
-          team_id: organizedInfo?.teamId || null,
+          teamName,
+          team_id: teamId,
         };
       });
 

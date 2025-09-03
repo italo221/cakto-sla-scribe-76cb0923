@@ -77,26 +77,13 @@ export function TagTeamPopover({
   const handleTeamSelect = async (teamId: string | null) => {
     setSaving(true);
     try {
-      // Criar/atualizar a tag na tabela organized_tags
-      const { error } = await supabase.rpc('upsert_organized_tag', {
-        p_tag_name: tagName,
+      // Usar a nova função RPC para salvar atribuição
+      const { data, error } = await supabase.rpc('set_tag_team_assignment', {
+        p_tag_name: tagName.toLowerCase().trim(),
         p_team_id: teamId
       });
 
-      if (error) {
-        // Se a RPC não existir, usar SQL direto
-        const { error: sqlError } = await supabase
-          .from('organized_tags')
-          .upsert({
-            name: tagName.toLowerCase().trim(),
-            team_id: teamId,
-            is_global: !teamId
-          }, {
-            onConflict: 'name,team_id'
-          });
-        
-        if (sqlError) throw sqlError;
-      }
+      if (error) throw error;
 
       const selectedTeam = teamId ? teams.find(t => t.id === teamId) : null;
       onTeamUpdated(teamId, selectedTeam?.nome || null);
