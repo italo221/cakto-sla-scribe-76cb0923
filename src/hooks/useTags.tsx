@@ -18,20 +18,28 @@ export const useTags = () => {
       // Buscar atribuições de tags-times salvos
       const { data: assignmentsData, error: assignmentsError } = await supabase.rpc('get_tag_team_assignments');
       
-      // Buscar todas as tags dos tickets
-      const ticketsRes = await supabase.from('sla_demandas').select('tags').not('tags', 'is', null);
-      const hiddenRes = await supabase.rpc('get_hidden_tags');
+      // Buscar todas as tags dos tickets e da tabela organized_tags
+      const [ticketsRes, hiddenRes, organizedRes] = await Promise.all([
+        supabase.from('sla_demandas').select('tags').not('tags', 'is', null),
+        supabase.rpc('get_hidden_tags'),
+        supabase.from('organized_tags').select('name')
+      ]);
 
       if (ticketsRes.error) throw ticketsRes.error;
       if (hiddenRes.error) {
         console.warn('Falha ao obter hidden tags (seguindo sem ocultar):', hiddenRes.error);
       }
+      if (organizedRes.error) {
+        console.warn('Falha ao obter organized tags:', organizedRes.error);
+      }
 
       const hiddenArray: string[] = Array.isArray(hiddenRes.data) ? hiddenRes.data : [];
       const hiddenSet = new Set(hiddenArray.map(t => (t || '').trim().toLowerCase()));
 
-      // Extrair todas as tags únicas dos tickets
+      // Extrair todas as tags únicas dos tickets e organized_tags
       const tagsFromTickets = new Set<string>();
+      
+      // Tags dos tickets
       if (ticketsRes.data && Array.isArray(ticketsRes.data)) {
         ticketsRes.data.forEach((ticket) => {
           if (ticket.tags && Array.isArray(ticket.tags)) {
@@ -41,6 +49,16 @@ export const useTags = () => {
                 tagsFromTickets.add(clean);
               }
             });
+          }
+        });
+      }
+
+      // Tags da tabela organized_tags
+      if (organizedRes.data && Array.isArray(organizedRes.data)) {
+        organizedRes.data.forEach((tag) => {
+          const clean = (tag.name || '').trim().toLowerCase();
+          if (clean && !hiddenSet.has(clean)) {
+            tagsFromTickets.add(clean);
           }
         });
       }
@@ -103,10 +121,32 @@ export const useTags = () => {
   };
 
   // Adicionar uma nova tag ao histórico
-  const addTagToHistory = (newTag: string) => {
+  const addTagToHistory = async (newTag: string) => {
     const trimmedTag = newTag.trim().toLowerCase();
     if (trimmedTag && !allTags.includes(trimmedTag)) {
-      setAllTags(prev => [...prev, trimmedTag].sort());
+      try {
+        // Inserir a tag como global na tabela organized_tags
+        const { error } = await supabase
+          .from('organized_tags')
+          .insert({
+            name: trimmedTag,
+            is_global: true,
+            created_by: null // Tag global não tem criador específico
+          })
+          .select()
+          .single();
+
+        if (error && error.code !== '23505') { // Ignorar erro de duplicata
+          console.error('Erro ao salvar tag:', error);
+        } else {
+          // Atualizar estado local imediatamente
+          setAllTags(prev => [...prev, trimmedTag].sort());
+          // Recarregar tags organizadas para garantir consistência
+          await fetchOrganizedTags();
+        }
+      } catch (error) {
+        console.error('Erro ao adicionar tag:', error);
+      }
     }
   };
 

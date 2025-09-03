@@ -61,11 +61,11 @@ export function TagChipsPicker({
   }, [organizedTags, query, maxVisible, normalizedSelected]);
 
   const addViaInput = useCallback(
-    (tag: string) => {
+    async (tag: string) => {
       const raw = tag.trim().toLowerCase();
       if (!raw) return;
       if (!allTags.includes(raw)) {
-        addTagToHistory(raw);
+        await addTagToHistory(raw);
       }
       if (!normalizedSelected.includes(raw)) {
         if (!maxSelected || selected.length < maxSelected) {
@@ -78,13 +78,13 @@ export function TagChipsPicker({
   );
 
   const toggleTag = useCallback(
-    (tagName: string) => {
+    async (tagName: string) => {
       const t = tagName.trim().toLowerCase();
       const isSelected = normalizedSelected.includes(t);
       if (isSelected) {
         onChange(selected.filter((s) => s.trim().toLowerCase() !== t));
       } else {
-        addViaInput(t);
+        await addViaInput(t);
       }
     },
     [normalizedSelected, onChange, selected, addViaInput]
@@ -189,7 +189,7 @@ export function TagChipsPicker({
                     "rounded-full h-8 px-3 pr-8",
                     !hasTeam && "border-dashed border-muted-foreground/50"
                   )}
-                  onClick={() => toggleTag(tag)}
+                  onClick={() => void toggleTag(tag)}
                   aria-pressed
                 >
                   <span className="flex items-center gap-1">
@@ -243,7 +243,7 @@ export function TagChipsPicker({
                     "rounded-full h-8 px-3 pr-8",
                     !hasTeam && "border-dashed border-muted-foreground/50"
                   )}
-                  onClick={() => toggleTag(tagData.name)}
+                  onClick={() => void toggleTag(tagData.name)}
                   aria-pressed={isActive}
                 >
                   <span className="flex items-center gap-1">

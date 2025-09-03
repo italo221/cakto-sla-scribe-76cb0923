@@ -137,7 +137,7 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
       };
 
       // Adicionar novas tags ao histórico
-      selectedTags.forEach(tag => addTagToHistory(tag));
+      await Promise.all(selectedTags.map(tag => addTagToHistory(tag)));
 
       const { error } = await supabase
         .from('sla_demandas')

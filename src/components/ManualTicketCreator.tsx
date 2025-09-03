@@ -325,7 +325,7 @@ export default function ManualTicketCreator({ onTicketCreated }: ManualTicketCre
       }
 
       // Adicionar novas tags ao histórico
-      selectedTags.forEach(tag => addTagToHistory(tag));
+      await Promise.all(selectedTags.map(tag => addTagToHistory(tag)));
 
       setStep('complete');
       toast({
