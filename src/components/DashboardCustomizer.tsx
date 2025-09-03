@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -88,7 +88,7 @@ const presetSchemes: ColorScheme[] = [
   }
 ];
 
-export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({ isOpen, onOpenChange }) => {
+export const DashboardCustomizer = ({ isOpen, onOpenChange }: DashboardCustomizerProps) => {
   const { isSuperAdmin } = useAuth();
   const [currentColors, setCurrentColors] = useState(defaultColors.colors);
   const [selectedPreset, setSelectedPreset] = useState(0);
