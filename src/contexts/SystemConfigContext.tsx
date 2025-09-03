@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ColorData {
@@ -28,7 +28,7 @@ const SystemConfigContext = createContext<SystemConfigContextType | undefined>(u
 let globalConfig: SystemConfig | null = null;
 let isLoading = false;
 
-export const SystemConfigProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const SystemConfigProvider = ({ children }: { children: ReactNode }) => {
   const [config, setConfig] = useState<SystemConfig>({
     systemName: '',
     systemLogo: null,
