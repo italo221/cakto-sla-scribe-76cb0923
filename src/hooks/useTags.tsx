@@ -1,26 +1,26 @@
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
+import { TagWithTeam } from "@/utils/tagFormatting";
 
 // Tags pré-definidas iniciais
 const DEFAULT_TAGS = ['bug', 'conta bloqueada', 'duplicidade de CPF'];
 
 export const useTags = () => {
   const [allTags, setAllTags] = useState<string[]>(DEFAULT_TAGS);
+  const [organizedTags, setOrganizedTags] = useState<TagWithTeam[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Buscar todas as tags existentes no banco, filtrando as ocultas (catálogo)
-  const fetchAllTags = async () => {
+  // Buscar todas as tags organizadas (com informações de time)
+  const fetchOrganizedTags = async () => {
     try {
       setLoading(true);
-      const [ticketsRes, hiddenRes] = await Promise.all([
-        supabase.from('sla_demandas').select('tags').not('tags', 'is', null),
-        supabase.rpc('get_hidden_tags')
-      ]);
+      
+      // Primeiro buscar as tags dos tickets existentes
+      const ticketsRes = await supabase.from('sla_demandas').select('tags').not('tags', 'is', null);
+      const hiddenRes = await supabase.rpc('get_hidden_tags');
 
       if (ticketsRes.error) throw ticketsRes.error;
       if (hiddenRes.error) {
-        // Usuários não-admin podem não ter acesso a system_settings diretamente; a RPC usa SECURITY DEFINER
-        // Ainda assim, se falhar, seguimos sem ocultar nada
         console.warn('Falha ao obter hidden tags (seguindo sem ocultar):', hiddenRes.error);
       }
 
@@ -40,17 +40,27 @@ export const useTags = () => {
         }
       });
 
-      // Remover tags padrão que estejam ocultas
-      hiddenSet.forEach((t) => tagsSet.delete(t));
+      // Criar tags organizadas (sem time por enquanto)
+      const organized: TagWithTeam[] = Array.from(tagsSet).map(tag => ({
+        name: tag,
+        teamName: null,
+        team_id: null,
+      }));
 
+      setOrganizedTags(organized);
       setAllTags(Array.from(tagsSet).sort());
     } catch (error) {
-      console.error('Erro ao buscar tags:', error);
-      // Manter tags padrão em caso de erro (sem ocultas)
+      console.error('Erro ao buscar tags organizadas:', error);
       setAllTags(DEFAULT_TAGS.map(t => t.trim().toLowerCase()).sort());
+      setOrganizedTags([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Buscar todas as tags existentes no banco, filtrando as ocultas (catálogo) - mantido para compatibilidade
+  const fetchAllTags = async () => {
+    await fetchOrganizedTags();
   };
 
   // Adicionar uma nova tag ao histórico
@@ -104,14 +114,16 @@ export const useTags = () => {
   };
 
   useEffect(() => {
-    fetchAllTags();
+    fetchOrganizedTags();
   }, []);
 
   return {
     allTags,
+    organizedTags,
     loading,
     addTagToHistory,
     fetchAllTags,
+    fetchOrganizedTags,
     getTagStats
   };
 };

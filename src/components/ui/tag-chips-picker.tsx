@@ -1,12 +1,14 @@
-import React, { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTags } from "@/hooks/useTags";
 import { cn } from "@/lib/utils";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, Settings, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { formatTagLabel, TagWithTeam } from "@/utils/tagFormatting";
+import { TagTeamPopover } from "@/components/ui/tag-team-popover";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -34,11 +36,12 @@ export function TagChipsPicker({
   placeholder = "Buscar tags...",
   className,
 }: TagChipsPickerProps) {
-  const { allTags, addTagToHistory, loading, fetchAllTags } = useTags();
+  const { allTags, organizedTags, addTagToHistory, loading, fetchAllTags, fetchOrganizedTags } = useTags();
   const [query, setQuery] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmTag, setConfirmTag] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [tagTeamMap, setTagTeamMap] = useState<Map<string, { teamId: string | null; teamName: string | null }>>(new Map());
   const { toast } = useToast();
   const { isSuperAdmin } = useAuth();
   const normalizedSelected = useMemo(
@@ -48,14 +51,14 @@ export function TagChipsPicker({
 
   const filteredTags = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const base = allTags || [];
-    const list = q ? base.filter((t) => t.includes(q)) : base;
+    const base = organizedTags || [];
+    const list = q ? base.filter((t) => t.name.includes(q)) : base;
     // Remover tags já selecionadas da lista sugerida (toggle UX)
     const withoutSelected = list.filter(
-      (t) => !normalizedSelected.includes((t || "").trim().toLowerCase())
+      (t) => !normalizedSelected.includes((t.name || "").trim().toLowerCase())
     );
     return withoutSelected.slice(0, maxVisible);
-  }, [allTags, query, maxVisible, normalizedSelected]);
+  }, [organizedTags, query, maxVisible, normalizedSelected]);
 
   const addViaInput = useCallback(
     (tag: string) => {
@@ -75,8 +78,8 @@ export function TagChipsPicker({
   );
 
   const toggleTag = useCallback(
-    (tag: string) => {
-      const t = tag.trim().toLowerCase();
+    (tagName: string) => {
+      const t = tagName.trim().toLowerCase();
       const isSelected = normalizedSelected.includes(t);
       if (isSelected) {
         onChange(selected.filter((s) => s.trim().toLowerCase() !== t));
@@ -86,6 +89,19 @@ export function TagChipsPicker({
     },
     [normalizedSelected, onChange, selected, addViaInput]
   );
+
+  const handleTagTeamUpdate = useCallback((tagName: string, teamId: string | null, teamName: string | null) => {
+    setTagTeamMap(prev => new Map(prev).set(tagName, { teamId, teamName }));
+  }, []);
+
+  const getTagWithTeam = useCallback((tagName: string): TagWithTeam => {
+    const teamInfo = tagTeamMap.get(tagName);
+    return {
+      name: tagName,
+      teamName: teamInfo?.teamName || null,
+      team_id: teamInfo?.teamId || null,
+    };
+  }, [tagTeamMap]);
 
   const requestDeleteTag = useCallback(
     (tag: string) => {
@@ -146,19 +162,50 @@ export function TagChipsPicker({
 
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {selected.map((tag) => (
-            <Button
-              key={`selected-${tag}`}
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="rounded-full h-8 px-3"
-              onClick={() => toggleTag(tag)}
-              aria-pressed
-            >
-              {tag}
-            </Button>
-          ))}
+          {selected.map((tag) => {
+            const tagWithTeam = getTagWithTeam(tag);
+            const hasTeam = !!tagWithTeam.teamName;
+            
+            return (
+              <div key={`selected-${tag}`} className="relative group">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className={cn(
+                    "rounded-full h-8 px-3 pr-8",
+                    !hasTeam && "border-dashed border-muted-foreground/50"
+                  )}
+                  onClick={() => toggleTag(tag)}
+                  aria-pressed
+                >
+                  <span className="flex items-center gap-1">
+                    {formatTagLabel(tagWithTeam)}
+                    {!hasTeam && <AlertTriangle className="h-3 w-3 opacity-50" />}
+                  </span>
+                </Button>
+                <TagTeamPopover
+                  tagId={tag}
+                  tagName={tag}
+                  currentTeamId={tagWithTeam.team_id}
+                  currentTeamName={tagWithTeam.teamName}
+                  onTeamUpdated={(teamId, teamName) => handleTagTeamUpdate(tag, teamId, teamName)}
+                >
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="absolute top-1/2 -translate-y-1/2 right-1 h-5 w-5 rounded-full text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`Atribuir time à tag ${tag}`}
+                    title={`Atribuir time à tag ${tag}`}
+                  >
+                    <Settings className="h-3 w-3" />
+                  </Button>
+                </TagTeamPopover>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -166,29 +213,38 @@ export function TagChipsPicker({
         {loading ? (
           <span className="text-sm text-muted-foreground">Carregando tags…</span>
         ) : filteredTags.length > 0 ? (
-          filteredTags.map((tag) => {
-            const isActive = normalizedSelected.includes(tag);
+          filteredTags.map((tagData) => {
+            const isActive = normalizedSelected.includes(tagData.name);
+            const tagWithTeam = { ...tagData, ...getTagWithTeam(tagData.name) };
+            const hasTeam = !!tagWithTeam.teamName;
+            
             return (
-              <div key={tag} className="relative inline-block">
+              <div key={tagData.name} className="relative inline-block group">
                 <Button
                   type="button"
                   variant={isActive ? "secondary" : "outline"}
                   size="sm"
-                  className="rounded-full h-8 px-3 pr-8"
-                  onClick={() => toggleTag(tag)}
+                  className={cn(
+                    "rounded-full h-8 px-3 pr-8",
+                    !hasTeam && "border-dashed border-muted-foreground/50"
+                  )}
+                  onClick={() => toggleTag(tagData.name)}
                   aria-pressed={isActive}
                 >
-                  {tag}
+                  <span className="flex items-center gap-1">
+                    {formatTagLabel(tagWithTeam)}
+                    {!hasTeam && <AlertTriangle className="h-3 w-3 opacity-50" />}
+                  </span>
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon-sm"
                   className="absolute top-1/2 -translate-y-1/2 right-1 h-5 w-5 rounded-full text-muted-foreground hover:text-foreground"
-                  onClick={(e) => { e.stopPropagation(); requestDeleteTag(tag); }}
-                  disabled={deleting === tag}
-                  aria-label={`Excluir tag ${tag}`}
-                  title={`Excluir tag ${tag}`}
+                  onClick={(e) => { e.stopPropagation(); requestDeleteTag(tagData.name); }}
+                  disabled={deleting === tagData.name}
+                  aria-label={`Excluir tag ${tagData.name}`}
+                  title={`Excluir tag ${tagData.name}`}
                 >
                   <X className="h-3 w-3" />
                 </Button>
