@@ -1021,7 +1021,7 @@ const toggleCommentsFocusMode = () => {
           )}
           
           {/* Botões de ação em linha separada */}
-          <div className="flex items-center justify-end gap-3 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
               {/* Botão de Editar */}
               {canEditTicket(currentSLA as any) && !isCommentsFocusMode && (
                 <Button
