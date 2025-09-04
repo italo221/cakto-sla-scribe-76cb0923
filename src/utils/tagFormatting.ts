@@ -6,8 +6,8 @@ export interface TagWithTeam {
 }
 
 export function formatTagLabel(tag: TagWithTeam): string {
-  const team = (tag.teamName ?? "").trim();
-  const safeName = tag.name.trim();
+  const team = (tag.teamName ?? "").trim().toUpperCase();
+  const safeName = tag.name.trim().toUpperCase();
   
   if (team.length > 0) {
     return `#${team} - ${safeName}`;
