@@ -167,17 +167,25 @@ export default function TvDashboard() {
 
     const slaCompliance = resolvedTickets.length > 0 ? (withinSLA / resolvedTickets.length) * 100 : 0;
 
-    // Status distribution
+    // Status distribution - incluir atrasados e excluir fechados para modo TV
     const statusCount = filteredTickets.reduce((acc, ticket) => {
+      // Pular tickets fechados no modo TV
+      if (ticket.status === 'fechado') return acc;
+      
       acc[ticket.status] = (acc[ticket.status] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    const statusData = Object.entries(statusCount).map(([status, count]) => ({
-      name: status,
-      value: count,
-      color: STATUS_COLORS[status as keyof typeof STATUS_COLORS] || '#6b7280'
-    }));
+    // Adicionar categoria de atrasados
+    statusCount['atrasado'] = overdueTickets;
+
+    const statusData = Object.entries(statusCount)
+      .filter(([status]) => status !== 'fechado') // Garantir que fechado não apareça
+      .map(([status, count]) => ({
+        name: status,
+        value: count,
+        color: status === 'atrasado' ? '#dc2626' : STATUS_COLORS[status as keyof typeof STATUS_COLORS] || '#6b7280'
+      }));
 
     // Priority distribution
     const priorityCount = filteredTickets.reduce((acc, ticket) => {
