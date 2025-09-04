@@ -154,7 +154,11 @@ export default function RichTextMentionEditor({
     const editor = editorRef.current.querySelector('[contenteditable]') as HTMLElement;
     if (!editor) return;
     
-    // Obter o texto atual do editor
+    // Preservar o conteúdo atual e trabalhar com Range API
+    const selection = window.getSelection();
+    if (!selection) return;
+    
+    // Obter o texto atual para calcular posições
     const textContent = editor.textContent || editor.innerText || '';
     
     // Calcular posições para substituição
@@ -162,43 +166,69 @@ export default function RichTextMentionEditor({
     const afterAtWithQuery = textContent.substring(lastAtPosition + 1); // Remove o @
     const afterQuery = afterAtWithQuery.substring(mentionQuery.length); // Remove a query
     
-    // Criar o novo texto com a menção
-    const mentionText = `@${selectedUser.nome_completo}`;
-    const newTextContent = beforeAt + mentionText + ' ' + afterQuery;
+    // Criar um range que seleciona apenas o texto do @ até o final da query
+    const range = document.createRange();
     
-    // Limpar o editor e inserir o novo conteúdo
-    editor.innerHTML = '';
+    // Encontrar todos os nós de texto no editor
+    const walker = document.createTreeWalker(
+      editor,
+      NodeFilter.SHOW_TEXT,
+      null
+    );
     
-    // Criar fragmentos para cada parte
-    const fragment = document.createDocumentFragment();
+    let textPosition = 0;
+    let startNode: Text | null = null;
+    let endNode: Text | null = null;
+    let startOffset = 0;
+    let endOffset = 0;
     
-    // Texto antes da menção
-    if (beforeAt) {
-      fragment.appendChild(document.createTextNode(beforeAt));
+    // Encontrar nós de início e fim da seleção
+    while (walker.nextNode()) {
+      const node = walker.currentNode as Text;
+      const nodeText = node.textContent || '';
+      const nodeEnd = textPosition + nodeText.length;
+      
+      // Início do @ (nó e posição)
+      if (!startNode && nodeEnd > lastAtPosition) {
+        startNode = node;
+        startOffset = lastAtPosition - textPosition;
+      }
+      
+      // Final da query (nó e posição)
+      if (!endNode && nodeEnd >= lastAtPosition + 1 + mentionQuery.length) {
+        endNode = node;
+        endOffset = (lastAtPosition + 1 + mentionQuery.length) - textPosition;
+        break;
+      }
+      
+      textPosition += nodeText.length;
     }
     
-    // Criar span da menção (único wrapper)
+    if (!startNode || !endNode) return;
+    
+    // Selecionar o texto que será substituído (@ + query)
+    range.setStart(startNode, startOffset);
+    range.setEnd(endNode, endOffset);
+    
+    // Criar a menção
+    const mentionText = `@${selectedUser.nome_completo}`;
     const mentionSpan = document.createElement('span');
     mentionSpan.className = 'mention-highlight';
     mentionSpan.setAttribute('data-user-id', selectedUser.user_id);
     mentionSpan.setAttribute('data-user-name', selectedUser.nome_completo);
-    mentionSpan.setAttribute('contenteditable', 'false'); // Tornar a menção não editável
+    mentionSpan.setAttribute('contenteditable', 'false');
     mentionSpan.textContent = mentionText;
-    fragment.appendChild(mentionSpan);
     
-    // Adicionar espaço após a menção
+    // Deletar o conteúdo selecionado e inserir a menção
+    range.deleteContents();
+    range.insertNode(mentionSpan);
+    
+    // Inserir espaço após a menção
     const spaceNode = document.createTextNode(' ');
-    fragment.appendChild(spaceNode);
+    range.setStartAfter(mentionSpan);
+    range.insertNode(spaceNode);
     
-    // Texto após a menção
-    if (afterQuery) {
-      fragment.appendChild(document.createTextNode(afterQuery));
-    }
-    
-    // Inserir o fragmento no editor
-    editor.appendChild(fragment);
-    
-    // Normalizar o DOM para remover nós vazios
+    // Normalizar o DOM
     editor.normalize();
     
     // Atualizar o valor
@@ -210,26 +240,20 @@ export default function RichTextMentionEditor({
     setLastAtPosition(-1);
     setSelectedIndex(0);
     
-    // Posicionar cursor após o espaço da menção
+    // Posicionar cursor após o espaço
     setTimeout(() => {
       editor.focus();
       
-      const range = document.createRange();
-      const selection = window.getSelection();
+      const newRange = document.createRange();
+      const newSelection = window.getSelection();
       
-      if (selection && spaceNode.nextSibling) {
-        // Posicionar cursor após o espaço
-        range.setStart(spaceNode.nextSibling, 0);
-        range.collapse(true);
-      } else if (selection) {
-        // Se não há próximo nó, posicionar no final
-        range.selectNodeContents(editor);
-        range.collapse(false);
-      }
+      // Posicionar cursor após o espaço
+      newRange.setStartAfter(spaceNode);
+      newRange.collapse(true);
       
-      if (selection) {
-        selection.removeAllRanges();
-        selection.addRange(range);
+      if (newSelection) {
+        newSelection.removeAllRanges();
+        newSelection.addRange(newRange);
       }
     }, 10);
   };
