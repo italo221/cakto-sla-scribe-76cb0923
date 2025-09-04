@@ -149,84 +149,89 @@ export default function RichTextMentionEditor({
 
   // Selecionar usuário da lista
   const selectUser = (selectedUser: User) => {
-    if (lastAtPosition === -1) return;
+    if (lastAtPosition === -1 || !editorRef.current) return;
     
-    // Trabalhar com o HTML original para preservar formatação e menções anteriores
-    const htmlContent = value;
+    const editor = editorRef.current.querySelector('[contenteditable]') as HTMLElement;
+    if (!editor) return;
     
-    // Encontrar a posição do @ no HTML
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = htmlContent;
-    const textContent = tempDiv.textContent || tempDiv.innerText || '';
+    // Obter o texto atual do editor
+    const textContent = editor.textContent || editor.innerText || '';
     
-    // Encontrar onde está o @ no HTML original
-    let htmlPosition = 0;
-    let textPosition = 0;
-    let foundAtPosition = -1;
+    // Calcular posições para substituição
+    const beforeAt = textContent.substring(0, lastAtPosition);
+    const afterAtWithQuery = textContent.substring(lastAtPosition + 1); // Remove o @
+    const afterQuery = afterAtWithQuery.substring(mentionQuery.length); // Remove a query
     
-    for (let i = 0; i < htmlContent.length && textPosition <= lastAtPosition; i++) {
-      if (htmlContent[i] === '<') {
-        // Pular tag HTML
-        while (i < htmlContent.length && htmlContent[i] !== '>') {
-          i++;
-        }
-      } else {
-        if (textPosition === lastAtPosition) {
-          foundAtPosition = i;
-          break;
-        }
-        textPosition++;
-      }
+    // Criar o novo texto com a menção
+    const mentionText = `@${selectedUser.nome_completo}`;
+    const newTextContent = beforeAt + mentionText + ' ' + afterQuery;
+    
+    // Limpar o editor e inserir o novo conteúdo
+    editor.innerHTML = '';
+    
+    // Criar fragmentos para cada parte
+    const fragment = document.createDocumentFragment();
+    
+    // Texto antes da menção
+    if (beforeAt) {
+      fragment.appendChild(document.createTextNode(beforeAt));
     }
     
-    if (foundAtPosition === -1) {
-      // Fallback: usar posição aproximada
-      foundAtPosition = htmlContent.lastIndexOf('@');
+    // Criar span da menção (único wrapper)
+    const mentionSpan = document.createElement('span');
+    mentionSpan.className = 'mention-highlight';
+    mentionSpan.setAttribute('data-user-id', selectedUser.user_id);
+    mentionSpan.setAttribute('data-user-name', selectedUser.nome_completo);
+    mentionSpan.setAttribute('contenteditable', 'false'); // Tornar a menção não editável
+    mentionSpan.textContent = mentionText;
+    fragment.appendChild(mentionSpan);
+    
+    // Adicionar espaço após a menção
+    const spaceNode = document.createTextNode(' ');
+    fragment.appendChild(spaceNode);
+    
+    // Texto após a menção
+    if (afterQuery) {
+      fragment.appendChild(document.createTextNode(afterQuery));
     }
     
-    // Substituir @query pela menção formatada
-    const beforeAt = htmlContent.substring(0, foundAtPosition);
-    const afterAt = htmlContent.substring(foundAtPosition);
-    const queryEndIndex = afterAt.indexOf('@') === 0 ? 1 + mentionQuery.length : mentionQuery.length;
-    const afterQuery = afterAt.substring(queryEndIndex);
+    // Inserir o fragmento no editor
+    editor.appendChild(fragment);
     
-    // Criar menção com dados estruturados e adicionar espaço com formatação normal
-    const mentionSpan = `<span class="mention-highlight" data-user-id="${selectedUser.user_id}" data-user-name="${selectedUser.nome_completo}">@${selectedUser.nome_completo}</span>&nbsp;`;
+    // Normalizar o DOM para remover nós vazios
+    editor.normalize();
     
-    const newValue = beforeAt + mentionSpan + afterQuery;
-    onChange(newValue);
+    // Atualizar o valor
+    onChange(editor.innerHTML);
     
+    // Limpar estado das menções
     setShowMentions(false);
     setMentionQuery('');
     setLastAtPosition(-1);
+    setSelectedIndex(0);
     
-    // Posicionar cursor após a menção para evitar herdar formatação
+    // Posicionar cursor após o espaço da menção
     setTimeout(() => {
-      if (editorRef.current) {
-        const editor = editorRef.current.querySelector('[contenteditable]') as HTMLElement;
-        if (editor) {
-          editor.focus();
-          
-          // Encontrar o span da menção recém-inserida e posicionar cursor após ele
-          const mentionSpans = editor.querySelectorAll('span[data-user-id]');
-          const lastMentionSpan = mentionSpans[mentionSpans.length - 1];
-          
-          if (lastMentionSpan) {
-            const range = document.createRange();
-            const selection = window.getSelection();
-            
-            // Posicionar cursor após o span da menção
-            range.setStartAfter(lastMentionSpan);
-            range.collapse(true);
-            
-            if (selection) {
-              selection.removeAllRanges();
-              selection.addRange(range);
-            }
-          }
-        }
+      editor.focus();
+      
+      const range = document.createRange();
+      const selection = window.getSelection();
+      
+      if (selection && spaceNode.nextSibling) {
+        // Posicionar cursor após o espaço
+        range.setStart(spaceNode.nextSibling, 0);
+        range.collapse(true);
+      } else if (selection) {
+        // Se não há próximo nó, posicionar no final
+        range.selectNodeContents(editor);
+        range.collapse(false);
       }
-    }, 50);
+      
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }, 10);
   };
 
   // Navegação por teclado

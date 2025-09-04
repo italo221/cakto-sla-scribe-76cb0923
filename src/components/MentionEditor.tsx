@@ -120,26 +120,32 @@ export default function MentionEditor({
     
     const textarea = textareaRef.current;
     const currentValue = textarea.value;
-    const cursorPosition = textarea.selectionStart;
     
-    // Substituir @query por HTML estruturado com dados do usuário
+    // Calcular posições para substituição limpa
     const beforeAt = currentValue.substring(0, lastAtPosition);
-    const afterCursor = currentValue.substring(cursorPosition);
+    const afterAtWithQuery = currentValue.substring(lastAtPosition + 1); // Remove o @
+    const afterQuery = afterAtWithQuery.substring(mentionQuery.length); // Remove a query
+    
+    // Criar menção estruturada única
     const mentionHtml = `<span class="mention-highlight" data-user-id="${selectedUser.user_id}" data-user-name="${selectedUser.nome_completo}">@${selectedUser.nome_completo}</span>`;
     
-    const newValue = beforeAt + mentionHtml + ' ' + afterCursor;
+    const newValue = beforeAt + mentionHtml + ' ' + afterQuery;
     onChange(newValue);
     
-    // Reposicionar cursor
+    // Calcular nova posição do cursor (após a menção + espaço)
     const newCursorPosition = beforeAt.length + mentionHtml.length + 1;
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-    }, 0);
     
+    // Limpar estado das menções
     setShowMentions(false);
     setMentionQuery('');
     setLastAtPosition(-1);
+    setSelectedIndex(0);
+    
+    // Reposicionar cursor após a menção
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+    }, 10);
   };
 
   // Navegação por teclado na lista de mentions

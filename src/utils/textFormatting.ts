@@ -9,23 +9,43 @@ export function extractCleanTextWithMentions(htmlContent: string): string {
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = htmlContent;
   
-  // Preservar menções que já estão formatadas (com data-user-id ou estilo inline)
-  const mentionSpans = tempDiv.querySelectorAll('span[data-user-id], span[style*="background-color: hsl(var(--primary)"]');
+  // Remover wrappers duplicados/aninhados de menções
+  const nestedMentions = tempDiv.querySelectorAll('span[data-user-id] span, span.mention-highlight span');
+  nestedMentions.forEach(innerSpan => {
+    // Se é um span dentro de uma menção, mover o conteúdo para o pai e remover
+    const parent = innerSpan.parentElement;
+    if (parent) {
+      parent.textContent = innerSpan.textContent || parent.textContent;
+      innerSpan.remove();
+    }
+  });
+  
+  // Normalizar menções para garantir formato único
+  const mentionSpans = tempDiv.querySelectorAll('span[data-user-id], span[style*="background-color: hsl(var(--primary)"], span.mention-highlight');
   mentionSpans.forEach(span => {
     const textContent = span.textContent || '';
     const userId = span.getAttribute('data-user-id');
     const userName = span.getAttribute('data-user-name');
     
-    // Se tem userId, manter a formatação para preservar a menção
+    // Se tem userId, criar menção estruturada única
     if (userId && userName) {
-      span.outerHTML = `<span class="mention-highlight" data-user-id="${userId}" data-user-name="${userName}">${textContent}</span>`;
-    } else {
-      // Se não tem userId, manter pelo menos a formatação visual
-      span.outerHTML = `<span class="mention-highlight">${textContent}</span>`;
+      const newSpan = document.createElement('span');
+      newSpan.className = 'mention-highlight';
+      newSpan.setAttribute('data-user-id', userId);
+      newSpan.setAttribute('data-user-name', userName);
+      newSpan.setAttribute('contenteditable', 'false');
+      newSpan.textContent = textContent;
+      span.replaceWith(newSpan);
+    } else if (span.classList.contains('mention-highlight')) {
+      // Se não tem userId mas tem a classe, manter formatação visual apenas
+      const newSpan = document.createElement('span');
+      newSpan.className = 'mention-highlight';
+      newSpan.textContent = textContent;
+      span.replaceWith(newSpan);
     }
   });
   
-  // Retornar o HTML processado (não apenas texto)
+  // Retornar o HTML processado e normalizado
   return tempDiv.innerHTML;
 }
 
