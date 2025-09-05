@@ -85,6 +85,15 @@ export default function Inbox() {
     lastFetch: lastFetch ? new Date(lastFetch).toISOString() : 'nunca'
   });
 
+  // Exibir SupabaseStatus se não configurado ou com erro de conexão
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="p-6">
+        <SupabaseStatus />
+      </div>
+    );
+  }
+
   // Usar hook centralizado para estatísticas sincronizadas  
   const { stats } = useTicketStats(optimizedTicketsWithStatus);
 

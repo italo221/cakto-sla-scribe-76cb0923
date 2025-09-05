@@ -14,12 +14,13 @@ export interface TicketStats {
 // Permite reutilizar tickets já carregados para evitar consultas duplicadas
 export const useTicketStats = (externalTickets?: TicketWithStatus[]) => {
   const { ticketsWithStatus, loading, error, reloadTickets } = useOptimizedTickets({
-    enableRealtime: true,
+    enableRealtime: false, // Desabilitar para evitar egress desnecessário
     batchSize: 100,
-    autoFetch: !externalTickets
+    autoFetch: !externalTickets // Só buscar se não foram passados tickets externos
   });
 
-  const sourceTickets = externalTickets ?? ticketsWithStatus;
+  // Priorizar tickets externos se fornecidos para evitar requisições duplicadas
+  const sourceTickets = externalTickets && externalTickets.length > 0 ? externalTickets : ticketsWithStatus;
 
   // Calcular estatísticas usando a MESMA lógica para ambas as telas
   const stats = useMemo((): TicketStats => {
