@@ -3,12 +3,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, CheckCircle, ExternalLink, Database, Copy } from 'lucide-react';
-import { testSupabaseConnection, getSupabaseConfig, showSetupInstructions } from '@/lib/supabase-config';
+import { getSupabaseConfig } from '@/lib/supabase-config';
 import { useToast } from '@/hooks/use-toast';
 
 export default function SupabaseStatus() {
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { toast } = useToast();
   const config = getSupabaseConfig();
 
@@ -17,8 +18,27 @@ export default function SupabaseStatus() {
   }, []);
 
   const checkConnection = async () => {
-    const connected = await testSupabaseConnection();
-    setIsConnected(connected);
+    try {
+      const response = await fetch(`${config.url}/rest/v1/`, {
+        method: 'GET',
+        headers: {
+          'apikey': config.anonKey,
+          'Authorization': `Bearer ${config.anonKey}`
+        }
+      });
+
+      if (response.status === 429) {
+        console.error('Supabase rate limit exceeded while checking status');
+        setErrorMessage('Limite de recursos do Supabase excedido, tente novamente mais tarde ou contate o administrador');
+        setIsConnected(false);
+        return;
+      }
+
+      setIsConnected(response.ok);
+    } catch (error) {
+      console.error('Erro ao verificar conexão com o Supabase:', error);
+      setIsConnected(false);
+    }
   };
 
   const copyToClipboard = (text: string, label: string) => {
@@ -28,6 +48,17 @@ export default function SupabaseStatus() {
       description: `${label} copiado para a área de transferência.`,
     });
   };
+
+  if (errorMessage) {
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          {errorMessage}
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   if (isConnected === true) {
     return (

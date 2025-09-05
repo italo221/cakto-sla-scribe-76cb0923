@@ -98,8 +98,17 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
   const fetchTickets = useCallback(async (forceRefresh = false) => {
     const cacheKey = 'all_tickets';
     const now = Date.now();
-    
+
     console.log('🔄 Iniciando fetch de tickets...', { forceRefresh, cacheSize: ticketCache.size });
+
+    const handleRateLimitError = (status: number, err: unknown) => {
+      if (status === 429) {
+        console.error('❌ Supabase rate limit exceeded:', err);
+        setError('Limite de recursos do Supabase excedido, tente novamente mais tarde ou contate o administrador');
+        return true;
+      }
+      return false;
+    };
     
     // Verificar cache se não for refresh forçado
     if (!forceRefresh && ticketCache.has(cacheKey)) {
@@ -118,7 +127,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       console.log('🌐 Fazendo request para Supabase...');
 
       // Query otimizada - buscar apenas campos necessários incluindo responsável
-      const { data, error } = await supabase
+      const { data, error, status } = await supabase
         .from('sla_demandas')
         .select(`
           id,
@@ -149,8 +158,10 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
         `)
         .order('data_criacao', { ascending: false })
         .limit(500); // Limitar resultados para performance
-
-      if (error) throw error;
+      if (error) {
+        if (handleRateLimitError(status, error)) return [];
+        throw error;
+      }
       console.log('✅ Dados recebidos do Supabase:', data?.length || 0, 'tickets');
 
       // Transformar dados e buscar informações do responsável
@@ -166,11 +177,15 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
         // Buscar dados dos responsáveis em uma query separada
         let assigneeMap: Record<string, any> = {};
         if (assigneeIds.length > 0) {
-          const { data: assignees } = await supabase
+          const { data: assignees, error: assigneesError, status: assigneesStatus } = await supabase
             .from('profiles')
             .select('user_id, nome_completo, email, avatar_url')
             .in('user_id', assigneeIds);
-          
+
+          if (assigneesError) {
+            if (handleRateLimitError(assigneesStatus, assigneesError)) return [];
+          }
+
           if (assignees) {
             assigneeMap = assignees.reduce((acc, assignee) => {
               acc[assignee.user_id] = assignee;
@@ -184,12 +199,13 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
         let commentsData: any[] = [];
         
         if (ticketIds.length > 0) {
-          const { data: comments, error: commentsError } = await supabase
+          const { data: comments, error: commentsError, status: commentsStatus } = await supabase
             .from('sla_comentarios_internos')
             .select('sla_id, comentario')
             .in('sla_id', ticketIds);
-          
+
           if (commentsError) {
+            if (handleRateLimitError(commentsStatus, commentsError)) return [];
             console.error('Error loading comments:', commentsError);
           } else {
             commentsData = comments || [];
@@ -228,9 +244,14 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       console.log('✅ Tickets processados e salvos:', sortedData.length);
       
       return sortedData;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('❌ Erro ao carregar tickets:', err);
-      setError(err instanceof Error ? err.message : 'Erro desconhecido');
+      const status = (err as { status?: number }).status;
+      if (status === 429) {
+        setError('Limite de recursos do Supabase excedido, tente novamente mais tarde ou contate o administrador');
+      } else {
+        setError(err instanceof Error ? err.message : 'Erro desconhecido');
+      }
       
       // Se houver dados em cache, usar como fallback
       if (ticketCache.has(cacheKey)) {
