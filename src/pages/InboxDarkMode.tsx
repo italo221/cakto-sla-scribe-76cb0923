@@ -26,7 +26,7 @@ import TicketKanban from "@/components/TicketKanban";
 import JiraTicketCard from "@/components/JiraTicketCard";
 import VirtualizedTicketList from "@/components/VirtualizedTicketList";
 import { useOptimizedTickets } from "@/hooks/useOptimizedTickets";
-import { useTicketStats } from "@/hooks/useTicketStats";
+import { useGlobalTicketStats } from "@/hooks/useGlobalTicketStats";
 import { useAuth } from "@/hooks/useAuth";
 import { useTags } from "@/hooks/useTags";
 import { useToast } from "@/hooks/use-toast";
@@ -87,8 +87,8 @@ export default function Inbox() {
     );
   }
 
-  // Usar hook centralizado para estatísticas sincronizadas  
-  const { stats } = useTicketStats(optimizedTicketsWithStatus);
+  // Usar hook especializado para estatísticas globais que busca TODOS os tickets
+  const { stats, reloadStats } = useGlobalTicketStats();
 
   const [setores, setSetores] = useState<Setor[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -530,6 +530,7 @@ export default function Inbox() {
   };
   const handleTicketUpdate = () => {
     reloadTickets();
+    reloadStats(); // Recarregar também as estatísticas globais
     toast({
       title: "Ticket atualizado",
       description: "O ticket foi atualizado com sucesso."

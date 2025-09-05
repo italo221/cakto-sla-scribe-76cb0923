@@ -15,7 +15,7 @@ export interface TicketStats {
 export const useTicketStats = (externalTickets?: TicketWithStatus[]) => {
   const { ticketsWithStatus, loading, error, reloadTickets } = useOptimizedTickets({
     enableRealtime: false, // Desabilitar para evitar egress desnecessário
-    batchSize: 100,
+    batchSize: externalTickets ? 25 : 999, // Se for para estatísticas globais, buscar quase todos
     autoFetch: !externalTickets // Só buscar se não foram passados tickets externos
   });
 
