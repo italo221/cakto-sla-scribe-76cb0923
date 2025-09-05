@@ -56,3 +56,6 @@ port = 54330
 
 [functions.generate-sla-tags]
 verify_jwt = false
+[functions.cleanup-old-records]
+verify_jwt = false
+
