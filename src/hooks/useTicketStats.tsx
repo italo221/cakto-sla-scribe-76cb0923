@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useOptimizedTickets } from './useOptimizedTickets';
+import { useOptimizedTickets, TicketWithStatus } from './useOptimizedTickets';
 
 export interface TicketStats {
   total: number;
@@ -11,16 +11,20 @@ export interface TicketStats {
   criticos: number;
 }
 
-export const useTicketStats = () => {
+// Permite reutilizar tickets já carregados para evitar consultas duplicadas
+export const useTicketStats = (externalTickets?: TicketWithStatus[]) => {
   const { ticketsWithStatus, loading, error, reloadTickets } = useOptimizedTickets({
     enableRealtime: true,
-    batchSize: 100
+    batchSize: 100,
+    autoFetch: !externalTickets
   });
+
+  const sourceTickets = externalTickets ?? ticketsWithStatus;
 
   // Calcular estatísticas usando a MESMA lógica para ambas as telas
   const stats = useMemo((): TicketStats => {
     const counts = {
-      total: ticketsWithStatus.length,
+      total: sourceTickets.length,
       abertos: 0,
       em_andamento: 0,
       resolvidos: 0,
@@ -30,7 +34,7 @@ export const useTicketStats = () => {
     };
 
     // Um loop único para calcular todas as estatísticas de forma consistente
-    ticketsWithStatus.forEach(ticket => {
+    sourceTickets.forEach(ticket => {
       // Recalcular se está atrasado considerando prazo_interno
       const isExpired = (() => {
         if (ticket.status === 'resolvido' || ticket.status === 'fechado') return false;
@@ -86,13 +90,13 @@ export const useTicketStats = () => {
     });
 
     return counts;
-  }, [ticketsWithStatus]);
+  }, [sourceTickets]);
 
   return {
     stats,
-    loading,
-    error,
+    loading: externalTickets ? false : loading,
+    error: externalTickets ? null : error,
     reloadTickets,
-    ticketsWithStatus
+    ticketsWithStatus: sourceTickets
   };
 };

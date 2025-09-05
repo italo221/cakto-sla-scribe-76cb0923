@@ -50,6 +50,7 @@ export default function KanbanPage() {
   // Usar hook otimizado para tickets
   const {
     tickets,
+    ticketsWithStatus,
     loading,
     reloadTickets,
     loadMoreTickets,
@@ -60,8 +61,8 @@ export default function KanbanPage() {
     batchSize: 100
   });
 
-  // Usar hook centralizado para estatísticas sincronizadas
-  const { stats } = useTicketStats();
+  // Usar hook centralizado para estatísticas sincronizadas sem duplicar consultas
+  const { stats } = useTicketStats(ticketsWithStatus);
 
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
