@@ -61,65 +61,37 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const fetchProfile = async (userId: string) => {
     try {
-      // Timeout para queries do perfil
-      const profilePromise = supabase
+      // Buscar perfil do usuário
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('user_id, nome_completo, email, avatar_url, role, user_type, ativo') // Apenas campos necessários
+        .select('*')
         .eq('user_id', userId)
         .single();
 
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout')), 10000);
-      });
-
-      const { data: profileData, error: profileError } = await Promise.race([
-        profilePromise,
-        timeoutPromise
-      ]) as any;
-
       if (profileError) {
         console.error('Erro ao buscar perfil:', profileError);
-        // Para casos de timeout, usar dados mínimos
-        if (profileError.message === 'Timeout') {
-          console.log('Timeout no perfil, usando dados mínimos');
-          return;
-        }
         return;
       }
 
       setProfile(profileData);
 
-      // Buscar setores com timeout menor (dados menos críticos)
-      try {
-        const setoresPromise = supabase
-          .from('user_setores')
-          .select(`
-            id,
-            user_id,
-            setor_id,
-            setor:setores(id, nome, descricao)
-          `)
-          .eq('user_id', userId);
+      // Buscar setores do usuário
+      const { data: setoresData, error: setoresError } = await supabase
+        .from('user_setores')
+        .select(`
+          id,
+          user_id,
+          setor_id,
+          setor:setores(id, nome, descricao)
+        `)
+        .eq('user_id', userId);
 
-        const setoresTimeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Timeout')), 5000);
-        });
-
-        const { data: setoresData, error: setoresError } = await Promise.race([
-          setoresPromise,
-          setoresTimeoutPromise
-        ]) as any;
-
-        if (setoresError) {
-          console.error('Erro ao buscar setores do usuário:', setoresError);
-          return;
-        }
-
-        setSetores(setoresData || []);
-      } catch (error) {
-        console.error('Timeout ao buscar setores, continuando sem eles');
-        setSetores([]);
+      if (setoresError) {
+        console.error('Erro ao buscar setores do usuário:', setoresError);
+        return;
       }
+
+      setSetores(setoresData || []);
     } catch (error) {
       console.error('Erro ao buscar dados do usuário:', error);
     }

@@ -43,9 +43,9 @@ interface UseOptimizedTicketsOptions {
   sortFunction?: (a: Ticket, b: Ticket) => number;
 }
 
-// Cache mais agressivo para reduzir egress
+// Cache moderado para balancear performance e atualização
 const ticketCache = new Map<string, { data: Ticket[]; timestamp: number }>();
-const CACHE_DURATION = 120000; // 2 minutos
+const CACHE_DURATION = 30000; // 30 segundos
 
 // Função para limpar cache completamente
 const clearAllCache = () => {
@@ -137,27 +137,38 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       const from = (page - 1) * batchSize;
       const to = from + batchSize - 1;
 
-      // Query com timeout agressivo
-      const queryPromise = supabase
+      // Query otimizada sem timeout para evitar erros
+      const { data, error, status, count } = await supabase
         .from('sla_demandas')
         .select(`
           id,
           ticket_number,
           titulo,
           solicitante,
+          time_responsavel,
+          descricao,
+          tipo_ticket,
           status,
           nivel_criticidade,
-          data_criacao
+          pontuacao_total,
+          pontuacao_financeiro,
+          pontuacao_cliente,
+          pontuacao_reputacao,
+          pontuacao_urgencia,
+          pontuacao_operacional,
+          data_criacao,
+          updated_at,
+          resolved_at,
+          observacoes,
+          tags,
+          setor_id,
+          responsavel_interno,
+          prazo_interno,
+          prioridade_operacional,
+          assignee_user_id
         `, { count: 'exact' })
         .order('data_criacao', { ascending: false })
         .range(from, to);
-
-      // Timeout de 5 segundos
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout na consulta de tickets')), 5000);
-      });
-
-      const { data, error, status, count } = await Promise.race([queryPromise, timeoutPromise]) as any;
       if (error) {
         if (handleRateLimitError(status, error)) return [];
         throw error;
@@ -165,43 +176,36 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       console.log('✅ Dados recebidos do Supabase:', data?.length || 0, 'tickets');
       if (typeof count === 'number') setTotalCount(count);
 
-      // Transformar dados simplificados
-      const ticketsData: Ticket[] = [];
-      
-      if (data && data.length > 0) {
-        // Mapear dados básicos sem queries adicionais para evitar sobrecarga
-        data.forEach((ticket: any) => {
-          ticketsData.push({
-            id: ticket.id,
-            ticket_number: ticket.ticket_number,
-            titulo: ticket.titulo,
-            time_responsavel: ticket.solicitante || 'N/A',
-            solicitante: ticket.solicitante,
-            descricao: '',
-            tipo_ticket: 'Padrão',
-            status: ticket.status,
-            nivel_criticidade: ticket.nivel_criticidade,
-            pontuacao_total: 0,
-            pontuacao_financeiro: 0,
-            pontuacao_cliente: 0,
-            pontuacao_reputacao: 0,
-            pontuacao_urgencia: 0,
-            pontuacao_operacional: 0,
-            data_criacao: ticket.data_criacao,
-            updated_at: undefined,
-            resolved_at: null,
-            observacoes: undefined,
-            tags: [],
-            setor_id: undefined,
-            responsavel_interno: undefined,
-            prazo_interno: undefined,
-            prioridade_operacional: undefined,
-            assignee_user_id: null,
-            assignee: null,
-            sla_comentarios_internos: []
-          });
-        });
-      }
+      // Transformar dados completos
+      const ticketsData: Ticket[] = data?.map((ticket: any) => ({
+        id: ticket.id,
+        ticket_number: ticket.ticket_number,
+        titulo: ticket.titulo,
+        time_responsavel: ticket.time_responsavel || ticket.solicitante || 'N/A',
+        solicitante: ticket.solicitante,
+        descricao: ticket.descricao || '',
+        tipo_ticket: ticket.tipo_ticket || 'Padrão',
+        status: ticket.status,
+        nivel_criticidade: ticket.nivel_criticidade,
+        pontuacao_total: ticket.pontuacao_total || 0,
+        pontuacao_financeiro: ticket.pontuacao_financeiro || 0,
+        pontuacao_cliente: ticket.pontuacao_cliente || 0,
+        pontuacao_reputacao: ticket.pontuacao_reputacao || 0,
+        pontuacao_urgencia: ticket.pontuacao_urgencia || 0,
+        pontuacao_operacional: ticket.pontuacao_operacional || 0,
+        data_criacao: ticket.data_criacao,
+        updated_at: ticket.updated_at,
+        resolved_at: ticket.resolved_at,
+        observacoes: ticket.observacoes,
+        tags: ticket.tags || [],
+        setor_id: ticket.setor_id,
+        responsavel_interno: ticket.responsavel_interno,
+        prazo_interno: ticket.prazo_interno,
+        prioridade_operacional: ticket.prioridade_operacional,
+        assignee_user_id: ticket.assignee_user_id,
+        assignee: null, // Será buscado separadamente se necessário
+        sla_comentarios_internos: []
+      })) || [];
       
       // Ordenar de forma otimizada
       const sortedData = [...ticketsData].sort(sortFunction);
