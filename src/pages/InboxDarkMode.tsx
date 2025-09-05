@@ -230,7 +230,7 @@ export default function InboxDarkMode() {
     const lowerTerm = term.toLowerCase();
 
     // Buscar em títulos, solicitantes, setores e números de ticket
-    ticketsWithStatus.forEach(ticket => {
+    optimizedTicketsWithStatus.forEach(ticket => {
       // Títulos que contenham o termo
       if (ticket.titulo.toLowerCase().includes(lowerTerm)) {
         suggestions.add(ticket.titulo);
@@ -254,8 +254,8 @@ export default function InboxDarkMode() {
 
     // Priorizar sugestões - tickets críticos e recentes primeiro
     return Array.from(suggestions).slice(0, 8).sort((a, b) => {
-      const aTicket = ticketsWithStatus.find(t => t.titulo === a || t.solicitante === a || t.time_responsavel === a || t.ticket_number === a);
-      const bTicket = ticketsWithStatus.find(t => t.titulo === b || t.solicitante === b || t.time_responsavel === b || t.ticket_number === b);
+      const aTicket = optimizedTicketsWithStatus.find(t => t.titulo === a || t.solicitante === a || t.time_responsavel === a || t.ticket_number === a);
+      const bTicket = optimizedTicketsWithStatus.find(t => t.titulo === b || t.solicitante === b || t.time_responsavel === b || t.ticket_number === b);
       if (!aTicket || !bTicket) return 0;
 
       // Priorizar por criticidade
@@ -272,7 +272,7 @@ export default function InboxDarkMode() {
       // Depois por data (mais recentes primeiro)
       return new Date(bTicket.data_criacao).getTime() - new Date(aTicket.data_criacao).getTime();
     });
-  }, [ticketsWithStatus]);
+  }, [optimizedTicketsWithStatus]);
 
   // Atualizar sugestões quando o termo de busca mudar
   useEffect(() => {
@@ -308,7 +308,7 @@ export default function InboxDarkMode() {
 
   // Aplicar filtros aos tickets com status info
   const filteredTicketsWithStatus = useMemo(() => {
-    let filtered = ticketsWithStatus;
+    let filtered = optimizedTicketsWithStatus;
 
     // Busca inteligente
     if (searchTerm) {
@@ -395,7 +395,7 @@ export default function InboxDarkMode() {
 
 
     return filtered;
-  }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, tagFilter, dateSort, criticalitySort, smartSearch, setores]);
+  }, [optimizedTicketsWithStatus, searchTerm, activeFilter, setorFilter, tagFilter, dateSort, criticalitySort, smartSearch, setores]);
 
   // Contagem de tickets por setor - priorizar time_responsavel se existir, senão setor_id
   const setorCounts = useMemo(() => {
