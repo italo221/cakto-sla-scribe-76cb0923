@@ -105,23 +105,12 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
 
   const hasMore = useMemo(() => tickets.length < totalCount, [tickets, totalCount]);
 
-  // Função de fetch com retry logic para timeouts
-  const fetchTickets = useCallback(async (page = 1, forceRefresh = false, retryCount = 0) => {
+  // Função de fetch simplificada sem retry para evitar loops
+  const fetchTickets = useCallback(async (page = 1, forceRefresh = false) => {
     const cacheKey = `tickets_page_${page}`;
     const now = Date.now();
-    const maxRetries = 3;
-    const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 5000);
 
-    console.log('🔄 Iniciando fetch de tickets...', { forceRefresh, cacheSize: ticketCache.size, page, retryCount });
-
-    const handleRateLimitError = (status: number, err: unknown) => {
-      if (status === 429) {
-        console.error('❌ Supabase rate limit exceeded:', err);
-        setError('Limite de recursos do Supabase excedido, tente novamente mais tarde ou contate o administrador');
-        return true;
-      }
-      return false;
-    };
+    console.log('🔄 Iniciando fetch de tickets...', { forceRefresh, cacheSize: ticketCache.size, page });
     
     // Verificar cache se não for refresh forçado
     if (!forceRefresh && ticketCache.has(cacheKey)) {
@@ -141,17 +130,12 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     try {
       setLoading(true);
       setError(null);
-      console.log('🌐 Fazendo request para Supabase...', { attempt: retryCount + 1 });
+      console.log('🌐 Fazendo request para Supabase...');
 
       const from = (page - 1) * batchSize;
       const to = from + batchSize - 1;
 
-      // Criar promise com timeout personalizado
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), 30000); // 30 segundos
-      });
-
-      const queryPromise = supabase
+      const { data, error, status, count } = await supabase
         .from('sla_demandas')
         .select(`
           id,
@@ -182,13 +166,16 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
         `, { count: 'exact' })
         .order('data_criacao', { ascending: false })
         .range(from, to);
-
-      const { data, error, status, count } = await Promise.race([queryPromise, timeoutPromise]) as any;
       
       if (error) {
-        if (handleRateLimitError(status, error)) return [];
+        if (status === 429) {
+          console.error('❌ Supabase rate limit exceeded:', error);
+          setError('Limite de recursos excedido, tente novamente mais tarde');
+          return [];
+        }
         throw error;
       }
+      
       console.log('✅ Dados recebidos do Supabase:', data?.length || 0, 'tickets');
       if (typeof count === 'number') setTotalCount(count);
 
@@ -219,7 +206,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
         prazo_interno: ticket.prazo_interno,
         prioridade_operacional: ticket.prioridade_operacional,
         assignee_user_id: ticket.assignee_user_id,
-        assignee: null, // Será buscado separadamente se necessário
+        assignee: null,
         sla_comentarios_internos: []
       })) || [];
       
@@ -246,47 +233,16 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       console.log('✅ Tickets processados e salvos:', sortedTicketsRef.current.length);
 
       return sortedTicketsRef.current;
-    } catch (err: unknown) {
-      console.error('❌ Erro ao carregar tickets:', err);
+    } catch (error: any) {
+      console.error('❌ Erro ao carregar tickets:', error);
       
-      // Identificar se é erro de timeout para retry
-      const isTimeoutError = err instanceof Error && (
-        err.message.includes('timeout') || 
-        err.message.includes('upstream request timeout') ||
-        err.message.includes('Request timeout') ||
-        err.message.includes('network') ||
-        err.message.includes('fetch')
-      );
-      
-      // Retry logic para timeouts
-      if (retryCount < maxRetries && isTimeoutError) {
-        console.info(`🔄 Tentativa ${retryCount + 1}/${maxRetries} falhou, tentando novamente em ${retryDelay}ms...`);
-        setError(`Reconectando... (${retryCount + 1}/${maxRetries})`);
-        
-        setTimeout(() => {
-          fetchTickets(page, forceRefresh, retryCount + 1);
-        }, retryDelay);
-        
-        return [];
-      }
-      
-      // Definir mensagem de erro apropriada
-      let errorMessage = 'Erro desconhecido';
-      if (err instanceof Error) {
-        if (isTimeoutError) {
-          errorMessage = retryCount >= maxRetries 
-            ? 'Problema de conexão persistente. Verifique sua internet e tente novamente.'
-            : 'Problema de conexão com o servidor.';
-        } else if (err.message.includes('upstream')) {
+      let errorMessage = 'Erro ao carregar tickets';
+      if (error?.message) {
+        if (error.message.includes('upstream request timeout')) {
           errorMessage = 'Servidor sobrecarregado. Tente novamente em alguns minutos.';
         } else {
-          errorMessage = err.message;
+          errorMessage = error.message;
         }
-      }
-      
-      const status = (err as { status?: number }).status;
-      if (status === 429) {
-        errorMessage = 'Limite de recursos excedido. Tente novamente mais tarde.';
       }
       
       setError(errorMessage);
@@ -305,7 +261,6 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       
       return [];
     } finally {
-      // Sempre desabilitar loading no final se não houve retry
       setLoading(false);
     }
   }, [sortFunction, batchSize]);
