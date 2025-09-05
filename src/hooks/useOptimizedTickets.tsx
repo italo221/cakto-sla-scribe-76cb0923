@@ -117,52 +117,100 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       setError(null);
       console.log('🌐 Fazendo request para Supabase...');
 
-      // Query EXTREMAMENTE simplificada para evitar sobrecarga do Supabase
+      // Query otimizada - buscar apenas campos necessários incluindo responsável
       const { data, error } = await supabase
         .from('sla_demandas')
         .select(`
           id,
           ticket_number,
           titulo,
+          time_responsavel,
+          solicitante,
+          descricao,
+          tipo_ticket,
           status,
           nivel_criticidade,
+          pontuacao_total,
+          pontuacao_financeiro,
+          pontuacao_cliente,
+          pontuacao_reputacao,
+          pontuacao_urgencia,
+          pontuacao_operacional,
           data_criacao,
-          setor_id
+          updated_at,
+          resolved_at,
+          observacoes,
+          tags,
+          setor_id,
+          responsavel_interno,
+          prazo_interno,
+          prioridade_operacional,
+          assignee_user_id
         `)
         .order('data_criacao', { ascending: false })
-        .limit(50); // Reduzido drasticamente para performance
+        .limit(500); // Limitar resultados para performance
 
       if (error) throw error;
       console.log('✅ Dados recebidos do Supabase:', data?.length || 0, 'tickets');
 
-      // Dados simplificados - sem responsáveis nem comentários para reduzir carga
+      // Transformar dados e buscar informações do responsável
       const ticketsData: Ticket[] = [];
       
       if (data && data.length > 0) {
+        // Buscar IDs únicos de responsáveis
+        const assigneeIds = Array.from(new Set(
+          data.filter(ticket => ticket.assignee_user_id)
+               .map(ticket => ticket.assignee_user_id)
+        ));
+        
+        // Buscar dados dos responsáveis em uma query separada
+        let assigneeMap: Record<string, any> = {};
+        if (assigneeIds.length > 0) {
+          const { data: assignees } = await supabase
+            .from('profiles')
+            .select('user_id, nome_completo, email, avatar_url')
+            .in('user_id', assigneeIds);
+          
+          if (assignees) {
+            assigneeMap = assignees.reduce((acc, assignee) => {
+              acc[assignee.user_id] = assignee;
+              return acc;
+            }, {});
+          }
+        }
+        
+        // Carregar comentários separadamente para todos os tickets
+        const ticketIds = data.map(ticket => ticket.id);
+        let commentsData: any[] = [];
+        
+        if (ticketIds.length > 0) {
+          const { data: comments, error: commentsError } = await supabase
+            .from('sla_comentarios_internos')
+            .select('sla_id, comentario')
+            .in('sla_id', ticketIds);
+          
+          if (commentsError) {
+            console.error('Error loading comments:', commentsError);
+          } else {
+            commentsData = comments || [];
+          }
+        }
+
+        // Agrupar comentários por ticket ID
+        const commentsByTicket = commentsData.reduce((acc: any, comment: any) => {
+          if (!acc[comment.sla_id]) {
+            acc[comment.sla_id] = [];
+          }
+          acc[comment.sla_id].push({ comentario: comment.comentario });
+          return acc;
+        }, {});
+        
+        // Combinar dados dos tickets com informações dos responsáveis e comentários
         data.forEach((ticket: any) => {
           ticketsData.push({
             ...ticket,
-            // Campos padrão simplificados
-            time_responsavel: 'N/A',
-            solicitante: 'Sistema',
-            descricao: 'Carregamento simplificado para economia de recursos',
-            tipo_ticket: 'sistema',
-            pontuacao_total: 0,
-            pontuacao_financeiro: 0,
-            pontuacao_cliente: 0,
-            pontuacao_reputacao: 0,
-            pontuacao_urgencia: 0,
-            pontuacao_operacional: 0,
-            updated_at: ticket.data_criacao,
-            resolved_at: null,
-            observacoes: null,
-            tags: [],
-            responsavel_interno: null,
-            prazo_interno: null,
-            prioridade_operacional: 'media',
-            assignee_user_id: null,
-            assignee: null,
-            sla_comentarios_internos: []
+            assignee: ticket.assignee_user_id ? assigneeMap[ticket.assignee_user_id] || null : null,
+            sla_comentarios_internos: commentsByTicket[ticket.id] || []
           });
         });
       }
@@ -203,12 +251,64 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     return fetchTickets(true);
   }, [fetchTickets]);
 
-  // TEMPORARIAMENTE DESABILITADO para reduzir carga no Supabase
-  // O realtime está causando loop infinito e esgotando recursos
+  // Configurar realtime de forma otimizada
   useEffect(() => {
-    console.log('🚫 Realtime desabilitado temporariamente para evitar sobrecarga');
-    return () => {};
-  }, []);
+    if (!enableRealtime) return;
+
+    console.log('🔗 Configurando canal realtime...');
+
+    // Cleanup canal anterior
+    if (realtimeChannelRef.current) {
+      console.log('🔌 Removendo canal anterior');
+      supabase.removeChannel(realtimeChannelRef.current);
+    }
+
+    // Configurar novo canal com throttling reduzido para transferências
+    let updateTimeout: NodeJS.Timeout | null = null;
+    
+    const channel = supabase
+      .channel('tickets-optimized')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sla_demandas'
+        },
+        (payload) => {
+          console.log('📡 Realtime update recebido:', payload.eventType, (payload.new as any)?.id);
+          
+          // Para transferências de setor (mudança de setor_id), atualizar imediatamente
+          const isTransfer = payload.eventType === 'UPDATE' && 
+            payload.old?.setor_id !== payload.new?.setor_id;
+          
+          if (updateTimeout) clearTimeout(updateTimeout);
+          
+          // Reduzir debounce para transferências para atualização mais rápida
+          const debounceTime = isTransfer ? 200 : 1000;
+          
+          updateTimeout = setTimeout(() => {
+            console.log('🔄 Atualizando tickets por realtime...');
+            // Invalidar cache e recarregar
+            ticketCache.clear();
+            fetchTickets(true);
+          }, debounceTime);
+        }
+      )
+      .subscribe();
+
+    console.log('✅ Canal realtime configurado');
+    realtimeChannelRef.current = channel;
+
+    return () => {
+      if (updateTimeout) clearTimeout(updateTimeout);
+      if (realtimeChannelRef.current) {
+        console.log('🔌 Cleanup: removendo canal realtime');
+        supabase.removeChannel(realtimeChannelRef.current);
+        realtimeChannelRef.current = null;
+      }
+    };
+  }, [enableRealtime, fetchTickets]);
 
   // Listener para evento de atualização de prazo
   useEffect(() => {
