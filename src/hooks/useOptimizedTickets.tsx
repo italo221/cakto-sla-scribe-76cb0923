@@ -362,7 +362,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       
       // Invalidar cache e recarregar tickets
       ticketCache.clear();
-      fetchTickets(true);
+      fetchTickets(1, true);
     };
 
     window.addEventListener('ticketDeadlineUpdated', handleDeadlineUpdate as EventListener);
@@ -377,7 +377,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     // Limpar cache ao inicializar para garantir dados frescos
     clearAllCache();
     fetchTickets(1, true);
-  }, [fetchTickets]);
+  }, []); // Remove fetchTickets dependency to prevent infinite loop
 
   // Memoizar tickets com status para evitar recálculos
   const ticketsWithStatus = useMemo(() => {
