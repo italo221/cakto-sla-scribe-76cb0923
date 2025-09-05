@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { subscribeToChannel } from '@/lib/realtimeManager';
 
 interface Notification {
   id: string;
@@ -42,55 +43,55 @@ export function useNotifications() {
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
-      .channel('notifications-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
-          if (!newNotification.is_read) {
-            setUnreadCount(prev => prev + 1);
+    const unsubscribe = subscribeToChannel('notifications-changes', (channel) => {
+      channel
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            const newNotification = payload.new as Notification;
+            setNotifications(prev => [newNotification, ...prev]);
+            if (!newNotification.is_read) {
+              setUnreadCount(prev => prev + 1);
+            }
+
+            // Mostrar toast para nova notificação
+            toast({
+              title: newNotification.title,
+              description: newNotification.message,
+              duration: 5000,
+            });
           }
-          
-          // Mostrar toast para nova notificação
-          toast({
-            title: newNotification.title,
-            description: newNotification.message,
-            duration: 5000,
-          });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          const updatedNotification = payload.new as Notification;
-          setNotifications(prev => 
-            prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
-          );
-          
-          // Atualizar contador se foi marcada como lida
-          if (updatedNotification.is_read && payload.old?.is_read === false) {
-            setUnreadCount(prev => Math.max(0, prev - 1));
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            const updatedNotification = payload.new as Notification;
+            setNotifications(prev =>
+              prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
+            );
+
+            // Atualizar contador se foi marcada como lida
+            if (updatedNotification.is_read && payload.old?.is_read === false) {
+              setUnreadCount(prev => Math.max(0, prev - 1));
+            }
           }
-        }
-      )
-      .subscribe();
+        );
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [user, toast]);
 
