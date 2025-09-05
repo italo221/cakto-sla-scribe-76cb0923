@@ -58,8 +58,16 @@ interface Setor {
   id: string;
   nome: string;
 }
-export default function Inbox() {
-  // Usar hook otimizado para tickets
+export default function InboxDarkMode() {
+  const { user, canEdit, isSuperAdmin } = useAuth();
+  const { toast } = useToast();
+
+  // Estados de filtro (declarados primeiro para uso no hook)
+  const [activeFilter, setActiveFilter] = useState<'all' | 'aberto' | 'em_andamento' | 'resolvido' | 'fechado' | 'atrasado' | 'critico' | 'info-incompleta'>('all');
+  const [setorFilter, setSetorFilter] = useState('all');
+  const [tagFilter, setTagFilter] = useState('todas');
+
+  // Hook de tickets otimizados (após declaração dos filtros)
   const {
     tickets: optimizedTickets,
     ticketsWithStatus: optimizedTicketsWithStatus,
@@ -74,9 +82,8 @@ export default function Inbox() {
     hasMore
   } = useOptimizedTickets({
     enableRealtime: false, // Desabilitar para reduzir egress
-    batchSize: 25 // Reduzir batch size
+    batchSize: activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' ? 500 : 25 // Carregar mais tickets quando há filtros ativos
   });
-
 
   // Exibir SupabaseStatus se não configurado ou com erro de conexão
   if (!isSupabaseConfigured) {
@@ -90,13 +97,11 @@ export default function Inbox() {
   // Usar hook especializado para estatísticas globais que busca TODOS os tickets
   const { stats, reloadStats } = useGlobalTicketStats();
 
+  // Outros estados
   const [setores, setSetores] = useState<Setor[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'aberto' | 'em_andamento' | 'resolvido' | 'fechado' | 'atrasado' | 'critico' | 'info-incompleta'>('all');
-  const [setorFilter, setSetorFilter] = useState('all');
-  const [tagFilter, setTagFilter] = useState('todas');
   const [dateSort, setDateSort] = useState<'newest' | 'oldest' | 'none'>('none');
   const [criticalitySort, setCriticalitySort] = useState<'highest' | 'lowest' | 'none'>('none');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -109,14 +114,15 @@ export default function Inbox() {
   
   const [searchParams, setSearchParams] = useSearchParams();
   
-  const {
-    user,
-    canEdit,
-    isSuperAdmin
-  } = useAuth();
   const { allTags } = useTags();
   const [userRole, setUserRole] = useState<string>('viewer');
-  const { toast } = useToast();
+
+  // Efeito para recarregar tickets quando filtros mudarem
+  useEffect(() => {
+    if (activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas') {
+      reloadTickets();
+    }
+  }, [activeFilter, setorFilter, tagFilter]);
 
   // Verificar parâmetro ticket na URL para abertura automática do modal
   useEffect(() => {
@@ -682,7 +688,14 @@ export default function Inbox() {
 
         {/* Status Cards - Sistema de filtro unificado usando dados centralizados */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
-          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'aberto' ? 'ring-2 ring-slate-500 border-l-slate-500 bg-slate-50 dark:bg-slate-800' : 'border-l-slate-400 hover:border-l-slate-500')} onClick={() => setActiveFilter(activeFilter === 'aberto' ? 'all' : 'aberto')}>
+          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'aberto' ? 'ring-2 ring-slate-500 border-l-slate-500 bg-slate-50 dark:bg-slate-800' : 'border-l-slate-400 hover:border-l-slate-500')} onClick={() => {
+            const newFilter = activeFilter === 'aberto' ? 'all' : 'aberto';
+            setActiveFilter(newFilter);
+            if (newFilter !== 'all') {
+              // Recarregar tickets para mostrar todos os relevantes
+              reloadTickets();
+            }
+          }}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <Circle className="h-6 w-6 text-slate-400 dark:text-slate-300" />
@@ -692,7 +705,13 @@ export default function Inbox() {
             </CardContent>
           </Card>
 
-          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'em_andamento' ? 'ring-2 ring-blue-500 border-l-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-l-blue-400 hover:border-l-blue-500')} onClick={() => setActiveFilter(activeFilter === 'em_andamento' ? 'all' : 'em_andamento')}>
+          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'em_andamento' ? 'ring-2 ring-blue-500 border-l-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-l-blue-400 hover:border-l-blue-500')} onClick={() => {
+            const newFilter = activeFilter === 'em_andamento' ? 'all' : 'em_andamento';
+            setActiveFilter(newFilter);
+            if (newFilter !== 'all') {
+              reloadTickets();
+            }
+          }}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <Activity className="h-6 w-6 text-blue-500 dark:text-blue-400" />
@@ -702,7 +721,13 @@ export default function Inbox() {
             </CardContent>
           </Card>
 
-          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'resolvido' ? 'ring-2 ring-green-500 border-l-green-500 bg-green-50 dark:bg-green-900/20' : 'border-l-green-400 hover:border-l-green-500')} onClick={() => setActiveFilter(activeFilter === 'resolvido' ? 'all' : 'resolvido')}>
+          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'resolvido' ? 'ring-2 ring-green-500 border-l-green-500 bg-green-50 dark:bg-green-900/20' : 'border-l-green-400 hover:border-l-green-500')} onClick={() => {
+            const newFilter = activeFilter === 'resolvido' ? 'all' : 'resolvido';
+            setActiveFilter(newFilter);
+            if (newFilter !== 'all') {
+              reloadTickets();
+            }
+          }}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <CheckCircle className="h-6 w-6 text-green-500 dark:text-green-400" />
@@ -712,7 +737,13 @@ export default function Inbox() {
             </CardContent>
           </Card>
 
-          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'fechado' ? 'ring-2 ring-gray-500 border-l-gray-500 bg-gray-50 dark:bg-gray-800' : 'border-l-gray-400 hover:border-l-gray-500')} onClick={() => setActiveFilter(activeFilter === 'fechado' ? 'all' : 'fechado')}>
+          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'fechado' ? 'ring-2 ring-gray-500 border-l-gray-500 bg-gray-50 dark:bg-gray-800' : 'border-l-gray-400 hover:border-l-gray-500')} onClick={() => {
+            const newFilter = activeFilter === 'fechado' ? 'all' : 'fechado';
+            setActiveFilter(newFilter);
+            if (newFilter !== 'all') {
+              reloadTickets();
+            }
+          }}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <X className="h-6 w-6 text-gray-500 dark:text-gray-400" />
@@ -722,7 +753,13 @@ export default function Inbox() {
             </CardContent>
           </Card>
 
-          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'atrasado' ? 'ring-2 ring-red-500 border-l-red-500 bg-red-50 dark:bg-red-900/20' : 'border-l-red-400 hover:border-l-red-500')} onClick={() => setActiveFilter(activeFilter === 'atrasado' ? 'all' : 'atrasado')}>
+          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'atrasado' ? 'ring-2 ring-red-500 border-l-red-500 bg-red-50 dark:bg-red-900/20' : 'border-l-red-400 hover:border-l-red-500')} onClick={() => {
+            const newFilter = activeFilter === 'atrasado' ? 'all' : 'atrasado';
+            setActiveFilter(newFilter);
+            if (newFilter !== 'all') {
+              reloadTickets();
+            }
+          }}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <AlertTriangle className="h-6 w-6 text-red-500 dark:text-red-400" />
@@ -732,7 +769,13 @@ export default function Inbox() {
             </CardContent>
           </Card>
 
-          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'critico' ? 'ring-2 ring-red-600 border-l-red-600 bg-red-50 dark:bg-red-900/20' : 'border-l-red-500 hover:border-l-red-600')} onClick={() => setActiveFilter(activeFilter === 'critico' ? 'all' : 'critico')}>
+          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'critico' ? 'ring-2 ring-red-600 border-l-red-600 bg-red-50 dark:bg-red-900/20' : 'border-l-red-500 hover:border-l-red-600')} onClick={() => {
+            const newFilter = activeFilter === 'critico' ? 'all' : 'critico';
+            setActiveFilter(newFilter);
+            if (newFilter !== 'all') {
+              reloadTickets();
+            }
+          }}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <Flag className="h-6 w-6 text-red-600 dark:text-red-500" />
