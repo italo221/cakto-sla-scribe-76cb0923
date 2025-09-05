@@ -77,13 +77,6 @@ export default function Inbox() {
     batchSize: 25 // Reduzir batch size
   });
 
-  console.log('📊 InboxDarkMode - Estado atual:', {
-    ticketsCount: optimizedTickets?.length || 0,
-    ticketsWithStatusCount: optimizedTicketsWithStatus?.length || 0,
-    loading,
-    error,
-    lastFetch: lastFetch ? new Date(lastFetch).toISOString() : 'nunca'
-  });
 
   // Exibir SupabaseStatus se não configurado ou com erro de conexão
   if (!isSupabaseConfigured) {
@@ -223,15 +216,6 @@ export default function Inbox() {
   // Usar tickets otimizados diretamente
   const ticketsWithStatus = optimizedTicketsWithStatus;
   
-  console.log('🎯 InboxDarkMode - Tickets recebidos:', {
-    total: ticketsWithStatus.length,
-    primeiros3Ids: ticketsWithStatus.slice(0, 3).map(t => t.id),
-    primeiros3Titulos: ticketsWithStatus.slice(0, 3).map(t => t.titulo),
-    statusDistribuicao: ticketsWithStatus.reduce((acc, t) => {
-      acc[t.status] = (acc[t.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>)
-  });
 
   // Busca inteligente com sugestões
   const generateSearchSuggestions = useCallback((term: string) => {
@@ -403,11 +387,6 @@ export default function Inbox() {
       });
     }
 
-    console.log('🔍 Tickets filtrados:', {
-      total: filtered.length,
-      filtros: { searchTerm, activeFilter, setorFilter, tagFilter, dateSort, criticalitySort },
-      primeiros3: filtered.slice(0, 3).map(t => ({ id: t.id, titulo: t.titulo, status: t.status }))
-    });
 
     return filtered;
   }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, tagFilter, dateSort, criticalitySort, smartSearch]);
@@ -499,21 +478,12 @@ export default function Inbox() {
     return tempos[criticality as keyof typeof tempos] || '7 dias úteis';
   };
   const handleOpenTicketDetail = (ticket: Ticket) => {
-    console.log('🎯 handleOpenTicketDetail chamado:', { 
-      ticketId: ticket?.id, 
-      titulo: ticket?.titulo,
-      ticketCompleto: ticket 
-    });
-    
     if (!ticket) {
-      console.error('❌ Ticket é null ou undefined');
       return;
     }
     
     setSelectedTicket(ticket);
     setModalOpen(true);
-    
-    console.log('✅ Modal configurado para abrir');
   };
   
   const handleOpenTicketById = async (ticketId: string) => {

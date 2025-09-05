@@ -115,13 +115,12 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     const cacheKey = `tickets_page_${page}`;
     const now = Date.now();
 
-    console.log('🔄 Iniciando fetch de tickets...', { forceRefresh, cacheSize: ticketCache.size, page });
+    
     
     // Verificar cache se não for refresh forçado
     if (!forceRefresh && ticketCache.has(cacheKey)) {
       const cached = ticketCache.get(cacheKey)!;
       if (now - cached.timestamp < CACHE_DURATION) {
-        console.log('✅ Usando cache de tickets:', cached.data.length, 'tickets');
         if (page === 1) {
           setTickets(cached.data);
         } else {
@@ -135,7 +134,6 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     try {
       setLoading(true);
       setError(null);
-      console.log('🌐 Fazendo request ultra-otimizado para Supabase...');
 
       const from = (page - 1) * batchSize;
       const to = from + batchSize - 1;
@@ -186,7 +184,6 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
         throw result.error;
       }
       
-      console.log('✅ Dados ultra-otimizados recebidos:', result.data?.length || 0, 'tickets');
       if (typeof result.count === 'number') setTotalCount(result.count);
 
       // Transformar dados completos dos tickets
@@ -308,8 +305,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
   // - 109,496 calls para realtime.list_changes (8+ segundos)
   // Total: >10 segundos de overhead por minuto
   useEffect(() => {
-    console.log('⚠️ Realtime permanentemente desabilitado para performance');
-    // Completamente removido devido ao impacto extremo na performance
+    // Realtime permanentemente desabilitado para performance
     return;
   }, []);
 
@@ -317,7 +313,6 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
   useEffect(() => {
     const handleDeadlineUpdate = (event: CustomEvent) => {
       const { ticketId } = event.detail;
-      console.log('🔄 Recalculando status após atualização de prazo:', ticketId);
       
       // Invalidar cache e recarregar tickets
       ticketCache.clear();
@@ -329,15 +324,26 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     return () => {
       window.removeEventListener('ticketDeadlineUpdated', handleDeadlineUpdate as EventListener);
     };
-  }, [fetchTickets]);
+  }, []); // Sem dependências para evitar loops
 
-  // Carregar tickets na inicialização
+  // Carregar tickets na inicialização apenas uma vez
   useEffect(() => {
     if (!autoFetch) return;
-    // Limpar cache ao inicializar para garantir dados frescos
-    clearAllCache();
-    fetchTickets(1, true);
-  }, [autoFetch, fetchTickets]);
+    
+    let mounted = true;
+    const loadInitialTickets = async () => {
+      if (mounted) {
+        clearAllCache();
+        await fetchTickets(1, true);
+      }
+    };
+    
+    loadInitialTickets();
+    
+    return () => {
+      mounted = false;
+    };
+  }, [autoFetch]); // Remover fetchTickets das dependências para evitar loop
 
   // Memoizar tickets com status para evitar recálculos
   const ticketsWithStatus = useMemo<TicketWithStatus[]>(() => {
