@@ -463,6 +463,10 @@ npm run typecheck
 - Ticket → Setor (muitos para um)
 - Ticket → Usuário (muitos para um - criador)
 
+## 🧹 Política de Retenção de Dados
+
+Registros de tickets, logs e notificações são mantidos por 30 dias. A função Edge `cleanup-old-records` remove automaticamente itens mais antigos diariamente através de um job `cron` no Supabase.
+
 ---
 
 ## 📞 Suporte
