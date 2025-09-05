@@ -7,11 +7,12 @@ export const useOptimizedEgressV2 = () => {
     totalDataTransferred: 0,
     cacheHits: 0,
     cacheMisses: 0,
-    bytesReduced: 0
+    bytesReduced: 0,
+    rls_performance_issues: 0 // Contador para problemas de RLS
   });
 
   const queryCache = useRef(new Map<string, { data: any; timestamp: number; size: number }>());
-  const CACHE_DURATION = 600000; // 10 minutos de cache super agressivo
+  const CACHE_DURATION = 1800000; // 30 minutos para tabelas com problemas de RLS
 
   // Otimizar query com campos mínimos
   const optimizeQuery = useCallback((baseQuery: any, essentialFields: string[]) => {
@@ -35,7 +36,21 @@ export const useOptimizedEgressV2 = () => {
     }
 
     // Executar query apenas se realmente necessário
-    const result = await queryFn();
+    let result;
+    try {
+      result = await queryFn();
+    } catch (error: any) {
+      // Se houver erro relacionado a RLS ou performance, incrementar contador
+      if (error?.message?.includes('timeout') || 
+          error?.message?.includes('policy') ||
+          error?.message?.includes('permission')) {
+        setEgressStats(prev => ({
+          ...prev,
+          rls_performance_issues: prev.rls_performance_issues + 1
+        }));
+      }
+      throw error;
+    }
     const dataSize = JSON.stringify(result).length;
 
     // Salvar no cache com persistência
@@ -85,7 +100,8 @@ export const useOptimizedEgressV2 = () => {
       totalDataTransferred: 0,
       cacheHits: 0,
       cacheMisses: 0,
-      bytesReduced: 0
+      bytesReduced: 0,
+      rls_performance_issues: 0
     });
   }, []);
 
