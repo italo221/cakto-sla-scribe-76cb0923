@@ -119,6 +119,9 @@ export default function InboxDarkMode() {
 
   // Efeito para recarregar tickets quando filtros mudarem
   useEffect(() => {
+    // Only run this effect after initial load and when we have tickets
+    if (!optimizedTicketsWithStatus.length) return;
+    
     if (activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas') {
       // Load more tickets when filters are active to ensure we get all relevant results
       const loadMoreForFilters = async () => {
@@ -131,7 +134,7 @@ export default function InboxDarkMode() {
       };
       loadMoreForFilters();
     }
-  }, [activeFilter, setorFilter, tagFilter]);
+  }, [activeFilter, setorFilter, tagFilter, optimizedTicketsWithStatus.length, hasMore, loadMoreTickets]);
 
   // Verificar parâmetro ticket na URL para abertura automática do modal
   useEffect(() => {
