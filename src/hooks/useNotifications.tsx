@@ -39,60 +39,10 @@ export function useNotifications() {
     fetchNotifications();
   }, [user]);
 
-  // Configurar realtime para novas notificações
+  // Realtime desabilitado para reduzir egress
   useEffect(() => {
-    if (!user) return;
-
-    const unsubscribe = subscribeToChannel('notifications-changes', (channel) => {
-      channel
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            const newNotification = payload.new as Notification;
-            setNotifications(prev => [newNotification, ...prev]);
-            if (!newNotification.is_read) {
-              setUnreadCount(prev => prev + 1);
-            }
-
-            // Mostrar toast para nova notificação
-            toast({
-              title: newNotification.title,
-              description: newNotification.message,
-              duration: 5000,
-            });
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            const updatedNotification = payload.new as Notification;
-            setNotifications(prev =>
-              prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
-            );
-
-            // Atualizar contador se foi marcada como lida
-            if (updatedNotification.is_read && payload.old?.is_read === false) {
-              setUnreadCount(prev => Math.max(0, prev - 1));
-            }
-          }
-        );
-    });
-
-    return () => {
-      unsubscribe();
-    };
+    // Realtime desabilitado para reduzir sobrecarga
+    return;
   }, [user, toast]);
 
   const fetchNotifications = async () => {
@@ -101,15 +51,29 @@ export function useNotifications() {
     try {
       const { data, error } = await supabase
         .from('notifications')
-        .select('id, user_id, ticket_id, type, title, message, is_read, created_at, updated_at') // Incluir todos os campos necessários
+        .select('id, ticket_id, type, title, is_read, created_at') // Apenas campos essenciais
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(30); // Reduzir ainda mais para diminuir egress
+        .limit(20); // Reduzir ainda mais para diminuir egress
 
       if (error) throw error;
 
-      setNotifications(data || []);
-      setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+      // Transformar dados para interface completa
+      const notificationsData: Notification[] = data?.map(item => ({
+        id: item.id,
+        user_id: user.id,
+        ticket_id: item.ticket_id,
+        comment_id: undefined,
+        type: item.type,
+        title: item.title,
+        message: '', // Não carregar message para reduzir egress
+        is_read: item.is_read,
+        created_at: item.created_at,
+        updated_at: ''
+      })) || [];
+      
+      setNotifications(notificationsData);
+      setUnreadCount(notificationsData.filter(n => !n.is_read).length);
     } catch (error) {
       console.error('Erro ao buscar notificações:', error);
     } finally {

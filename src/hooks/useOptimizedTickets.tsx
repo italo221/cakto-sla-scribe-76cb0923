@@ -49,9 +49,9 @@ interface UseOptimizedTicketsOptions {
   autoFetch?: boolean;
 }
 
-// Cache moderado para balancear performance e atualização
+// Cache agressivo para reduzir egress
 const ticketCache = new Map<string, { data: Ticket[]; timestamp: number }>();
-const CACHE_DURATION = 30000; // 30 segundos
+const CACHE_DURATION = 120000; // 2 minutos para reduzir requisições
 
 // Função para limpar cache completamente
 const clearAllCache = () => {
@@ -89,7 +89,7 @@ const createOptimizedSort = () => {
 export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) => {
   const {
     enableRealtime = false, // Desabilitar por padrão para reduzir egress
-    batchSize = 25, // Reduzir tamanho do batch
+    batchSize = 20, // Reduzir ainda mais o batch size
     sortFunction = createOptimizedSort(),
     autoFetch = true
   } = options;
@@ -143,25 +143,14 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
           titulo,
           solicitante,
           time_responsavel,
-          descricao,
           tipo_ticket,
           status,
           nivel_criticidade,
           pontuacao_total,
-          pontuacao_financeiro,
-          pontuacao_cliente,
-          pontuacao_reputacao,
-          pontuacao_urgencia,
-          pontuacao_operacional,
           data_criacao,
-          updated_at,
-          resolved_at,
-          observacoes,
           tags,
           setor_id,
-          responsavel_interno,
           prazo_interno,
-          prioridade_operacional,
           assignee_user_id
         `, { count: 'exact' })
         .order('data_criacao', { ascending: false })
@@ -179,32 +168,32 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       console.log('✅ Dados recebidos do Supabase:', data?.length || 0, 'tickets');
       if (typeof count === 'number') setTotalCount(count);
 
-      // Transformar dados completos
+      // Transformar dados otimizados
       const ticketsData: Ticket[] = data?.map((ticket: any) => ({
         id: ticket.id,
         ticket_number: ticket.ticket_number,
         titulo: ticket.titulo,
         time_responsavel: ticket.time_responsavel || ticket.solicitante || 'N/A',
         solicitante: ticket.solicitante,
-        descricao: ticket.descricao || '',
+        descricao: '', // Não carregar descrição na lista para reduzir egress
         tipo_ticket: ticket.tipo_ticket || 'Padrão',
         status: ticket.status,
         nivel_criticidade: ticket.nivel_criticidade,
         pontuacao_total: ticket.pontuacao_total || 0,
-        pontuacao_financeiro: ticket.pontuacao_financeiro || 0,
-        pontuacao_cliente: ticket.pontuacao_cliente || 0,
-        pontuacao_reputacao: ticket.pontuacao_reputacao || 0,
-        pontuacao_urgencia: ticket.pontuacao_urgencia || 0,
-        pontuacao_operacional: ticket.pontuacao_operacional || 0,
+        pontuacao_financeiro: 0, // Não carregar campos extras
+        pontuacao_cliente: 0,
+        pontuacao_reputacao: 0,
+        pontuacao_urgencia: 0,
+        pontuacao_operacional: 0,
         data_criacao: ticket.data_criacao,
-        updated_at: ticket.updated_at,
-        resolved_at: ticket.resolved_at,
-        observacoes: ticket.observacoes,
+        updated_at: '',
+        resolved_at: null,
+        observacoes: '',
         tags: ticket.tags || [],
         setor_id: ticket.setor_id,
-        responsavel_interno: ticket.responsavel_interno,
+        responsavel_interno: '',
         prazo_interno: ticket.prazo_interno,
-        prioridade_operacional: ticket.prioridade_operacional,
+        prioridade_operacional: 'media',
         assignee_user_id: ticket.assignee_user_id,
         assignee: null,
         sla_comentarios_internos: []
@@ -278,10 +267,10 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     return fetchTickets(nextPage);
   }, [fetchTickets, currentPage, hasMore]);
 
-  // Realtime temporariamente desabilitado para reduzir carga no Supabase
+  // Realtime permanentemente desabilitado para reduzir egress
   useEffect(() => {
-    // Desabilitado temporariamente devido à sobrecarga do Supabase
-    if (!enableRealtime || true) return; // Força desabilitar
+    // Desabilitado permanentemente para reduzir sobrecarga do Supabase
+    return; // Força desabilitar completamente
 
     console.log('🔗 Configurando canal realtime...');
 
