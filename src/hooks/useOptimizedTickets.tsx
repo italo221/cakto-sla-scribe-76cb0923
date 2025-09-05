@@ -107,12 +107,12 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       setLoading(true);
       setError(null);
 
-      // Implementar timeout para requisições de tickets
+      // Timeout ainda mais agressivo para reduzir Egress
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000);
+        setTimeout(() => reject(new Error('Request timeout after 8 seconds')), 8000);
       });
 
-      // Query ULTRA otimizada - apenas campos essenciais para reduzir Egress
+      // Query MÍNIMA - apenas 3 campos essenciais para reduzir drasticamente o Egress
       const fetchPromise = supabase
         .from('sla_demandas')
         .select(`
@@ -121,13 +121,10 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
           titulo,
           status,
           nivel_criticidade,
-          pontuacao_total,
-          data_criacao,
-          setor_id,
-          assignee_user_id
+          data_criacao
         `)
         .order('data_criacao', { ascending: false })
-        .limit(200); // Reduzir limite para diminuir egress
+        .limit(100); // Reduzir ainda mais o limite
 
       const { data, error } = await Promise.race([
         fetchPromise,
@@ -189,12 +186,43 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       console.error('❌ Erro ao carregar tickets:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
       
-      // Se for timeout e não temos cache, tentar novamente em 5 segundos
-      if (err instanceof Error && err.message.includes('timeout') && tickets.length === 0) {
-        console.log('⏰ Timeout detectado nos tickets, tentando novamente em 5 segundos...');
+      // Fallback para modo offline com dados mínimos
+      if (err instanceof Error && err.message.includes('timeout')) {
+        console.log('⚠️ Modo offline ativado - usando dados mínimos');
+        
+        // Se não temos dados em cache, criar dados mínimos de fallback
+        if (tickets.length === 0) {
+          const fallbackTickets: Ticket[] = [{
+            id: 'offline-1',
+            ticket_number: 'OFF-001',
+            titulo: 'Sistema em modo offline',
+            time_responsavel: 'Sistema',
+            solicitante: 'Sistema',
+            descricao: 'Conectividade limitada - dados reduzidos',
+            tipo_ticket: 'sistema',
+            status: 'em_andamento',
+            nivel_criticidade: 'P3',
+            pontuacao_total: 0,
+            pontuacao_financeiro: 0,
+            pontuacao_cliente: 0,
+            pontuacao_reputacao: 0,
+            pontuacao_urgencia: 0,
+            pontuacao_operacional: 0,
+            data_criacao: new Date().toISOString(),
+            tags: ['offline', 'sistema'],
+            assignee: null,
+            sla_comentarios_internos: []
+          }];
+          
+          setTickets(fallbackTickets);
+          sortedTicketsRef.current = fallbackTickets;
+        }
+        
+        // Tentar reconectar em 10 segundos (menos agressivo)
         setTimeout(() => {
+          console.log('🔄 Tentando reconectar...');
           fetchTickets(true);
-        }, 5000);
+        }, 10000);
       }
       
       return [];
