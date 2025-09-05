@@ -134,7 +134,7 @@ const JiraTicketCard = memo(({
       try {
         const { count, error } = await supabase
           .from('sla_comentarios_internos')
-          .select('*', { count: 'exact', head: true })
+          .select('id', { count: 'exact', head: true })
           .eq('sla_id', ticket.id);
         
         if (error) throw error;

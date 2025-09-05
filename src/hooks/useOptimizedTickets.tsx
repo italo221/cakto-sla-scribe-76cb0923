@@ -43,9 +43,9 @@ interface UseOptimizedTicketsOptions {
   sortFunction?: (a: Ticket, b: Ticket) => number;
 }
 
-// Cache para evitar refetching desnecessário
+// Cache mais agressivo para reduzir egress
 const ticketCache = new Map<string, { data: Ticket[]; timestamp: number }>();
-const CACHE_DURATION = 30000; // 30 segundos
+const CACHE_DURATION = 120000; // 2 minutos
 
 // Função para limpar cache completamente
 const clearAllCache = () => {
@@ -82,8 +82,8 @@ const createOptimizedSort = () => {
 
 export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) => {
   const {
-    enableRealtime = true,
-    batchSize = 50,
+    enableRealtime = false, // Desabilitar por padrão para reduzir egress
+    batchSize = 25, // Reduzir tamanho do batch
     sortFunction = createOptimizedSort()
   } = options;
 

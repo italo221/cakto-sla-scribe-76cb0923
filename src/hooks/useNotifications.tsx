@@ -101,10 +101,10 @@ export function useNotifications() {
     try {
       const { data, error } = await supabase
         .from('notifications')
-        .select('*')
+        .select('id, user_id, ticket_id, type, title, message, is_read, created_at, updated_at') // Incluir todos os campos necessários
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(30); // Reduzir ainda mais para diminuir egress
 
       if (error) throw error;
 

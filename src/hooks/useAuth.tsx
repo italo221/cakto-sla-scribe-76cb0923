@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Timeout para queries do perfil
       const profilePromise = supabase
         .from('profiles')
-        .select('*')
+        .select('user_id, nome_completo, email, avatar_url, role, user_type, ativo') // Apenas campos necessários
         .eq('user_id', userId)
         .single();
 

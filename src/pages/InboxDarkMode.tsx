@@ -73,8 +73,8 @@ export default function Inbox() {
     totalCount,
     hasMore
   } = useOptimizedTickets({
-    enableRealtime: true,
-    batchSize: 50
+    enableRealtime: false, // Desabilitar para reduzir egress
+    batchSize: 25 // Reduzir batch size
   });
 
   console.log('📊 InboxDarkMode - Estado atual:', {
