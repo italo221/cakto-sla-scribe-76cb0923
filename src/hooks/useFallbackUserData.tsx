@@ -56,11 +56,30 @@ export const useFallbackUserData = () => {
   }, []);
 
   const getFallbackProfitData = useCallback((email: string) => {
+    // Dados mais realistas para modo fallback durante problemas de RLS
     return {
       total_profit_30_days: 0,
       profit_count_30_days: 0,
-      profits: []
+      total_profit_7_days: 0,
+      profit_count_7_days: 0,
+      profits: [],
+      note: 'Dados de lucro indisponíveis durante otimização de políticas de segurança'
     };
+  }, []);
+
+  // Função específica para detectar problemas com user_profits RLS
+  const detectProfitsRlsIssue = useCallback(() => {
+    const errorMessages = [
+      'user_profits_timeout',
+      'policy evaluation timeout',
+      'auth.uid() performance',
+      'RLS policy slow'
+    ];
+    
+    // Verificar se há indicadores de problema de RLS
+    return errorMessages.some(msg => 
+      localStorage.getItem('recent_errors')?.includes(msg)
+    );
   }, []);
 
   return {
@@ -69,6 +88,7 @@ export const useFallbackUserData = () => {
     getFallbackUserData,
     getFallbackKycData,
     getFallbackRegistrationData,
-    getFallbackProfitData
+    getFallbackProfitData,
+    detectProfitsRlsIssue
   };
 };
