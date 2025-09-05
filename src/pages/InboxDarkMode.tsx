@@ -395,7 +395,7 @@ export default function InboxDarkMode() {
 
 
     return filtered;
-  }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, tagFilter, dateSort, criticalitySort, smartSearch]);
+  }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, tagFilter, dateSort, criticalitySort, smartSearch, setores]);
 
   // Contagem de tickets por setor - priorizar time_responsavel se existir, senão setor_id
   const setorCounts = useMemo(() => {
