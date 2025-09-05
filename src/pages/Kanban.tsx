@@ -48,10 +48,13 @@ interface Setor {
 
 export default function KanbanPage() {
   // Usar hook otimizado para tickets
-  const { 
-    tickets, 
-    loading, 
-    reloadTickets 
+  const {
+    tickets,
+    loading,
+    reloadTickets,
+    loadMoreTickets,
+    hasMore,
+    totalCount
   } = useOptimizedTickets({
     enableRealtime: true,
     batchSize: 100
@@ -501,8 +504,8 @@ export default function KanbanPage() {
                 <RefreshCw className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : viewMode === 'status' ? (
-              <TicketKanban 
-                tickets={filteredTickets} 
+              <TicketKanban
+                tickets={filteredTickets}
                 onOpenDetail={handleOpenTicketDetail}
                 onEditTicket={handleEditTicket}
                 onTicketUpdate={handleTicketUpdate}
@@ -519,6 +522,17 @@ export default function KanbanPage() {
             )}
           </CardContent>
         </Card>
+
+        {hasMore && !loading && (
+          <div className="flex flex-col items-center mt-4">
+            <Button onClick={loadMoreTickets} variant="outline" size="sm">
+              Carregar mais
+            </Button>
+            <span className="mt-2 text-xs text-muted-foreground">
+              {tickets.length} de {totalCount}
+            </span>
+          </div>
+        )}
 
         {/* Ticket Detail Modal */}
         {selectedTicket && (
