@@ -82,7 +82,7 @@ export default function InboxDarkMode() {
     hasMore
   } = useOptimizedTickets({
     enableRealtime: false, // Desabilitar para reduzir egress
-    batchSize: activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' ? 500 : 25 // Carregar mais tickets quando há filtros ativos
+    batchSize: 25 // Use fixed batch size to avoid dependency issues
   });
 
   // Exibir SupabaseStatus se não configurado ou com erro de conexão
@@ -120,7 +120,16 @@ export default function InboxDarkMode() {
   // Efeito para recarregar tickets quando filtros mudarem
   useEffect(() => {
     if (activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas') {
-      reloadTickets();
+      // Load more tickets when filters are active to ensure we get all relevant results
+      const loadMoreForFilters = async () => {
+        let currentCount = optimizedTicketsWithStatus.length;
+        // Keep loading until we have at least 500 tickets or no more available
+        while (currentCount < 500 && hasMore) {
+          await loadMoreTickets();
+          currentCount = optimizedTicketsWithStatus.length;
+        }
+      };
+      loadMoreForFilters();
     }
   }, [activeFilter, setorFilter, tagFilter]);
 
