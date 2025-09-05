@@ -49,9 +49,9 @@ interface UseOptimizedTicketsOptions {
   autoFetch?: boolean;
 }
 
-// Cache agressivo para reduzir egress
+// Cache máximo para reduzir egress e melhorar performance
 const ticketCache = new Map<string, { data: Ticket[]; timestamp: number }>();
-const CACHE_DURATION = 120000; // 2 minutos para reduzir requisições
+const CACHE_DURATION = 300000; // 5 minutos de cache
 
 // Função para limpar cache completamente
 const clearAllCache = () => {
@@ -89,7 +89,7 @@ const createOptimizedSort = () => {
 export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) => {
   const {
     enableRealtime = false, // Desabilitar por padrão para reduzir egress
-    batchSize = 20, // Reduzir ainda mais o batch size
+    batchSize = 15, // Reduzir ainda mais para diminuir egress
     sortFunction = createOptimizedSort(),
     autoFetch = true
   } = options;
@@ -141,17 +141,11 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
           id,
           ticket_number,
           titulo,
-          solicitante,
-          time_responsavel,
-          tipo_ticket,
           status,
           nivel_criticidade,
-          pontuacao_total,
           data_criacao,
-          tags,
           setor_id,
-          prazo_interno,
-          assignee_user_id
+          prazo_interno
         `, { count: 'exact' })
         .order('data_criacao', { ascending: false })
         .range(from, to);
@@ -168,19 +162,19 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       console.log('✅ Dados recebidos do Supabase:', data?.length || 0, 'tickets');
       if (typeof count === 'number') setTotalCount(count);
 
-      // Transformar dados otimizados
+      // Transformar dados ultra-otimizados (apenas 8 campos críticos)
       const ticketsData: Ticket[] = data?.map((ticket: any) => ({
         id: ticket.id,
         ticket_number: ticket.ticket_number,
         titulo: ticket.titulo,
-        time_responsavel: ticket.time_responsavel || ticket.solicitante || 'N/A',
-        solicitante: ticket.solicitante,
-        descricao: '', // Não carregar descrição na lista para reduzir egress
-        tipo_ticket: ticket.tipo_ticket || 'Padrão',
+        time_responsavel: 'N/A', // Valor padrão para reduzir consulta
+        solicitante: 'N/A', // Valor padrão para reduzir consulta
+        descricao: '', // Não carregar
+        tipo_ticket: 'Padrão', // Valor padrão
         status: ticket.status,
         nivel_criticidade: ticket.nivel_criticidade,
-        pontuacao_total: ticket.pontuacao_total || 0,
-        pontuacao_financeiro: 0, // Não carregar campos extras
+        pontuacao_total: 0, // Valor padrão
+        pontuacao_financeiro: 0,
         pontuacao_cliente: 0,
         pontuacao_reputacao: 0,
         pontuacao_urgencia: 0,
@@ -189,12 +183,12 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
         updated_at: '',
         resolved_at: null,
         observacoes: '',
-        tags: ticket.tags || [],
+        tags: [], // Não carregar tags para reduzir egress
         setor_id: ticket.setor_id,
         responsavel_interno: '',
         prazo_interno: ticket.prazo_interno,
         prioridade_operacional: 'media',
-        assignee_user_id: ticket.assignee_user_id,
+        assignee_user_id: null, // Não carregar para reduzir consulta
         assignee: null,
         sla_comentarios_internos: []
       })) || [];
