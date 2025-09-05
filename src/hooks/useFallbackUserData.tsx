@@ -73,9 +73,11 @@ export const useFallbackUserData = () => {
   const detectProfitsRlsIssue = useCallback(() => {
     const errorMessages = [
       'user_profits_timeout',
+      'user_profits_auth_uid_timeout', // Novo: específico para auth.uid() per-row
       'policy evaluation timeout',
       'auth.uid() performance',
-      'RLS policy slow'
+      'RLS policy slow',
+      'per-row function evaluation' // Novo: específico para o problema relatado
     ];
     
     // Verificar se há indicadores de problema de RLS

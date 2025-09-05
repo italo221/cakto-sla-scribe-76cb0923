@@ -51,11 +51,11 @@ export const useOptimizedProfits = () => {
             .order('profit_date', { ascending: false })
             .limit(20); // Limitar drasticamente para reduzir impacto RLS
 
-          // Timeout de 10 segundos para evitar travamento
+          // Timeout de 5 segundos (reduzido) para evitar travamento por auth.uid() per-row
           const { data, error } = await Promise.race([
             profitQuery,
             new Promise<never>((_, reject) => 
-              setTimeout(() => reject(new Error('user_profits_timeout')), 10000)
+              setTimeout(() => reject(new Error('user_profits_auth_uid_timeout')), 5000)
             )
           ]);
 
