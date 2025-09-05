@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { subscribeToChannel } from '@/lib/realtimeManager';
 import { useOptimizedEgressV2 } from './useOptimizedEgressV2';
+import { useFallbackTickets } from './useFallbackTickets';
 
 // Exportar o tipo de ticket para reutilização em outros hooks
 export interface Ticket {
@@ -50,9 +51,9 @@ interface UseOptimizedTicketsOptions {
   autoFetch?: boolean;
 }
 
-// Cache máximo para reduzir egress e melhorar performance
+// Cache extremamente agressivo para compensar índices duplicados
 const ticketCache = new Map<string, { data: Ticket[]; timestamp: number }>();
-const CACHE_DURATION = 300000; // 5 minutos de cache
+const CACHE_DURATION = 900000; // 15 minutos de cache máximo
 
 // Função para limpar cache completamente
 const clearAllCache = () => {
@@ -90,7 +91,7 @@ const createOptimizedSort = () => {
 export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) => {
   const {
     enableRealtime = false, // Permanentemente desabilitado
-    batchSize = 10, // Reduzir para 10 tickets máximo
+    batchSize = 5, // Reduzir drasticamente para 5 tickets para compensar índices duplicados
     sortFunction = createOptimizedSort(),
     autoFetch = true
   } = options;
@@ -226,15 +227,29 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       console.error('❌ Erro ao carregar tickets:', error);
       
       let errorMessage = 'Erro ao carregar tickets';
+      let useFallback = false;
+      
       if (error?.message) {
-        if (error.message.includes('upstream request timeout')) {
-          errorMessage = 'Servidor sobrecarregado. Tente novamente em alguns minutos.';
+        if (error.message.includes('upstream request timeout') || 
+            error.message.includes('timeout') ||
+            error.message.includes('rate limit')) {
+          errorMessage = 'Sistema sobrecarregado. Usando dados em cache.';
+          useFallback = true;
         } else {
           errorMessage = error.message;
         }
       }
       
       setError(errorMessage);
+      
+      // Se houver problemas de performance, usar fallback
+      if (useFallback) {
+        const fallback = useFallbackTickets();
+        setTickets(fallback.tickets);
+        setTotalCount(fallback.tickets.length);
+        console.log('🔄 Usando dados de fallback devido à sobrecarga');
+        return fallback.tickets;
+      }
       
       // Se houver dados em cache, usar como fallback
       if (ticketCache.has(cacheKey)) {
