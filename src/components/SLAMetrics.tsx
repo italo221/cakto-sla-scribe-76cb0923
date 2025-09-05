@@ -16,7 +16,7 @@ interface SLAMetricsProps {
 
 export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
   const { policies, getPolicyBySetor, calculateSLADeadline } = useSLAPolicies();
-  const { ticketsWithStatus } = useOptimizedTickets({ enableRealtime: true });
+  const { ticketsWithStatus } = useOptimizedTickets({ enableRealtime: false }); // ❌ Desabilitado para reduzir queries
   const [selectedSetorId, setSelectedSetorId] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('30');
 

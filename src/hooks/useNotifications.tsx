@@ -39,9 +39,9 @@ export function useNotifications() {
     fetchNotifications();
   }, [user]);
 
-  // Realtime desabilitado para reduzir egress
+  // ❌ REALTIME COMPLETAMENTE DESABILITADO - Reduzir egress e overhead
   useEffect(() => {
-    // Realtime desabilitado para reduzir sobrecarga
+    console.warn('⚠️ Realtime de notificações desabilitado permanentemente');
     return;
   }, [user, toast]);
 

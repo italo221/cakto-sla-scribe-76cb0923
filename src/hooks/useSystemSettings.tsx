@@ -117,7 +117,7 @@ export const useSystemSettings = () => {
       fetchSystemSettings();
     }
 
-    // Configurar subscription em tempo real
+    // ❌ Realtime desabilitado - sem subscriptions
     const unsubscribe = setupRealtimeSubscription();
 
     // Cleanup

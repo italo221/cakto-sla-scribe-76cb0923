@@ -167,7 +167,7 @@ export const SystemConfigProvider = ({ children }: { children: ReactNode }) => {
   // Inicializar ao montar o provider
   useEffect(() => {
     loadInitialConfig();
-    setupRealtimeSubscription();
+    // ❌ Realtime desabilitado - setupRealtimeSubscription();
 
     return () => {
       if (subscriptionRef.current) {
