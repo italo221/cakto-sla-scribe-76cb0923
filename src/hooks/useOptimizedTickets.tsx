@@ -107,66 +107,99 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       setLoading(true);
       setError(null);
 
-      // Timeout ainda mais agressivo para reduzir Egress
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout after 8 seconds')), 8000);
-      });
-
-      // Query MÍNIMA - apenas 3 campos essenciais para reduzir drasticamente o Egress
-      const fetchPromise = supabase
+      // Query otimizada - buscar apenas campos necessários incluindo responsável
+      const { data, error } = await supabase
         .from('sla_demandas')
         .select(`
           id,
           ticket_number,
           titulo,
+          time_responsavel,
+          solicitante,
+          descricao,
+          tipo_ticket,
           status,
           nivel_criticidade,
-          data_criacao
+          pontuacao_total,
+          pontuacao_financeiro,
+          pontuacao_cliente,
+          pontuacao_reputacao,
+          pontuacao_urgencia,
+          pontuacao_operacional,
+          data_criacao,
+          updated_at,
+          resolved_at,
+          observacoes,
+          tags,
+          setor_id,
+          responsavel_interno,
+          prazo_interno,
+          prioridade_operacional,
+          assignee_user_id
         `)
         .order('data_criacao', { ascending: false })
-        .limit(100); // Reduzir ainda mais o limite
-
-      const { data, error } = await Promise.race([
-        fetchPromise,
-        timeoutPromise
-      ]) as any;
+        .limit(500); // Limitar resultados para performance
 
       if (error) throw error;
 
-      // Simplificar processamento - não buscar assignees e comentários por enquanto
+      // Transformar dados e buscar informações do responsável
       const ticketsData: Ticket[] = [];
       
       if (data && data.length > 0) {
-        // Apenas mapear os dados básicos sem queries adicionais
+        // Buscar IDs únicos de responsáveis
+        const assigneeIds = Array.from(new Set(
+          data.filter(ticket => ticket.assignee_user_id)
+               .map(ticket => ticket.assignee_user_id)
+        ));
+        
+        // Buscar dados dos responsáveis em uma query separada
+        let assigneeMap: Record<string, any> = {};
+        if (assigneeIds.length > 0) {
+          const { data: assignees } = await supabase
+            .from('profiles')
+            .select('user_id, nome_completo, email, avatar_url')
+            .in('user_id', assigneeIds);
+          
+          if (assignees) {
+            assigneeMap = assignees.reduce((acc, assignee) => {
+              acc[assignee.user_id] = assignee;
+              return acc;
+            }, {});
+          }
+        }
+        
+        // Carregar comentários separadamente para todos os tickets
+        const ticketIds = data.map(ticket => ticket.id);
+        let commentsData: any[] = [];
+        
+        if (ticketIds.length > 0) {
+          const { data: comments, error: commentsError } = await supabase
+            .from('sla_comentarios_internos')
+            .select('sla_id, comentario')
+            .in('sla_id', ticketIds);
+          
+          if (commentsError) {
+            console.error('Error loading comments:', commentsError);
+          } else {
+            commentsData = comments || [];
+          }
+        }
+
+        // Agrupar comentários por ticket ID
+        const commentsByTicket = commentsData.reduce((acc: any, comment: any) => {
+          if (!acc[comment.sla_id]) {
+            acc[comment.sla_id] = [];
+          }
+          acc[comment.sla_id].push({ comentario: comment.comentario });
+          return acc;
+        }, {});
+        
+        // Combinar dados dos tickets com informações dos responsáveis e comentários
         data.forEach((ticket: any) => {
           ticketsData.push({
-            id: ticket.id,
-            ticket_number: ticket.ticket_number,
-            titulo: ticket.titulo,
-            time_responsavel: ticket.time_responsavel || '',
-            solicitante: ticket.solicitante || '',
-            descricao: ticket.descricao || '',
-            tipo_ticket: ticket.tipo_ticket || 'bug',
-            status: ticket.status,
-            nivel_criticidade: ticket.nivel_criticidade,
-            pontuacao_total: ticket.pontuacao_total || 0,
-            pontuacao_financeiro: ticket.pontuacao_financeiro || 0,
-            pontuacao_cliente: ticket.pontuacao_cliente || 0,
-            pontuacao_reputacao: ticket.pontuacao_reputacao || 0,
-            pontuacao_urgencia: ticket.pontuacao_urgencia || 0,
-            pontuacao_operacional: ticket.pontuacao_operacional || 0,
-            data_criacao: ticket.data_criacao,
-            updated_at: ticket.updated_at,
-            resolved_at: ticket.resolved_at,
-            observacoes: ticket.observacoes,
-            tags: ticket.tags || [],
-            setor_id: ticket.setor_id,
-            responsavel_interno: ticket.responsavel_interno,
-            prazo_interno: ticket.prazo_interno,
-            prioridade_operacional: ticket.prioridade_operacional,
-            assignee_user_id: ticket.assignee_user_id,
-            assignee: null, // Não buscar por enquanto para reduzir egress
-            sla_comentarios_internos: [] // Não buscar por enquanto para reduzir egress
+            ...ticket,
+            assignee: ticket.assignee_user_id ? assigneeMap[ticket.assignee_user_id] || null : null,
+            sla_comentarios_internos: commentsByTicket[ticket.id] || []
           });
         });
       }
@@ -183,48 +216,8 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       
       return sortedData;
     } catch (err) {
-      console.error('❌ Erro ao carregar tickets:', err);
+      console.error('Erro ao carregar tickets:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
-      
-      // Fallback para modo offline com dados mínimos
-      if (err instanceof Error && err.message.includes('timeout')) {
-        console.log('⚠️ Modo offline ativado - usando dados mínimos');
-        
-        // Se não temos dados em cache, criar dados mínimos de fallback
-        if (tickets.length === 0) {
-          const fallbackTickets: Ticket[] = [{
-            id: 'offline-1',
-            ticket_number: 'OFF-001',
-            titulo: 'Sistema em modo offline',
-            time_responsavel: 'Sistema',
-            solicitante: 'Sistema',
-            descricao: 'Conectividade limitada - dados reduzidos',
-            tipo_ticket: 'sistema',
-            status: 'em_andamento',
-            nivel_criticidade: 'P3',
-            pontuacao_total: 0,
-            pontuacao_financeiro: 0,
-            pontuacao_cliente: 0,
-            pontuacao_reputacao: 0,
-            pontuacao_urgencia: 0,
-            pontuacao_operacional: 0,
-            data_criacao: new Date().toISOString(),
-            tags: ['offline', 'sistema'],
-            assignee: null,
-            sla_comentarios_internos: []
-          }];
-          
-          setTickets(fallbackTickets);
-          sortedTicketsRef.current = fallbackTickets;
-        }
-        
-        // Tentar reconectar em 10 segundos (menos agressivo)
-        setTimeout(() => {
-          console.log('🔄 Tentando reconectar...');
-          fetchTickets(true);
-        }, 10000);
-      }
-      
       return [];
     } finally {
       setLoading(false);

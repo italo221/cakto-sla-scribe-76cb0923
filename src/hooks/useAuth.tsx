@@ -69,11 +69,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (profileError) {
         console.error('Erro ao buscar perfil:', profileError);
-        // Se há erro de autenticação, fazer logout
-        if (profileError.code === 'PGRST301' || profileError.message?.includes('JWT')) {
-          console.log('Token expirado, fazendo logout...');
-          await signOut();
-        }
         return;
       }
 
@@ -98,10 +93,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setSetores(setoresData || []);
     } catch (error) {
       console.error('Erro ao buscar dados do usuário:', error);
-      // Se há erro de rede ou autenticação, fazer logout
-      if (error instanceof Error && error.message?.includes('auth')) {
-        await signOut();
-      }
     }
   };
 
@@ -109,8 +100,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Configurar listener de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.id);
-        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -127,36 +116,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     );
 
-    // Verificar sessão atual com retry em caso de erro
-    const initializeAuth = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Erro ao obter sessão:', error);
-          // Se há erro de token, tentar refresh
-          if (error.message?.includes('refresh_token_not_found') || error.message?.includes('Invalid Refresh Token')) {
-            console.log('Token inválido, redirecionando para login...');
-            await supabase.auth.signOut();
-          }
-          setLoading(false);
-          return;
-        }
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          fetchProfile(session.user.id);
-        }
-        setLoading(false);
-      } catch (error) {
-        console.error('Erro inesperado na inicialização:', error);
-        setLoading(false);
+    // Verificar sessão atual
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchProfile(session.user.id);
       }
-    };
-
-    initializeAuth();
+      setLoading(false);
+    });
 
     return () => subscription.unsubscribe();
   }, []);
