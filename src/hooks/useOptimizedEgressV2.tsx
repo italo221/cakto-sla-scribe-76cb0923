@@ -12,7 +12,7 @@ export const useOptimizedEgressV2 = () => {
   });
 
   const queryCache = useRef(new Map<string, { data: any; timestamp: number; size: number }>());
-  const CACHE_DURATION = 1800000; // 30 minutos para tabelas com problemas de RLS
+  const CACHE_DURATION = 7200000; // 2 horas para tabelas com RLS crítica (user_kyc)
 
   // Otimizar query com campos mínimos
   const optimizeQuery = useCallback((baseQuery: any, essentialFields: string[]) => {

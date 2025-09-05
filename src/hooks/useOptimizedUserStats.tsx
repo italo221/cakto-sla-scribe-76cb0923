@@ -123,30 +123,44 @@ export const useOptimizedUserStats = () => {
     }
   }, [cachedQuery]);
 
-  // Função otimizada para buscar apenas status KYC (mais comum)
+  // Função ultra-otimizada para buscar apenas status KYC (evita RLS lenta)
   const fetchKycStatus = useCallback(async (email: string) => {
     if (!email) return 'not_started';
 
     try {
-      const result = await cachedQuery(`kyc_status_${email}`, async () => {
-        // Consulta ultra-simplificada para evitar problema de RLS
-        const { data, error } = await supabase
-          .from('user_kyc')
-          .select('kyc_status') // Apenas 1 campo para reduzir egress
-          .eq('email', email)
-          .limit(1)
-          .maybeSingle();
+      // Cache de 2 horas para KYC devido ao problema crítico de auth.uid() por linha
+      const result = await cachedQuery(`kyc_status_ultra_${email}`, async () => {
+        try {
+          console.log('🔍 Consulta KYC ultra-otimizada (evitando RLS lenta)...');
+          
+          // Timeout de 2 segundos para evitar travamento por auth.uid() RLS
+          const { data, error } = await Promise.race([
+            supabase
+              .from('user_kyc')
+              .select('kyc_status') // Apenas 1 campo para minimizar impacto
+              .eq('email', email)
+              .limit(1)
+              .maybeSingle(),
+            new Promise<never>((_, reject) => 
+              setTimeout(() => reject(new Error('kyc_ultra_timeout')), 2000)
+            )
+          ]);
 
-        if (error || !data) {
-          return 'not_started';
+          if (error) {
+            console.warn('KYC RLS está lenta (auth.uid() issue):', error);
+            return 'rls_performance_issue';
+          }
+
+          return data?.kyc_status || 'not_started';
+        } catch (timeoutError) {
+          console.warn('KYC timeout por RLS lenta:', timeoutError);
+          return 'rls_timeout';
         }
-
-        return data.kyc_status;
       });
 
       return result;
     } catch (error) {
-      console.warn('Erro ao buscar status KYC:', error);
+      console.warn('Erro crítico KYC (auth.uid() RLS):', error);
       return 'system_optimization'; // Status especial durante otimização
     }
   }, [cachedQuery]);

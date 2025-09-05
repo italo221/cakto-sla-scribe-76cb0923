@@ -34,14 +34,16 @@ export const useFallbackUserData = () => {
   }, []);
 
   const getFallbackKycData = useCallback((email: string) => {
+    // Dados específicos para problema de RLS auth.uid() na user_kyc
     return {
-      id: `fallback-${email}`,
+      id: `fallback-kyc-${email}`,
       email,
-      kyc_status: 'verified',
+      kyc_status: 'rls_bypass_mode', // Status especial para indicar modo fallback
       kyc_date: new Date().toISOString(),
-      verification_level: 'basic',
+      verification_level: 'system_fallback',
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      note: 'Dados KYC em modo fallback devido à otimização de políticas auth.uid()'
     };
   }, []);
 
@@ -82,6 +84,21 @@ export const useFallbackUserData = () => {
     );
   }, []);
 
+  // Função específica para detectar problemas com user_kyc RLS auth.uid()
+  const detectKycRlsIssue = useCallback(() => {
+    const kycErrorMessages = [
+      'user_kyc_rls_timeout',
+      'kyc_ultra_timeout', 
+      'kyc_status_timeout',
+      'auth.uid() performance',
+      'RLS policy slow on user_kyc'
+    ];
+    
+    // Verificar se há indicadores específicos de problema RLS user_kyc
+    const recentErrors = localStorage.getItem('recent_kyc_errors') || '';
+    return kycErrorMessages.some(msg => recentErrors.includes(msg));
+  }, []);
+
   return {
     fallbackMode,
     setFallbackMode,
@@ -89,6 +106,7 @@ export const useFallbackUserData = () => {
     getFallbackKycData,
     getFallbackRegistrationData,
     getFallbackProfitData,
-    detectProfitsRlsIssue
+    detectProfitsRlsIssue,
+    detectKycRlsIssue
   };
 };
