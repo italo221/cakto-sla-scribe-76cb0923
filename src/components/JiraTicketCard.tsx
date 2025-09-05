@@ -208,7 +208,33 @@ const JiraTicketCard = memo(({
   // Destaque sutil para tickets atrasados
   isExpired && "bg-red-50/30 dark:bg-red-900/10",
   // Fundo verde claro para tickets resolvidos (apenas no modo lista)
-  ticket.status === 'resolvido' && "bg-green-50 dark:bg-green-900/10")} onClick={() => onOpenDetail(ticket)}>
+  // Destaque sutil para tickets atrasados
+  isExpired && "bg-red-50/30 dark:bg-red-900/10",
+  // Fundo verde claro para tickets resolvidos (apenas no modo lista)
+  ticket.status === 'resolvido' && "bg-green-50 dark:bg-green-900/10")} onClick={() => {
+    console.log('🖱️ JiraTicketCard clicado:', { 
+      ticketId: ticket.id, 
+      titulo: ticket.titulo,
+      onOpenDetail: typeof onOpenDetail 
+    });
+    
+    if (!onOpenDetail) {
+      console.error('❌ onOpenDetail não está definido');
+      return;
+    }
+    
+    if (!ticket) {
+      console.error('❌ ticket não está definido');
+      return;
+    }
+    
+    try {
+      onOpenDetail(ticket);
+      console.log('✅ onOpenDetail chamado com sucesso');
+    } catch (error) {
+      console.error('❌ Erro ao chamar onOpenDetail:', error);
+    }
+  }}>
       <CardContent className="py-3 px-4 space-y-3">
         {/* Header - Número e badges */}
         <div className="flex items-center justify-between">

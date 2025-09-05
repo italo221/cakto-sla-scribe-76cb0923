@@ -499,8 +499,21 @@ export default function Inbox() {
     return tempos[criticality as keyof typeof tempos] || '7 dias úteis';
   };
   const handleOpenTicketDetail = (ticket: Ticket) => {
+    console.log('🎯 handleOpenTicketDetail chamado:', { 
+      ticketId: ticket?.id, 
+      titulo: ticket?.titulo,
+      ticketCompleto: ticket 
+    });
+    
+    if (!ticket) {
+      console.error('❌ Ticket é null ou undefined');
+      return;
+    }
+    
     setSelectedTicket(ticket);
     setModalOpen(true);
+    
+    console.log('✅ Modal configurado para abrir');
   };
   
   const handleOpenTicketById = async (ticketId: string) => {
