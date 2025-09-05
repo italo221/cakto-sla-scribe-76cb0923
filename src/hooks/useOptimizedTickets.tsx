@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { subscribeToChannel } from '@/lib/realtimeManager';
 
-interface Ticket {
+// Exportar o tipo de ticket para reutilização em outros hooks
+export interface Ticket {
   id: string;
   ticket_number: string;
   titulo: string;
@@ -37,10 +38,15 @@ interface Ticket {
   sla_comentarios_internos?: Array<{ comentario: string }>;
 }
 
+// Ticket enriquecido com flag de atraso
+export type TicketWithStatus = Ticket & { isExpired: boolean };
+
 interface UseOptimizedTicketsOptions {
   enableRealtime?: boolean;
   batchSize?: number;
   sortFunction?: (a: Ticket, b: Ticket) => number;
+  // Permite desabilitar o carregamento automático para evitar requisições duplicadas
+  autoFetch?: boolean;
 }
 
 // Cache moderado para balancear performance e atualização
@@ -84,7 +90,8 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
   const {
     enableRealtime = false, // Desabilitar por padrão para reduzir egress
     batchSize = 25, // Reduzir tamanho do batch
-    sortFunction = createOptimizedSort()
+    sortFunction = createOptimizedSort(),
+    autoFetch = true
   } = options;
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -351,13 +358,14 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
 
   // Carregar tickets na inicialização
   useEffect(() => {
+    if (!autoFetch) return;
     // Limpar cache ao inicializar para garantir dados frescos
     clearAllCache();
     fetchTickets(1, true);
-  }, []); // Remove fetchTickets dependency to prevent infinite loop
+  }, [autoFetch, fetchTickets]);
 
   // Memoizar tickets com status para evitar recálculos
-  const ticketsWithStatus = useMemo(() => {
+  const ticketsWithStatus = useMemo<TicketWithStatus[]>(() => {
     return tickets.map(ticket => {
       // Calcular se está atrasado de forma otimizada
       const timeConfig = {

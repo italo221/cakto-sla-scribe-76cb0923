@@ -86,7 +86,7 @@ export default function Inbox() {
   });
 
   // Usar hook centralizado para estatísticas sincronizadas  
-  const { stats } = useTicketStats();
+  const { stats } = useTicketStats(optimizedTicketsWithStatus);
 
   const [setores, setSetores] = useState<Setor[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -804,7 +804,13 @@ export default function Inbox() {
           {loading ? <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
               <p className="mt-2 text-muted-foreground dark:text-muted-foreground">Carregando tickets...</p>
-            </div> : filteredTicketsWithStatus.length === 0 ? <Card className="border-dashed bg-card dark:bg-card">
+            </div> : error ? <Card className="border-destructive bg-destructive/10">
+              <CardContent className="p-8 text-center">
+                <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-destructive mb-2">Falha ao carregar tickets</h3>
+                <p className="text-destructive text-sm">{error}</p>
+              </CardContent>
+            </Card> : filteredTicketsWithStatus.length === 0 ? <Card className="border-dashed bg-card dark:bg-card">
               <CardContent className="p-8 text-center">
                 <InboxIcon className="h-12 w-12 text-muted-foreground dark:text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground dark:text-foreground mb-2">
