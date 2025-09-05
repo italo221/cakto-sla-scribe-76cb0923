@@ -66,11 +66,21 @@ export const SystemConfigProvider = ({ children }: { children: ReactNode }) => {
     isLoading = true;
     
     try {
+      // Implementar timeout para configurações
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Configuration timeout after 8 seconds')), 8000);
+      });
+
       // Carregar todas as configurações de uma vez
-      const { data: settingsData, error } = await supabase
+      const fetchPromise = supabase
         .from('system_settings')
         .select('setting_key, setting_value')
         .in('setting_key', ['system_name', 'system_logo', 'primary_color', 'secondary_color']);
+
+      const { data: settingsData, error } = await Promise.race([
+        fetchPromise,
+        timeoutPromise
+      ]) as any;
 
       if (error) throw error;
 

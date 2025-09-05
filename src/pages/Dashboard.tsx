@@ -23,16 +23,28 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchSetores = async () => {
       try {
-        const { data, error } = await supabase
+        // Implementar timeout para setores
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Setores timeout after 8 seconds')), 8000);
+        });
+
+        const fetchPromise = supabase
           .from('setores')
           .select('id, nome, descricao')
           .eq('ativo', true)
           .order('nome');
 
+        const { data, error } = await Promise.race([
+          fetchPromise,
+          timeoutPromise
+        ]) as any;
+
         if (error) throw error;
         setSetores(data || []);
       } catch (err) {
-        console.error('Error fetching setores:', err);
+        console.error('❌ Error fetching setores:', err);
+        // Em caso de erro, continuar com array vazio para não travar a interface
+        setSetores([]);
       }
     };
 
