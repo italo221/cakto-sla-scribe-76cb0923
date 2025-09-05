@@ -59,6 +59,17 @@ interface Setor {
   nome: string;
 }
 export default function InboxDarkMode() {
+  console.log('InboxDarkMode component starting');
+  
+  // Check Supabase configuration first, before any hooks
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="p-6">
+        <SupabaseStatus />
+      </div>
+    );
+  }
+  
   const { user, canEdit, isSuperAdmin } = useAuth();
   const { toast } = useToast();
 
@@ -66,6 +77,8 @@ export default function InboxDarkMode() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'aberto' | 'em_andamento' | 'resolvido' | 'fechado' | 'atrasado' | 'critico' | 'info-incompleta'>('all');
   const [setorFilter, setSetorFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('todas');
+  
+  console.log('Filters initialized:', { activeFilter, setorFilter, tagFilter });
 
   // Hook de tickets otimizados (após declaração dos filtros)
   const {
@@ -84,15 +97,6 @@ export default function InboxDarkMode() {
     enableRealtime: false, // Desabilitar para reduzir egress
     batchSize: 25 // Use fixed batch size to avoid dependency issues
   });
-
-  // Exibir SupabaseStatus se não configurado ou com erro de conexão
-  if (!isSupabaseConfigured) {
-    return (
-      <div className="p-6">
-        <SupabaseStatus />
-      </div>
-    );
-  }
 
   // Usar hook especializado para estatísticas globais que busca TODOS os tickets
   const { stats, reloadStats } = useGlobalTicketStats();
