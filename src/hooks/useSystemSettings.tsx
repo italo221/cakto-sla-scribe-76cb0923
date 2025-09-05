@@ -37,11 +37,21 @@ export const useSystemSettings = () => {
     }
     
     try {
-      // Buscar configurações de forma mais eficiente
-      const { data: settingsData, error } = await supabase
+      // Implementar timeout personalizado
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout after 10 seconds')), 10000);
+      });
+
+      // Buscar configurações com timeout
+      const fetchPromise = supabase
         .from('system_settings')
         .select('setting_key, setting_value')
         .in('setting_key', ['system_name', 'system_logo']);
+
+      const { data: settingsData, error } = await Promise.race([
+        fetchPromise,
+        timeoutPromise
+      ]) as any;
 
       if (error) throw error;
 
@@ -66,12 +76,20 @@ export const useSystemSettings = () => {
       setIsReady(true);
       isInitialLoading = false;
     } catch (error) {
-      console.error('Erro ao carregar configurações do sistema:', error);
+      console.error('❌ Erro ao carregar configurações:', error);
       // Em caso de erro, usar valores padrão
       setSystemName('Manhattan');
       setSystemLogo(null);
       setIsReady(true);
       isInitialLoading = false;
+      
+      // Se for timeout e não temos cache, tentar novamente em 5 segundos
+      if (error instanceof Error && error.message.includes('timeout') && !settingsCache) {
+        console.log('⏰ Timeout detectado, tentando novamente em 5 segundos...');
+        setTimeout(() => {
+          fetchSystemSettings(true);
+        }, 5000);
+      }
     } finally {
       setLoading(false);
     }

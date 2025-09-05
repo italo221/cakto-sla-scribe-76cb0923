@@ -57,3 +57,17 @@ export function SkeletonCard() {
     </div>
   );
 }
+
+export function TimeoutWarning({ message }: { message?: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center p-8 text-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+      <p className="text-muted-foreground mb-2">
+        {message || "Carregando dados..."}
+      </p>
+      <p className="text-xs text-muted-foreground">
+        Se o carregamento está lento, pode ser instabilidade temporária na conexão.
+      </p>
+    </div>
+  );
+}

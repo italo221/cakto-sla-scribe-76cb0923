@@ -107,8 +107,13 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       setLoading(true);
       setError(null);
 
+      // Implementar timeout para requisições de tickets
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000);
+      });
+
       // Query otimizada - buscar apenas campos necessários incluindo responsável
-      const { data, error } = await supabase
+      const fetchPromise = supabase
         .from('sla_demandas')
         .select(`
           id,
@@ -140,6 +145,11 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
         .order('data_criacao', { ascending: false })
         .limit(500); // Limitar resultados para performance
 
+      const { data, error } = await Promise.race([
+        fetchPromise,
+        timeoutPromise
+      ]) as any;
+
       if (error) throw error;
 
       // Transformar dados e buscar informações do responsável
@@ -150,7 +160,8 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
         const assigneeIds = Array.from(new Set(
           data.filter(ticket => ticket.assignee_user_id)
                .map(ticket => ticket.assignee_user_id)
-        ));
+               .filter(Boolean)
+        )) as string[];
         
         // Buscar dados dos responsáveis em uma query separada
         let assigneeMap: Record<string, any> = {};
@@ -216,8 +227,17 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       
       return sortedData;
     } catch (err) {
-      console.error('Erro ao carregar tickets:', err);
+      console.error('❌ Erro ao carregar tickets:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
+      
+      // Se for timeout e não temos cache, tentar novamente em 5 segundos
+      if (err instanceof Error && err.message.includes('timeout') && tickets.length === 0) {
+        console.log('⏰ Timeout detectado nos tickets, tentando novamente em 5 segundos...');
+        setTimeout(() => {
+          fetchTickets(true);
+        }, 5000);
+      }
+      
       return [];
     } finally {
       setLoading(false);
