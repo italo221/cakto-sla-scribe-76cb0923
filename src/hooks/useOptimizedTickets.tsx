@@ -112,38 +112,22 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
         setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000);
       });
 
-      // Query otimizada - buscar apenas campos necessários incluindo responsável
+      // Query ULTRA otimizada - apenas campos essenciais para reduzir Egress
       const fetchPromise = supabase
         .from('sla_demandas')
         .select(`
           id,
           ticket_number,
           titulo,
-          time_responsavel,
-          solicitante,
-          descricao,
-          tipo_ticket,
           status,
           nivel_criticidade,
           pontuacao_total,
-          pontuacao_financeiro,
-          pontuacao_cliente,
-          pontuacao_reputacao,
-          pontuacao_urgencia,
-          pontuacao_operacional,
           data_criacao,
-          updated_at,
-          resolved_at,
-          observacoes,
-          tags,
           setor_id,
-          responsavel_interno,
-          prazo_interno,
-          prioridade_operacional,
           assignee_user_id
         `)
         .order('data_criacao', { ascending: false })
-        .limit(500); // Limitar resultados para performance
+        .limit(200); // Reduzir limite para diminuir egress
 
       const { data, error } = await Promise.race([
         fetchPromise,
@@ -152,65 +136,40 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
 
       if (error) throw error;
 
-      // Transformar dados e buscar informações do responsável
+      // Simplificar processamento - não buscar assignees e comentários por enquanto
       const ticketsData: Ticket[] = [];
       
       if (data && data.length > 0) {
-        // Buscar IDs únicos de responsáveis
-        const assigneeIds = Array.from(new Set(
-          data.filter(ticket => ticket.assignee_user_id)
-               .map(ticket => ticket.assignee_user_id)
-               .filter(Boolean)
-        )) as string[];
-        
-        // Buscar dados dos responsáveis em uma query separada
-        let assigneeMap: Record<string, any> = {};
-        if (assigneeIds.length > 0) {
-          const { data: assignees } = await supabase
-            .from('profiles')
-            .select('user_id, nome_completo, email, avatar_url')
-            .in('user_id', assigneeIds);
-          
-          if (assignees) {
-            assigneeMap = assignees.reduce((acc, assignee) => {
-              acc[assignee.user_id] = assignee;
-              return acc;
-            }, {});
-          }
-        }
-        
-        // Carregar comentários separadamente para todos os tickets
-        const ticketIds = data.map(ticket => ticket.id);
-        let commentsData: any[] = [];
-        
-        if (ticketIds.length > 0) {
-          const { data: comments, error: commentsError } = await supabase
-            .from('sla_comentarios_internos')
-            .select('sla_id, comentario')
-            .in('sla_id', ticketIds);
-          
-          if (commentsError) {
-            console.error('Error loading comments:', commentsError);
-          } else {
-            commentsData = comments || [];
-          }
-        }
-
-        // Agrupar comentários por ticket ID
-        const commentsByTicket = commentsData.reduce((acc: any, comment: any) => {
-          if (!acc[comment.sla_id]) {
-            acc[comment.sla_id] = [];
-          }
-          acc[comment.sla_id].push({ comentario: comment.comentario });
-          return acc;
-        }, {});
-        
-        // Combinar dados dos tickets com informações dos responsáveis e comentários
+        // Apenas mapear os dados básicos sem queries adicionais
         data.forEach((ticket: any) => {
           ticketsData.push({
-            ...ticket,
-            assignee: ticket.assignee_user_id ? assigneeMap[ticket.assignee_user_id] || null : null,
-            sla_comentarios_internos: commentsByTicket[ticket.id] || []
+            id: ticket.id,
+            ticket_number: ticket.ticket_number,
+            titulo: ticket.titulo,
+            time_responsavel: ticket.time_responsavel || '',
+            solicitante: ticket.solicitante || '',
+            descricao: ticket.descricao || '',
+            tipo_ticket: ticket.tipo_ticket || 'bug',
+            status: ticket.status,
+            nivel_criticidade: ticket.nivel_criticidade,
+            pontuacao_total: ticket.pontuacao_total || 0,
+            pontuacao_financeiro: ticket.pontuacao_financeiro || 0,
+            pontuacao_cliente: ticket.pontuacao_cliente || 0,
+            pontuacao_reputacao: ticket.pontuacao_reputacao || 0,
+            pontuacao_urgencia: ticket.pontuacao_urgencia || 0,
+            pontuacao_operacional: ticket.pontuacao_operacional || 0,
+            data_criacao: ticket.data_criacao,
+            updated_at: ticket.updated_at,
+            resolved_at: ticket.resolved_at,
+            observacoes: ticket.observacoes,
+            tags: ticket.tags || [],
+            setor_id: ticket.setor_id,
+            responsavel_interno: ticket.responsavel_interno,
+            prazo_interno: ticket.prazo_interno,
+            prioridade_operacional: ticket.prioridade_operacional,
+            assignee_user_id: ticket.assignee_user_id,
+            assignee: null, // Não buscar por enquanto para reduzir egress
+            sla_comentarios_internos: [] // Não buscar por enquanto para reduzir egress
           });
         });
       }

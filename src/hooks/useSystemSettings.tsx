@@ -42,11 +42,11 @@ export const useSystemSettings = () => {
         setTimeout(() => reject(new Error('Request timeout after 10 seconds')), 10000);
       });
 
-      // Buscar configurações com timeout
+      // Query mínima para reduzir egress
       const fetchPromise = supabase
         .from('system_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['system_name', 'system_logo']);
+        .in('setting_key', ['system_name', 'system_logo']); // Remover cores por enquanto
 
       const { data: settingsData, error } = await Promise.race([
         fetchPromise,
