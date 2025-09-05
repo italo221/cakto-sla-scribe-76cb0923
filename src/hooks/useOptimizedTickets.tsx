@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from "@/integrations/supabase/client";
+import { subscribeToChannel } from '@/lib/realtimeManager';
 
 interface Ticket {
   id: string;
@@ -93,7 +94,6 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
-  const realtimeChannelRef = useRef<any>(null);
   const sortedTicketsRef = useRef<Ticket[]>([]);
 
   const hasMore = useMemo(() => tickets.length < totalCount, [tickets, totalCount]);
@@ -312,18 +312,11 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
 
     console.log('🔗 Configurando canal realtime...');
 
-    // Cleanup canal anterior
-    if (realtimeChannelRef.current) {
-      console.log('🔌 Removendo canal anterior');
-      supabase.removeChannel(realtimeChannelRef.current);
-    }
-
     // Configurar novo canal com throttling reduzido para transferências
     let updateTimeout: NodeJS.Timeout | null = null;
-    
-    const channel = supabase
-      .channel('tickets-optimized')
-      .on(
+
+    const unsubscribe = subscribeToChannel('tickets-optimized', (channel) => {
+      channel.on(
         'postgres_changes',
         {
           event: '*',
@@ -332,16 +325,16 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
         },
         (payload) => {
           console.log('📡 Realtime update recebido:', payload.eventType, (payload.new as any)?.id);
-          
+
           // Para transferências de setor (mudança de setor_id), atualizar imediatamente
-          const isTransfer = payload.eventType === 'UPDATE' && 
+          const isTransfer = payload.eventType === 'UPDATE' &&
             payload.old?.setor_id !== payload.new?.setor_id;
-          
+
           if (updateTimeout) clearTimeout(updateTimeout);
-          
+
           // Reduzir debounce para transferências para atualização mais rápida
           const debounceTime = isTransfer ? 200 : 1000;
-          
+
           updateTimeout = setTimeout(() => {
             console.log('🔄 Atualizando tickets por realtime...');
             // Invalidar cache e recarregar
@@ -350,19 +343,14 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
             fetchTickets(1, true);
           }, debounceTime);
         }
-      )
-      .subscribe();
+      );
+    });
 
     console.log('✅ Canal realtime configurado');
-    realtimeChannelRef.current = channel;
 
     return () => {
       if (updateTimeout) clearTimeout(updateTimeout);
-      if (realtimeChannelRef.current) {
-        console.log('🔌 Cleanup: removendo canal realtime');
-        supabase.removeChannel(realtimeChannelRef.current);
-        realtimeChannelRef.current = null;
-      }
+      unsubscribe();
     };
   }, [enableRealtime, fetchTickets]);
 

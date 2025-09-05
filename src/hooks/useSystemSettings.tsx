@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { subscribeToChannel } from '@/lib/realtimeManager';
 
 interface SystemSettings {
   systemName: string;
@@ -16,7 +17,6 @@ export const useSystemSettings = () => {
   const [systemName, setSystemName] = useState(''); // Iniciar vazio para evitar flicker
   const [systemLogo, setSystemLogo] = useState<string | null>(null);
   const [loading, setLoading] = useState(true); // Começar com loading true
-  const subscriptionRef = useRef<any>(null);
   const [isReady, setIsReady] = useState(false); // Estado para indicar quando está pronto
 
   const fetchSystemSettings = async (forceRefresh = false) => {
@@ -78,15 +78,8 @@ export const useSystemSettings = () => {
   };
 
   const setupRealtimeSubscription = () => {
-    // Limpar subscription anterior se existir
-    if (subscriptionRef.current) {
-      subscriptionRef.current.unsubscribe();
-    }
-
-    // Criar nova subscription para mudanças em tempo real
-    subscriptionRef.current = supabase
-      .channel('system-settings-changes')
-      .on('postgres_changes',
+    return subscribeToChannel('system-settings-changes', (channel) => {
+      channel.on('postgres_changes',
         {
           event: '*',
           schema: 'public',
@@ -95,9 +88,9 @@ export const useSystemSettings = () => {
         },
         (payload) => {
           if (import.meta.env.DEV) console.log('🔔 Configuração atualizada:', payload);
-          
+
           const { setting_key, setting_value } = payload.new as any;
-          
+
           if (setting_key === 'system_name') {
             const newName = setting_value as string;
             setSystemName(newName);
@@ -108,7 +101,7 @@ export const useSystemSettings = () => {
             setIsReady(true);
             if (import.meta.env.DEV) console.log('🔥 Nome do sistema atualizado em tempo real:', newName);
           }
-          
+
           if (setting_key === 'system_logo') {
             const newLogo = setting_value as string;
             setSystemLogo(newLogo);
@@ -120,8 +113,8 @@ export const useSystemSettings = () => {
             if (import.meta.env.DEV) console.log('🔥 Logo do sistema atualizada em tempo real');
           }
         }
-      )
-      .subscribe();
+      );
+    });
   };
 
   const updateSystemName = (newName: string) => {
@@ -158,13 +151,11 @@ export const useSystemSettings = () => {
     }
 
     // Configurar subscription em tempo real
-    setupRealtimeSubscription();
+    const unsubscribe = setupRealtimeSubscription();
 
     // Cleanup
     return () => {
-      if (subscriptionRef.current) {
-        subscriptionRef.current.unsubscribe();
-      }
+      unsubscribe();
     };
   }, []);
 
