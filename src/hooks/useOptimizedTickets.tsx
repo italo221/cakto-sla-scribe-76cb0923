@@ -98,7 +98,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
 
   const hasMore = useMemo(() => tickets.length < totalCount, [tickets, totalCount]);
 
-  // Função de fetch otimizada com cache e paginação
+  // Função de fetch com timeout agressivo e fallbacks
   const fetchTickets = useCallback(async (page = 1, forceRefresh = false) => {
     const cacheKey = `tickets_page_${page}`;
     const now = Date.now();
@@ -132,43 +132,32 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     try {
       setLoading(true);
       setError(null);
-      console.log('🌐 Fazendo request para Supabase...');
+      console.log('🌐 Fazendo request para Supabase com timeout...');
 
       const from = (page - 1) * batchSize;
       const to = from + batchSize - 1;
 
-      // Query otimizada - buscar apenas campos necessários incluindo responsável
-      const { data, error, status, count } = await supabase
+      // Query com timeout agressivo
+      const queryPromise = supabase
         .from('sla_demandas')
         .select(`
           id,
           ticket_number,
           titulo,
-          time_responsavel,
           solicitante,
-          descricao,
-          tipo_ticket,
           status,
           nivel_criticidade,
-          pontuacao_total,
-          pontuacao_financeiro,
-          pontuacao_cliente,
-          pontuacao_reputacao,
-          pontuacao_urgencia,
-          pontuacao_operacional,
-          data_criacao,
-          updated_at,
-          resolved_at,
-          observacoes,
-          tags,
-          setor_id,
-          responsavel_interno,
-          prazo_interno,
-          prioridade_operacional,
-          assignee_user_id
+          data_criacao
         `, { count: 'exact' })
         .order('data_criacao', { ascending: false })
         .range(from, to);
+
+      // Timeout de 5 segundos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout na consulta de tickets')), 5000);
+      });
+
+      const { data, error, status, count } = await Promise.race([queryPromise, timeoutPromise]) as any;
       if (error) {
         if (handleRateLimitError(status, error)) return [];
         throw error;
@@ -176,69 +165,40 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       console.log('✅ Dados recebidos do Supabase:', data?.length || 0, 'tickets');
       if (typeof count === 'number') setTotalCount(count);
 
-      // Transformar dados e buscar informações do responsável
+      // Transformar dados simplificados
       const ticketsData: Ticket[] = [];
       
       if (data && data.length > 0) {
-        // Buscar IDs únicos de responsáveis
-        const assigneeIds = Array.from(new Set(
-          data.filter(ticket => ticket.assignee_user_id)
-               .map(ticket => ticket.assignee_user_id)
-        ));
-        
-        // Buscar dados dos responsáveis em uma query separada
-        let assigneeMap: Record<string, any> = {};
-        if (assigneeIds.length > 0) {
-          const { data: assignees, error: assigneesError, status: assigneesStatus } = await supabase
-            .from('profiles')
-            .select('user_id, nome_completo, email, avatar_url')
-            .in('user_id', assigneeIds);
-
-          if (assigneesError) {
-            if (handleRateLimitError(assigneesStatus, assigneesError)) return [];
-          }
-
-          if (assignees) {
-            assigneeMap = assignees.reduce((acc, assignee) => {
-              acc[assignee.user_id] = assignee;
-              return acc;
-            }, {});
-          }
-        }
-        
-        // Carregar comentários separadamente para todos os tickets
-        const ticketIds = data.map(ticket => ticket.id);
-        let commentsData: any[] = [];
-        
-        if (ticketIds.length > 0) {
-          const { data: comments, error: commentsError, status: commentsStatus } = await supabase
-            .from('sla_comentarios_internos')
-            .select('sla_id, comentario')
-            .in('sla_id', ticketIds);
-
-          if (commentsError) {
-            if (handleRateLimitError(commentsStatus, commentsError)) return [];
-            console.error('Error loading comments:', commentsError);
-          } else {
-            commentsData = comments || [];
-          }
-        }
-
-        // Agrupar comentários por ticket ID
-        const commentsByTicket = commentsData.reduce((acc: any, comment: any) => {
-          if (!acc[comment.sla_id]) {
-            acc[comment.sla_id] = [];
-          }
-          acc[comment.sla_id].push({ comentario: comment.comentario });
-          return acc;
-        }, {});
-        
-        // Combinar dados dos tickets com informações dos responsáveis e comentários
+        // Mapear dados básicos sem queries adicionais para evitar sobrecarga
         data.forEach((ticket: any) => {
           ticketsData.push({
-            ...ticket,
-            assignee: ticket.assignee_user_id ? assigneeMap[ticket.assignee_user_id] || null : null,
-            sla_comentarios_internos: commentsByTicket[ticket.id] || []
+            id: ticket.id,
+            ticket_number: ticket.ticket_number,
+            titulo: ticket.titulo,
+            time_responsavel: ticket.solicitante || 'N/A',
+            solicitante: ticket.solicitante,
+            descricao: '',
+            tipo_ticket: 'Padrão',
+            status: ticket.status,
+            nivel_criticidade: ticket.nivel_criticidade,
+            pontuacao_total: 0,
+            pontuacao_financeiro: 0,
+            pontuacao_cliente: 0,
+            pontuacao_reputacao: 0,
+            pontuacao_urgencia: 0,
+            pontuacao_operacional: 0,
+            data_criacao: ticket.data_criacao,
+            updated_at: undefined,
+            resolved_at: null,
+            observacoes: undefined,
+            tags: [],
+            setor_id: undefined,
+            responsavel_interno: undefined,
+            prazo_interno: undefined,
+            prioridade_operacional: undefined,
+            assignee_user_id: null,
+            assignee: null,
+            sla_comentarios_internos: []
           });
         });
       }
@@ -268,12 +228,24 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       return sortedTicketsRef.current;
     } catch (err: unknown) {
       console.error('❌ Erro ao carregar tickets:', err);
+      
+      let errorMessage = 'Erro desconhecido';
+      if (err instanceof Error) {
+        if (err.message === 'Timeout na consulta de tickets') {
+          errorMessage = 'Supabase está sobrecarregado. Tentando carregar dados básicos...';
+        } else if (err.message.includes('upstream')) {
+          errorMessage = 'Servidor sobrecarregado. Verifique novamente em alguns minutos.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       const status = (err as { status?: number }).status;
       if (status === 429) {
-        setError('Limite de recursos do Supabase excedido, tente novamente mais tarde ou contate o administrador');
-      } else {
-        setError(err instanceof Error ? err.message : 'Erro desconhecido');
+        errorMessage = 'Limite de recursos do Supabase excedido, tente novamente mais tarde ou contate o administrador';
       }
+      
+      setError(errorMessage);
       
       // Se houver dados em cache, usar como fallback
       if (ticketCache.has(cacheKey)) {
@@ -306,9 +278,10 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     return fetchTickets(nextPage);
   }, [fetchTickets, currentPage, hasMore]);
 
-  // Configurar realtime de forma otimizada
+  // Realtime temporariamente desabilitado para reduzir carga no Supabase
   useEffect(() => {
-    if (!enableRealtime) return;
+    // Desabilitado temporariamente devido à sobrecarga do Supabase
+    if (!enableRealtime || true) return; // Força desabilitar
 
     console.log('🔗 Configurando canal realtime...');
 
