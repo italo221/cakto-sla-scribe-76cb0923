@@ -99,6 +99,31 @@ export const useFallbackUserData = () => {
     return kycErrorMessages.some(msg => recentErrors.includes(msg));
   }, []);
 
+  // Função para detectar problemas com sla_action_logs RLS
+  const detectActionLogsRlsIssue = useCallback(() => {
+    const actionLogsErrorMessages = [
+      'sla_action_logs_timeout',
+      'action_logs_rls_timeout',
+      'auth.uid() per row evaluation',
+      'RLS policy slow on sla_action_logs'
+    ];
+    
+    const recentErrors = localStorage.getItem('recent_action_logs_errors') || '';
+    return actionLogsErrorMessages.some(msg => recentErrors.includes(msg));
+  }, []);
+
+  const getFallbackActionLogs = useCallback((ticketId: string) => {
+    return [
+      {
+        id: `fallback-log-${ticketId}-1`,
+        acao: 'ticket_criado',
+        timestamp: new Date().toISOString(),
+        autor_email: 'sistema@fallback',
+        justificativa: 'Log em modo fallback durante otimização RLS'
+      }
+    ];
+  }, []);
+
   return {
     fallbackMode,
     setFallbackMode,
@@ -106,7 +131,9 @@ export const useFallbackUserData = () => {
     getFallbackKycData,
     getFallbackRegistrationData,
     getFallbackProfitData,
+    getFallbackActionLogs,
     detectProfitsRlsIssue,
-    detectKycRlsIssue
+    detectKycRlsIssue,
+    detectActionLogsRlsIssue
   };
 };
