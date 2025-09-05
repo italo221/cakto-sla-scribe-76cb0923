@@ -90,16 +90,20 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastFetch, setLastFetch] = useState<number>(0);
-  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
   const realtimeChannelRef = useRef<any>(null);
   const sortedTicketsRef = useRef<Ticket[]>([]);
 
-  // Função de fetch otimizada com cache
-  const fetchTickets = useCallback(async (forceRefresh = false) => {
-    const cacheKey = 'all_tickets';
+  const hasMore = useMemo(() => tickets.length < totalCount, [tickets, totalCount]);
+
+  // Função de fetch otimizada com cache e paginação
+  const fetchTickets = useCallback(async (page = 1, forceRefresh = false) => {
+    const cacheKey = `tickets_page_${page}`;
     const now = Date.now();
 
-    console.log('🔄 Iniciando fetch de tickets...', { forceRefresh, cacheSize: ticketCache.size });
+    console.log('🔄 Iniciando fetch de tickets...', { forceRefresh, cacheSize: ticketCache.size, page });
 
     const handleRateLimitError = (status: number, err: unknown) => {
       if (status === 429) {
@@ -115,7 +119,11 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       const cached = ticketCache.get(cacheKey)!;
       if (now - cached.timestamp < CACHE_DURATION) {
         console.log('✅ Usando cache de tickets:', cached.data.length, 'tickets');
-        setTickets(cached.data);
+        if (page === 1) {
+          setTickets(cached.data);
+        } else {
+          setTickets(prev => [...prev, ...cached.data]);
+        }
         setLoading(false);
         return cached.data;
       }
@@ -126,8 +134,11 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       setError(null);
       console.log('🌐 Fazendo request para Supabase...');
 
+      const from = (page - 1) * batchSize;
+      const to = from + batchSize - 1;
+
       // Query otimizada - buscar apenas campos necessários incluindo responsável
-      const { data, error, status } = await supabase
+      const { data, error, status, count } = await supabase
         .from('sla_demandas')
         .select(`
           id,
@@ -155,14 +166,15 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
           prazo_interno,
           prioridade_operacional,
           assignee_user_id
-        `)
+        `, { count: 'exact' })
         .order('data_criacao', { ascending: false })
-        .limit(500); // Limitar resultados para performance
+        .range(from, to);
       if (error) {
         if (handleRateLimitError(status, error)) return [];
         throw error;
       }
       console.log('✅ Dados recebidos do Supabase:', data?.length || 0, 'tickets');
+      if (typeof count === 'number') setTotalCount(count);
 
       // Transformar dados e buscar informações do responsável
       const ticketsData: Ticket[] = [];
@@ -236,14 +248,24 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       
       // Atualizar cache
       ticketCache.set(cacheKey, { data: sortedData, timestamp: now });
-      
-      setTickets(sortedData);
-      sortedTicketsRef.current = sortedData;
+
+      if (page === 1 || forceRefresh) {
+        setTickets(sortedData);
+        sortedTicketsRef.current = sortedData;
+      } else {
+        setTickets(prev => {
+          const existing = new Set(prev.map(t => t.id));
+          const merged = [...prev, ...sortedData.filter(t => !existing.has(t.id))];
+          sortedTicketsRef.current = merged;
+          return merged;
+        });
+      }
+      setCurrentPage(page);
       setLastFetch(now);
-      
-      console.log('✅ Tickets processados e salvos:', sortedData.length);
-      
-      return sortedData;
+
+      console.log('✅ Tickets processados e salvos:', sortedTicketsRef.current.length);
+
+      return sortedTicketsRef.current;
     } catch (err: unknown) {
       console.error('❌ Erro ao carregar tickets:', err);
       const status = (err as { status?: number }).status;
@@ -257,7 +279,11 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       if (ticketCache.has(cacheKey)) {
         const cached = ticketCache.get(cacheKey)!;
         console.log('🔄 Usando dados de cache como fallback:', cached.data.length, 'tickets');
-        setTickets(cached.data);
+        if (page === 1) {
+          setTickets(cached.data);
+        } else {
+          setTickets(prev => [...prev, ...cached.data]);
+        }
         return cached.data;
       }
       
@@ -265,12 +291,20 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     } finally {
       setLoading(false);
     }
-  }, [sortFunction]);
+  }, [sortFunction, batchSize]);
 
   // Função de reload otimizada
   const reloadTickets = useCallback(() => {
-    return fetchTickets(true);
+    setCurrentPage(1);
+    ticketCache.clear();
+    return fetchTickets(1, true);
   }, [fetchTickets]);
+
+  const loadMoreTickets = useCallback(() => {
+    if (!hasMore) return Promise.resolve([]);
+    const nextPage = currentPage + 1;
+    return fetchTickets(nextPage);
+  }, [fetchTickets, currentPage, hasMore]);
 
   // Configurar realtime de forma otimizada
   useEffect(() => {
@@ -312,7 +346,8 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
             console.log('🔄 Atualizando tickets por realtime...');
             // Invalidar cache e recarregar
             ticketCache.clear();
-            fetchTickets(true);
+            setCurrentPage(1);
+            fetchTickets(1, true);
           }, debounceTime);
         }
       )
@@ -353,7 +388,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
   useEffect(() => {
     // Limpar cache ao inicializar para garantir dados frescos
     clearAllCache();
-    fetchTickets(true);
+    fetchTickets(1, true);
   }, [fetchTickets]);
 
   // Memoizar tickets com status para evitar recálculos
@@ -469,7 +504,11 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     stats,
     lastFetch,
     fetchTickets,
+    loadMoreTickets,
     reloadTickets,
+    currentPage,
+    totalCount,
+    hasMore,
     searchTickets,
     clearAllCache
   };

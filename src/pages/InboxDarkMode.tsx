@@ -66,9 +66,12 @@ export default function Inbox() {
     loading,
     error,
     lastFetch,
-    fetchTickets: loadTickets,
     reloadTickets,
-    searchTickets
+    searchTickets,
+    loadMoreTickets,
+    currentPage,
+    totalCount,
+    hasMore
   } = useOptimizedTickets({
     enableRealtime: true,
     batchSize: 50
@@ -780,7 +783,7 @@ export default function Inbox() {
 
           <div className="flex items-center gap-4 text-sm text-muted-foreground dark:text-muted-foreground">
             <span className="mx-0 px-0 my-[5px] py-0 text-base text-center">
-              {filteredTicketsWithStatus.length} de {optimizedTickets.length} tickets
+              {filteredTicketsWithStatus.length} de {totalCount} tickets
             </span>
             {(searchTerm || activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'none') && <Button variant="ghost" size="sm" onClick={() => {
             setSearchTerm('');
@@ -812,6 +815,17 @@ export default function Inbox() {
                 </p>
               </CardContent>
             </Card> : filteredTicketsWithStatus.map(ticket => <JiraTicketCard key={ticket.id} ticket={ticket} onOpenDetail={handleOpenTicketDetail} onUpdateStatus={handleUpdateStatus} onEditTicket={handleEditTicket} onDeleteTicket={handleDeleteTicket} userCanEdit={canEdit} userCanDelete={canDelete} />)}
+
+          {hasMore && !loading && (
+            <div className="flex flex-col items-center py-4">
+              <Button onClick={loadMoreTickets} disabled={loading} variant="outline" size="sm">
+                Carregar mais
+              </Button>
+              <span className="mt-2 text-xs text-muted-foreground">
+                {optimizedTickets.length} de {totalCount}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Modals */}
