@@ -32,15 +32,31 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // Adicionar timeout para login
+      const loginPromise = supabase.auth.signInWithPassword({
         email: loginData.email,
         password: loginData.password,
       });
 
+      // Timeout de 30 segundos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout na autenticação')), 30000);
+      });
+
+      const { error } = await Promise.race([loginPromise, timeoutPromise]) as any;
+
       if (error) {
+        // Mensagens de erro mais específicas
+        let errorMessage = error.message;
+        if (error.message.includes('timeout') || error.message.includes('upstream')) {
+          errorMessage = 'O servidor está sobrecarregado. Tente novamente em alguns minutos.';
+        } else if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Email ou senha incorretos.';
+        }
+
         toast({
           title: "Erro no login",
-          description: error.message,
+          description: errorMessage,
           variant: "destructive",
         });
         return;
@@ -51,11 +67,16 @@ const Auth = () => {
         description: "Redirecionando...",
       });
 
-      navigate('/dashboard');
-    } catch (error) {
+      navigate('/inbox'); // Ir direto para inbox em vez de dashboard
+    } catch (error: any) {
+      let errorMessage = "Tente novamente mais tarde.";
+      if (error.message === 'Timeout na autenticação') {
+        errorMessage = 'A conexão está lenta. Verifique sua internet e tente novamente.';
+      }
+      
       toast({
         title: "Erro inesperado",
-        description: "Tente novamente mais tarde.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
