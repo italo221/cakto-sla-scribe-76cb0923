@@ -23,12 +23,37 @@ serve(async (req) => {
     const results: Record<string, string> = {}
 
     for (const table of tables) {
-      const { error } = await supabase
+      // fetch records older than cutoff
+      const { data: rows, error: selectError } = await supabase
         .from(table)
-        .delete()
+        .select('*')
         .lt('created_at', cutoffDate)
 
-      results[table] = error ? `error: ${error.message}` : 'ok'
+      if (selectError) {
+        results[table] = `select error: ${selectError.message}`
+        continue
+      }
+
+      if (rows && rows.length > 0) {
+        // archive rows into a matching _archive table
+        const { error: archiveError } = await supabase
+          .from(`${table}_archive`)
+          .insert(rows)
+
+        if (archiveError) {
+          results[table] = `archive error: ${archiveError.message}`
+          continue
+        }
+
+        const { error: deleteError } = await supabase
+          .from(table)
+          .delete()
+          .lt('created_at', cutoffDate)
+
+        results[table] = deleteError ? `delete error: ${deleteError.message}` : `archived ${rows.length}`
+      } else {
+        results[table] = 'no rows'
+      }
     }
 
     return new Response(
