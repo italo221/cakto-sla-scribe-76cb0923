@@ -127,6 +127,8 @@ export default function SLADetailModal({
   onUpdate,
   setSelectedSLA
 }: SLADetailModalProps) {
+  // Debug log para identificar problemas
+  console.log('🔍 TicketDetailModal - Dados recebidos:', { sla, isOpen });
   const {
     user,
     profile,
@@ -400,7 +402,11 @@ const toggleCommentsFocusMode = () => {
   }, [currentSLA, isOpen]);
 
   const loadComments = async () => {
-    if (!currentSLA) return;
+    if (!currentSLA?.id) {
+      console.log('⚠️ loadComments: currentSLA ou ID ausente', { currentSLA });
+      return;
+    }
+    console.log('📥 Carregando comentários para ticket:', currentSLA.id);
     try {
       const { data, error } = await supabase
         .from('sla_comentarios_internos')
@@ -425,7 +431,11 @@ const toggleCommentsFocusMode = () => {
   };
 
   const loadActionLogs = async () => {
-    if (!currentSLA) return;
+    if (!currentSLA?.id) {
+      console.log('⚠️ loadActionLogs: currentSLA ou ID ausente', { currentSLA });
+      return;
+    }
+    console.log('📋 Carregando logs de ação para ticket:', currentSLA.id);
     try {
       const { data, error } = await supabase
         .from('sla_action_logs')
@@ -464,7 +474,11 @@ const toggleCommentsFocusMode = () => {
   };
 
   const loadDbAttachments = async () => {
-    if (!currentSLA) return;
+    if (!currentSLA?.id) {
+      console.log('⚠️ loadDbAttachments: currentSLA ou ID ausente', { currentSLA });
+      return;
+    }
+    console.log('📎 Carregando anexos para ticket:', currentSLA.id);
     try {
       const { data: rows, error } = await supabase
         .from('ticket_attachments')

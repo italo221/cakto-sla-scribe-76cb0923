@@ -146,10 +146,29 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
           .from('sla_demandas')
           .select(`
             id,
+            ticket_number,
             titulo,
+            solicitante,
+            time_responsavel,
+            descricao,
             status,
             nivel_criticidade,
-            data_criacao
+            data_criacao,
+            assignee_user_id,
+            setor_id,
+            pontuacao_total,
+            pontuacao_financeiro,
+            pontuacao_cliente,
+            pontuacao_reputacao,
+            pontuacao_urgencia,
+            pontuacao_operacional,
+            responsavel_interno,
+            prazo_interno,
+            prioridade_operacional,
+            tags,
+            updated_at,
+            resolved_at,
+            observacoes
           `, { count: 'exact' })
           .order('data_criacao', { ascending: false })
           .range(from, to);
@@ -170,33 +189,33 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       console.log('✅ Dados ultra-otimizados recebidos:', result.data?.length || 0, 'tickets');
       if (typeof result.count === 'number') setTotalCount(result.count);
 
-      // Transformar dados super-compactos (apenas 5 campos críticos)
+      // Transformar dados completos dos tickets
       const ticketsData: Ticket[] = result.data?.map((ticket: any) => ({
         id: ticket.id,
-        ticket_number: `#${ticket.id.slice(-6)}`, // Gerar número a partir do ID
+        ticket_number: ticket.ticket_number,
         titulo: ticket.titulo,
-        time_responsavel: 'Sistema', // Valor fixo para reduzir consulta
-        solicitante: 'Sistema', // Valor fixo
-        descricao: '', // Não carregar
-        tipo_ticket: 'Padrão', // Valor fixo
+        time_responsavel: ticket.time_responsavel,
+        solicitante: ticket.solicitante,
+        descricao: ticket.descricao || '',
+        tipo_ticket: 'Padrão',
         status: ticket.status,
         nivel_criticidade: ticket.nivel_criticidade,
-        pontuacao_total: 0, // Valor fixo
-        pontuacao_financeiro: 0,
-        pontuacao_cliente: 0,
-        pontuacao_reputacao: 0,
-        pontuacao_urgencia: 0,
-        pontuacao_operacional: 0,
+        pontuacao_total: ticket.pontuacao_total || 0,
+        pontuacao_financeiro: ticket.pontuacao_financeiro || 0,
+        pontuacao_cliente: ticket.pontuacao_cliente || 0,
+        pontuacao_reputacao: ticket.pontuacao_reputacao || 0,
+        pontuacao_urgencia: ticket.pontuacao_urgencia || 0,
+        pontuacao_operacional: ticket.pontuacao_operacional || 0,
         data_criacao: ticket.data_criacao,
-        updated_at: '',
-        resolved_at: null,
-        observacoes: '',
-        tags: [], // Array vazio
-        setor_id: '', // Não carregar
-        responsavel_interno: '',
-        prazo_interno: null,
-        prioridade_operacional: 'media',
-        assignee_user_id: null,
+        updated_at: ticket.updated_at || '',
+        resolved_at: ticket.resolved_at,
+        observacoes: ticket.observacoes || '',
+        tags: ticket.tags || [],
+        setor_id: ticket.setor_id || '',
+        responsavel_interno: ticket.responsavel_interno || '',
+        prazo_interno: ticket.prazo_interno,
+        prioridade_operacional: ticket.prioridade_operacional || 'media',
+        assignee_user_id: ticket.assignee_user_id,
         assignee: null,
         sla_comentarios_internos: []
       })) || [];
