@@ -68,7 +68,7 @@ const PRIORITY_COLORS = {
 export default function TvDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { tickets, loading: ticketsLoading, reloadTickets } = useOptimizedTickets({ enableRealtime: true });
+  const { tickets, loading: ticketsLoading, reloadTickets } = useOptimizedTickets({ enableRealtime: false }); // Desabilitado para performance
   const { organizedTags, fetchOrganizedTags } = useTags();
 
   const [dateFilter, setDateFilter] = useState("30days");

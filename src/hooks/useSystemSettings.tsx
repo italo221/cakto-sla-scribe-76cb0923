@@ -77,44 +77,11 @@ export const useSystemSettings = () => {
     }
   };
 
+  // ❌ REALTIME DESABILITADO - Detectado nas queries lentas
   const setupRealtimeSubscription = () => {
-    return subscribeToChannel('system-settings-changes', (channel) => {
-      channel.on('postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'system_settings',
-          filter: 'setting_key=in.(system_name,system_logo)'
-        },
-        (payload) => {
-          if (import.meta.env.DEV) console.log('🔔 Configuração atualizada:', payload);
-
-          const { setting_key, setting_value } = payload.new as any;
-
-          if (setting_key === 'system_name') {
-            const newName = setting_value as string;
-            setSystemName(newName);
-            // Atualizar cache imediatamente
-            if (settingsCache) {
-              settingsCache.systemName = newName;
-            }
-            setIsReady(true);
-            if (import.meta.env.DEV) console.log('🔥 Nome do sistema atualizado em tempo real:', newName);
-          }
-
-          if (setting_key === 'system_logo') {
-            const newLogo = setting_value as string;
-            setSystemLogo(newLogo);
-            // Atualizar cache imediatamente
-            if (settingsCache) {
-              settingsCache.systemLogo = newLogo;
-            }
-            setIsReady(true);
-            if (import.meta.env.DEV) console.log('🔥 Logo do sistema atualizada em tempo real');
-          }
-        }
-      );
-    });
+    console.log('⚠️ Realtime desabilitado para system_settings para reduzir overhead');
+    // Função noop para manter compatibilidade
+    return () => {};
   };
 
   const updateSystemName = (newName: string) => {

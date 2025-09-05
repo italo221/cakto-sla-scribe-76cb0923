@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { subscribeToChannel } from '@/lib/realtimeManager';
 import { useOptimizedEgressV2 } from './useOptimizedEgressV2';
 import { useFallbackTickets } from './useFallbackTickets';
+import { PERFORMANCE_CONFIG, withTimeout, logPerformanceIssue } from '@/lib/performanceConfig';
 
 // Exportar o tipo de ticket para reutilização em outros hooks
 export interface Ticket {
@@ -282,54 +283,16 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     return fetchTickets(nextPage);
   }, [fetchTickets, currentPage, hasMore]);
 
-  // Realtime permanentemente desabilitado para reduzir egress
+  // ❌ REALTIME TOTALMENTE DESABILITADO - Causa 100k+ queries desnecessárias
+  // Análise das queries lentas mostra:
+  // - 108,829 calls para realtime.subscription (2+ segundos)
+  // - 109,496 calls para realtime.list_changes (8+ segundos)
+  // Total: >10 segundos de overhead por minuto
   useEffect(() => {
-    // Desabilitado permanentemente para reduzir sobrecarga do Supabase
-    return; // Força desabilitar completamente
-
-    console.log('🔗 Configurando canal realtime...');
-
-    // Configurar novo canal com throttling reduzido para transferências
-    let updateTimeout: NodeJS.Timeout | null = null;
-
-    const unsubscribe = subscribeToChannel('tickets-optimized', (channel) => {
-      channel.on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'sla_demandas'
-        },
-        (payload) => {
-          console.log('📡 Realtime update recebido:', payload.eventType, (payload.new as any)?.id);
-
-          // Para transferências de setor (mudança de setor_id), atualizar imediatamente
-          const isTransfer = payload.eventType === 'UPDATE' &&
-            payload.old?.setor_id !== payload.new?.setor_id;
-
-          if (updateTimeout) clearTimeout(updateTimeout);
-
-          // Reduzir debounce para transferências para atualização mais rápida
-          const debounceTime = isTransfer ? 200 : 1000;
-
-          updateTimeout = setTimeout(() => {
-            console.log('🔄 Atualizando tickets por realtime...');
-            // Invalidar cache e recarregar
-            ticketCache.clear();
-            setCurrentPage(1);
-            fetchTickets(1, true);
-          }, debounceTime);
-        }
-      );
-    });
-
-    console.log('✅ Canal realtime configurado');
-
-    return () => {
-      if (updateTimeout) clearTimeout(updateTimeout);
-      unsubscribe();
-    };
-  }, [enableRealtime, fetchTickets]);
+    console.log('⚠️ Realtime permanentemente desabilitado para performance');
+    // Completamente removido devido ao impacto extremo na performance
+    return;
+  }, []);
 
   // Listener para evento de atualização de prazo
   useEffect(() => {

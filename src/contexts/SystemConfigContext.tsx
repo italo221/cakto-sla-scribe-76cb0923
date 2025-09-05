@@ -119,59 +119,11 @@ export const SystemConfigProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Configurar subscription em tempo real
+  // ❌ REALTIME DESABILITADO - Contribui para queries lentas
   const setupRealtimeSubscription = () => {
-    if (subscriptionRef.current) {
-      subscriptionRef.current.unsubscribe();
-    }
-
-    subscriptionRef.current = supabase
-      .channel('system-config-realtime')
-      .on('postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'system_settings',
-          filter: 'setting_key=in.(system_name,system_logo,primary_color,secondary_color)'
-        },
-        (payload) => {
-          if (import.meta.env.DEV) {
-            console.log('🔔 Configuração atualizada em tempo real:', payload);
-          }
-          
-          const { setting_key, setting_value } = payload.new as any;
-          
-          setConfig(prev => {
-            const updated = { ...prev };
-            
-            switch (setting_key) {
-              case 'system_name':
-                updated.systemName = setting_value as string;
-                break;
-              case 'system_logo':
-                updated.systemLogo = setting_value as string;
-                break;
-              case 'primary_color':
-                updated.primaryColor = setting_value as ColorData;
-                if (setting_value?.hsl) {
-                  document.documentElement.style.setProperty('--primary', setting_value.hsl);
-                }
-                break;
-              case 'secondary_color':
-                updated.secondaryColor = setting_value as ColorData;
-                if (setting_value?.hsl) {
-                  document.documentElement.style.setProperty('--secondary', setting_value.hsl);
-                }
-                break;
-            }
-            
-            // Atualizar cache global
-            globalConfig = updated;
-            return updated;
-          });
-        }
-      )
-      .subscribe();
+    console.log('⚠️ Realtime desabilitado para system_settings devido ao overhead');
+    // Função vazia para manter compatibilidade
+    return () => {};
   };
 
   // Funções de atualização
