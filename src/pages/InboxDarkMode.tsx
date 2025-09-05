@@ -74,6 +74,14 @@ export default function Inbox() {
     batchSize: 50
   });
 
+  console.log('📊 InboxDarkMode - Estado atual:', {
+    ticketsCount: optimizedTickets?.length || 0,
+    ticketsWithStatusCount: optimizedTicketsWithStatus?.length || 0,
+    loading,
+    error,
+    lastFetch: lastFetch ? new Date(lastFetch).toISOString() : 'nunca'
+  });
+
   // Usar hook centralizado para estatísticas sincronizadas  
   const { stats } = useTicketStats();
 
@@ -202,6 +210,16 @@ export default function Inbox() {
 
   // Usar tickets otimizados diretamente
   const ticketsWithStatus = optimizedTicketsWithStatus;
+  
+  console.log('🎯 InboxDarkMode - Tickets recebidos:', {
+    total: ticketsWithStatus.length,
+    primeiros3Ids: ticketsWithStatus.slice(0, 3).map(t => t.id),
+    primeiros3Titulos: ticketsWithStatus.slice(0, 3).map(t => t.titulo),
+    statusDistribuicao: ticketsWithStatus.reduce((acc, t) => {
+      acc[t.status] = (acc[t.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>)
+  });
 
   // Busca inteligente com sugestões
   const generateSearchSuggestions = useCallback((term: string) => {
@@ -372,6 +390,12 @@ export default function Inbox() {
         return criticalitySort === 'highest' ? criticalityB - criticalityA : criticalityA - criticalityB;
       });
     }
+
+    console.log('🔍 Tickets filtrados:', {
+      total: filtered.length,
+      filtros: { searchTerm, activeFilter, setorFilter, tagFilter, dateSort, criticalitySort },
+      primeiros3: filtered.slice(0, 3).map(t => ({ id: t.id, titulo: t.titulo, status: t.status }))
+    });
 
     return filtered;
   }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, tagFilter, dateSort, criticalitySort, smartSearch]);

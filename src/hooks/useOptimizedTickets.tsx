@@ -46,6 +46,12 @@ interface UseOptimizedTicketsOptions {
 const ticketCache = new Map<string, { data: Ticket[]; timestamp: number }>();
 const CACHE_DURATION = 30000; // 30 segundos
 
+// Função para limpar cache completamente
+const clearAllCache = () => {
+  console.log('🧹 Limpando todo o cache de tickets');
+  ticketCache.clear();
+};
+
 // Função de ordenação otimizada com memoização
 const createOptimizedSort = () => {
   const statusPriority = { 'aberto': 3, 'em_andamento': 2, 'resolvido': 1, 'fechado': 0 };
@@ -93,10 +99,13 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     const cacheKey = 'all_tickets';
     const now = Date.now();
     
+    console.log('🔄 Iniciando fetch de tickets...', { forceRefresh, cacheSize: ticketCache.size });
+    
     // Verificar cache se não for refresh forçado
     if (!forceRefresh && ticketCache.has(cacheKey)) {
       const cached = ticketCache.get(cacheKey)!;
       if (now - cached.timestamp < CACHE_DURATION) {
+        console.log('✅ Usando cache de tickets:', cached.data.length, 'tickets');
         setTickets(cached.data);
         setLoading(false);
         return cached.data;
@@ -106,6 +115,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     try {
       setLoading(true);
       setError(null);
+      console.log('🌐 Fazendo request para Supabase...');
 
       // Query otimizada - buscar apenas campos necessários incluindo responsável
       const { data, error } = await supabase
@@ -141,6 +151,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
         .limit(500); // Limitar resultados para performance
 
       if (error) throw error;
+      console.log('✅ Dados recebidos do Supabase:', data?.length || 0, 'tickets');
 
       // Transformar dados e buscar informações do responsável
       const ticketsData: Ticket[] = [];
@@ -214,10 +225,21 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       sortedTicketsRef.current = sortedData;
       setLastFetch(now);
       
+      console.log('✅ Tickets processados e salvos:', sortedData.length);
+      
       return sortedData;
     } catch (err) {
-      console.error('Erro ao carregar tickets:', err);
+      console.error('❌ Erro ao carregar tickets:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
+      
+      // Se houver dados em cache, usar como fallback
+      if (ticketCache.has(cacheKey)) {
+        const cached = ticketCache.get(cacheKey)!;
+        console.log('🔄 Usando dados de cache como fallback:', cached.data.length, 'tickets');
+        setTickets(cached.data);
+        return cached.data;
+      }
+      
       return [];
     } finally {
       setLoading(false);
@@ -233,8 +255,11 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
   useEffect(() => {
     if (!enableRealtime) return;
 
+    console.log('🔗 Configurando canal realtime...');
+
     // Cleanup canal anterior
     if (realtimeChannelRef.current) {
+      console.log('🔌 Removendo canal anterior');
       supabase.removeChannel(realtimeChannelRef.current);
     }
 
@@ -251,6 +276,8 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
           table: 'sla_demandas'
         },
         (payload) => {
+          console.log('📡 Realtime update recebido:', payload.eventType, (payload.new as any)?.id);
+          
           // Para transferências de setor (mudança de setor_id), atualizar imediatamente
           const isTransfer = payload.eventType === 'UPDATE' && 
             payload.old?.setor_id !== payload.new?.setor_id;
@@ -261,6 +288,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
           const debounceTime = isTransfer ? 200 : 1000;
           
           updateTimeout = setTimeout(() => {
+            console.log('🔄 Atualizando tickets por realtime...');
             // Invalidar cache e recarregar
             ticketCache.clear();
             fetchTickets(true);
@@ -269,11 +297,13 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
       )
       .subscribe();
 
+    console.log('✅ Canal realtime configurado');
     realtimeChannelRef.current = channel;
 
     return () => {
       if (updateTimeout) clearTimeout(updateTimeout);
       if (realtimeChannelRef.current) {
+        console.log('🔌 Cleanup: removendo canal realtime');
         supabase.removeChannel(realtimeChannelRef.current);
         realtimeChannelRef.current = null;
       }
@@ -300,7 +330,9 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
 
   // Carregar tickets na inicialização
   useEffect(() => {
-    fetchTickets();
+    // Limpar cache ao inicializar para garantir dados frescos
+    clearAllCache();
+    fetchTickets(true);
   }, [fetchTickets]);
 
   // Memoizar tickets com status para evitar recálculos
@@ -417,6 +449,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     lastFetch,
     fetchTickets,
     reloadTickets,
-    searchTickets
+    searchTickets,
+    clearAllCache
   };
 };
