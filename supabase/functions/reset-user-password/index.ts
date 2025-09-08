@@ -54,18 +54,20 @@ serve(async (req) => {
 
     console.log('Looking for user with email:', email)
 
-    // Get user by email
-    const { data: user, error: getUserError } = await supabaseAdmin.auth.admin.getUserByEmail(email)
+    // Get user by email using listUsers
+    const { data: users, error: getUserError } = await supabaseAdmin.auth.admin.listUsers()
     
     if (getUserError) {
-      console.error('Error getting user:', getUserError)
+      console.error('Error listing users:', getUserError)
       return new Response(
-        JSON.stringify({ error: 'Usuário não encontrado: ' + getUserError.message }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+        JSON.stringify({ error: 'Erro ao buscar usuários: ' + getUserError.message }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
 
-    if (!user || !user.user) {
+    const user = users.users.find(u => u.email === email)
+
+    if (!user) {
       console.error('User not found for email:', email)
       return new Response(
         JSON.stringify({ error: 'Usuário não encontrado no sistema' }),
@@ -73,11 +75,11 @@ serve(async (req) => {
       )
     }
 
-    console.log('User found, updating password for user ID:', user.user.id)
+    console.log('User found, updating password for user ID:', user.id)
 
     // Update user password
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      user.user.id,
+      user.id,
       { password: newPassword }
     )
 
