@@ -22,21 +22,23 @@ import { PasswordChecker } from "@/components/PasswordChecker";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SupabaseStatus from "@/components/SupabaseStatus";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
+import { useOptimizedProfiles } from '@/hooks/useOptimizedProfiles';
+import { useOptimizedSetores } from '@/hooks/useOptimizedSetores';
 interface Profile {
   id: string;
   user_id: string;
   email: string;
   nome_completo: string;
-  user_type: 'administrador_master' | 'colaborador_setor';
-  role: 'super_admin' | 'operador' | 'viewer';
+  user_type: string;
+  role: string;
   ativo: boolean;
-  created_at: string;
+  created_at?: string;
 }
 interface Setor {
   id: string;
   nome: string;
-  descricao: string;
-  ativo: boolean;
+  descricao?: string;
+  ativo?: boolean;
 }
 interface UserSetor {
   id: string;
@@ -72,6 +74,8 @@ const Admin = () => {
   const [selectedSetorDetail, setSelectedSetorDetail] = useState<Setor | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { fetchProfiles } = useOptimizedProfiles();
+  const { fetchSetores: getSetores } = useOptimizedSetores();
 
   // Sistema aberto - sempre autenticado como admin
   const isAuthenticated = true;
@@ -101,7 +105,7 @@ const Admin = () => {
       try {
         const { error } = await supabase.from('profiles').update({
           nome_completo: editedName.trim(),
-          role: editedRole
+          role: editedRole as 'super_admin' | 'operador' | 'viewer'
         }).eq('id', user.id);
         if (error) throw error;
         toast({
@@ -218,18 +222,21 @@ const Admin = () => {
   // Fetch data
   const fetchData = async () => {
     try {
-      const [usersResponse, setoresResponse, userSetoresResponse] = await Promise.all([supabase.from('profiles').select('*').order('nome_completo'), supabase.from('setores').select('*').order('nome'), supabase.from('user_setores').select(`
+      const [usersResponse, setoresResponse, userSetoresResponse] = await Promise.all([
+        fetchProfiles(),
+        getSetores(),
+        supabase.from('user_setores').select(`
             id,
             user_id,
             setor_id,
             setores:setor_id (id, nome, descricao, ativo),
             profiles:user_id (nome_completo, email)
-          `)]);
-      if (usersResponse.error) throw usersResponse.error;
-      if (setoresResponse.error) throw setoresResponse.error;
+          `)
+      ]);
+      
       if (userSetoresResponse.error) throw userSetoresResponse.error;
-      setUsers(usersResponse.data || []);
-      setSetores(setoresResponse.data || []);
+      setUsers(usersResponse || []);
+      setSetores(setoresResponse || []);
 
       // Transform userSetores data to match interface
       const transformedUserSetores = (userSetoresResponse.data || []).map((item: any) => ({

@@ -22,8 +22,8 @@ import {
 interface Setor {
   id: string;
   nome: string;
-  descricao: string;
-  ativo: boolean;
+  descricao?: string;
+  ativo?: boolean;
 }
 
 interface Profile {
