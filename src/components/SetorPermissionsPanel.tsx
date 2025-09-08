@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOptimizedSetores } from '@/hooks/useOptimizedSetores';
 import { 
   Building2, 
   Shield, 
@@ -19,8 +20,8 @@ import {
 interface Setor {
   id: string;
   nome: string;
-  descricao: string;
-  ativo: boolean;
+  descricao?: string;
+  ativo?: boolean;
 }
 
 interface SetorPermissao {
@@ -41,17 +42,18 @@ export default function SetorPermissionsPanel() {
   const { toast } = useToast();
   const { isSuperAdmin } = useAuth();
 
+  const { fetchSetores } = useOptimizedSetores();
+  
   const fetchData = async () => {
     try {
       const [setoresResponse, permissoesResponse] = await Promise.all([
-        useOptimizedSetores().eq('ativo', true).order('nome'),
+        fetchSetores(),
         supabase.from('setor_permissoes').select('*')
       ]);
 
-      if (setoresResponse.error) throw setoresResponse.error;
       if (permissoesResponse.error) throw permissoesResponse.error;
 
-      setSetores(setoresResponse.data || []);
+      setSetores(setoresResponse || []);
       setPermissoes(permissoesResponse.data || []);
     } catch (error: any) {
       toast({

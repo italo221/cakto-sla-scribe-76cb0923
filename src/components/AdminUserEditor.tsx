@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { User, Save, Upload, Shield, Crown, Settings, Eye, CheckCircle, XCircle } from 'lucide-react';
+import { useOptimizedProfiles } from '@/hooks/useOptimizedProfiles';
 interface AdminUserEditorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -20,8 +21,8 @@ interface UserProfile {
   user_id: string;
   email: string;
   nome_completo: string;
-  user_type: 'administrador_master' | 'colaborador_setor';
-  role: 'super_admin' | 'operador' | 'viewer';
+  user_type: string;
+  role: string;
   ativo: boolean;
   telefone?: string;
   avatar_url?: string;
@@ -40,7 +41,7 @@ export default function AdminUserEditor({
     nome_completo: '',
     email: '',
     telefone: '',
-    role: 'viewer' as 'super_admin' | 'operador' | 'viewer',
+    role: 'viewer' as string,
     ativo: true,
     avatar_url: ''
   });
@@ -49,15 +50,14 @@ export default function AdminUserEditor({
       fetchUserProfile();
     }
   }, [userId, open]);
+  const { getProfileById } = useOptimizedProfiles();
+  
   const fetchUserProfile = async () => {
     if (!userId) return;
     setLoading(true);
     try {
-      const {
-        data,
-        error
-      } = await useOptimizedProfiles().eq('user_id', userId).single();
-      if (error) throw error;
+      const data = await getProfileById(userId);
+      if (!data) throw new Error('Usuário não encontrado');
       setUserProfile(data);
       setFormData({
         nome_completo: data.nome_completo,
@@ -84,7 +84,7 @@ export default function AdminUserEditor({
       } = await supabase.from('profiles').update({
         nome_completo: formData.nome_completo,
         telefone: formData.telefone,
-        role: formData.role,
+        role: formData.role as 'super_admin' | 'operador' | 'viewer',
         ativo: formData.ativo,
         avatar_url: formData.avatar_url,
         updated_at: new Date().toISOString()

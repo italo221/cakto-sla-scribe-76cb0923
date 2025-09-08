@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
+import { useOptimizedSetores } from '@/hooks/useOptimizedSetores';
 type DateRange = '7dias' | '30dias' | 'mes_anterior' | 'personalizado';
 type ViewType = 'global' | 'time' | 'comparativo';
 type StatusFilter = 'todos' | 'abertos' | 'resolvidos' | 'atrasados';
@@ -51,8 +52,8 @@ interface SLAData {
 interface Setor {
   id: string;
   nome: string;
-  descricao: string;
-  ativo: boolean;
+  descricao?: string;
+  ativo?: boolean;
 }
 interface CriticalSLA {
   id: string;
@@ -399,13 +400,11 @@ export default function ModernSLADashboard() {
       fetchSLAMetrics();
     }
   }, [user, selectedRange, customDateFrom, customDateTo, statusFilter, priorityFilter, viewType, selectedTime, compareSelectedTimes]);
+  const { fetchSetores: getSetores } = useOptimizedSetores();
+  
   const fetchSetores = async () => {
     try {
-      const {
-        data,
-        error
-      } = await useOptimizedSetores().eq('ativo', true).order('nome');
-      if (error) throw error;
+      const data = await getSetores();
       setSetores(data || []);
     } catch (error) {
       console.error('Erro ao buscar setores:', error);
