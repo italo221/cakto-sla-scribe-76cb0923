@@ -25,6 +25,7 @@ export const PERFORMANCE_CONFIG = {
     USER_PROFITS: 5000, // 5 segundos
     TICKETS: 8000, // 8 segundos
     COMMENTS: 5000, // 5 segundos
+    NOTIFICATIONS: 2000, // 2 segundos
   },
   
   // Limits para Reduzir Egress
