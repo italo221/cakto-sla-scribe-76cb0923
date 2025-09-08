@@ -7,24 +7,52 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  console.log('Reset password function called', { method: req.method, url: req.url })
+  
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { email, newPassword } = await req.json()
+    const requestBody = await req.json()
+    const { email, newPassword } = requestBody
+    
+    console.log('Request received for email:', email)
+
+    if (!email || !newPassword) {
+      console.error('Missing email or password')
+      return new Response(
+        JSON.stringify({ error: 'Email e senha são obrigatórios' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    
+    console.log('Environment check:', { 
+      hasUrl: !!supabaseUrl, 
+      hasServiceKey: !!serviceKey,
+      url: supabaseUrl?.substring(0, 20) + '...' 
+    })
+
+    if (!supabaseUrl || !serviceKey) {
+      console.error('Missing environment variables')
+      return new Response(
+        JSON.stringify({ error: 'Configuração do servidor incompleta' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      )
+    }
 
     // Create admin client
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
+    const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
       }
-    )
+    })
+
+    console.log('Looking for user with email:', email)
 
     // Get user by email
     const { data: user, error: getUserError } = await supabaseAdmin.auth.admin.getUserByEmail(email)
@@ -32,10 +60,20 @@ serve(async (req) => {
     if (getUserError) {
       console.error('Error getting user:', getUserError)
       return new Response(
-        JSON.stringify({ error: 'Usuário não encontrado' }),
+        JSON.stringify({ error: 'Usuário não encontrado: ' + getUserError.message }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
       )
     }
+
+    if (!user || !user.user) {
+      console.error('User not found for email:', email)
+      return new Response(
+        JSON.stringify({ error: 'Usuário não encontrado no sistema' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      )
+    }
+
+    console.log('User found, updating password for user ID:', user.user.id)
 
     // Update user password
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
@@ -46,10 +84,12 @@ serve(async (req) => {
     if (updateError) {
       console.error('Error updating password:', updateError)
       return new Response(
-        JSON.stringify({ error: 'Erro ao alterar senha' }),
+        JSON.stringify({ error: 'Erro ao alterar senha: ' + updateError.message }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
+
+    console.log('Password updated successfully for user:', email)
 
     return new Response(
       JSON.stringify({ message: 'Senha alterada com sucesso' }),
@@ -59,7 +99,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Function error:', error)
     return new Response(
-      JSON.stringify({ error: 'Erro interno do servidor' }),
+      JSON.stringify({ error: 'Erro interno do servidor: ' + error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }
