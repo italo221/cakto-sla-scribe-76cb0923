@@ -404,7 +404,7 @@ export default function ModernSLADashboard() {
       const {
         data,
         error
-      } = await supabase.from('setores').select('*').eq('ativo', true).order('nome');
+      } = await useOptimizedSetores().eq('ativo', true).order('nome');
       if (error) throw error;
       setSetores(data || []);
     } catch (error) {

@@ -44,7 +44,7 @@ export default function SetorPermissionsPanel() {
   const fetchData = async () => {
     try {
       const [setoresResponse, permissoesResponse] = await Promise.all([
-        supabase.from('setores').select('*').eq('ativo', true).order('nome'),
+        useOptimizedSetores().eq('ativo', true).order('nome'),
         supabase.from('setor_permissoes').select('*')
       ]);
 

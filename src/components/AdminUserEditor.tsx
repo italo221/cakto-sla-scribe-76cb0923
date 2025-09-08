@@ -56,7 +56,7 @@ export default function AdminUserEditor({
       const {
         data,
         error
-      } = await supabase.from('profiles').select('*').eq('user_id', userId).single();
+      } = await useOptimizedProfiles().eq('user_id', userId).single();
       if (error) throw error;
       setUserProfile(data);
       setFormData({
