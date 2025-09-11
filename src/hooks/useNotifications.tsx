@@ -51,7 +51,7 @@ export function useNotifications() {
     try {
       const { data, error } = await supabase
         .from('notifications')
-        .select('id, ticket_id, type, title, is_read, created_at') // Apenas campos essenciais
+        .select('id, ticket_id, type, title, message, is_read, created_at') // Incluir message para mostrar número do ticket
         .eq('user_id', user.id)
         .eq('type', 'mention') // Filtrar apenas notificações de marcação
         .order('created_at', { ascending: false })
@@ -67,7 +67,7 @@ export function useNotifications() {
         comment_id: undefined,
         type: item.type,
         title: item.title,
-        message: '', // Não carregar message para reduzir egress
+        message: item.message || '', // Agora incluindo a mensagem com número do ticket
         is_read: item.is_read,
         created_at: item.created_at,
         updated_at: ''
@@ -114,8 +114,16 @@ export function useNotifications() {
   };
 
   const handleNotificationClick = async (notification: Notification) => {
+    console.log('🔔 Clique na notificação:', {
+      notificationId: notification.id,
+      ticketId: notification.ticket_id,
+      currentPath: location.pathname,
+      isRead: notification.is_read
+    });
+
     // Marcar como lida
     if (!notification.is_read) {
+      console.log('🔔 Marcando notificação como lida...');
       await markAsRead(notification.id);
     }
 
@@ -123,17 +131,22 @@ export function useNotifications() {
     if (notification.ticket_id) {
       // Se já estamos na inbox, apenas adicionar o parâmetro
       if (location.pathname === '/inbox') {
+        console.log('🔔 Navegando dentro da inbox com replace');
         navigate(`/inbox?ticket=${notification.ticket_id}`, { replace: true });
       } else {
+        console.log('🔔 Navegando para inbox');
         navigate(`/inbox?ticket=${notification.ticket_id}`);
       }
       
       // Disparar evento customizado para abrir o modal
       setTimeout(() => {
+        console.log('🔔 Disparando evento openTicketModal');
         window.dispatchEvent(new CustomEvent('openTicketModal', { 
           detail: { ticketId: notification.ticket_id } 
         }));
       }, 100);
+    } else {
+      console.log('⚠️ Notificação sem ticket_id associado');
     }
   };
 

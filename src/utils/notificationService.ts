@@ -74,13 +74,22 @@ export async function notifyTicketComment(
   commentId: string
 ) {
   try {
+    // Buscar o número do ticket
+    const { data: ticket } = await supabase
+      .from('sla_demandas')
+      .select('ticket_number')
+      .eq('id', ticketId)
+      .single();
+
+    const ticketNumber = ticket?.ticket_number || 'N/A';
+
     await createNotification({
       userId,
       ticketId,
       commentId,
       type: 'comment',
       title: 'Novo comentário',
-      message: `${commenterName} comentou no ticket: ${ticketTitle}`
+      message: `${commenterName} comentou no ticket ${ticketNumber}: ${ticketTitle}`
     });
   } catch (error) {
     console.error('Erro ao criar notificação de comentário:', error);
@@ -95,12 +104,21 @@ export async function notifyTicketUpdate(
   updateType: string
 ) {
   try {
+    // Buscar o número do ticket
+    const { data: ticket } = await supabase
+      .from('sla_demandas')
+      .select('ticket_number')
+      .eq('id', ticketId)
+      .single();
+
+    const ticketNumber = ticket?.ticket_number || 'N/A';
+
     await createNotification({
       userId,
       ticketId,
       type: 'ticket_update',
       title: 'Ticket atualizado',
-      message: `${updaterName} ${updateType} o ticket: ${ticketTitle}`
+      message: `${updaterName} ${updateType} o ticket ${ticketNumber}: ${ticketTitle}`
     });
   } catch (error) {
     console.error('Erro ao criar notificação de atualização:', error);
