@@ -144,7 +144,7 @@ export function useNotifications() {
         window.dispatchEvent(new CustomEvent('openTicketModal', { 
           detail: { ticketId: notification.ticket_id } 
         }));
-      }, 100);
+      }, 300); // Aumentar o timeout para dar mais tempo
     } else {
       console.log('⚠️ Notificação sem ticket_id associado');
     }

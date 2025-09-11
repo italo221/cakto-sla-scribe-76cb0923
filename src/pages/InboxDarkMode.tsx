@@ -155,11 +155,34 @@ export default function InboxDarkMode() {
 
     // Event listener para abrir modal via notificação
     const handleOpenTicketModal = (event: CustomEvent) => {
+      console.log('🔔 InboxDarkMode - Evento openTicketModal recebido:', event.detail);
       const { ticketId } = event.detail;
+      
+      // Primeiro tentar encontrar nos tickets carregados
       const ticket = optimizedTicketsWithStatus.find(t => t.id === ticketId);
       if (ticket) {
+        console.log('🔔 InboxDarkMode - Ticket encontrado nos dados:', ticket.ticket_number);
         setSelectedTicket(ticket);
         setModalOpen(true);
+      } else {
+        console.log('🔔 InboxDarkMode - Ticket não encontrado nos dados carregados, buscando diretamente...');
+        // Se não encontrar, buscar diretamente no banco
+        supabase
+          .from('sla_demandas')
+          .select('*')
+          .eq('id', ticketId)
+          .single()
+          .then(({ data, error }) => {
+            if (error) {
+              console.error('Erro ao buscar ticket:', error);
+              return;
+            }
+            if (data) {
+              console.log('🔔 InboxDarkMode - Ticket encontrado no banco:', data.ticket_number);
+              setSelectedTicket(data);
+              setModalOpen(true);
+            }
+          });
       }
     };
     window.addEventListener('openTicketModal', handleOpenTicketModal as EventListener);
@@ -168,7 +191,7 @@ export default function InboxDarkMode() {
       window.removeEventListener('openEditModal', handleOpenEditModal as EventListener);
       window.removeEventListener('openTicketModal', handleOpenTicketModal as EventListener);
     };
-  }, [optimizedTicketsWithStatus]);
+  }, []);  // Remover dependência para evitar recriação constante
 
   const loadSetores = async () => {
     try {
