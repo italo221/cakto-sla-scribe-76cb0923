@@ -53,6 +53,7 @@ export function useNotifications() {
         .from('notifications')
         .select('id, ticket_id, type, title, is_read, created_at') // Apenas campos essenciais
         .eq('user_id', user.id)
+        .eq('type', 'mention') // Filtrar apenas notificações de marcação
         .order('created_at', { ascending: false })
         .limit(20); // Reduzir ainda mais para diminuir egress
 
