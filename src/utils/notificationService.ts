@@ -44,13 +44,22 @@ export async function notifyUserMention(
   commentId?: string
 ) {
   try {
+    // Buscar o número do ticket
+    const { data: ticket } = await supabase
+      .from('sla_demandas')
+      .select('ticket_number')
+      .eq('id', ticketId)
+      .single();
+
+    const ticketNumber = ticket?.ticket_number || 'N/A';
+
     await createNotification({
       userId: mentionedUserId,
       ticketId,
       commentId,
       type: 'mention',
       title: `${mentionerName} mencionou você`,
-      message: `Você foi mencionado em um comentário no ticket: ${ticketTitle}`
+      message: `Você foi mencionado em um comentário no ticket ${ticketNumber}: ${ticketTitle}`
     });
   } catch (error) {
     console.error('Erro ao criar notificação de menção:', error);
