@@ -14,22 +14,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import FileUploader from "@/components/FileUploader";
 import LinkInput from "@/components/LinkInput";
 import { Loader2, Upload, X } from "lucide-react";
-
-interface Ticket {
-  id: string;
-  ticket_number: string;
-  titulo: string;
-  descricao: string;
-  tipo_ticket: string;
-  nivel_criticidade: string;
-  time_responsavel: string;
-  solicitante: string;
-  status: string;
-  observacoes?: string;
-  tags?: string[];
-  link_referencia?: string;
-  anexos?: string;
-}
+import { Ticket } from "@/hooks/useOptimizedTickets";
 
 interface TicketEditModalProps {
   ticket: Ticket | null;
@@ -72,19 +57,15 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         solicitante: safeString(ticket.solicitante),
         status: safeString(ticket.status),
         observacoes: safeString(ticket.observacoes),
-        link_referencia: safeString(ticket.link_referencia)
+        link_referencia: '' // Vai ser carregado separadamente se necessário
       };
       
       setFormData(newFormData);
       setSelectedTags(Array.isArray(ticket.tags) ? ticket.tags : []);
       
-      // Carregar anexos
-      try {
-        const anexosData = ticket.anexos ? JSON.parse(ticket.anexos) : [];
-        setAnexos(Array.isArray(anexosData) ? anexosData : []);
-      } catch {
-        setAnexos([]);
-      }
+      // Para anexos e link, buscar dados completos do ticket se necessário
+      fetchCompleteTicketData(ticket.id);
+    } else if (!ticket) {
     } else if (!ticket) {
       // Reset form quando não há ticket
       setFormData({
@@ -102,6 +83,38 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
       setAnexos([]);
     }
   }, [ticket, isOpen]);
+
+  // Função para buscar dados completos do ticket incluindo anexos e link
+  const fetchCompleteTicketData = async (ticketId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('sla_demandas')
+        .select('link_referencia, anexos')
+        .eq('id', ticketId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        // Atualizar link_referencia
+        setFormData(prev => ({
+          ...prev,
+          link_referencia: data.link_referencia || ''
+        }));
+
+        // Carregar anexos
+        try {
+          const anexosData = data.anexos ? JSON.parse(String(data.anexos)) : [];
+          setAnexos(Array.isArray(anexosData) ? anexosData : []);
+        } catch {
+          setAnexos([]);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados completos do ticket:', error);
+      // Não mostrar erro ao usuário, pois é um carregamento opcional
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

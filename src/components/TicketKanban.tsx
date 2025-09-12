@@ -4,7 +4,8 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, HelpCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, HelpCircle, Edit, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -123,6 +124,13 @@ const KanbanCard = memo(({
     }
   };
 
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isDragActive && !isSortableDragging) {
+      onEditTicket(ticket);
+    }
+  };
+
   // Configurações de prioridade
   const getPriorityColor = (nivel: string) => {
     switch (nivel) {
@@ -140,15 +148,42 @@ const KanbanCard = memo(({
   };
   return <Card ref={setNodeRef} style={style} {...attributes} className={cn("group bg-card animate-fade-in relative cursor-pointer macos-card-kanban", "border border-border", isDragging && "opacity-90 rotate-2 scale-105 shadow-2xl z-50 ring-2 ring-primary", isSortableDragging && "shadow-xl scale-105 rotate-2 border-primary")} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onClick={handleClick}>
       <CardContent className="p-3 space-y-3 macos-card">
-        {/* Header com número e prioridade P0 */}
+        {/* Header com número, prioridade P0 e botões de ação */}
         <div className="flex items-center justify-between">
           <Badge variant="default" className="text-xs font-mono bg-primary text-primary-foreground">
             {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
           </Badge>
-          {ticket.nivel_criticidade === 'P0' && <div className="flex items-center gap-1">
-              <AlertTriangle className="h-4 w-4 text-red-500" />
-              <span className="text-xs font-medium text-red-600 dark:text-red-400">P0</span>
-            </div>}
+          <div className="flex items-center gap-1">
+            {ticket.nivel_criticidade === 'P0' && (
+              <div className="flex items-center gap-1">
+                <AlertTriangle className="h-4 w-4 text-red-500" />
+                <span className="text-xs font-medium text-red-600 dark:text-red-400">P0</span>
+              </div>
+            )}
+            {/* Botões de ação - aparecem no hover */}
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0 hover:bg-primary/10"
+                onClick={handleClick}
+                title="Ver detalhes"
+              >
+                <Eye className="h-3 w-3" />
+              </Button>
+              {userCanEdit && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 w-6 p-0 hover:bg-primary/10"
+                  onClick={handleEditClick}
+                  title="Editar ticket"
+                >
+                  <Edit className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Título */}
