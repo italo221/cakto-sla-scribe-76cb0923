@@ -66,6 +66,8 @@ export default function InboxDarkMode() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'aberto' | 'em_andamento' | 'resolvido' | 'fechado' | 'atrasado' | 'critico' | 'info-incompleta'>('all');
   const [setorFilter, setSetorFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('todas');
+  const [dateSort, setDateSort] = useState<'newest' | 'oldest' | 'none'>('none');
+  const [criticalitySort, setCriticalitySort] = useState<'highest' | 'lowest' | 'none'>('none');
 
   // Hook de tickets otimizados (após declaração dos filtros)
   const {
@@ -82,7 +84,7 @@ export default function InboxDarkMode() {
     hasMore
   } = useOptimizedTickets({
     enableRealtime: false, // Desabilitar para reduzir egress
-    batchSize: activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' ? 500 : 25 // Carregar mais tickets quando há filtros ativos
+    batchSize: activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'none' ? 500 : 50 // Carregar mais tickets quando há filtros ativos, incluindo ordenação
   });
 
   // Exibir SupabaseStatus se não configurado ou com erro de conexão
@@ -102,8 +104,6 @@ export default function InboxDarkMode() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [dateSort, setDateSort] = useState<'newest' | 'oldest' | 'none'>('none');
-  const [criticalitySort, setCriticalitySort] = useState<'highest' | 'lowest' | 'none'>('none');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -119,10 +119,10 @@ export default function InboxDarkMode() {
 
   // Efeito para recarregar tickets quando filtros mudarem
   useEffect(() => {
-    if (activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas') {
+    if (activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'none') {
       reloadTickets();
     }
-  }, [activeFilter, setorFilter, tagFilter]);
+  }, [activeFilter, setorFilter, tagFilter, dateSort, criticalitySort]);
 
   // Verificar parâmetro ticket na URL para abertura automática do modal
   useEffect(() => {
