@@ -50,10 +50,22 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
       // Função helper para garantir string vazia em vez de null/undefined
       const safeString = (value: any) => value ? String(value).trim() : '';
       
+      // Mapear valores do banco para os valores do select
+      const mapTipoTicket = (tipo: string) => {
+        const tipoLower = tipo.toLowerCase();
+        if (tipoLower.includes('bug')) return 'bug';
+        if (tipoLower.includes('feature') || tipoLower.includes('nova')) return 'feature';
+        if (tipoLower.includes('suporte')) return 'suporte';
+        if (tipoLower.includes('melhoria')) return 'melhoria';
+        if (tipoLower.includes('solicitacao') || tipoLower.includes('solicitação') || tipoLower.includes('tarefa')) return 'solicitacao_tarefa';
+        // Default para solicitacao se não conseguir mapear
+        return 'solicitacao';
+      };
+      
       const newFormData = {
         titulo: safeString(ticket.titulo),
         descricao: safeString(ticket.descricao),
-        tipo_ticket: safeString(ticket.tipo_ticket),
+        tipo_ticket: mapTipoTicket(safeString(ticket.tipo_ticket)),
         nivel_criticidade: safeString(ticket.nivel_criticidade),
         time_responsavel: safeString(ticket.time_responsavel),
         solicitante: safeString(ticket.solicitante),
@@ -63,9 +75,15 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
       };
       
       console.log('🔧 TicketEditModal - Dados do form preenchidos:', newFormData);
+      console.log('🔧 TicketEditModal - Estado atual do formData antes do set:', formData);
       
       setFormData(newFormData);
       setSelectedTags(Array.isArray(ticket.tags) ? ticket.tags : []);
+      
+      // Verificar se os dados foram setados corretamente após um pequeno delay
+      setTimeout(() => {
+        console.log('🔧 TicketEditModal - Estado do formData após setFormData:', formData);
+      }, 100);
       
       // Para anexos e link, buscar dados completos do ticket se necessário
       fetchCompleteTicketData(ticket.id);
@@ -87,6 +105,13 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
       setAnexos([]);
     }
   }, [ticket, isOpen]);
+
+  // useEffect adicional para debug do formData
+  useEffect(() => {
+    if (isOpen) {
+      console.log('🔧 TicketEditModal - FormData atual:', formData);
+    }
+  }, [formData, isOpen]);
 
   // Função para buscar dados completos do ticket incluindo anexos e link
   const fetchCompleteTicketData = async (ticketId: string) => {
@@ -216,9 +241,16 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
               <Input
                 id="titulo"
                 value={formData.titulo}
-                onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                onChange={(e) => {
+                  console.log('🔧 TicketEditModal - Título sendo alterado:', e.target.value);
+                  setFormData({ ...formData, titulo: e.target.value });
+                }}
                 required
               />
+              {/* Debug: mostrar valor atual */}
+              <div className="text-xs text-muted-foreground mt-1">
+                Debug: {formData.titulo || '(vazio)'}
+              </div>
             </div>
             
             <div>
@@ -238,10 +270,17 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
             <Textarea
               id="descricao"
               value={formData.descricao}
-              onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+              onChange={(e) => {
+                console.log('🔧 TicketEditModal - Descrição sendo alterada:', e.target.value.substring(0, 50) + '...');
+                setFormData({ ...formData, descricao: e.target.value });
+              }}
               rows={4}
               required
             />
+            {/* Debug: mostrar valor atual */}
+            <div className="text-xs text-muted-foreground mt-1">
+              Debug: {formData.descricao ? formData.descricao.substring(0, 30) + '...' : '(vazio)'}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
