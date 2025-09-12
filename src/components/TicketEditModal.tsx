@@ -45,6 +45,8 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
 
   useEffect(() => {
     if (ticket && isOpen) {
+      console.log('🔧 TicketEditModal - Ticket recebido:', ticket);
+      
       // Função helper para garantir string vazia em vez de null/undefined
       const safeString = (value: any) => value ? String(value).trim() : '';
       
@@ -60,13 +62,15 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
         link_referencia: '' // Vai ser carregado separadamente se necessário
       };
       
+      console.log('🔧 TicketEditModal - Dados do form preenchidos:', newFormData);
+      
       setFormData(newFormData);
       setSelectedTags(Array.isArray(ticket.tags) ? ticket.tags : []);
       
       // Para anexos e link, buscar dados completos do ticket se necessário
       fetchCompleteTicketData(ticket.id);
     } else if (!ticket) {
-    } else if (!ticket) {
+      console.log('🔧 TicketEditModal - Resetando form (sem ticket)');
       // Reset form quando não há ticket
       setFormData({
         titulo: '',

@@ -337,6 +337,7 @@ const JiraTicketCard = memo(({
               />
               {userCanEdit && onEditTicket && <Button size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={e => {
             e.stopPropagation();
+            console.log('🔧 JiraTicketCard - Editando ticket:', ticket);
             onEditTicket(ticket);
           }}>
                   <Edit3 className="h-3 w-3 mr-1" />
