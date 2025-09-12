@@ -92,7 +92,7 @@ const createOptimizedSort = () => {
 export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) => {
   const {
     enableRealtime = false, // Permanentemente desabilitado
-    batchSize = 5, // Reduzir drasticamente para 5 tickets para compensar índices duplicados
+    batchSize = 100, // Aumentar para kanban mostrar mais tickets
     sortFunction = createOptimizedSort(),
     autoFetch = true
   } = options;
@@ -140,7 +140,8 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
 
       // Usar cache agressivo para reduzir requisições
       const result = await cachedQuery(`tickets_page_${page}_${batchSize}`, async () => {
-        const { data, error, status, count } = await supabase
+        // Para kanban, carregar todos os tickets necessários com filtros específicos
+        let query = supabase
           .from('sla_demandas')
           .select(`
             id,
@@ -167,7 +168,19 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
             updated_at,
             resolved_at,
             observacoes
-          `, { count: 'exact' })
+          `, { count: 'exact' });
+
+        // Para kanban, mostrar:
+        // - Todos os abertos
+        // - Todos os em andamento  
+        // - Todos os resolvidos
+        // - Fechados apenas dos últimos 7 dias
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        query = query.or(`status.in.(aberto,em_andamento,resolvido),and(status.eq.fechado,updated_at.gte.${sevenDaysAgo.toISOString()})`);
+        
+        const { data, error, status, count } = await query
           .order('data_criacao', { ascending: false })
           .range(from, to);
 

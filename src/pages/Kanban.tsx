@@ -58,7 +58,7 @@ export default function KanbanPage() {
     totalCount
   } = useOptimizedTickets({
     enableRealtime: false, // Desabilitado devido a queries lentas
-    batchSize: 50 // Reduzido para performance
+    batchSize: 200 // Aumentado para mostrar mais tickets no kanban
   });
 
   // Usar hook centralizado para estatísticas sincronizadas sem duplicar consultas
