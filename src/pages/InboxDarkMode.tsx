@@ -416,6 +416,15 @@ export default function InboxDarkMode() {
       });
     }
 
+    // Aplicar ordenação padrão se nenhuma ordenação está ativa (por data de criação, mais recente primeiro)
+    if (dateSort === 'none' && criticalitySort === 'none') {
+      filtered = [...filtered].sort((a, b) => {
+        const dateA = new Date(a.data_criacao).getTime();
+        const dateB = new Date(b.data_criacao).getTime();
+        return dateB - dateA; // Mais recente primeiro
+      });
+    }
+
 
     return filtered;
   }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, tagFilter, dateSort, criticalitySort, smartSearch]);
