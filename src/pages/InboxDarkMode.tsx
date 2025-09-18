@@ -30,6 +30,7 @@ import { useGlobalTicketStats } from "@/hooks/useGlobalTicketStats";
 import { useAuth } from "@/hooks/useAuth";
 import { useTags } from "@/hooks/useTags";
 import { useToast } from "@/hooks/use-toast";
+import { SmartPagination } from '@/components/SmartPagination';
 interface Ticket {
   id: string;
   ticket_number: string;
@@ -68,6 +69,10 @@ export default function InboxDarkMode() {
   const [tagFilter, setTagFilter] = useState('todas');
   const [dateSort, setDateSort] = useState<'newest' | 'oldest' | 'none'>('none');
   const [criticalitySort, setCriticalitySort] = useState<'highest' | 'lowest' | 'none'>('none');
+  
+  // Estados para paginação
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [itensPorPagina, setItensPorPagina] = useState(30);
 
   // Hook de tickets otimizados (após declaração dos filtros)
   const {
@@ -428,6 +433,36 @@ export default function InboxDarkMode() {
 
     return filtered;
   }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, tagFilter, dateSort, criticalitySort, smartSearch]);
+
+  // Cálculos de paginação
+  const totalTickets = filteredTicketsWithStatus.length;
+  const totalPaginas = Math.ceil(totalTickets / itensPorPagina);
+  
+  // Tickets paginados
+  const ticketsPaginados = useMemo(() => {
+    const inicio = (paginaAtual - 1) * itensPorPagina;
+    const fim = inicio + itensPorPagina;
+    return filteredTicketsWithStatus.slice(inicio, fim);
+  }, [filteredTicketsWithStatus, paginaAtual, itensPorPagina]);
+
+  // Resetar para página 1 quando filtros mudarem
+  useEffect(() => {
+    setPaginaAtual(1);
+  }, [searchTerm, activeFilter, setorFilter, tagFilter, dateSort, criticalitySort]);
+
+  // Ajustar página se estiver fora do range
+  useEffect(() => {
+    if (paginaAtual > totalPaginas && totalPaginas > 0) {
+      setPaginaAtual(totalPaginas);
+    }
+  }, [paginaAtual, totalPaginas]);
+
+  // Função para trocar de página
+  const handlePageChange = (novaPagina: number) => {
+    if (novaPagina >= 1 && novaPagina <= totalPaginas) {
+      setPaginaAtual(novaPagina);
+    }
+  };
 
   // Contagem de tickets por setor - priorizar time_responsavel se existir, senão setor_id
   const setorCounts = useMemo(() => {
@@ -851,7 +886,7 @@ export default function InboxDarkMode() {
 
           <div className="flex items-center gap-4 text-sm text-muted-foreground dark:text-muted-foreground">
             <span className="mx-0 px-0 my-[5px] py-0 text-base text-center">
-              {filteredTicketsWithStatus.length} de {totalCount} tickets
+              {totalTickets} tickets encontrados | Página {paginaAtual} de {totalPaginas}
             </span>
             {(searchTerm || activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'none') && <Button variant="ghost" size="sm" onClick={() => {
             setSearchTerm('');
@@ -888,16 +923,16 @@ export default function InboxDarkMode() {
                   {searchTerm || activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'none' ? 'Tente ajustar os filtros de busca.' : 'Quando houver tickets, eles aparecerão aqui.'}
                 </p>
               </CardContent>
-            </Card> : filteredTicketsWithStatus.map(ticket => <JiraTicketCard key={ticket.id} ticket={ticket} onOpenDetail={handleOpenTicketDetail} onUpdateStatus={handleUpdateStatus} onEditTicket={handleEditTicket} onDeleteTicket={handleDeleteTicket} userCanEdit={canEdit} userCanDelete={canDelete} />)}
+            </Card> : ticketsPaginados.map(ticket => <JiraTicketCard key={ticket.id} ticket={ticket} onOpenDetail={handleOpenTicketDetail} onUpdateStatus={handleUpdateStatus} onEditTicket={handleEditTicket} onDeleteTicket={handleDeleteTicket} userCanEdit={canEdit} userCanDelete={canDelete} />)}
 
-          {hasMore && !loading && (
-            <div className="flex flex-col items-center py-4">
-              <Button onClick={loadMoreTickets} disabled={loading} variant="outline" size="sm">
-                Carregar mais
-              </Button>
-              <span className="mt-2 text-xs text-muted-foreground">
-                {optimizedTickets.length} de {totalCount}
-              </span>
+          {/* Paginação */}
+          {totalPaginas > 1 && (
+            <div className="flex justify-center py-6">
+              <SmartPagination 
+                currentPage={paginaAtual}
+                totalPages={totalPaginas}
+                onPageChange={handlePageChange}
+              />
             </div>
           )}
         </div>
