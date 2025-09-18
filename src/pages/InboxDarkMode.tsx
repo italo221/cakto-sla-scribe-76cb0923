@@ -70,27 +70,22 @@ export default function InboxDarkMode() {
   const [dateSort, setDateSort] = useState<'newest' | 'oldest' | 'none'>('none');
   const [criticalitySort, setCriticalitySort] = useState<'highest' | 'lowest' | 'none'>('none');
   
-  // Estados para paginação
-  const [paginaAtual, setPaginaAtual] = useState(1);
-  const [itensPorPagina, setItensPorPagina] = useState(30);
-
-  // Hook de tickets otimizados (após declaração dos filtros)
-  const {
-    tickets: optimizedTickets,
-    ticketsWithStatus: optimizedTicketsWithStatus,
-    loading,
-    error,
-    lastFetch,
-    reloadTickets,
-    searchTickets,
-    loadMoreTickets,
-    currentPage,
-    totalCount,
-    hasMore
-  } = useOptimizedTickets({
-    enableRealtime: false, // Desabilitar para reduzir egress
-    batchSize: activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'none' ? 500 : 50 // Carregar mais tickets quando há filtros ativos, incluindo ordenação
+  // Estados para paginação e URL
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [paginaAtual, setPaginaAtual] = useState(() => {
+    const page = searchParams.get('page');
+    return page ? Math.max(1, parseInt(page)) : 1;
   });
+  const [itensPorPagina, setItensPorPagina] = useState(() => {
+    const pageSize = searchParams.get('pageSize');
+    return pageSize ? Math.max(15, parseInt(pageSize)) : 30;
+  });
+
+  // Estados para dados paginados
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Exibir SupabaseStatus se não configurado ou com erro de conexão
   if (!isSupabaseConfigured) {
@@ -117,31 +112,180 @@ export default function InboxDarkMode() {
   const [selectedTicketForDelete, setSelectedTicketForDelete] = useState<Ticket | null>(null);
   const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('detailed');
   
-  const [searchParams, setSearchParams] = useSearchParams();
-  
   const { allTags } = useTags();
   const [userRole, setUserRole] = useState<string>('viewer');
 
-  // Efeito para recarregar tickets quando filtros mudarem
-  useEffect(() => {
-    if (activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'none') {
-      reloadTickets();
+  // Função para construir query com filtros
+  const buildQuery = useCallback(() => {
+    let query = supabase.from('sla_demandas').select('*');
+    
+    // Aplicar filtros na query
+    if (activeFilter !== 'all') {
+      if (activeFilter === 'atrasado') {
+        // Para atrasados, precisamos fazer no frontend pois depende de cálculo
+      } else if (activeFilter === 'critico') {
+        query = query.eq('nivel_criticidade', 'P0').in('status', ['aberto', 'em_andamento']);
+      } else if (activeFilter === 'info-incompleta') {
+        query = query.contains('tags', [tagFilter]);
+      } else {
+        query = query.eq('status', activeFilter);
+      }
     }
-  }, [activeFilter, setorFilter, tagFilter, dateSort, criticalitySort]);
+
+    if (setorFilter !== 'all') {
+      const setorSelecionado = setores.find(s => s.id === setorFilter);
+      if (setorSelecionado) {
+        query = query.or(`time_responsavel.eq.${setorSelecionado.nome},setor_id.eq.${setorFilter}`);
+      }
+    }
+
+    if (tagFilter !== 'todas') {
+      query = query.contains('tags', [tagFilter]);
+    }
+
+    if (searchTerm) {
+      query = query.or(`titulo.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,solicitante.ilike.%${searchTerm}%,time_responsavel.ilike.%${searchTerm}%,ticket_number.ilike.%${searchTerm}%`);
+    }
+
+    return query;
+  }, [activeFilter, setorFilter, tagFilter, searchTerm, setores]);
+
+  // Função para buscar total de tickets
+  const fetchTotalCount = useCallback(async () => {
+    try {
+      let query = supabase.from('sla_demandas').select('*', { count: 'exact', head: true });
+      
+      // Aplicar os mesmos filtros da query principal
+      if (activeFilter !== 'all') {
+        if (activeFilter === 'atrasado') {
+          // Para atrasados, precisamos fazer no frontend pois depende de cálculo
+        } else if (activeFilter === 'critico') {
+          query = query.eq('nivel_criticidade', 'P0').in('status', ['aberto', 'em_andamento']);
+        } else if (activeFilter === 'info-incompleta') {
+          query = query.contains('tags', [tagFilter]);
+        } else {
+          query = query.eq('status', activeFilter);
+        }
+      }
+
+      if (setorFilter !== 'all') {
+        const setorSelecionado = setores.find(s => s.id === setorFilter);
+        if (setorSelecionado) {
+          query = query.or(`time_responsavel.eq.${setorSelecionado.nome},setor_id.eq.${setorFilter}`);
+        }
+      }
+
+      if (tagFilter !== 'todas') {
+        query = query.contains('tags', [tagFilter]);
+      }
+
+      if (searchTerm) {
+        query = query.or(`titulo.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,solicitante.ilike.%${searchTerm}%,time_responsavel.ilike.%${searchTerm}%,ticket_number.ilike.%${searchTerm}%`);
+      }
+      
+      const { count, error } = await query;
+      if (error) throw error;
+      return count || 0;
+    } catch (error) {
+      console.error('Erro ao buscar total de tickets:', error);
+      return 0;
+    }
+  }, [activeFilter, setorFilter, tagFilter, searchTerm, setores]);
+
+  // Função para buscar tickets paginados
+  const fetchTickets = useCallback(async (page = 1, pageSize = 30) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Buscar total de tickets
+      const total = await fetchTotalCount();
+      setTotalCount(total);
+      
+      // Verificar se página está dentro do limite
+      const maxPage = Math.ceil(total / pageSize) || 1;
+      const safePage = Math.min(page, maxPage);
+      
+      // Calcular range
+      const from = (safePage - 1) * pageSize;
+      const to = from + pageSize - 1;
+      
+      // Buscar tickets da página
+      const query = buildQuery();
+      
+      // Aplicar ordenação
+      if (dateSort !== 'none') {
+        query.order('data_criacao', { ascending: dateSort === 'oldest' });
+      } else if (criticalitySort !== 'none') {
+        // Para ordenação por criticidade, usar SQL CASE
+        const order = criticalitySort === 'highest' ? 'desc' : 'asc';
+        query.order('nivel_criticidade', { ascending: order === 'asc' });
+      } else {
+        query.order('data_criacao', { ascending: false }); // Padrão: mais recente primeiro
+      }
+      
+      const { data, error } = await query.range(from, to);
+      
+      if (error) throw error;
+      
+      setTickets(data || []);
+      
+      // Atualizar página atual se foi ajustada
+      if (safePage !== page) {
+        setPaginaAtual(safePage);
+        updateURL(safePage, pageSize);
+      }
+      
+    } catch (error) {
+      console.error('Erro ao buscar tickets:', error);
+      setError('Erro ao carregar tickets');
+      setTickets([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [buildQuery, fetchTotalCount, dateSort, criticalitySort]);
+
+  // Função para atualizar URL
+  const updateURL = useCallback((page: number, pageSize: number) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', page.toString());
+    params.set('pageSize', pageSize.toString());
+    setSearchParams(params);
+  }, [searchParams, setSearchParams]);
+
+  // Função para recarregar tickets (compatibilidade)
+  const reloadTickets = useCallback(() => {
+    fetchTickets(paginaAtual, itensPorPagina);
+  }, [fetchTickets, paginaAtual, itensPorPagina]);
+
+  // Efeito para buscar tickets quando filtros ou paginação mudarem
+  useEffect(() => {
+    fetchTickets(paginaAtual, itensPorPagina);
+  }, [fetchTickets, paginaAtual, itensPorPagina]);
+
+  // Efeito para resetar página quando filtros mudarem
+  useEffect(() => {
+    if (paginaAtual !== 1) {
+      setPaginaAtual(1);
+      updateURL(1, itensPorPagina);
+    }
+  }, [activeFilter, setorFilter, tagFilter, dateSort, criticalitySort, searchTerm]);
 
   // Verificar parâmetro ticket na URL para abertura automática do modal
   useEffect(() => {
     const ticketId = searchParams.get('ticket');
-    if (ticketId && optimizedTicketsWithStatus.length > 0) {
-      const ticket = optimizedTicketsWithStatus.find(t => t.id === ticketId);
+    if (ticketId && tickets.length > 0) {
+      const ticket = tickets.find(t => t.id === ticketId);
       if (ticket) {
         setSelectedTicket(ticket);
         setModalOpen(true);
         // Limpar parâmetro da URL após abrir modal
-        setSearchParams({});
+        const params = new URLSearchParams(searchParams);
+        params.delete('ticket');
+        setSearchParams(params);
       }
     }
-  }, [searchParams, optimizedTicketsWithStatus, setSearchParams]);
+  }, [searchParams, tickets, setSearchParams]);
 
   // Define canDelete based on user permissions
   const canDelete = isSuperAdmin;
@@ -164,7 +308,7 @@ export default function InboxDarkMode() {
       const { ticketId } = event.detail;
       
       // Primeiro tentar encontrar nos tickets carregados
-      const ticket = optimizedTicketsWithStatus.find(t => t.id === ticketId);
+      const ticket = tickets.find(t => t.id === ticketId);
       if (ticket) {
         console.log('🔔 InboxDarkMode - Ticket encontrado nos dados:', ticket.ticket_number);
         setSelectedTicket(ticket);
@@ -247,8 +391,8 @@ export default function InboxDarkMode() {
     return labels[status as keyof typeof labels] || 'Desconhecido';
   };
 
-  // Usar tickets otimizados diretamente
-  const ticketsWithStatus = optimizedTicketsWithStatus;
+  // Usar tickets diretos (já paginados)
+  const ticketsWithStatus = tickets;
   
 
   // Busca inteligente com sugestões
@@ -334,116 +478,18 @@ export default function InboxDarkMode() {
     return partialMatch;
   }, []);
 
-  // Aplicar filtros aos tickets com status info
-  const filteredTicketsWithStatus = useMemo(() => {
-    let filtered = ticketsWithStatus;
-
-    // Busca inteligente
-    if (searchTerm) {
-      filtered = filtered.filter(ticket => smartSearch(ticket, searchTerm));
-    }
-
-    // Sistema de filtros unificado - apenas um filtro ativo por vez
-    if (activeFilter !== 'all') {
-      filtered = filtered.filter(ticket => {
-        const ticketStatus = ticket.status?.toString()?.trim()?.toLowerCase();
-        switch (activeFilter) {
-          case 'atrasado':
-            return ticket.isExpired;
-          case 'critico':
-            return ticket.nivel_criticidade === 'P0' && 
-                   ['aberto', 'em_andamento'].includes(ticketStatus);
-          case 'info-incompleta':
-            return ticket.tags?.includes("info-incompleta");
-          default:
-            // Remover a exclusão de tickets atrasados - eles devem aparecer na sua aba base
-            return ticketStatus === activeFilter;
-        }
-      });
-    }
-
-    // Filtro por setor - usar mesma lógica da contagem
-    if (setorFilter !== 'all') {
-      filtered = filtered.filter(ticket => {
-        const setorSelecionado = setores.find(s => s.id === setorFilter);
-        if (!setorSelecionado) return false;
-
-        const timeResponsavel = ticket.time_responsavel?.trim();
-        const nomeSetor = setorSelecionado.nome?.trim();
-
-        
-        // Se time_responsavel corresponde ao nome do setor, usar isso (prioritário)
-        if (timeResponsavel === nomeSetor) {
-          return true;
-        }
-        
-        // Fallback: se não há time_responsavel ou não corresponde, usar setor_id
-        if (!timeResponsavel && ticket.setor_id === setorFilter) {
-          return true;
-        }
-        
-        return false;
-      });
-    }
-
-    // Filtro por tag (separado e independente dos outros filtros)
-    if (tagFilter !== 'todas') {
-      filtered = filtered.filter(ticket => {
-        // Garantir que tags seja sempre um array válido
-        const ticketTags = Array.isArray(ticket.tags) ? ticket.tags : [];
-        
-        // Busca case-insensitive e com trim para evitar problemas de espaço
-        const hasTag = ticketTags.some(tag => 
-          tag && typeof tag === 'string' && 
-          tag.trim().toLowerCase() === tagFilter.trim().toLowerCase()
-        );
-        
-        return hasTag;
-      });
-    }
-
-    // Aplicar ordenação por data
-    if (dateSort !== 'none') {
-      filtered = [...filtered].sort((a, b) => {
-        const dateA = new Date(a.data_criacao).getTime();
-        const dateB = new Date(b.data_criacao).getTime();
-        return dateSort === 'newest' ? dateB - dateA : dateA - dateB;
-      });
-    }
-
-    // Aplicar ordenação por criticidade
-    if (criticalitySort !== 'none') {
-      filtered = [...filtered].sort((a, b) => {
-        const criticalityOrder = { 'P0': 4, 'P1': 3, 'P2': 2, 'P3': 1 };
-        const criticalityA = criticalityOrder[a.nivel_criticidade as keyof typeof criticalityOrder] || 0;
-        const criticalityB = criticalityOrder[b.nivel_criticidade as keyof typeof criticalityOrder] || 0;
-        return criticalitySort === 'highest' ? criticalityB - criticalityA : criticalityA - criticalityB;
-      });
-    }
-
-    // Aplicar ordenação padrão se nenhuma ordenação está ativa (por data de criação, mais recente primeiro)
-    if (dateSort === 'none' && criticalitySort === 'none') {
-      filtered = [...filtered].sort((a, b) => {
-        const dateA = new Date(a.data_criacao).getTime();
-        const dateB = new Date(b.data_criacao).getTime();
-        return dateB - dateA; // Mais recente primeiro
-      });
-    }
-
-
-    return filtered;
-  }, [ticketsWithStatus, searchTerm, activeFilter, setorFilter, tagFilter, dateSort, criticalitySort, smartSearch]);
-
-  // Cálculos de paginação
-  const totalTickets = filteredTicketsWithStatus.length;
-  const totalPaginas = Math.ceil(totalTickets / itensPorPagina);
+  // Os tickets já vêm filtrados e paginados do backend
+  const filteredTicketsWithStatus = ticketsWithStatus;
   
-  // Tickets paginados
-  const ticketsPaginados = useMemo(() => {
-    const inicio = (paginaAtual - 1) * itensPorPagina;
-    const fim = inicio + itensPorPagina;
-    return filteredTicketsWithStatus.slice(inicio, fim);
-  }, [filteredTicketsWithStatus, paginaAtual, itensPorPagina]);
+  // Cálculos de paginação
+  const totalPaginas = Math.ceil(totalCount / itensPorPagina);
+  const totalTickets = totalCount;
+  
+  // Usar tickets diretamente (já paginados)
+  const ticketsPaginados = ticketsWithStatus;
+  
+  // Compatibilidade com código existente
+  const optimizedTicketsWithStatus = ticketsWithStatus;
 
   // Resetar para página 1 quando filtros mudarem
   useEffect(() => {
