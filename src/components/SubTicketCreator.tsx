@@ -42,18 +42,33 @@ export function SubTicketCreator({ parentTicket, onSubTicketCreated }: SubTicket
     setIsLoading(true);
 
     try {
-      // 1. Obter próximo número sequencial
+      console.log('🔄 Iniciando criação de sub-ticket para parent:', parentTicket.id);
+
+      // 1. Verificar autenticação ANTES de tudo
+      const { data: currentUser, error: authError } = await supabase.auth.getUser();
+      if (authError || !currentUser?.user?.id) {
+        throw new Error('Usuário não autenticado. Faça login novamente.');
+      }
+
+      console.log('✅ Usuário autenticado:', currentUser.user.id);
+
+      // 2. Obter próximo número sequencial
       const { data: sequenceData, error: sequenceError } = await supabase
         .rpc('get_next_subticket_sequence', { p_parent_ticket_id: parentTicket.id });
 
-      if (sequenceError) throw sequenceError;
+      if (sequenceError) {
+        console.error('❌ Erro ao obter sequência:', sequenceError);
+        throw sequenceError;
+      }
 
       const sequenceNumber = sequenceData;
+      console.log('✅ Número sequencial obtido:', sequenceNumber);
 
-      // 2. Criar título com sufixo
+      // 3. Criar título com sufixo
       const subTicketTitle = `${parentTicket.titulo} #${sequenceNumber.toString().padStart(2, '0')}`;
+      console.log('✅ Título do sub-ticket:', subTicketTitle);
 
-      // 3. Criar o ticket filho herdando dados do pai
+      // 4. Criar o ticket filho herdando dados do pai
       const { data: newTicket, error: ticketError } = await supabase
         .from('sla_demandas')
         .insert({
@@ -78,13 +93,20 @@ export function SubTicketCreator({ parentTicket, onSubTicketCreated }: SubTicket
         .select()
         .single();
 
-      if (ticketError) throw ticketError;
-
-      // 4. Criar vínculo na tabela subtickets
-      const currentUser = await supabase.auth.getUser();
-      if (!currentUser.data.user?.id) {
-        throw new Error('Usuário não autenticado');
+      if (ticketError) {
+        console.error('❌ Erro ao criar ticket:', ticketError);
+        throw ticketError;
       }
+
+      console.log('✅ Ticket criado:', newTicket.id, newTicket.ticket_number);
+
+      // 5. Criar vínculo na tabela subtickets
+      console.log('🔗 Criando vínculo parent-child:', {
+        parent_ticket_id: parentTicket.id,
+        child_ticket_id: newTicket.id,
+        sequence_number: sequenceNumber,
+        created_by: currentUser.user.id
+      });
 
       const { error: linkError } = await supabase
         .from('subtickets')
@@ -92,25 +114,30 @@ export function SubTicketCreator({ parentTicket, onSubTicketCreated }: SubTicket
           parent_ticket_id: parentTicket.id,
           child_ticket_id: newTicket.id,
           sequence_number: sequenceNumber,
-          created_by: currentUser.data.user.id
+          created_by: currentUser.user.id
         });
 
-      if (linkError) throw linkError;
+      if (linkError) {
+        console.error('❌ Erro ao criar vínculo:', linkError);
+        throw linkError;
+      }
+
+      console.log('✅ Vínculo criado com sucesso');
 
       toast({
         title: "Sub-ticket criado",
-        description: `Sub-ticket #${sequenceNumber.toString().padStart(2, '0')} criado com sucesso.`,
+        description: `Sub-ticket #${sequenceNumber.toString().padStart(2, '0')} (${newTicket.ticket_number}) criado com sucesso.`,
       });
 
       setDescription('');
       setIsOpen(false);
       onSubTicketCreated();
 
-    } catch (error) {
-      console.error('Erro ao criar sub-ticket:', error);
+    } catch (error: any) {
+      console.error('❌ Erro ao criar sub-ticket:', error);
       toast({
         title: "Erro",
-        description: "Erro ao criar sub-ticket. Tente novamente.",
+        description: error.message || "Erro ao criar sub-ticket. Tente novamente.",
         variant: "destructive",
       });
     } finally {
