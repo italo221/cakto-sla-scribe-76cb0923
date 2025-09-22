@@ -59,42 +59,60 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [setores, setSetores] = useState<UserSetor[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Debounce para evitar múltiplas chamadas consecutivas
+  const [fetchProfileTimer, setFetchProfileTimer] = useState<NodeJS.Timeout | null>(null);
+
   const fetchProfile = async (userId: string) => {
     try {
-      // Buscar perfil do usuário
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+      // Buscar perfil e setores em paralelo para otimizar
+      const [profileResponse, setoresResponse] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single(),
+        supabase
+          .from('user_setores')
+          .select(`
+            id,
+            user_id,
+            setor_id,
+            setor:setores(id, nome, descricao)
+          `)
+          .eq('user_id', userId)
+      ]);
+
+      const { data: profileData, error: profileError } = profileResponse;
+      const { data: setoresData, error: setoresError } = setoresResponse;
 
       if (profileError) {
         console.error('Erro ao buscar perfil:', profileError);
         return;
       }
 
-      setProfile(profileData);
-
-      // Buscar setores do usuário
-      const { data: setoresData, error: setoresError } = await supabase
-        .from('user_setores')
-        .select(`
-          id,
-          user_id,
-          setor_id,
-          setor:setores(id, nome, descricao)
-        `)
-        .eq('user_id', userId);
-
       if (setoresError) {
         console.error('Erro ao buscar setores do usuário:', setoresError);
-        return;
+        // Não return aqui para que o perfil seja definido mesmo sem setores
       }
 
+      setProfile(profileData);
       setSetores(setoresData || []);
     } catch (error) {
       console.error('Erro ao buscar dados do usuário:', error);
     }
+  };
+
+  // Função com debounce para evitar chamadas excessivas
+  const debouncedFetchProfile = (userId: string) => {
+    if (fetchProfileTimer) {
+      clearTimeout(fetchProfileTimer);
+    }
+    
+    const timer = setTimeout(() => {
+      fetchProfile(userId);
+    }, 100);
+    
+    setFetchProfileTimer(timer);
   };
 
   useEffect(() => {
@@ -105,10 +123,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Aguardar um pouco e então buscar perfil
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 100);
+          // Usar debounce para evitar múltiplas chamadas
+          debouncedFetchProfile(session.user.id);
         } else {
           setProfile(null);
           setSetores([]);
@@ -123,7 +139,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchProfile(session.user.id);
+        debouncedFetchProfile(session.user.id);
       }
       setLoading(false);
     });

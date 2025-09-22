@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -29,7 +29,7 @@ export function SubTicketCreator({ parentTicket, onSubTicketCreated }: SubTicket
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleCreateSubTicket = async () => {
+  const handleCreateSubTicket = useCallback(async () => {
     if (!description.trim()) {
       toast({
         title: "Erro",
@@ -116,7 +116,7 @@ export function SubTicketCreator({ parentTicket, onSubTicketCreated }: SubTicket
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [description, parentTicket, toast, onSubTicketCreated]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

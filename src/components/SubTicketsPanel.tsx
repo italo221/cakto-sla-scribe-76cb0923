@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,63 +35,88 @@ interface SubTicketsPanelProps {
   onSubTicketClick: (ticketId: string) => void;
 }
 
+// Cache para sub-tickets
+const subTicketsCache = new Map<string, {
+  data: SubTicket[];
+  timestamp: number;
+}>();
+
+const CACHE_DURATION = 30000; // 30 segundos
+
 export function SubTicketsPanel({ parentTicket, onSubTicketClick }: SubTicketsPanelProps) {
   const [subTickets, setSubTickets] = useState<SubTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const loadSubTickets = async () => {
+  // Memoizar o parentTicket.id para evitar re-execuções
+  const parentTicketId = useMemo(() => parentTicket.id, [parentTicket.id]);
+
+  const loadSubTickets = useCallback(async () => {
+    // Verificar cache primeiro
+    const cached = subTicketsCache.get(parentTicketId);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      setSubTickets(cached.data);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Primeiro buscar os subtickets
+      // Primeira query: buscar subtickets
       const { data: subTicketsData, error: subTicketsError } = await supabase
         .from('subtickets')
         .select('child_ticket_id, sequence_number')
-        .eq('parent_ticket_id', parentTicket.id)
+        .eq('parent_ticket_id', parentTicketId)
         .order('sequence_number', { ascending: true });
 
       if (subTicketsError) throw subTicketsError;
 
       if (!subTicketsData || subTicketsData.length === 0) {
-        setSubTickets([]);
+        const emptyResult: SubTicket[] = [];
+        subTicketsCache.set(parentTicketId, {
+          data: emptyResult,
+          timestamp: Date.now()
+        });
+        setSubTickets(emptyResult);
         return;
       }
 
-      // Buscar dados dos tickets filhos
+      // Segunda query: buscar dados dos tickets filhos em uma única query
       const childTicketIds = subTicketsData.map(item => item.child_ticket_id);
       
       const { data: ticketsData, error: ticketsError } = await supabase
         .from('sla_demandas')
-        .select(`
-          id,
-          ticket_number,
-          titulo,
-          status,
-          nivel_criticidade,
-          tags,
-          data_criacao,
-          responsavel_interno
-        `)
+        .select('id, ticket_number, titulo, status, nivel_criticidade, tags, data_criacao, responsavel_interno')
         .in('id', childTicketIds);
 
       if (ticketsError) throw ticketsError;
 
-      // Combinar os dados
-      const formattedSubTickets: SubTicket[] = subTicketsData.map((subTicketItem) => {
-        const ticketData = ticketsData?.find(ticket => ticket.id === subTicketItem.child_ticket_id);
-        
-        return {
-          id: ticketData?.id || '',
-          ticket_number: ticketData?.ticket_number || '',
-          titulo: ticketData?.titulo || '',
-          status: ticketData?.status || '',
-          nivel_criticidade: ticketData?.nivel_criticidade || '',
-          tags: ticketData?.tags || [],
-          data_criacao: ticketData?.data_criacao || '',
-          sequence_number: subTicketItem.sequence_number,
-          responsavel_interno: ticketData?.responsavel_interno
-        };
-      }).filter(ticket => ticket.id); // Filtrar tickets que não foram encontrados
+      // Combinar dados de forma otimizada
+      const formattedSubTickets: SubTicket[] = subTicketsData
+        .map((subTicketItem) => {
+          const ticketData = ticketsData?.find(ticket => ticket.id === subTicketItem.child_ticket_id);
+          
+          if (!ticketData) return null;
+          
+          return {
+            id: ticketData.id,
+            ticket_number: ticketData.ticket_number,
+            titulo: ticketData.titulo,
+            status: ticketData.status,
+            nivel_criticidade: ticketData.nivel_criticidade,
+            tags: ticketData.tags || [],
+            data_criacao: ticketData.data_criacao,
+            sequence_number: subTicketItem.sequence_number,
+            responsavel_interno: ticketData.responsavel_interno
+          };
+        })
+        .filter(Boolean) as SubTicket[];
+
+      // Atualizar cache
+      subTicketsCache.set(parentTicketId, {
+        data: formattedSubTickets,
+        timestamp: Date.now()
+      });
 
       setSubTickets(formattedSubTickets);
     } catch (error) {
@@ -104,11 +129,17 @@ export function SubTicketsPanel({ parentTicket, onSubTicketClick }: SubTicketsPa
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [parentTicketId, toast]);
 
   useEffect(() => {
     loadSubTickets();
-  }, [parentTicket.id]);
+  }, [loadSubTickets]);
+
+  // Função para limpar cache e recarregar
+  const handleSubTicketCreated = useCallback(() => {
+    subTicketsCache.delete(parentTicketId);
+    loadSubTickets();
+  }, [parentTicketId, loadSubTickets]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -162,7 +193,7 @@ export function SubTicketsPanel({ parentTicket, onSubTicketClick }: SubTicketsPa
         <CardTitle className="text-lg">Sub-Tickets</CardTitle>
         <SubTicketCreator 
           parentTicket={parentTicket} 
-          onSubTicketCreated={loadSubTickets}
+          onSubTicketCreated={handleSubTicketCreated}
         />
       </CardHeader>
       <CardContent>
