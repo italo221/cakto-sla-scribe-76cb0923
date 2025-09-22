@@ -30,9 +30,14 @@ export function SubTicketBadge({ parentTicketInfo, onParentTicketClick }: SubTic
             <p className="text-sm text-blue-700 dark:text-blue-300">
               Este é um sub-ticket de{' '}
               <Button
+                type="button"
                 variant="link"
                 className="h-auto p-0 text-sm font-medium text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100"
-                onClick={() => onParentTicketClick(parentTicketInfo.id)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onParentTicketClick(parentTicketInfo.id);
+                }}
               >
                 {parentTicketInfo.ticket_number}
               </Button>
@@ -43,9 +48,14 @@ export function SubTicketBadge({ parentTicketInfo, onParentTicketClick }: SubTic
           </div>
           
           <Button
+            type="button"
             variant="ghost"
             size="sm"
-            onClick={() => onParentTicketClick(parentTicketInfo.id)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onParentTicketClick(parentTicketInfo.id);
+            }}
             className="flex-shrink-0 text-blue-600 hover:text-blue-900 hover:bg-blue-100 dark:text-blue-400 dark:hover:text-blue-200 dark:hover:bg-blue-900/50"
           >
             <ArrowUpRight className="h-4 w-4" />
