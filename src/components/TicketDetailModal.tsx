@@ -1198,15 +1198,38 @@ const toggleCommentsFocusMode = () => {
           {isSubTicket && parentTicketInfo && (
             <SubTicketBadge
               parentTicketInfo={parentTicketInfo}
-              onParentTicketClick={(ticketId) => {
-                // Fechar modal atual e abrir ticket pai
-                onClose();
-                setTimeout(() => {
-                  const url = new URL(window.location.href);
-                  url.searchParams.set('ticket', ticketId);
-                  window.history.pushState({}, '', url.toString());
-                  window.location.reload();
-                }, 100);
+              onParentTicketClick={async (ticketId) => {
+                try {
+                  // Buscar dados do ticket pai
+                  const { data: parentTicket, error } = await supabase
+                    .from('sla_demandas')
+                    .select('*')
+                    .eq('id', ticketId)
+                    .single();
+
+                  if (error) throw error;
+
+                  if (parentTicket && setSelectedSLA) {
+                    // Converter para o tipo SLA esperado
+                    const slaTicket: SLA = {
+                      ...parentTicket,
+                      anexos: Array.isArray(parentTicket.anexos) ? JSON.stringify(parentTicket.anexos) : (parentTicket.anexos as string)
+                    };
+                    
+                    // Fechar modal atual e abrir ticket pai
+                    onClose();
+                    setTimeout(() => {
+                      setSelectedSLA(slaTicket);
+                    }, 100);
+                  }
+                } catch (error) {
+                  console.error('Erro ao abrir ticket pai:', error);
+                  toast({
+                    title: "Erro",
+                    description: "Não foi possível abrir o ticket pai",
+                    variant: "destructive"
+                  });
+                }
               }}
             />
           )}
