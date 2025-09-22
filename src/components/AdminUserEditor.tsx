@@ -53,11 +53,20 @@ export default function AdminUserEditor({
   const { getProfileById } = useOptimizedProfiles();
   
   const fetchUserProfile = async () => {
-    if (!userId) return;
+    if (!userId || userId === 'undefined') {
+      console.error('❌ userId inválido:', userId);
+      toast.error('ID do usuário inválido');
+      return;
+    }
+    
+    console.log('🔍 Buscando perfil para userId:', userId);
     setLoading(true);
     try {
       const data = await getProfileById(userId);
+      console.log('🔍 Dados do perfil retornados:', data);
+      
       if (!data) throw new Error('Usuário não encontrado');
+      
       setUserProfile(data);
       setFormData({
         nome_completo: data.nome_completo,
@@ -68,16 +77,22 @@ export default function AdminUserEditor({
         avatar_url: data.avatar_url || ''
       });
     } catch (error: any) {
-      console.error('Erro ao buscar perfil:', error);
-      toast.error('Erro ao carregar dados do usuário');
+      console.error('❌ Erro ao buscar perfil:', error);
+      toast.error('Erro ao carregar dados do usuário: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
   const handleSave = async () => {
-    if (!userProfile) return;
+    if (!userProfile || !userProfile.user_id) {
+      toast.error('Erro: ID do usuário não encontrado');
+      return;
+    }
+    
     setLoading(true);
     try {
+      console.log('🔍 Salvando usuário:', { userProfile, formData });
+      
       // Atualizar dados no profiles
       const {
         error: profileError

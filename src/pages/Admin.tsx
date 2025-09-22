@@ -74,7 +74,10 @@ const Admin = () => {
   const [selectedSetorDetail, setSelectedSetorDetail] = useState<Setor | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const { fetchProfiles } = useOptimizedProfiles();
+  const { fetchProfiles } = useOptimizedProfiles({ 
+    includeInactive: true, 
+    selectFields: ['user_id', 'id', 'nome_completo', 'email', 'role', 'user_type', 'ativo', 'created_at'] 
+  });
   const { fetchSetores: getSetores } = useOptimizedSetores();
 
   // Sistema aberto - sempre autenticado como admin
@@ -191,6 +194,16 @@ const Admin = () => {
             <Edit className="h-3 w-3" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => {
+            console.log('🔍 Abrindo editor para usuário:', user);
+            console.log('🔍 user.user_id:', user.user_id);
+            if (!user.user_id) {
+              toast({
+                title: "Erro",
+                description: "ID do usuário não encontrado",
+                variant: "destructive"
+              });
+              return;
+            }
             setSelectedUserForEdit(user.user_id);
             setAdminUserEditorOpen(true);
           }}>
