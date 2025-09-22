@@ -1224,15 +1224,9 @@ const toggleCommentsFocusMode = () => {
                     
                     console.log('🔍 Ticket convertido:', slaTicket);
                     
-                    // Chamar setSelectedSLA ANTES de fechar o modal
+                    // Abrir o ticket pai diretamente no modal atual
                     console.log('🔍 Chamando setSelectedSLA...');
                     setSelectedSLA(slaTicket);
-                    
-                    // Pequeno delay e então fechar o modal atual
-                    setTimeout(() => {
-                      console.log('🔍 Fechando modal atual...');
-                      onClose();
-                    }, 50);
                   } else if (!parentTicket) {
                     toast({
                       title: "Ticket não encontrado",
