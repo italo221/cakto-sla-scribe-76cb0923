@@ -1199,13 +1199,19 @@ const toggleCommentsFocusMode = () => {
             <SubTicketBadge
               parentTicketInfo={parentTicketInfo}
               onParentTicketClick={async (ticketId) => {
+                console.log('🔍 Clicando no ticket pai:', ticketId);
+                console.log('🔍 setSelectedSLA disponível:', !!setSelectedSLA);
+                
                 try {
                   // Buscar dados do ticket pai
                   const { data: parentTicket, error } = await supabase
                     .from('sla_demandas')
                     .select('*')
                     .eq('id', ticketId)
-                    .single();
+                    .maybeSingle();
+
+                  console.log('🔍 Dados do ticket pai:', parentTicket);
+                  console.log('🔍 Erro na busca:', error);
 
                   if (error) throw error;
 
@@ -1213,14 +1219,30 @@ const toggleCommentsFocusMode = () => {
                     // Converter para o tipo SLA esperado
                     const slaTicket: SLA = {
                       ...parentTicket,
-                      anexos: Array.isArray(parentTicket.anexos) ? JSON.stringify(parentTicket.anexos) : (parentTicket.anexos as string)
+                      anexos: Array.isArray(parentTicket.anexos) ? JSON.stringify(parentTicket.anexos) : (parentTicket.anexos as string || '[]')
                     };
+                    
+                    console.log('🔍 Ticket convertido:', slaTicket);
                     
                     // Fechar modal atual e abrir ticket pai
                     onClose();
                     setTimeout(() => {
+                      console.log('🔍 Chamando setSelectedSLA...');
                       setSelectedSLA(slaTicket);
-                    }, 100);
+                    }, 150);
+                  } else if (!parentTicket) {
+                    toast({
+                      title: "Ticket não encontrado",
+                      description: "O ticket pai não foi encontrado",
+                      variant: "destructive"
+                    });
+                  } else if (!setSelectedSLA) {
+                    console.log('🔍 setSelectedSLA não está disponível, usando fallback');
+                    // Fallback: navegar pela URL
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('ticket', ticketId);
+                    window.history.pushState({}, '', url.toString());
+                    window.location.reload();
                   }
                 } catch (error) {
                   console.error('Erro ao abrir ticket pai:', error);
