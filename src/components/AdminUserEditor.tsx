@@ -93,21 +93,38 @@ export default function AdminUserEditor({
     try {
       console.log('🔍 Salvando usuário:', { userProfile, formData });
       
+      // Verificar se o usuário atual tem permissões de super admin
+      const { data: currentUser } = await supabase.auth.getUser();
+      console.log('🔍 Usuário atual:', currentUser);
+      
+      if (!currentUser?.user) {
+        throw new Error('Usuário não autenticado. Faça login novamente.');
+      }
+      
       // Atualizar dados no profiles
-      const {
-        error: profileError
-      } = await supabase.from('profiles').update({
+      const updateData = {
         nome_completo: formData.nome_completo,
         telefone: formData.telefone,
         role: formData.role as 'super_admin' | 'operador' | 'viewer',
         ativo: formData.ativo,
         avatar_url: formData.avatar_url,
         updated_at: new Date().toISOString()
-      }).eq('user_id', userProfile.user_id);
+      };
+      
+      console.log('🔍 Dados para atualização:', updateData);
+      console.log('🔍 Atualizando usuário com user_id:', userProfile.user_id);
+      
+      const {
+        error: profileError
+      } = await supabase.from('profiles').update(updateData).eq('user_id', userProfile.user_id);
+      
+      console.log('🔍 Resultado da atualização:', { profileError });
+      
       if (profileError) throw profileError;
 
       // Se o email mudou, atualizar no auth.users (através de RPC se necessário)
       if (formData.email !== userProfile.email) {
+        console.log('🔍 Atualizando email...');
         // Nota: Para alterar email via admin, seria necessário uma função RPC específica
         // Por segurança, vamos apenas atualizar no profiles por enquanto
         const {
@@ -115,13 +132,21 @@ export default function AdminUserEditor({
         } = await supabase.from('profiles').update({
           email: formData.email
         }).eq('user_id', userProfile.user_id);
+        
+        console.log('🔍 Resultado da atualização de email:', { emailError });
         if (emailError) throw emailError;
       }
+      
+      console.log('✅ Usuário atualizado com sucesso');
       toast.success('Usuário atualizado com sucesso!');
-      onUserUpdated();
-      onOpenChange(false);
+      
+      // Aguardar um pouco antes de fechar para garantir que os dados foram atualizados
+      setTimeout(() => {
+        onUserUpdated();
+        onOpenChange(false);
+      }, 500);
     } catch (error: any) {
-      console.error('Erro ao atualizar usuário:', error);
+      console.error('❌ Erro ao atualizar usuário:', error);
       toast.error('Erro ao atualizar usuário: ' + error.message);
     } finally {
       setLoading(false);
