@@ -43,38 +43,55 @@ export function SubTicketsPanel({ parentTicket, onSubTicketClick }: SubTicketsPa
   const loadSubTickets = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // Primeiro buscar os subtickets
+      const { data: subTicketsData, error: subTicketsError } = await supabase
         .from('subtickets')
-        .select(`
-          sequence_number,
-          child_ticket_id,
-          sla_demandas!subtickets_child_ticket_id_fkey (
-            id,
-            ticket_number,
-            titulo,
-            status,
-            nivel_criticidade,
-            tags,
-            data_criacao,
-            responsavel_interno
-          )
-        `)
+        .select('child_ticket_id, sequence_number')
         .eq('parent_ticket_id', parentTicket.id)
         .order('sequence_number', { ascending: true });
 
-      if (error) throw error;
+      if (subTicketsError) throw subTicketsError;
 
-      const formattedSubTickets: SubTicket[] = data.map((item: any) => ({
-        id: item.sla_demandas.id,
-        ticket_number: item.sla_demandas.ticket_number,
-        titulo: item.sla_demandas.titulo,
-        status: item.sla_demandas.status,
-        nivel_criticidade: item.sla_demandas.nivel_criticidade,
-        tags: item.sla_demandas.tags || [],
-        data_criacao: item.sla_demandas.data_criacao,
-        sequence_number: item.sequence_number,
-        responsavel_interno: item.sla_demandas.responsavel_interno
-      }));
+      if (!subTicketsData || subTicketsData.length === 0) {
+        setSubTickets([]);
+        return;
+      }
+
+      // Buscar dados dos tickets filhos
+      const childTicketIds = subTicketsData.map(item => item.child_ticket_id);
+      
+      const { data: ticketsData, error: ticketsError } = await supabase
+        .from('sla_demandas')
+        .select(`
+          id,
+          ticket_number,
+          titulo,
+          status,
+          nivel_criticidade,
+          tags,
+          data_criacao,
+          responsavel_interno
+        `)
+        .in('id', childTicketIds);
+
+      if (ticketsError) throw ticketsError;
+
+      // Combinar os dados
+      const formattedSubTickets: SubTicket[] = subTicketsData.map((subTicketItem) => {
+        const ticketData = ticketsData?.find(ticket => ticket.id === subTicketItem.child_ticket_id);
+        
+        return {
+          id: ticketData?.id || '',
+          ticket_number: ticketData?.ticket_number || '',
+          titulo: ticketData?.titulo || '',
+          status: ticketData?.status || '',
+          nivel_criticidade: ticketData?.nivel_criticidade || '',
+          tags: ticketData?.tags || [],
+          data_criacao: ticketData?.data_criacao || '',
+          sequence_number: subTicketItem.sequence_number,
+          responsavel_interno: ticketData?.responsavel_interno
+        };
+      }).filter(ticket => ticket.id); // Filtrar tickets que não foram encontrados
 
       setSubTickets(formattedSubTickets);
     } catch (error) {

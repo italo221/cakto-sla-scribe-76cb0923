@@ -81,13 +81,18 @@ export function SubTicketCreator({ parentTicket, onSubTicketCreated }: SubTicket
       if (ticketError) throw ticketError;
 
       // 4. Criar vínculo na tabela subtickets
+      const currentUser = await supabase.auth.getUser();
+      if (!currentUser.data.user?.id) {
+        throw new Error('Usuário não autenticado');
+      }
+
       const { error: linkError } = await supabase
         .from('subtickets')
         .insert({
           parent_ticket_id: parentTicket.id,
           child_ticket_id: newTicket.id,
           sequence_number: sequenceNumber,
-          created_by: (await supabase.auth.getUser()).data.user?.id
+          created_by: currentUser.data.user.id
         });
 
       if (linkError) throw linkError;
