@@ -1098,6 +1098,48 @@ export type Database = {
           },
         ]
       }
+      subtickets: {
+        Row: {
+          child_ticket_id: string
+          created_at: string
+          created_by: string
+          id: string
+          parent_ticket_id: string
+          sequence_number: number
+        }
+        Insert: {
+          child_ticket_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          parent_ticket_id: string
+          sequence_number: number
+        }
+        Update: {
+          child_ticket_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          parent_ticket_id?: string
+          sequence_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subtickets_child_ticket_fk"
+            columns: ["child_ticket_id"]
+            isOneToOne: true
+            referencedRelation: "sla_demandas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subtickets_parent_ticket_fk"
+            columns: ["parent_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           created_at: string
@@ -1562,6 +1604,10 @@ export type Database = {
       get_hidden_tags: {
         Args: Record<PropertyKey, never>
         Returns: string[]
+      }
+      get_next_subticket_sequence: {
+        Args: { p_parent_ticket_id: string }
+        Returns: number
       }
       get_organized_tags: {
         Args: {

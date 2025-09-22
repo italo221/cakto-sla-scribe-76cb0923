@@ -36,6 +36,9 @@ import { extractCleanTextWithMentions, formatMentionsForDisplay } from "@/utils/
 import { extractMentions, findMentionedUsers, notifyUserMention } from "@/utils/notificationService";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import TicketLinksPanel from "@/components/TicketLinksPanel";
+import { SubTicketsPanel } from "@/components/SubTicketsPanel";
+import { SubTicketBadge } from "@/components/SubTicketBadge";
+import { useSubTicket } from "@/hooks/useSubTicket";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { HelpCircle } from "lucide-react";
@@ -150,6 +153,7 @@ export default function SLADetailModal({
   const { calculateSLADeadline } = useSLAPolicies();
   
   const [currentSLA, setCurrentSLA] = useState<SLA | null>(sla);
+  const { parentTicketInfo, isSubTicket } = useSubTicket(currentSLA?.id || null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [actionLogs, setActionLogs] = useState<ActionLog[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -1190,6 +1194,23 @@ const toggleCommentsFocusMode = () => {
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Badge de Sub-ticket */}
+          {isSubTicket && parentTicketInfo && (
+            <SubTicketBadge
+              parentTicketInfo={parentTicketInfo}
+              onParentTicketClick={(ticketId) => {
+                // Fechar modal atual e abrir ticket pai
+                onClose();
+                setTimeout(() => {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('ticket', ticketId);
+                  window.history.pushState({}, '', url.toString());
+                  window.location.reload();
+                }, 100);
+              }}
+            />
+          )}
+
           {/* Conteúdo principal */}
           {/* Tabs de Discussão e Histórico */}
           {!isCommentsFocusMode && (
@@ -2031,6 +2052,24 @@ const toggleCommentsFocusMode = () => {
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* Painel de Sub-Tickets */}
+          {!isCommentsFocusMode && currentSLA && (
+            <SubTicketsPanel 
+              parentTicket={currentSLA as any}
+              onSubTicketClick={(ticketId) => {
+                // Fechar modal atual e abrir novo ticket
+                onClose();
+                // Aguardar fechamento do modal antes de abrir o novo
+                setTimeout(() => {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('ticket', ticketId);
+                  window.history.pushState({}, '', url.toString());
+                  window.location.reload();
+                }, 100);
+              }}
+            />
           )}
 
           {/* Painel de Tickets Vinculados */}
