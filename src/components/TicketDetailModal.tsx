@@ -2100,16 +2100,70 @@ const toggleCommentsFocusMode = () => {
           {!isCommentsFocusMode && currentSLA && (
             <SubTicketsPanel 
               parentTicket={currentSLA as any}
-              onSubTicketClick={(ticketId) => {
-                // Fechar modal atual e abrir novo ticket
-                onClose();
-                // Aguardar fechamento do modal antes de abrir o novo
-                setTimeout(() => {
-                  const url = new URL(window.location.href);
-                  url.searchParams.set('ticket', ticketId);
-                  window.history.pushState({}, '', url.toString());
-                  window.location.reload();
-                }, 100);
+              onSubTicketClick={async (ticketId) => {
+                console.log('🔍 Clicando no sub-ticket:', ticketId);
+                
+                if (!setSelectedSLA) {
+                  console.log('🔍 setSelectedSLA não disponível');
+                  return;
+                }
+                
+                try {
+                  // Buscar o sub-ticket
+                  const { data: subTicket, error } = await supabase
+                    .from('sla_demandas')
+                    .select('*')
+                    .eq('id', ticketId)
+                    .maybeSingle();
+                  
+                  console.log('🔍 Dados do sub-ticket:', subTicket);
+                  console.log('🔍 Erro na busca:', error);
+                  
+                  if (subTicket && !error) {
+                    // Converter para formato SLA usando apenas os campos da interface
+                    const slaTicket: SLA = {
+                      id: subTicket.id,
+                      titulo: subTicket.titulo || '',
+                      descricao: subTicket.descricao || '',
+                      status: subTicket.status || 'aberto',
+                      nivel_criticidade: subTicket.nivel_criticidade || 'baixo',
+                      time_responsavel: subTicket.time_responsavel || '',
+                      solicitante: subTicket.solicitante || '',
+                      data_criacao: subTicket.data_criacao || new Date().toISOString(),
+                      pontuacao_total: 0,
+                      pontuacao_financeiro: 0,
+                      pontuacao_cliente: 0,
+                      pontuacao_reputacao: 0,
+                      pontuacao_urgencia: 0,
+                      pontuacao_operacional: 0,
+                      tags: Array.isArray(subTicket.tags) ? subTicket.tags.map(String) : [],
+                      ticket_number: subTicket.ticket_number || '',
+                      prioridade_operacional: subTicket.prioridade_operacional || 'normal',
+                      link_referencia: subTicket.link_referencia || null,
+                      anexos: typeof subTicket.anexos === 'string' ? subTicket.anexos : null,
+                      assignee_user_id: subTicket.assignee_user_id || null
+                    };
+                    
+                    console.log('🔍 Sub-ticket convertido:', slaTicket);
+                    
+                    // Abrir o sub-ticket diretamente no modal atual
+                    console.log('🔍 Chamando setSelectedSLA para sub-ticket...');
+                    setSelectedSLA(slaTicket);
+                  } else if (!subTicket) {
+                    toast({
+                      title: "Sub-ticket não encontrado",
+                      description: "O sub-ticket não foi encontrado",
+                      variant: "destructive"
+                    });
+                  }
+                } catch (error) {
+                  console.error('Erro ao buscar sub-ticket:', error);
+                  toast({
+                    title: "Erro",
+                    description: "Erro ao carregar o sub-ticket",
+                    variant: "destructive"
+                  });
+                }
               }}
             />
           )}
