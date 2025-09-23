@@ -115,9 +115,21 @@ export default function InboxDarkMode() {
   const { allTags } = useTags();
   const [userRole, setUserRole] = useState<string>('viewer');
 
-  // Função para construir query com filtros
+  // Função para construir query com filtros e busca melhorada
   const buildQuery = useCallback(() => {
-    let query = supabase.from('sla_demandas').select('*');
+    let query = supabase.from('sla_demandas').select(`
+      *,
+      setores(nome),
+      profiles!sla_demandas_assignee_user_id_fkey(nome_completo, email),
+      sla_comentarios_internos(
+        id,
+        autor_nome,
+        comentario,
+        created_at,
+        anexos
+      ),
+      subtickets!subtickets_child_ticket_id_fkey(parent_ticket_id)
+    `);
     
     // Aplicar filtros na query
     if (activeFilter !== 'all') {
@@ -144,7 +156,21 @@ export default function InboxDarkMode() {
     }
 
     if (searchTerm) {
-      query = query.or(`titulo.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,solicitante.ilike.%${searchTerm}%,time_responsavel.ilike.%${searchTerm}%,ticket_number.ilike.%${searchTerm}%`);
+      // Busca melhorada - incluir busca por palavras parciais e remover caracteres especiais
+      const cleanSearchTerm = searchTerm.replace(/[#\-]/g, ' ').trim();
+      const searchWords = cleanSearchTerm.split(' ').filter(word => word.length > 1);
+      
+      if (searchWords.length > 0) {
+        // Criar condições de busca mais flexíveis para cada palavra
+        const searchConditions = searchWords.map(word => 
+          `titulo.ilike.%${word}%,descricao.ilike.%${word}%,solicitante.ilike.%${word}%,time_responsavel.ilike.%${word}%,ticket_number.ilike.%${word}%`
+        ).join(',');
+        
+        query = query.or(searchConditions);
+      } else {
+        // Busca original se não há palavras válidas
+        query = query.or(`titulo.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,solicitante.ilike.%${searchTerm}%,time_responsavel.ilike.%${searchTerm}%,ticket_number.ilike.%${searchTerm}%`);
+      }
     }
 
     return query;
@@ -180,7 +206,19 @@ export default function InboxDarkMode() {
       }
 
       if (searchTerm) {
-        query = query.or(`titulo.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,solicitante.ilike.%${searchTerm}%,time_responsavel.ilike.%${searchTerm}%,ticket_number.ilike.%${searchTerm}%`);
+        // Busca melhorada também no count
+        const cleanSearchTerm = searchTerm.replace(/[#\-]/g, ' ').trim();
+        const searchWords = cleanSearchTerm.split(' ').filter(word => word.length > 1);
+        
+        if (searchWords.length > 0) {
+          const searchConditions = searchWords.map(word => 
+            `titulo.ilike.%${word}%,descricao.ilike.%${word}%,solicitante.ilike.%${word}%,time_responsavel.ilike.%${word}%,ticket_number.ilike.%${word}%`
+          ).join(',');
+          
+          query = query.or(searchConditions);
+        } else {
+          query = query.or(`titulo.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,solicitante.ilike.%${searchTerm}%,time_responsavel.ilike.%${searchTerm}%,ticket_number.ilike.%${searchTerm}%`);
+        }
       }
       
       const { count, error } = await query;
@@ -478,15 +516,57 @@ export default function InboxDarkMode() {
     return partialMatch;
   }, []);
 
-  // Os tickets já vêm filtrados e paginados do backend
-  const filteredTicketsWithStatus = ticketsWithStatus;
+  // Filtrar e priorizar tickets corretamente na busca
+  const filteredTicketsWithStatus = useMemo(() => {
+    if (!searchTerm) return ticketsWithStatus;
+    
+    // Verificar se busca por número de ticket específico
+    const searchingForTicketNumber = searchTerm.includes('TICKET-');
+    
+    if (searchingForTicketNumber) {
+      // Filtrar tickets que fazem match com a busca
+      const matchingTickets = ticketsWithStatus.filter(ticket => {
+        return ticket.ticket_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               ticket.titulo?.toLowerCase().includes(searchTerm.toLowerCase());
+      });
+      
+      // Se encontrou o ticket exato, priorizá-lo
+      const exactTicketMatch = matchingTickets.find(ticket => 
+        ticket.ticket_number?.toLowerCase() === searchTerm.toLowerCase()
+      );
+      
+      if (exactTicketMatch) {
+        // Se encontrou o ticket exato, mostrar apenas ele
+        return [exactTicketMatch];
+      }
+      
+      // Caso contrário, separar tickets primários de subtickets
+      const primaryTickets = matchingTickets.filter(ticket => {
+        // Verificar se é subticket através da estrutura dos dados retornados
+        // Se tem subtickets array com parent_ticket_id, é um subticket
+        const hasSubticketRelation = ticket.subtickets && ticket.subtickets.length > 0;
+        return !hasSubticketRelation;
+      });
+      
+      const subTickets = matchingTickets.filter(ticket => {
+        const hasSubticketRelation = ticket.subtickets && ticket.subtickets.length > 0;
+        return hasSubticketRelation;
+      });
+      
+      // Priorizar tickets primários sobre subtickets
+      return [...primaryTickets, ...subTickets];
+    }
+    
+    // Para busca por texto (não número de ticket), usar busca normal
+    return ticketsWithStatus.filter(ticket => smartSearch(ticket, searchTerm));
+  }, [ticketsWithStatus, searchTerm, smartSearch]);
   
   // Cálculos de paginação
   const totalPaginas = Math.ceil(totalCount / itensPorPagina);
   const totalTickets = totalCount;
   
-  // Usar tickets diretamente (já paginados)
-  const ticketsPaginados = ticketsWithStatus;
+  // Usar tickets filtrados
+  const ticketsPaginados = filteredTicketsWithStatus;
   
   // Compatibilidade com código existente
   const optimizedTicketsWithStatus = ticketsWithStatus;
