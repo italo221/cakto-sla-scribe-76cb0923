@@ -166,6 +166,18 @@ export default function TvDashboard() {
     }).length;
 
     const slaCompliance = resolvedTickets.length > 0 ? (withinSLA / resolvedTickets.length) * 100 : 0;
+    
+    // Log para debug das métricas de SLA
+    console.log('📊 TvDashboard SLA Debug:', {
+      filteredTicketsTotal: filteredTickets.length,
+      totalTickets,
+      resolvedTickets: resolvedTickets.length,
+      withinSLA,
+      slaCompliance: slaCompliance.toFixed(1) + '%',
+      overdueTickets,
+      dateFilter,
+      selectedSetor
+    });
 
     // Status distribution - incluir atrasados e excluir fechados para modo TV
     const statusCount = filteredTickets.reduce((acc, ticket) => {

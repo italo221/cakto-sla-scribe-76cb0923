@@ -628,8 +628,17 @@ export default function ModernSLADashboard() {
       const totalResolvidos = currentSlas.filter(sla => sla.status === 'resolvido' || sla.status === 'fechado').length;
 
       // SLA Compliance = tickets resolvidos dentro do prazo / total de tickets resolvidos
-      // Se não há tickets resolvidos, mostra 100% (meta alcançada)
-      const cumprimento = totalResolvidos > 0 ? ticketsResolvidosDentroPrazo / totalResolvidos * 100 : 100;
+      // Se não há tickets resolvidos, mostra 0% (não há dados para calcular)
+      const cumprimento = totalResolvidos > 0 ? ticketsResolvidosDentroPrazo / totalResolvidos * 100 : 0;
+      
+      // Log para debug das métricas de SLA
+      console.log('📊 ModernTicketDashboard SLA Debug:', {
+        total,
+        totalResolvidos,
+        ticketsResolvidosDentroPrazo,
+        cumprimento: cumprimento.toFixed(1) + '%',
+        atrasados
+      });
 
       // Métricas do período anterior - aplicar mesma lógica
       const previousTotal = previousSlas.length;
