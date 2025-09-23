@@ -120,15 +120,13 @@ export default function InboxDarkMode() {
     let query = supabase.from('sla_demandas').select(`
       *,
       setores(nome),
-      profiles!sla_demandas_assignee_user_id_fkey(nome_completo, email),
       sla_comentarios_internos(
         id,
         autor_nome,
         comentario,
         created_at,
         anexos
-      ),
-      subtickets!subtickets_child_ticket_id_fkey(parent_ticket_id)
+      )
     `);
     
     // Aplicar filtros na query
@@ -266,7 +264,28 @@ export default function InboxDarkMode() {
       
       if (error) throw error;
       
-      setTickets(data || []);
+      // Buscar informações de subtickets separadamente se necessário
+      let ticketsWithSubtickets = data || [];
+      if (data && data.length > 0) {
+        try {
+          const ticketIds = data.map(t => t.id);
+          const { data: subticketData } = await supabase
+            .from('subtickets')
+            .select('child_ticket_id, parent_ticket_id, sequence_number')
+            .in('child_ticket_id', ticketIds);
+          
+          // Adicionar informações de subticket aos tickets
+          ticketsWithSubtickets = data.map(ticket => ({
+            ...ticket,
+            subtickets: subticketData?.filter(st => st.child_ticket_id === ticket.id) || []
+          }));
+        } catch (subticketError) {
+          console.warn('Erro ao buscar subtickets:', subticketError);
+          // Continuar sem informações de subticket se houver erro
+        }
+      }
+      
+      setTickets(ticketsWithSubtickets);
       
       // Atualizar página atual se foi ajustada
       if (safePage !== page) {
