@@ -62,8 +62,9 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('Cleanup error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
     return new Response(
-      JSON.stringify({ error: 'Cleanup failed', details: error.message }),
+      JSON.stringify({ error: 'Cleanup failed', details: errorMessage }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }

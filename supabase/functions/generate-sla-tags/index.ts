@@ -52,9 +52,10 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Erro ao gerar tags:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: errorMessage,
         tags: [] // Fallback para array vazio
       }),
       { 
