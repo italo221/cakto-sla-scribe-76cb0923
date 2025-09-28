@@ -4,6 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus } from 'lucide-react';
 
@@ -28,6 +29,7 @@ export function SubTicketCreator({ parentTicket, onSubTicketCreated }: SubTicket
   const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { profile } = useAuth();
 
   const handleCreateSubTicket = useCallback(async () => {
     if (!description.trim()) {
@@ -51,6 +53,10 @@ export function SubTicketCreator({ parentTicket, onSubTicketCreated }: SubTicket
       }
 
       console.log('✅ Usuário autenticado:', currentUser.user.id);
+
+      // 1.5. Buscar nome do usuário para usar como solicitante
+      const solicitanteNome = profile?.nome_completo || profile?.email || currentUser.user.email || 'Usuário';
+      console.log('✅ Solicitante identificado:', solicitanteNome);
 
       // 2. Obter próximo número sequencial
       const { data: sequenceData, error: sequenceError } = await supabase
@@ -81,7 +87,7 @@ export function SubTicketCreator({ parentTicket, onSubTicketCreated }: SubTicket
           tags: parentTicket.tags,
           prioridade_operacional: parentTicket.prioridade_operacional as 'alta' | 'media' | 'baixa',
           status: 'aberto',
-          solicitante: 'Sistema - Sub-ticket',
+          solicitante: solicitanteNome,
           // Campos obrigatórios de pontuação
           pontuacao_financeiro: 0,
           pontuacao_cliente: 0,
