@@ -1108,14 +1108,14 @@ All colors MUST be HSL.
 }
 
 .macos-card:hover {
-  transform: scale(1.015) translateY(-1px);
+  /* Animação de hover removida para melhorar performance */
   box-shadow: 
     0 4px 12px rgba(0, 0, 0, 0.12),
     0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .macos-card:active {
-  transform: scale(1.008) translateY(0px);
+  /* Animação de active removida para melhorar performance */
   transition-duration: 100ms;
 }
 
