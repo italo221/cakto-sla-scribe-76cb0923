@@ -118,13 +118,24 @@ All colors MUST be HSL.
     --kpi-overdue: 0 84% 60%;
     --kpi-critical: 0 62% 50%;
     
-    /* Chart colors - Green spectrum */
-    --chart-color-1: 142 76% 42%;
-    --chart-color-2: 138 72% 46%;
-    --chart-color-3: 134 68% 50%;
-    --chart-color-4: 130 64% 54%;
-    --chart-color-5: 126 60% 58%;
-    --chart-color-6: 220 13% 91%;
+    /* Chart colors - shadcn/ui palette */
+    --chart-status-open: 221 83% 53%;      /* blue-500 */
+    --chart-status-progress: 45 93% 47%;   /* yellow-500 */
+    --chart-status-resolved: 142 76% 36%;  /* green-500 */
+    --chart-status-closed: 215 16% 47%;    /* gray-400 */
+    
+    --chart-priority-p0: 0 84% 60%;        /* red-500 */
+    --chart-priority-p1: 25 95% 53%;       /* orange-500 */
+    --chart-priority-p2: 45 93% 47%;       /* yellow-500 */
+    --chart-priority-p3: 142 76% 36%;      /* green-500 */
+    
+    /* Chart colors for other data - shadcn palette */
+    --chart-color-1: 160 84% 39%;          /* emerald-600 */
+    --chart-color-2: 239 84% 67%;          /* indigo-500 */
+    --chart-color-3: 45 93% 47%;           /* amber-500 */
+    --chart-color-4: 330 81% 60%;          /* rose-500 */
+    --chart-color-5: 189 85% 46%;          /* cyan-600 */
+    --chart-color-6: 215 16% 47%;          /* gray-400 */
 
     /* Custom semantic colors */
     --success: 142 71% 45%;

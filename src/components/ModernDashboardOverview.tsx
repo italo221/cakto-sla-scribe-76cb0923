@@ -257,20 +257,20 @@ export const ModernDashboardOverview = () => {
       const totalResolvedTickets = resolvedTickets + closedTickets;
       const slaCompliance = totalResolvedTickets > 0 ? (resolvedTicketsOnTime / totalResolvedTickets) * 100 : 0;
 
-      // Status data with semantic colors
+      // Status data with shadcn/ui colors
       const statusData = [
-        { name: 'Abertos', value: openTickets, color: 'hsl(var(--kpi-open))' },
-        { name: 'Em Andamento', value: inProgressTickets, color: 'hsl(var(--kpi-progress))' },
-        { name: 'Resolvidos', value: resolvedTickets, color: 'hsl(var(--kpi-resolved))' },
-        { name: 'Fechados', value: closedTickets, color: 'hsl(var(--chart-color-6))' },
+        { name: 'Abertos', value: openTickets, color: 'hsl(var(--chart-status-open))' },
+        { name: 'Em Andamento', value: inProgressTickets, color: 'hsl(var(--chart-status-progress))' },
+        { name: 'Resolvidos', value: resolvedTickets, color: 'hsl(var(--chart-status-resolved))' },
+        { name: 'Fechados', value: closedTickets, color: 'hsl(var(--chart-status-closed))' },
       ].filter(item => item.value > 0);
 
-      // Priority data with semantic colors
+      // Priority data with shadcn/ui colors
       const priorityData = [
-        { name: 'P0 - Crítico', value: tickets?.filter(t => t.nivel_criticidade === 'P0').length || 0, color: 'hsl(var(--kpi-critical))' },
-        { name: 'P1 - Alto', value: tickets?.filter(t => t.nivel_criticidade === 'P1').length || 0, color: 'hsl(var(--kpi-overdue))' },
-        { name: 'P2 - Médio', value: tickets?.filter(t => t.nivel_criticidade === 'P2').length || 0, color: 'hsl(var(--kpi-progress))' },
-        { name: 'P3 - Baixo', value: tickets?.filter(t => t.nivel_criticidade === 'P3').length || 0, color: 'hsl(var(--kpi-resolved))' },
+        { name: 'P0 - Crítico', value: tickets?.filter(t => t.nivel_criticidade === 'P0').length || 0, color: 'hsl(var(--chart-priority-p0))' },
+        { name: 'P1 - Alto', value: tickets?.filter(t => t.nivel_criticidade === 'P1').length || 0, color: 'hsl(var(--chart-priority-p1))' },
+        { name: 'P2 - Médio', value: tickets?.filter(t => t.nivel_criticidade === 'P2').length || 0, color: 'hsl(var(--chart-priority-p2))' },
+        { name: 'P3 - Baixo', value: tickets?.filter(t => t.nivel_criticidade === 'P3').length || 0, color: 'hsl(var(--chart-priority-p3))' },
       ].filter(item => item.value > 0);
 
       // Team data
