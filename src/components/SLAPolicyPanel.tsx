@@ -167,7 +167,7 @@ export const SLAPolicyPanel = ({ setores }: SLAPolicyPanelProps) => {
               {editedPolicy.mode === 'FIXO' && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Tempos de SLA por Criticidade</CardTitle>
+                    <CardTitle className="text-lg">SLA Fixo por Criticidade</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center gap-2 mb-4">
@@ -183,73 +183,61 @@ export const SLAPolicyPanel = ({ setores }: SLAPolicyPanelProps) => {
                       </Select>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                      <div className="space-y-2 p-4 rounded-lg border bg-card">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="destructive" className="text-xs">P0</Badge>
-                          <Label className="text-sm font-medium">Crítico</Label>
-                        </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="p0-time">P0 (Crítico)</Label>
                         <Input
+                          id="p0-time"
                           type="number"
                           min="1"
                           value={convertToDisplayValue(editedPolicy.p0_hours || 4)}
                           onChange={(e) => handleTimeChange('p0', e.target.value)}
-                          className="text-center font-mono"
                         />
-                        <p className="text-xs text-muted-foreground text-center">
+                        <span className="text-xs text-muted-foreground">
                           {editedPolicy.p0_hours || 4} horas
-                        </p>
+                        </span>
                       </div>
 
-                      <div className="space-y-2 p-4 rounded-lg border bg-card">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="default" className="text-xs">P1</Badge>
-                          <Label className="text-sm font-medium">Alto</Label>
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="p1-time">P1 (Alto)</Label>
                         <Input
+                          id="p1-time"
                           type="number"
                           min="1"
                           value={convertToDisplayValue(editedPolicy.p1_hours || 24)}
                           onChange={(e) => handleTimeChange('p1', e.target.value)}
-                          className="text-center font-mono"
                         />
-                        <p className="text-xs text-muted-foreground text-center">
+                        <span className="text-xs text-muted-foreground">
                           {editedPolicy.p1_hours || 24} horas
-                        </p>
+                        </span>
                       </div>
 
-                      <div className="space-y-2 p-4 rounded-lg border bg-card">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-xs">P2</Badge>
-                          <Label className="text-sm font-medium">Médio</Label>
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="p2-time">P2 (Médio)</Label>
                         <Input
+                          id="p2-time"
                           type="number"
                           min="1"
                           value={convertToDisplayValue(editedPolicy.p2_hours || 72)}
                           onChange={(e) => handleTimeChange('p2', e.target.value)}
-                          className="text-center font-mono"
                         />
-                        <p className="text-xs text-muted-foreground text-center">
+                        <span className="text-xs text-muted-foreground">
                           {editedPolicy.p2_hours || 72} horas
-                        </p>
+                        </span>
                       </div>
 
-                      <div className="space-y-2 p-4 rounded-lg border bg-card">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">P3</Badge>
-                          <Label className="text-sm font-medium">Baixo</Label>
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="p3-time">P3 (Baixo)</Label>
                         <Input
+                          id="p3-time"
                           type="number"
                           min="1"
                           value={convertToDisplayValue(editedPolicy.p3_hours || 168)}
                           onChange={(e) => handleTimeChange('p3', e.target.value)}
-                          className="text-center font-mono"
                         />
-                        <p className="text-xs text-muted-foreground text-center">
+                        <span className="text-xs text-muted-foreground">
                           {editedPolicy.p3_hours || 168} horas
-                        </p>
+                        </span>
                       </div>
                     </div>
                   </CardContent>

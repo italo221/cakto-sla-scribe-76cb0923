@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ModernTicketDashboard from "@/components/ModernTicketDashboard";
+import DynamicDashboard from "@/components/DynamicDashboard";
 import { SLAPolicyPanel } from "@/components/SLAPolicyPanel";
 import { SLAMetrics } from "@/components/SLAMetrics";
+import { Card, CardContent } from "@/components/ui/card";
 import { BarChart3, TrendingUp, Settings, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/hooks/usePermissions";
-import { ModernDashboardOverview } from "@/components/ModernDashboardOverview";
 
 interface Setor {
   id: string;
@@ -66,7 +67,11 @@ const Dashboard = () => {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
-              <ModernDashboardOverview />
+              <Card className="bg-card">
+                <CardContent className="p-6">
+                  <DynamicDashboard />
+                </CardContent>
+              </Card>
             </TabsContent>
 
 

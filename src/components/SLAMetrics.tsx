@@ -250,20 +250,15 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
           </div>
 
           {selectedPolicy && selectedSetorId !== 'all' && (
-            <div className="p-4 rounded-lg border bg-muted/50">
+            <div className="p-4 bg-muted rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Target className="h-4 w-4" />
-                <span className="font-medium">Política Atual</span>
-                <Badge variant={selectedPolicy.mode === 'FIXO' ? 'default' : 'secondary'}>
-                  {selectedPolicy.mode}
-                </Badge>
+                <span className="font-medium">Política Atual: {selectedPolicy.mode}</span>
               </div>
               {selectedPolicy.mode === 'FIXO' && (
-                <div className="text-sm text-muted-foreground grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <span>P0: <strong>{selectedPolicy.p0_hours}h</strong></span>
-                  <span>P1: <strong>{selectedPolicy.p1_hours}h</strong></span>
-                  <span>P2: <strong>{selectedPolicy.p2_hours}h</strong></span>
-                  <span>P3: <strong>{selectedPolicy.p3_hours}h</strong></span>
+                <div className="text-sm text-muted-foreground">
+                  P0: {selectedPolicy.p0_hours}h | P1: {selectedPolicy.p1_hours}h | 
+                  P2: {selectedPolicy.p2_hours}h | P3: {selectedPolicy.p3_hours}h
                 </div>
               )}
             </div>
@@ -272,58 +267,58 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
       </Card>
 
       {/* Indicadores Principais */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="hover:shadow-md transition-shadow">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-sm font-medium text-muted-foreground">Total de Tickets</p>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div className="text-2xl font-bold tracking-tight">{slaMetrics.totalTickets}</div>
-            <p className="text-xs text-muted-foreground">No período selecionado</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-sm font-medium text-muted-foreground">Conformidade SLA</p>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div className="space-y-1">
-              <div className="text-2xl font-bold tracking-tight">{slaMetrics.complianceRate.toFixed(1)}%</div>
-              <Progress value={slaMetrics.complianceRate} className="h-2" />
-              <p className="text-xs text-muted-foreground">Meta: 95%</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-sm font-medium text-muted-foreground">Tickets Atrasados</p>
-              <TrendingDown className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div className="space-y-1">
-              <div className="text-2xl font-bold tracking-tight text-destructive">
-                {slaMetrics.totalTickets > 0 
-                  ? ((slaMetrics.overdue / slaMetrics.totalTickets) * 100).toFixed(1) + '%'
-                  : '0%'
-                }
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total de Tickets</p>
+                <p className="text-2xl font-bold">{slaMetrics.totalTickets}</p>
               </div>
-              <p className="text-xs text-muted-foreground">{slaMetrics.overdue} tickets</p>
+              <Calendar className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-sm font-medium text-muted-foreground">Tempo Médio</p>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Conformidade SLA</p>
+                <p className="text-2xl font-bold">{slaMetrics.complianceRate.toFixed(1)}%</p>
+                <Progress value={slaMetrics.complianceRate} className="mt-2" />
+              </div>
+              <Target className="h-8 w-8 text-green-500" />
             </div>
-            <div className="text-2xl font-bold tracking-tight">{formatDuration(slaMetrics.avgResolutionHours)}</div>
-            <p className="text-xs text-muted-foreground">Resolução</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Atrasados</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {slaMetrics.totalTickets > 0 
+                    ? ((slaMetrics.overdue / slaMetrics.totalTickets) * 100).toFixed(1) + '%'
+                    : '0%'
+                  }
+                </p>
+              </div>
+              <TrendingDown className="h-8 w-8 text-red-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Tempo Médio</p>
+                <p className="text-2xl font-bold">{formatDuration(slaMetrics.avgResolutionHours)}</p>
+              </div>
+              <Clock className="h-8 w-8 text-blue-500" />
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -334,31 +329,28 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
           <CardTitle>Desempenho por Nível de Criticidade</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {Object.entries(slaMetrics.criticityBreakdown).map(([level, data]) => (
-              <div key={level} className="space-y-3 p-4 rounded-lg border bg-card">
+              <div key={level} className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Badge 
-                    variant={level === 'P0' ? 'destructive' : level === 'P1' ? 'default' : 'secondary'}
-                    className="text-xs"
-                  >
+                  <Badge variant={level === 'P0' ? 'destructive' : level === 'P1' ? 'secondary' : 'outline'}>
                     {level}
                   </Badge>
-                  <span className="text-xs text-muted-foreground font-medium">
+                  <span className="text-sm text-muted-foreground">
                     {data.total} tickets
                   </span>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Dentro do SLA</span>
-                    <span className="font-medium">{data.withinSLA}/{data.total}</span>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span>Dentro do SLA:</span>
+                    <span>{data.withinSLA}/{data.total}</span>
                   </div>
                   <Progress 
                     value={data.total > 0 ? (data.withinSLA / data.total) * 100 : 0} 
                     className="h-2"
                   />
                   <div className="text-xs text-muted-foreground">
-                    Tempo médio: <span className="font-medium">{formatDuration(data.avgResolutionHours)}</span>
+                    Tempo médio: {formatDuration(data.avgResolutionHours)}
                   </div>
                 </div>
               </div>
