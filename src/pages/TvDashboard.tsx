@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useOptimizedTickets } from "@/hooks/useOptimizedTickets";
 import { useTags } from "@/hooks/useTags";
+import type { Ticket } from "@/hooks/useOptimizedTickets";
 import { formatTagLabel, TagWithTeam } from "@/utils/tagFormatting";
 import { useNavigate } from "react-router-dom";
 import {
@@ -68,8 +68,10 @@ const PRIORITY_COLORS = {
 export default function TvDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { tickets, loading: ticketsLoading, reloadTickets } = useOptimizedTickets({ enableRealtime: false }); // Desabilitado para performance
   const { organizedTags, fetchOrganizedTags } = useTags();
+  
+  // Estado para tickets - buscar TODOS sem limitação
+  const [tickets, setTickets] = useState<Ticket[]>([]);
 
   const [dateFilter, setDateFilter] = useState("30days");
   const [selectedSetor, setSelectedSetor] = useState<string>("all");
@@ -389,12 +391,28 @@ export default function TvDashboard() {
     }
   }, []);
 
+  // Função para buscar TODOS os tickets sem limitação
+  const loadAllTickets = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sla_demandas')
+        .select('*')
+        .order('data_criacao', { ascending: false });
+      
+      if (error) throw error;
+      setTickets(data || []);
+      console.log('✅ TvDashboard: Carregados', data?.length || 0, 'tickets');
+    } catch (error) {
+      console.error('❌ Erro ao carregar tickets:', error);
+    }
+  }, []);
+
   const handleRefresh = useCallback(() => {
-    reloadTickets();
-    fetchOrganizedTags(); // Atualizar informações das tags
+    loadAllTickets();
+    fetchOrganizedTags();
     loadTagVolumeData();
     loadTagAvgTimeData();
-  }, [reloadTickets, fetchOrganizedTags, loadTagVolumeData, loadTagAvgTimeData]);
+  }, [loadAllTickets, fetchOrganizedTags, loadTagVolumeData, loadTagAvgTimeData]);
 
   // Auto-refresh a cada 60s
   useEffect(() => {
@@ -405,10 +423,12 @@ export default function TvDashboard() {
     return () => clearInterval(interval);
   }, [handleRefresh]);
 
+  // Carregar dados iniciais incluindo TODOS os tickets
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       await Promise.all([
+        loadAllTickets(),
         loadSetores(),
         loadPolicies(),
         loadTagVolumeData(),
@@ -417,7 +437,7 @@ export default function TvDashboard() {
       setLoading(false);
     };
     loadData();
-  }, [loadSetores, loadPolicies, loadTagVolumeData, loadTagAvgTimeData]);
+  }, [loadAllTickets, loadSetores, loadPolicies, loadTagVolumeData, loadTagAvgTimeData]);
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat('pt-BR').format(num);
