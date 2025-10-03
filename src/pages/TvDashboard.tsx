@@ -169,17 +169,35 @@ export default function TvDashboard() {
 
     const slaCompliance = resolvedTickets.length > 0 ? (withinSLA / resolvedTickets.length) * 100 : 0;
     
-    // Log para debug das métricas de SLA
-    console.log('📊 TvDashboard SLA Debug:', {
-      filteredTicketsTotal: filteredTickets.length,
-      totalTickets,
-      resolvedTickets: resolvedTickets.length,
-      withinSLA,
-      slaCompliance: slaCompliance.toFixed(1) + '%',
-      overdueTickets,
-      dateFilter,
-      selectedSetor
+    // Log DETALHADO para debug das métricas de SLA
+    console.log('📊 TvDashboard - CÁLCULO DE SLA DETALHADO:');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📅 Filtros aplicados:', {
+      periodo: dateFilter,
+      setor: selectedSetor === 'all' ? 'Todos' : selectedSetor
     });
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📈 TOTAL DE TICKETS:', totalTickets);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🔴 TICKETS ATRASADOS (ainda abertos):');
+    console.log('   Quantidade:', overdueTickets, `(${((overdueTickets/totalTickets)*100).toFixed(1)}%)`);
+    console.log('   Definição: Tickets ABERTOS/EM ANDAMENTO que já passaram do prazo SLA');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('✅ CUMPRIMENTO DE SLA:', slaCompliance.toFixed(1) + '%');
+    console.log('   Base de cálculo: APENAS tickets JÁ RESOLVIDOS/FECHADOS');
+    console.log('   Total de tickets resolvidos:', resolvedTickets.length, `(${((resolvedTickets.length/totalTickets)*100).toFixed(1)}% do total)`);
+    console.log('   Resolvidos DENTRO do prazo:', withinSLA);
+    console.log('   Resolvidos FORA do prazo:', resolvedTickets.length - withinSLA);
+    console.log('   Fórmula: (resolvidos no prazo / total resolvidos) × 100');
+    console.log('   Cálculo:', `(${withinSLA} / ${resolvedTickets.length}) × 100 = ${slaCompliance.toFixed(1)}%`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📊 RESUMO:');
+    console.log(`   • ${totalTickets} tickets no período`);
+    console.log(`   • ${resolvedTickets.length} foram resolvidos (${((resolvedTickets.length/totalTickets)*100).toFixed(1)}%)`);
+    console.log(`   • ${withinSLA} resolvidos NO PRAZO (${slaCompliance.toFixed(1)}% dos resolvidos)`);
+    console.log(`   • ${resolvedTickets.length - withinSLA} resolvidos ATRASADOS (${(100-slaCompliance).toFixed(1)}% dos resolvidos)`);
+    console.log(`   • ${overdueTickets} ainda ABERTOS e já ATRASADOS (${((overdueTickets/totalTickets)*100).toFixed(1)}% do total)`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
     // Status distribution - incluir atrasados e excluir fechados para modo TV
     const statusCount = filteredTickets.reduce((acc, ticket) => {
