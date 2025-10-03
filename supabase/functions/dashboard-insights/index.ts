@@ -85,25 +85,34 @@ Seja objetivo, claro e sempre que possível:
 
 Sempre responda em português brasileiro de forma profissional mas amigável.`;
 
+    const requestBody = {
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'system', content: metricsContext },
+        { role: 'user', content: message }
+      ]
+    };
+
+    console.log('📤 Enviando requisição para Lovable AI:', JSON.stringify(requestBody, null, 2));
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'system', content: metricsContext },
-          { role: 'user', content: message }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Erro na resposta da API:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      
       if (response.status === 429) {
         return new Response(JSON.stringify({ 
           error: 'Limite de requisições excedido. Tente novamente em alguns segundos.' 
@@ -120,7 +129,7 @@ Sempre responda em português brasileiro de forma profissional mas amigável.`;
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      throw new Error(`Erro na API: ${response.status}`);
+      throw new Error(`Erro na API: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
