@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { BarChart3, TrendingUp, Settings, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/hooks/usePermissions";
+import { DashboardAIChat } from "@/components/DashboardAIChat";
 
 interface Setor {
   id: string;
@@ -85,6 +86,8 @@ const Dashboard = () => {
           </Tabs>
         </div>
       </div>
+      
+      <DashboardAIChat context={`Tab ativa: ${activeTab}, Total de setores: ${setores.length}`} />
     </div>
   );
 };
