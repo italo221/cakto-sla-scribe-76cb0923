@@ -27,7 +27,8 @@ import {
   Target,
   GripVertical,
   Download,
-  Layers
+  Layers,
+  ListTree
 } from 'lucide-react';
 import {
   DndContext,
@@ -56,6 +57,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useTags } from '@/hooks/useTags';
 import { toast } from '@/hooks/use-toast';
+import { useTicketsWithSubTicketInfo } from '@/hooks/useTicketsWithSubTicketInfo';
 import TicketDetailModal from "@/components/TicketDetailModal";
 
 interface TeamMetrics {
@@ -101,11 +103,18 @@ interface Setor {
 }
 
 // Sortable Ticket Item Component
-function SortableTicketItem({ ticket, onTicketClick, onUnpinClick, isPinned }: {
+function SortableTicketItem({ 
+  ticket, 
+  onTicketClick, 
+  onUnpinClick, 
+  isPinned,
+  subTicketCount 
+}: {
   ticket: TeamTicket;
   onTicketClick: (ticket: TeamTicket) => void;
   onUnpinClick: (ticketId: string) => void;
   isPinned: boolean;
+  subTicketCount?: number;
 }) {
   const {
     attributes,
@@ -186,7 +195,22 @@ function SortableTicketItem({ ticket, onTicketClick, onUnpinClick, isPinned }: {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h4 className="font-medium text-sm truncate">{ticket.titulo}</h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-medium text-sm truncate">{ticket.titulo}</h4>
+                {subTicketCount && subTicketCount > 0 && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="secondary" className="text-xs shrink-0">
+                        <ListTree className="h-3 w-3 mr-1" />
+                        {subTicketCount}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Este ticket possui {subTicketCount} subticket{subTicketCount > 1 ? 's' : ''} vinculado{subTicketCount > 1 ? 's' : ''}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
               <div className="text-xs text-muted-foreground mt-1 space-x-1">
                 <span>{ticket.ticket_number}</span>
                 <span>•</span>
@@ -300,6 +324,10 @@ export default function Time() {
   const [pinnedTickets, setPinnedTickets] = useState<string[]>([]);
   const [showOnlyPinned, setShowOnlyPinned] = useState(false);
   const [pinnedLoading, setPinnedLoading] = useState(false);
+
+  // Subtickets info
+  const ticketIds = useMemo(() => tickets.map(t => t.id), [tickets]);
+  const { getSubTicketInfo } = useTicketsWithSubTicketInfo(ticketIds);
 
   // Carregar setores
   useEffect(() => {
@@ -648,9 +676,33 @@ export default function Time() {
     link.click();
   };
 
+  // Agrupar subtickets por ticket pai
+  const { parentTicketsMap, subTicketCounts } = useMemo(() => {
+    const parentMap = new Map<string, string>(); // child_id -> parent_id
+    const counts = new Map<string, number>(); // parent_id -> count
+    
+    tickets.forEach(ticket => {
+      const info = getSubTicketInfo(ticket.id);
+      if (info.isSubTicket && info.parentTicketNumber) {
+        // Encontrar o ID do ticket pai
+        const parentTicket = tickets.find(t => t.ticket_number === info.parentTicketNumber);
+        if (parentTicket) {
+          parentMap.set(ticket.id, parentTicket.id);
+          counts.set(parentTicket.id, (counts.get(parentTicket.id) || 0) + 1);
+        }
+      }
+    });
+    
+    return { parentTicketsMap: parentMap, subTicketCounts: counts };
+  }, [tickets, getSubTicketInfo]);
+
   // Separar e filtrar tickets
   const { pinnedTicketsData, regularTicketsData, groupedTicketsData } = useMemo(() => {
-    let allFiltered = [...tickets];
+    // Filtrar subtickets - mostrar apenas tickets pais
+    let allFiltered = tickets.filter(ticket => {
+      const info = getSubTicketInfo(ticket.id);
+      return !info.isSubTicket; // Ocultar subtickets da lista principal
+    });
     
     // Aplicar busca
     if (searchTerm) {
@@ -768,7 +820,7 @@ export default function Time() {
       regularTicketsData: sortedRegular,
       groupedTicketsData: grouped
     };
-  }, [tickets, searchTerm, priorityFilter, statusFilter, tagFilter, sortBy, pinnedTickets, groupByTeam, isSuperAdmin, availableSetores]);
+  }, [tickets, searchTerm, priorityFilter, statusFilter, tagFilter, sortBy, pinnedTickets, groupByTeam, isSuperAdmin, availableSetores, getSubTicketInfo]);
 
   const clearAllFilters = () => {
     setSearchTerm('');
@@ -1422,6 +1474,7 @@ export default function Time() {
                                     onTicketClick={handleTicketClick}
                                     onUnpinClick={handleUnpinTicket}
                                     isPinned={true}
+                                    subTicketCount={subTicketCounts.get(ticket.id)}
                                   />
                                 ))}
                               </div>
@@ -1458,6 +1511,7 @@ export default function Time() {
                                     onTicketClick={handleTicketClick}
                                     onUnpinClick={handleUnpinTicket}
                                     isPinned={true}
+                                    subTicketCount={subTicketCounts.get(ticket.id)}
                                   />
                                 ))}
                               </div>
@@ -1498,6 +1552,7 @@ export default function Time() {
                                           onTicketClick={handleTicketClick}
                                           onUnpinClick={handleUnpinTicket}
                                           isPinned={true}
+                                          subTicketCount={subTicketCounts.get(ticket.id)}
                                         />
                                       ))}
                                     </div>
@@ -1514,6 +1569,7 @@ export default function Time() {
                                         onTicketClick={handleTicketClick}
                                         onUnpinClick={handlePinTicket}
                                         isPinned={false}
+                                        subTicketCount={subTicketCounts.get(ticket.id)}
                                       />
                                     ))}
                                   </div>
@@ -1537,6 +1593,7 @@ export default function Time() {
                                 onTicketClick={handleTicketClick}
                                 onUnpinClick={handlePinTicket}
                                 isPinned={false}
+                                subTicketCount={subTicketCounts.get(ticket.id)}
                               />
                             ))}
                           </div>
