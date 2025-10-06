@@ -1546,6 +1546,10 @@ export type Database = {
         Args: { p_comentario: string; p_setor_id: string; p_sla_id: string }
         Returns: string
       }
+      backfill_legacy_subtickets: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       can_edit: {
         Args: Record<PropertyKey, never>
         Returns: boolean
