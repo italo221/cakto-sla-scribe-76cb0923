@@ -325,7 +325,9 @@ export default function Time() {
   const [showOnlyPinned, setShowOnlyPinned] = useState(false);
   const [pinnedLoading, setPinnedLoading] = useState(false);
 
-  // Subtickets info - removido daqui, será usado mais abaixo
+  // Subtickets info
+  const ticketIds = useMemo(() => tickets.map(t => t.id), [tickets]);
+  const { getSubTicketInfo } = useTicketsWithSubTicketInfo(ticketIds);
 
   // Carregar setores
   useEffect(() => {
@@ -674,10 +676,25 @@ export default function Time() {
     link.click();
   };
 
-  // Usar o hook atualizado para obter informações de subtickets
-  const { getSubTicketInfo, getSubTicketCount } = useTicketsWithSubTicketInfo(
-    tickets.map(t => t.id)
-  );
+  // Agrupar subtickets por ticket pai
+  const { parentTicketsMap, subTicketCounts } = useMemo(() => {
+    const parentMap = new Map<string, string>(); // child_id -> parent_id
+    const counts = new Map<string, number>(); // parent_id -> count
+    
+    tickets.forEach(ticket => {
+      const info = getSubTicketInfo(ticket.id);
+      if (info.isSubTicket && info.parentTicketNumber) {
+        // Encontrar o ID do ticket pai
+        const parentTicket = tickets.find(t => t.ticket_number === info.parentTicketNumber);
+        if (parentTicket) {
+          parentMap.set(ticket.id, parentTicket.id);
+          counts.set(parentTicket.id, (counts.get(parentTicket.id) || 0) + 1);
+        }
+      }
+    });
+    
+    return { parentTicketsMap: parentMap, subTicketCounts: counts };
+  }, [tickets, getSubTicketInfo]);
 
   // Separar e filtrar tickets
   const { pinnedTicketsData, regularTicketsData, groupedTicketsData } = useMemo(() => {
@@ -1451,13 +1468,13 @@ export default function Time() {
                             >
                               <div className="space-y-2">
                                 {pinnedTicketsData.map(ticket => (
-                                <SortableTicketItem
-                                  key={ticket.id}
-                                  ticket={ticket}
-                                  onTicketClick={handleTicketClick}
-                                  onUnpinClick={handleUnpinTicket}
-                                  isPinned={true}
-                                  subTicketCount={getSubTicketCount(ticket.id)}
+                                  <SortableTicketItem
+                                    key={ticket.id}
+                                    ticket={ticket}
+                                    onTicketClick={handleTicketClick}
+                                    onUnpinClick={handleUnpinTicket}
+                                    isPinned={true}
+                                    subTicketCount={subTicketCounts.get(ticket.id)}
                                   />
                                 ))}
                               </div>
@@ -1488,13 +1505,13 @@ export default function Time() {
                             >
                               <div className="space-y-2">
                                 {pinnedTicketsData.map(ticket => (
-                                <SortableTicketItem
-                                  key={ticket.id}
-                                  ticket={ticket}
-                                  onTicketClick={handleTicketClick}
-                                  onUnpinClick={handleUnpinTicket}
-                                  isPinned={true}
-                                  subTicketCount={getSubTicketCount(ticket.id)}
+                                  <SortableTicketItem
+                                    key={ticket.id}
+                                    ticket={ticket}
+                                    onTicketClick={handleTicketClick}
+                                    onUnpinClick={handleUnpinTicket}
+                                    isPinned={true}
+                                    subTicketCount={subTicketCounts.get(ticket.id)}
                                   />
                                 ))}
                               </div>
@@ -1529,13 +1546,13 @@ export default function Time() {
                                     </div>
                                     <div className="space-y-2">
                                       {group.pinnedTickets.map(ticket => (
-                                      <SortableTicketItem
-                                        key={ticket.id}
-                                        ticket={ticket}
-                                        onTicketClick={handleTicketClick}
-                                        onUnpinClick={handleUnpinTicket}
-                                        isPinned={true}
-                                        subTicketCount={getSubTicketCount(ticket.id)}
+                                        <SortableTicketItem
+                                          key={ticket.id}
+                                          ticket={ticket}
+                                          onTicketClick={handleTicketClick}
+                                          onUnpinClick={handleUnpinTicket}
+                                          isPinned={true}
+                                          subTicketCount={subTicketCounts.get(ticket.id)}
                                         />
                                       ))}
                                     </div>
@@ -1552,7 +1569,7 @@ export default function Time() {
                                         onTicketClick={handleTicketClick}
                                         onUnpinClick={handlePinTicket}
                                         isPinned={false}
-                                        subTicketCount={getSubTicketCount(ticket.id)}
+                                        subTicketCount={subTicketCounts.get(ticket.id)}
                                       />
                                     ))}
                                   </div>
@@ -1576,7 +1593,7 @@ export default function Time() {
                                 onTicketClick={handleTicketClick}
                                 onUnpinClick={handlePinTicket}
                                 isPinned={false}
-                                subTicketCount={getSubTicketCount(ticket.id)}
+                                subTicketCount={subTicketCounts.get(ticket.id)}
                               />
                             ))}
                           </div>
