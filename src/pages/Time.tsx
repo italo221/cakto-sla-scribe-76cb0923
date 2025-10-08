@@ -197,7 +197,7 @@ function SortableTicketItem({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h4 className="font-medium text-sm truncate">{ticket.titulo}</h4>
-                {subTicketCount && subTicketCount > 0 && (
+                {subTicketCount !== undefined && subTicketCount > 0 && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Badge variant="secondary" className="text-xs shrink-0">
@@ -682,8 +682,16 @@ export default function Time() {
     // Filtrar subtickets - mostrar apenas tickets pais
     let allFiltered = tickets.filter(ticket => {
       const info = getSubTicketInfo(ticket.id);
-      return !info.isSubTicket; // Ocultar subtickets da lista principal
+      const isChild = info.isSubTicket;
+      
+      if (isChild) {
+        console.log(`🚫 Ocultando subticket: ${ticket.ticket_number} - ${ticket.titulo}`);
+      }
+      
+      return !isChild; // Ocultar subtickets da lista principal
     });
+    
+    console.log(`📋 Total de tickets: ${tickets.length}, Após filtrar subtickets: ${allFiltered.length}`);
     
     // Aplicar busca
     if (searchTerm) {

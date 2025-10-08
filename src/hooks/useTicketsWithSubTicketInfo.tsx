@@ -24,6 +24,7 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
     const loadSubTicketInfo = async () => {
       setIsLoading(true);
       try {
+        // Query 1: Buscar informações de quais tickets SÃO subtickets
         const { data, error } = await supabase
           .from('subtickets')
           .select(`
@@ -36,7 +37,12 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
           `)
           .in('child_ticket_id', ticketIds);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao buscar subtickets (child):', error);
+          throw error;
+        }
+
+        console.log('🔍 Subtickets encontrados (filhos):', data?.length || 0);
 
         const info: SubTicketInfo = {};
         
@@ -52,22 +58,29 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
             sequenceNumber: item.sequence_number,
             parentTicketNumber: item.sla_demandas?.ticket_number
           };
+          console.log(`✅ Marcado como subticket: ${item.child_ticket_id}, pai: ${item.parent_ticket_id}`);
         });
 
         setSubTicketInfo(info);
 
-        // Buscar contagem de subtickets para cada ticket pai
+        // Query 2: Buscar contagem de subtickets para cada ticket PAI
         const { data: countsData, error: countsError } = await supabase
           .from('subtickets')
           .select('parent_ticket_id')
           .in('parent_ticket_id', ticketIds);
 
-        if (!countsError && countsData) {
+        if (countsError) {
+          console.error('Erro ao buscar contagem de subtickets:', countsError);
+        } else {
+          console.log('🔍 Registros de contagem encontrados:', countsData?.length || 0);
+          
           const counts = new Map<string, number>();
-          countsData.forEach((item: any) => {
+          countsData?.forEach((item: any) => {
             const parentId = item.parent_ticket_id;
             counts.set(parentId, (counts.get(parentId) || 0) + 1);
           });
+          
+          console.log('📊 Contagens finais:', Array.from(counts.entries()));
           setSubTicketCounts(counts);
         }
       } catch (error) {
