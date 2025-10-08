@@ -326,7 +326,11 @@ export default function Time() {
   const [pinnedLoading, setPinnedLoading] = useState(false);
 
   // Subtickets info
-  const ticketIds = useMemo(() => tickets.map(t => t.id), [tickets]);
+  const ticketIds = useMemo(() => {
+    const ids = tickets.map(t => t.id);
+    console.log('🎫 Total de IDs para verificar subtickets:', ids.length);
+    return ids;
+  }, [tickets]);
   const { getSubTicketInfo, getSubTicketCount } = useTicketsWithSubTicketInfo(ticketIds);
 
   // Carregar setores
