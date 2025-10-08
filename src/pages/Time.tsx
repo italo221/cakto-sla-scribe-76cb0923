@@ -197,7 +197,7 @@ function SortableTicketItem({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h4 className="font-medium text-sm truncate">{ticket.titulo}</h4>
-                {subTicketCount !== undefined && subTicketCount > 0 && (
+                {subTicketCount && subTicketCount > 0 && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Badge variant="secondary" className="text-xs shrink-0">
@@ -326,12 +326,8 @@ export default function Time() {
   const [pinnedLoading, setPinnedLoading] = useState(false);
 
   // Subtickets info
-  const ticketIds = useMemo(() => {
-    const ids = tickets.map(t => t.id);
-    console.log('🎫 Total de IDs para verificar subtickets:', ids.length);
-    return ids;
-  }, [tickets]);
-  const { getSubTicketInfo, getSubTicketCount } = useTicketsWithSubTicketInfo(ticketIds);
+  const ticketIds = useMemo(() => tickets.map(t => t.id), [tickets]);
+  const { getSubTicketInfo } = useTicketsWithSubTicketInfo(ticketIds);
 
   // Carregar setores
   useEffect(() => {
@@ -680,22 +676,33 @@ export default function Time() {
     link.click();
   };
 
+  // Agrupar subtickets por ticket pai
+  const { parentTicketsMap, subTicketCounts } = useMemo(() => {
+    const parentMap = new Map<string, string>(); // child_id -> parent_id
+    const counts = new Map<string, number>(); // parent_id -> count
+    
+    tickets.forEach(ticket => {
+      const info = getSubTicketInfo(ticket.id);
+      if (info.isSubTicket && info.parentTicketNumber) {
+        // Encontrar o ID do ticket pai
+        const parentTicket = tickets.find(t => t.ticket_number === info.parentTicketNumber);
+        if (parentTicket) {
+          parentMap.set(ticket.id, parentTicket.id);
+          counts.set(parentTicket.id, (counts.get(parentTicket.id) || 0) + 1);
+        }
+      }
+    });
+    
+    return { parentTicketsMap: parentMap, subTicketCounts: counts };
+  }, [tickets, getSubTicketInfo]);
 
   // Separar e filtrar tickets
   const { pinnedTicketsData, regularTicketsData, groupedTicketsData } = useMemo(() => {
     // Filtrar subtickets - mostrar apenas tickets pais
     let allFiltered = tickets.filter(ticket => {
       const info = getSubTicketInfo(ticket.id);
-      const isChild = info.isSubTicket;
-      
-      if (isChild) {
-        console.log(`🚫 Ocultando subticket: ${ticket.ticket_number} - ${ticket.titulo}`);
-      }
-      
-      return !isChild; // Ocultar subtickets da lista principal
+      return !info.isSubTicket; // Ocultar subtickets da lista principal
     });
-    
-    console.log(`📋 Total de tickets: ${tickets.length}, Após filtrar subtickets: ${allFiltered.length}`);
     
     // Aplicar busca
     if (searchTerm) {
@@ -1460,16 +1467,16 @@ export default function Time() {
                               strategy={verticalListSortingStrategy}
                             >
                               <div className="space-y-2">
-                                 {pinnedTicketsData.map(ticket => (
-                                   <SortableTicketItem
-                                     key={ticket.id}
-                                     ticket={ticket}
-                                     onTicketClick={handleTicketClick}
-                                     onUnpinClick={handleUnpinTicket}
-                                     isPinned={true}
-                                     subTicketCount={getSubTicketCount(ticket.id)}
-                                   />
-                                 ))}
+                                {pinnedTicketsData.map(ticket => (
+                                  <SortableTicketItem
+                                    key={ticket.id}
+                                    ticket={ticket}
+                                    onTicketClick={handleTicketClick}
+                                    onUnpinClick={handleUnpinTicket}
+                                    isPinned={true}
+                                    subTicketCount={subTicketCounts.get(ticket.id)}
+                                  />
+                                ))}
                               </div>
                             </SortableContext>
                           </DndContext>
@@ -1497,16 +1504,16 @@ export default function Time() {
                               strategy={verticalListSortingStrategy}
                             >
                               <div className="space-y-2">
-                                 {pinnedTicketsData.map(ticket => (
-                                   <SortableTicketItem
-                                     key={ticket.id}
-                                     ticket={ticket}
-                                     onTicketClick={handleTicketClick}
-                                     onUnpinClick={handleUnpinTicket}
-                                     isPinned={true}
-                                     subTicketCount={getSubTicketCount(ticket.id)}
-                                   />
-                                 ))}
+                                {pinnedTicketsData.map(ticket => (
+                                  <SortableTicketItem
+                                    key={ticket.id}
+                                    ticket={ticket}
+                                    onTicketClick={handleTicketClick}
+                                    onUnpinClick={handleUnpinTicket}
+                                    isPinned={true}
+                                    subTicketCount={subTicketCounts.get(ticket.id)}
+                                  />
+                                ))}
                               </div>
                             </SortableContext>
                           </DndContext>
@@ -1538,16 +1545,16 @@ export default function Time() {
                                       <span className="text-xs text-muted-foreground">Fixados</span>
                                     </div>
                                     <div className="space-y-2">
-                                       {group.pinnedTickets.map(ticket => (
-                                         <SortableTicketItem
-                                           key={ticket.id}
-                                           ticket={ticket}
-                                           onTicketClick={handleTicketClick}
-                                           onUnpinClick={handleUnpinTicket}
-                                           isPinned={true}
-                                           subTicketCount={getSubTicketCount(ticket.id)}
-                                         />
-                                       ))}
+                                      {group.pinnedTickets.map(ticket => (
+                                        <SortableTicketItem
+                                          key={ticket.id}
+                                          ticket={ticket}
+                                          onTicketClick={handleTicketClick}
+                                          onUnpinClick={handleUnpinTicket}
+                                          isPinned={true}
+                                          subTicketCount={subTicketCounts.get(ticket.id)}
+                                        />
+                                      ))}
                                     </div>
                                   </div>
                                 )}
@@ -1562,7 +1569,7 @@ export default function Time() {
                                         onTicketClick={handleTicketClick}
                                         onUnpinClick={handlePinTicket}
                                         isPinned={false}
-                                        subTicketCount={getSubTicketCount(ticket.id)}
+                                        subTicketCount={subTicketCounts.get(ticket.id)}
                                       />
                                     ))}
                                   </div>
@@ -1586,7 +1593,7 @@ export default function Time() {
                                 onTicketClick={handleTicketClick}
                                 onUnpinClick={handlePinTicket}
                                 isPinned={false}
-                                subTicketCount={getSubTicketCount(ticket.id)}
+                                subTicketCount={subTicketCounts.get(ticket.id)}
                               />
                             ))}
                           </div>
