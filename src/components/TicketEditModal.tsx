@@ -54,12 +54,12 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
       const mapTipoTicket = (tipo: string) => {
         const tipoLower = tipo.toLowerCase();
         if (tipoLower.includes('bug')) return 'bug';
-        if (tipoLower.includes('feature') || tipoLower.includes('nova')) return 'feature';
-        if (tipoLower.includes('suporte')) return 'suporte';
-        if (tipoLower.includes('melhoria')) return 'melhoria';
+        if (tipoLower.includes('duvida') || tipoLower.includes('dúvida') || tipoLower.includes('tecnica')) return 'duvida_tecnica';
+        if (tipoLower.includes('feedback') || tipoLower.includes('sugestao') || tipoLower.includes('sugestão')) return 'feedback_sugestao';
+        if (tipoLower.includes('atualizacao') || tipoLower.includes('atualização') || tipoLower.includes('projeto')) return 'atualizacao_projeto';
         if (tipoLower.includes('solicitacao') || tipoLower.includes('solicitação') || tipoLower.includes('tarefa')) return 'solicitacao_tarefa';
-        // Default para solicitacao se não conseguir mapear
-        return 'solicitacao';
+        // Se for "Padrão" ou qualquer outro valor não mapeado, usar solicitacao_tarefa
+        return 'solicitacao_tarefa';
       };
       
       const newFormData = {
@@ -292,11 +292,10 @@ export default function TicketEditModal({ ticket, isOpen, onClose, onUpdate }: T
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="bug">Bug</SelectItem>
-                  <SelectItem value="feature">Feature</SelectItem>
-                  <SelectItem value="suporte">Suporte</SelectItem>
-                  <SelectItem value="melhoria">Melhoria</SelectItem>
-                  <SelectItem value="solicitacao">Solicitação</SelectItem>
                   <SelectItem value="solicitacao_tarefa">Solicitação/Tarefa</SelectItem>
+                  <SelectItem value="duvida_tecnica">Dúvida Técnica</SelectItem>
+                  <SelectItem value="feedback_sugestao">Feedback/Sugestão</SelectItem>
+                  <SelectItem value="atualizacao_projeto">Atualização de Projeto</SelectItem>
                 </SelectContent>
               </Select>
             </div>
