@@ -167,22 +167,22 @@ All colors MUST be HSL.
     --accent-foreground: 0 0% 98%;
     --accent-hover: 0 0% 13%;
 
-    /* Status - usado apenas contextualmente */
-    --destructive: 0 70% 50%;
+    /* Status - Inbox Cakto com cores específicas */
+    --destructive: 348 100% 46%;        /* Vermelho atrasados/críticos #ec003f */
     --destructive-foreground: 0 0% 100%;
-    --destructive-hover: 0 70% 55%;
+    --destructive-hover: 348 100% 52%;
 
-    --success: 142 76% 42%;
+    --success: 142 76% 42%;             /* Verde sucesso #30A46C */
     --success-foreground: 0 0% 100%;
     --success-light: 142 76% 12%;
 
-    --warning: 38 92% 50%;
+    --warning: 28 93% 45%;              /* Amarelo info incompleta #e58b01 */
     --warning-foreground: 0 0% 4%;
-    --warning-light: 38 92% 12%;
+    --warning-light: 28 93% 12%;
 
-    --info: 200 70% 50%;
+    --info: 223 88% 45%;                /* Azul em andamento #1341d0 */
     --info-foreground: 0 0% 100%;
-    --info-light: 200 70% 12%;
+    --info-light: 223 88% 12%;
 
     /* Borders - sutis, quase invisíveis */
     --border: 0 0% 12%;
