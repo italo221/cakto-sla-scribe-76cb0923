@@ -133,116 +133,113 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* Base - Grafite Fosco Profundo (não preto puro) */
-    --background: 240 6% 6%;        /* #0C0C0D - fosco, quente */
-    --foreground: 0 0% 98%;         /* #FAFAFA - branco suave */
+    /* Base - Vercel-inspired neutral dark */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
 
-    /* Cards - Camadas sutis de profundidade */
-    --card: 240 5% 8%;              /* #141416 - card base */
+    /* Cards - subtle elevation */
+    --card: 0 0% 6%;
     --card-foreground: 0 0% 98%;
-    --card-hover: 240 5% 10%;       /* #18181B - hover leve */
+    --card-hover: 0 0% 8%;
 
     /* Popovers */
-    --popover: 240 5% 8%;
+    --popover: 0 0% 6%;
     --popover-foreground: 0 0% 98%;
 
-    /* Primary - Verde Cakto (Ação e Confiança) */
-    --primary: 156 100% 39%;        /* #00C56D - verde vibrante */
+    /* Primary - Cakto green, usado com parcimônia */
+    --primary: 142 76% 42%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 156 94% 48%;   /* #0AE387 - hover energético */
-    --primary-light: 156 94% 58%;   /* verde claro para acentos */
+    --primary-hover: 142 76% 48%;
+    --primary-light: 142 76% 12%;
 
-    /* Secondary - Neutro fosco equilibrado */
-    --secondary: 240 5% 12%;        /* cinza escuro fosco */
+    /* Secondary - tons neutros frios */
+    --secondary: 0 0% 10%;
     --secondary-foreground: 0 0% 98%;
-    --secondary-hover: 240 5% 14%;
+    --secondary-hover: 0 0% 13%;
 
-    /* Muted - Fundos de suporte, texto secundário */
-    --muted: 240 5% 11%;            /* cinza médio fosco */
-    --muted-foreground: 0 0% 63%;   /* texto secundário legível */
-    --muted-hover: 240 5% 13%;
+    /* Muted - texto secundário e fundos suaves */
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 64%;
+    --muted-hover: 0 0% 13%;
 
-    /* Accent - Destaque sutil, interações leves */
-    --accent: 240 5% 13%;
+    /* Accent - interações sutis */
+    --accent: 0 0% 10%;
     --accent-foreground: 0 0% 98%;
-    --accent-hover: 240 5% 15%;
+    --accent-hover: 0 0% 13%;
 
-    /* Destructive - Vermelho contido (erro/atraso) */
-    --destructive: 356 84% 60%;     /* #E5484D - vermelho fosco */
-    --destructive-foreground: 0 0% 98%;
-    --destructive-hover: 356 84% 65%;
+    /* Status - usado apenas contextualmente */
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-hover: 0 70% 55%;
 
-    /* Success - Verde SLA OK (calmo, confiável) */
-    --success: 152 55% 42%;         /* #30A46C - verde sucesso */
-    --success-foreground: 0 0% 98%;
-    --success-light: 152 55% 52%;
+    --success: 142 76% 42%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 76% 12%;
 
-    /* Warning - Amarelo atenção matte (não saturado) */
-    --warning: 45 93% 47%;          /* #EAB308 - amarelo fosco */
-    --warning-foreground: 45 10% 10%;
-    --warning-light: 45 93% 57%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 4%;
+    --warning-light: 38 92% 12%;
 
-    /* Info - Azul informativo neutro */
-    --info: 217 91% 60%;            /* #3B82F6 - azul claro */
-    --info-foreground: 0 0% 98%;
-    --info-light: 217 91% 70%;
+    --info: 200 70% 50%;
+    --info-foreground: 0 0% 100%;
+    --info-light: 200 70% 12%;
 
-    /* Borders - Translúcido sutil (sugere separação, não divide) */
-    --border: 0 0% 100% / 0.10;     /* rgba(255,255,255,0.10) */
-    --input: 0 0% 100% / 0.12;      /* rgba(255,255,255,0.12) */
-    --ring: 156 100% 39%;           /* foco verde Cakto */
+    /* Borders - sutis, quase invisíveis */
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --ring: 142 76% 42%;
 
     /* Chat */
-    --chat-background: 240 6% 5%;
-    --chat-user: 156 100% 39%;
+    --chat-background: 0 0% 5%;
+    --chat-user: 142 76% 42%;
     --chat-user-foreground: 0 0% 100%;
-    --chat-assistant: 240 5% 8%;
+    --chat-assistant: 0 0% 8%;
     --chat-assistant-foreground: 0 0% 98%;
 
     /* Sidebar */
-    --sidebar-background: 240 6% 6%;
+    --sidebar-background: 0 0% 4%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 156 100% 39%;
+    --sidebar-primary: 142 76% 42%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 5% 11%;
+    --sidebar-accent: 0 0% 10%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 100% / 0.10;
-    --sidebar-ring: 156 100% 39%;
+    --sidebar-border: 0 0% 10%;
+    --sidebar-ring: 142 76% 42%;
 
-    /* Dashboard - Minimalismo Funcional */
-    --dashboard-primary: 156 100% 39%;      /* verde Cakto - ação */
-    --dashboard-primary-light: 156 94% 58%; /* verde claro */
-    --dashboard-secondary: 240 5% 12%;      /* neutro fosco */
-    --dashboard-accent: 240 5% 13%;         /* acento sutil */
-    --dashboard-muted: 240 5% 11%;          /* fundo suporte */
-    --dashboard-neutral: 0 0% 63%;          /* texto secundário */
+    /* Dashboard */
+    --dashboard-primary: 142 76% 42%;
+    --dashboard-primary-light: 142 76% 12%;
+    --dashboard-secondary: 0 0% 10%;
+    --dashboard-accent: 142 76% 48%;
+    --dashboard-muted: 0 0% 12%;
+    --dashboard-neutral: 0 0% 20%;
 
-    /* KPI Cards - Cores com propósito (não decoração) */
-    --kpi-total: 217 91% 60%;       /* azul informativo */
-    --kpi-open: 45 93% 47%;         /* amarelo atenção */
-    --kpi-progress: 156 100% 39%;   /* verde ação */
-    --kpi-resolved: 152 55% 42%;    /* verde sucesso */
-    --kpi-overdue: 356 84% 60%;     /* vermelho erro */
-    --kpi-critical: 356 84% 60%;    /* vermelho crítico */
+    /* KPI Cards - apenas destaque funcional */
+    --kpi-total: 0 0% 98%;
+    --kpi-open: 200 70% 50%;
+    --kpi-progress: 38 92% 50%;
+    --kpi-resolved: 142 76% 42%;
+    --kpi-overdue: 0 70% 50%;
+    --kpi-critical: 0 70% 50%;
 
-    /* Charts - Paleta equilibrada, neutro dominante */
-    --chart-color-1: 156 100% 39%;  /* verde Cakto */
-    --chart-color-2: 217 91% 60%;   /* azul informativo */
-    --chart-color-3: 152 55% 42%;   /* verde sucesso */
-    --chart-color-4: 45 93% 47%;    /* amarelo atenção */
-    --chart-color-5: 356 84% 60%;   /* vermelho erro */
-    --chart-color-6: 262 83% 58%;   /* roxo auxiliar #7C3AED */
+    /* Charts - escala de neutro com verde Cakto */
+    --chart-color-1: 142 76% 42%;
+    --chart-color-2: 142 76% 48%;
+    --chart-color-3: 0 0% 40%;
+    --chart-color-4: 0 0% 50%;
+    --chart-color-5: 0 0% 60%;
+    --chart-color-6: 0 0% 70%;
 
-    /* Gradients - Lineares, translúcidos, discretos */
-    --gradient-primary: linear-gradient(135deg, hsl(156 100% 39% / 0.08), hsl(156 94% 48% / 0.04));
-    --gradient-background: linear-gradient(180deg, hsl(240 6% 6%), hsl(240 5% 8%));
-    --gradient-surface: linear-gradient(135deg, hsl(240 5% 8%), hsl(240 5% 10%));
+    /* Gradients - sutis e translúcidos */
+    --gradient-primary: linear-gradient(135deg, hsl(142 76% 42% / 0.1), hsl(142 76% 48% / 0.05));
+    --gradient-background: linear-gradient(180deg, hsl(0 0% 4%), hsl(0 0% 6%));
+    --gradient-surface: linear-gradient(135deg, hsl(0 0% 6%), hsl(0 0% 8%));
 
-    /* Shadows - Sutil, difusa (sugestão de camada, não relevo) */
-    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.12);
-    --shadow-md: 0 2px 4px -1px hsl(0 0% 0% / 0.15), 0 1px 2px -1px hsl(0 0% 0% / 0.08);
-    --shadow-lg: 0 4px 8px -2px hsl(0 0% 0% / 0.18), 0 2px 4px -2px hsl(0 0% 0% / 0.10);
-    --shadow-elevated: 0 8px 16px -4px hsl(0 0% 0% / 0.20), 0 4px 6px -2px hsl(0 0% 0% / 0.12);
+    /* Shadows - quase imperceptíveis */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.3), 0 4px 6px -4px hsl(0 0% 0% / 0.2);
+    --shadow-elevated: 0 20px 25px -5px hsl(0 0% 0% / 0.3), 0 8px 10px -6px hsl(0 0% 0% / 0.2);
   }
 
   /* Estilo para menções @usuario */
