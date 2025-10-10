@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useOptimizedTickets } from "@/hooks/useOptimizedTickets";
 import { useTicketStats } from "@/hooks/useTicketStats";
-
 import TicketKanban from "@/components/TicketKanban";
 import TicketKanbanTags from "@/components/TicketKanbanTags";
 import TicketDetailModal from "@/components/TicketDetailModal";
@@ -19,7 +18,6 @@ import { useTags } from "@/hooks/useTags";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { RefreshCw, Kanban as KanbanIcon, TrendingUp, Clock, AlertTriangle, Search, Filter, Building2, Tags, BarChart3, Activity, CheckCircle, X, Circle } from "lucide-react";
-
 interface Ticket {
   id: string;
   ticket_number: string;
@@ -41,12 +39,10 @@ interface Ticket {
   tags?: string[];
   setor_id?: string;
 }
-
 interface Setor {
   id: string;
   nome: string;
 }
-
 export default function KanbanPage() {
   // Usar hook otimizado para tickets
   const {
@@ -58,18 +54,20 @@ export default function KanbanPage() {
     hasMore,
     totalCount
   } = useOptimizedTickets({
-    enableRealtime: false, // Desabilitado devido a queries lentas
+    enableRealtime: false,
+    // Desabilitado devido a queries lentas
     batchSize: 200 // Aumentado para mostrar mais tickets no kanban
   });
 
   // Usar hook centralizado para estatísticas sincronizadas sem duplicar consultas
-  const { stats } = useTicketStats(ticketsWithStatus);
-
+  const {
+    stats
+  } = useTicketStats(ticketsWithStatus);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedTicketForEdit, setSelectedTicketForEdit] = useState<Ticket | null>(null);
-  
+
   // Estados do filtro do Kanban
   const [setores, setSetores] = useState<Setor[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -77,7 +75,7 @@ export default function KanbanPage() {
   const [tagFilter, setTagFilter] = useState('todas');
   const [criticalityFilter, setCriticalityFilter] = useState('all');
   const [infoIncompletaFilter, setInfoIncompletaFilter] = useState(false);
-  
+
   // Estados específicos do modo Tags
   const [viewMode, setViewMode] = useState<'status' | 'tags'>(() => {
     const saved = localStorage.getItem('kanbanViewMode');
@@ -85,30 +83,33 @@ export default function KanbanPage() {
   });
   const [tagRanking, setTagRanking] = useState<'all' | 'top10' | 'top25'>('all');
   const [tagSearch, setTagSearch] = useState('');
-  
-  const { user, canEdit } = useAuth();
-  const { toast } = useToast();
-  const { allTags } = useTags();
+  const {
+    user,
+    canEdit
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
+  const {
+    allTags
+  } = useTags();
 
   // Persistir modo de visualização
   useEffect(() => {
     localStorage.setItem('kanbanViewMode', viewMode);
   }, [viewMode]);
-
   const handleOpenTicketDetail = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setModalOpen(true);
   };
-
   const handleEditTicket = (ticket: Ticket) => {
     setSelectedTicketForEdit(ticket);
     setEditModalOpen(true);
   };
-
   const handleTicketUpdate = () => {
     reloadTickets();
     toast({
-      title: "Ticket atualizado", 
+      title: "Ticket atualizado",
       description: "O status do ticket foi atualizado com sucesso."
     });
   };
@@ -117,14 +118,12 @@ export default function KanbanPage() {
   useEffect(() => {
     loadSetores();
   }, []);
-
   const loadSetores = async () => {
     try {
-      const { data, error } = await supabase
-        .from('setores')
-        .select('id, nome')
-        .eq('ativo', true)
-        .order('nome');
+      const {
+        data,
+        error
+      } = await supabase.from('setores').select('id, nome').eq('ativo', true).order('nome');
       if (error) throw error;
       setSetores(data || []);
     } catch (error) {
@@ -139,13 +138,7 @@ export default function KanbanPage() {
     // Busca por termo
     if (searchTerm) {
       const lowerTerm = searchTerm.toLowerCase();
-      filtered = filtered.filter(ticket => 
-        ticket.titulo.toLowerCase().includes(lowerTerm) ||
-        ticket.solicitante.toLowerCase().includes(lowerTerm) ||
-        ticket.time_responsavel.toLowerCase().includes(lowerTerm) ||
-        ticket.ticket_number?.toLowerCase().includes(lowerTerm) ||
-        ticket.descricao.toLowerCase().includes(lowerTerm)
-      );
+      filtered = filtered.filter(ticket => ticket.titulo.toLowerCase().includes(lowerTerm) || ticket.solicitante.toLowerCase().includes(lowerTerm) || ticket.time_responsavel.toLowerCase().includes(lowerTerm) || ticket.ticket_number?.toLowerCase().includes(lowerTerm) || ticket.descricao.toLowerCase().includes(lowerTerm));
     }
 
     // Filtro por setor
@@ -153,18 +146,14 @@ export default function KanbanPage() {
       filtered = filtered.filter(ticket => {
         const setorSelecionado = setores.find(s => s.id === setorFilter);
         if (!setorSelecionado) return false;
-
         const timeResponsavel = ticket.time_responsavel?.trim();
         const nomeSetor = setorSelecionado.nome?.trim();
-        
         if (timeResponsavel === nomeSetor) {
           return true;
         }
-        
         if (!timeResponsavel && ticket.setor_id === setorFilter) {
           return true;
         }
-        
         return false;
       });
     }
@@ -173,10 +162,7 @@ export default function KanbanPage() {
     if (viewMode === 'status' && tagFilter !== 'todas') {
       filtered = filtered.filter(ticket => {
         const ticketTags = Array.isArray(ticket.tags) ? ticket.tags : [];
-        return ticketTags.some(tag => 
-          tag && typeof tag === 'string' && 
-          tag.trim().toLowerCase() === tagFilter.trim().toLowerCase()
-        );
+        return ticketTags.some(tag => tag && typeof tag === 'string' && tag.trim().toLowerCase() === tagFilter.trim().toLowerCase());
       });
     }
 
@@ -187,16 +173,11 @@ export default function KanbanPage() {
 
     // Filtro por informação incompleta
     if (infoIncompletaFilter) {
-      filtered = filtered.filter(ticket => 
-        ticket.tags?.includes("info-incompleta")
-      );
+      filtered = filtered.filter(ticket => ticket.tags?.includes("info-incompleta"));
     }
-
     return filtered;
   }, [tickets, searchTerm, setorFilter, tagFilter, criticalityFilter, infoIncompletaFilter, setores, viewMode]);
-
-  return (
-    <div className="min-h-screen bg-background text-foreground">
+  return <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto p-6 space-y-6">
         {/* Alerta de validação de setor */}
         <SetorValidationAlert />
@@ -216,12 +197,7 @@ export default function KanbanPage() {
             
             <div className="flex items-center gap-4">
               {/* Alternador de Modo */}
-              <ToggleGroup 
-                type="single" 
-                value={viewMode} 
-                onValueChange={(value) => value && setViewMode(value as 'status' | 'tags')}
-                className="bg-muted p-1 rounded-lg"
-              >
+              <ToggleGroup type="single" value={viewMode} onValueChange={value => value && setViewMode(value as 'status' | 'tags')} className="bg-muted p-1 rounded-lg">
                 <ToggleGroupItem value="status" aria-label="Visualizar por Status" className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" />
                   Status
@@ -249,19 +225,13 @@ export default function KanbanPage() {
                 </span>
               </div>
               
-              {viewMode === 'status' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {viewMode === 'status' ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   {/* Busca */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Buscar</label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Título, solicitante, número..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
+                      <Input placeholder="Título, solicitante, número..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
                     </div>
                   </div>
 
@@ -274,14 +244,12 @@ export default function KanbanPage() {
                       </SelectTrigger>
                       <SelectContent className="dropdown-filter">
                         <SelectItem value="all">Todos os setores</SelectItem>
-                        {setores.map(setor => (
-                          <SelectItem key={setor.id} value={setor.id}>
+                        {setores.map(setor => <SelectItem key={setor.id} value={setor.id}>
                             <div className="flex items-center gap-2">
                               <Building2 className="h-4 w-4" />
                               {setor.nome}
                             </div>
-                          </SelectItem>
-                        ))}
+                          </SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -295,11 +263,9 @@ export default function KanbanPage() {
                       </SelectTrigger>
                       <SelectContent className="dropdown-filter">
                         <SelectItem value="todas">Todas as tags</SelectItem>
-                        {allTags.map(tag => (
-                          <SelectItem key={tag} value={tag}>
+                        {allTags.map(tag => <SelectItem key={tag} value={tag}>
                             {tag}
-                          </SelectItem>
-                        ))}
+                          </SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -327,24 +293,8 @@ export default function KanbanPage() {
                   </div>
 
                   {/* Filtro por Informação Incompleta */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Filtros Especiais</label>
-                    <div className="flex items-center space-x-2 p-2 border rounded">
-                      <input
-                        type="checkbox"
-                        id="info-incompleta-filter"
-                        checked={infoIncompletaFilter}
-                        onChange={(e) => setInfoIncompletaFilter(e.target.checked)}
-                        className="rounded border-border"
-                      />
-                      <label htmlFor="info-incompleta-filter" className="text-sm cursor-pointer">
-                        Somente Info Incompleta
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  
+                </div> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Filtro por Setor */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Setor</label>
@@ -354,14 +304,12 @@ export default function KanbanPage() {
                       </SelectTrigger>
                       <SelectContent className="dropdown-filter">
                         <SelectItem value="all">Todos os setores</SelectItem>
-                        {setores.map(setor => (
-                          <SelectItem key={setor.id} value={setor.id}>
+                        {setores.map(setor => <SelectItem key={setor.id} value={setor.id}>
                             <div className="flex items-center gap-2">
                               <Building2 className="h-4 w-4" />
                               {setor.nome}
                             </div>
-                          </SelectItem>
-                        ))}
+                          </SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -369,7 +317,7 @@ export default function KanbanPage() {
                   {/* Ranking de Tags */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Ranking de Tags</label>
-                    <Select value={tagRanking} onValueChange={(value) => setTagRanking(value as 'all' | 'top10' | 'top25')}>
+                    <Select value={tagRanking} onValueChange={value => setTagRanking(value as 'all' | 'top10' | 'top25')}>
                       <SelectTrigger>
                         <SelectValue placeholder="Ranking" />
                       </SelectTrigger>
@@ -386,12 +334,7 @@ export default function KanbanPage() {
                     <label className="text-sm font-medium text-foreground">Buscar Tag</label>
                     <div className="relative">
                       <Tags className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Nome da tag..."
-                        value={tagSearch}
-                        onChange={(e) => setTagSearch(e.target.value)}
-                        className="pl-10"
-                      />
+                      <Input placeholder="Nome da tag..." value={tagSearch} onChange={e => setTagSearch(e.target.value)} className="pl-10" />
                     </div>
                   </div>
 
@@ -416,17 +359,14 @@ export default function KanbanPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-              )}
+                </div>}
             </CardContent>
           </Card>
         </div>
 
         {/* Stats Cards - Usando dados centralizados */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <Card className={cn(
-            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-blue-500/30"
-          )}>
+          <Card className={cn("cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-blue-500/30")}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Abertos</span>
@@ -436,9 +376,7 @@ export default function KanbanPage() {
             </CardContent>
           </Card>
 
-          <Card className={cn(
-            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-blue-400/30"
-          )}>
+          <Card className={cn("cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-blue-400/30")}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Em Andamento</span>
@@ -448,9 +386,7 @@ export default function KanbanPage() {
             </CardContent>
           </Card>
 
-          <Card className={cn(
-            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-green-500/30"
-          )}>
+          <Card className={cn("cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-green-500/30")}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Resolvidos</span>
@@ -460,9 +396,7 @@ export default function KanbanPage() {
             </CardContent>
           </Card>
 
-          <Card className={cn(
-            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-neutral-500/20"
-          )}>
+          <Card className={cn("cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-neutral-500/20")}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Fechados</span>
@@ -472,9 +406,7 @@ export default function KanbanPage() {
             </CardContent>
           </Card>
 
-          <Card className={cn(
-            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-red-600/35"
-          )}>
+          <Card className={cn("cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-red-600/35")}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Críticos</span>
@@ -484,9 +416,7 @@ export default function KanbanPage() {
             </CardContent>
           </Card>
 
-          <Card className={cn(
-            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-red-500/30"
-          )}>
+          <Card className={cn("cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-red-500/30")}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Atrasados</span>
@@ -500,67 +430,32 @@ export default function KanbanPage() {
         {/* Kanban Board */}
         <Card className="bg-card">
           <CardContent className="p-0">
-            {loading ? (
-              <div className="flex items-center justify-center h-96">
+            {loading ? <div className="flex items-center justify-center h-96">
                 <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : viewMode === 'status' ? (
-              <TicketKanban
-                tickets={filteredTickets}
-                onOpenDetail={handleOpenTicketDetail}
-                onEditTicket={handleEditTicket}
-                onTicketUpdate={handleTicketUpdate}
-                userRole={canEdit ? 'operador' : 'viewer'}
-              />
-            ) : (
-              <TicketKanbanTags
-                tickets={filteredTickets}
-                onOpenDetail={handleOpenTicketDetail}
-                onEditTicket={handleEditTicket}
-                rankingMode={tagRanking}
-                searchTag={tagSearch}
-              />
-            )}
+              </div> : viewMode === 'status' ? <TicketKanban tickets={filteredTickets} onOpenDetail={handleOpenTicketDetail} onEditTicket={handleEditTicket} onTicketUpdate={handleTicketUpdate} userRole={canEdit ? 'operador' : 'viewer'} /> : <TicketKanbanTags tickets={filteredTickets} onOpenDetail={handleOpenTicketDetail} onEditTicket={handleEditTicket} rankingMode={tagRanking} searchTag={tagSearch} />}
           </CardContent>
         </Card>
 
-        {hasMore && !loading && (
-          <div className="flex flex-col items-center mt-4">
+        {hasMore && !loading && <div className="flex flex-col items-center mt-4">
             <Button onClick={loadMoreTickets} variant="outline" size="sm">
               Carregar mais
             </Button>
             <span className="mt-2 text-xs text-muted-foreground">
               {tickets.length} de {totalCount}
             </span>
-          </div>
-        )}
+          </div>}
 
         {/* Ticket Detail Modal */}
-        {selectedTicket && (
-          <TicketDetailModal
-            sla={selectedTicket}
-            isOpen={modalOpen}
-            onClose={() => {
-              setModalOpen(false);
-              setSelectedTicket(null);
-            }}
-            onUpdate={reloadTickets}
-          />
-        )}
+        {selectedTicket && <TicketDetailModal sla={selectedTicket} isOpen={modalOpen} onClose={() => {
+        setModalOpen(false);
+        setSelectedTicket(null);
+      }} onUpdate={reloadTickets} />}
 
         {/* Ticket Edit Modal */}
-        {selectedTicketForEdit && (
-          <TicketEditModal
-            ticket={selectedTicketForEdit}
-            isOpen={editModalOpen}
-            onClose={() => {
-              setEditModalOpen(false);
-              setSelectedTicketForEdit(null);
-            }}
-            onUpdate={handleTicketUpdate}
-          />
-        )}
+        {selectedTicketForEdit && <TicketEditModal ticket={selectedTicketForEdit} isOpen={editModalOpen} onClose={() => {
+        setEditModalOpen(false);
+        setSelectedTicketForEdit(null);
+      }} onUpdate={handleTicketUpdate} />}
       </div>
-    </div>
-  );
+    </div>;
 }
