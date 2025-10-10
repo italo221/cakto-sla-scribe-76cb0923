@@ -12,7 +12,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search, Filter, Clock, AlertCircle, CheckCircle, X, Grid3X3, List, Star, User, MoreVertical, Play, Pause, CheckCircle2, XCircle, Eye, Columns3, AlertTriangle, Flag, Building, Target, Users, Activity, Inbox as InboxIcon, Circle, Info, Building2, HelpCircle } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
 import TicketDetailModal from "@/components/TicketDetailModal";
 import TicketEditModal from "@/components/TicketEditModal";
 import TicketDeleteModal from "@/components/TicketDeleteModal";
@@ -60,8 +59,14 @@ interface Setor {
   nome: string;
 }
 export default function InboxDarkMode() {
-  const { user, canEdit, isSuperAdmin } = useAuth();
-  const { toast } = useToast();
+  const {
+    user,
+    canEdit,
+    isSuperAdmin
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
 
   // Estados de filtro (declarados primeiro para uso no hook)
   const [activeFilter, setActiveFilter] = useState<'all' | 'aberto' | 'em_andamento' | 'resolvido' | 'fechado' | 'atrasado' | 'critico' | 'info-incompleta'>('all');
@@ -69,7 +74,7 @@ export default function InboxDarkMode() {
   const [tagFilter, setTagFilter] = useState('todas');
   const [dateSort, setDateSort] = useState<'newest' | 'oldest' | 'none'>('none');
   const [criticalitySort, setCriticalitySort] = useState<'highest' | 'lowest' | 'none'>('none');
-  
+
   // Estados para paginação e URL
   const [searchParams, setSearchParams] = useSearchParams();
   const [paginaAtual, setPaginaAtual] = useState(() => {
@@ -89,15 +94,16 @@ export default function InboxDarkMode() {
 
   // Exibir SupabaseStatus se não configurado ou com erro de conexão
   if (!isSupabaseConfigured) {
-    return (
-      <div className="p-6">
+    return <div className="p-6">
         <SupabaseStatus />
-      </div>
-    );
+      </div>;
   }
 
   // Usar hook especializado para estatísticas globais que busca TODOS os tickets
-  const { stats, reloadStats } = useGlobalTicketStats();
+  const {
+    stats,
+    reloadStats
+  } = useGlobalTicketStats();
 
   // Outros estados
   const [setores, setSetores] = useState<Setor[]>([]);
@@ -111,14 +117,15 @@ export default function InboxDarkMode() {
   const [selectedTicketForEdit, setSelectedTicketForEdit] = useState<Ticket | null>(null);
   const [selectedTicketForDelete, setSelectedTicketForDelete] = useState<Ticket | null>(null);
   const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('detailed');
-  
-  const { allTags } = useTags();
+  const {
+    allTags
+  } = useTags();
   const [userRole, setUserRole] = useState<string>('viewer');
 
   // Função para construir query com filtros
   const buildQuery = useCallback(() => {
     let query = supabase.from('sla_demandas').select('*');
-    
+
     // Aplicar filtros na query
     if (activeFilter !== 'all') {
       if (activeFilter === 'atrasado') {
@@ -131,30 +138,29 @@ export default function InboxDarkMode() {
         query = query.eq('status', activeFilter);
       }
     }
-
     if (setorFilter !== 'all') {
       const setorSelecionado = setores.find(s => s.id === setorFilter);
       if (setorSelecionado) {
         query = query.or(`time_responsavel.eq.${setorSelecionado.nome},setor_id.eq.${setorFilter}`);
       }
     }
-
     if (tagFilter !== 'todas') {
       query = query.contains('tags', [tagFilter]);
     }
-
     if (searchTerm) {
       query = query.or(`titulo.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,solicitante.ilike.%${searchTerm}%,time_responsavel.ilike.%${searchTerm}%,ticket_number.ilike.%${searchTerm}%`);
     }
-
     return query;
   }, [activeFilter, setorFilter, tagFilter, searchTerm, setores]);
 
   // Função para buscar total de tickets
   const fetchTotalCount = useCallback(async () => {
     try {
-      let query = supabase.from('sla_demandas').select('*', { count: 'exact', head: true });
-      
+      let query = supabase.from('sla_demandas').select('*', {
+        count: 'exact',
+        head: true
+      });
+
       // Aplicar os mesmos filtros da query principal
       if (activeFilter !== 'all') {
         if (activeFilter === 'atrasado') {
@@ -167,23 +173,22 @@ export default function InboxDarkMode() {
           query = query.eq('status', activeFilter);
         }
       }
-
       if (setorFilter !== 'all') {
         const setorSelecionado = setores.find(s => s.id === setorFilter);
         if (setorSelecionado) {
           query = query.or(`time_responsavel.eq.${setorSelecionado.nome},setor_id.eq.${setorFilter}`);
         }
       }
-
       if (tagFilter !== 'todas') {
         query = query.contains('tags', [tagFilter]);
       }
-
       if (searchTerm) {
         query = query.or(`titulo.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,solicitante.ilike.%${searchTerm}%,time_responsavel.ilike.%${searchTerm}%,ticket_number.ilike.%${searchTerm}%`);
       }
-      
-      const { count, error } = await query;
+      const {
+        count,
+        error
+      } = await query;
       if (error) throw error;
       return count || 0;
     } catch (error) {
@@ -196,46 +201,50 @@ export default function InboxDarkMode() {
   const fetchTickets = useCallback(async (page = 1, pageSize = 30) => {
     setLoading(true);
     setError(null);
-    
     try {
       // Buscar total de tickets
       const total = await fetchTotalCount();
       setTotalCount(total);
-      
+
       // Verificar se página está dentro do limite
       const maxPage = Math.ceil(total / pageSize) || 1;
       const safePage = Math.min(page, maxPage);
-      
+
       // Calcular range
       const from = (safePage - 1) * pageSize;
       const to = from + pageSize - 1;
-      
+
       // Buscar tickets da página
       const query = buildQuery();
-      
+
       // Aplicar ordenação
       if (dateSort !== 'none') {
-        query.order('data_criacao', { ascending: dateSort === 'oldest' });
+        query.order('data_criacao', {
+          ascending: dateSort === 'oldest'
+        });
       } else if (criticalitySort !== 'none') {
         // Para ordenação por criticidade, usar SQL CASE
         const order = criticalitySort === 'highest' ? 'desc' : 'asc';
-        query.order('nivel_criticidade', { ascending: order === 'asc' });
+        query.order('nivel_criticidade', {
+          ascending: order === 'asc'
+        });
       } else {
-        query.order('data_criacao', { ascending: false }); // Padrão: mais recente primeiro
+        query.order('data_criacao', {
+          ascending: false
+        }); // Padrão: mais recente primeiro
       }
-      
-      const { data, error } = await query.range(from, to);
-      
+      const {
+        data,
+        error
+      } = await query.range(from, to);
       if (error) throw error;
-      
       setTickets(data || []);
-      
+
       // Atualizar página atual se foi ajustada
       if (safePage !== page) {
         setPaginaAtual(safePage);
         updateURL(safePage, pageSize);
       }
-      
     } catch (error) {
       console.error('Erro ao buscar tickets:', error);
       setError('Erro ao carregar tickets');
@@ -289,7 +298,6 @@ export default function InboxDarkMode() {
 
   // Define canDelete based on user permissions
   const canDelete = isSuperAdmin;
-
   useEffect(() => {
     loadSetores();
     loadUserRole();
@@ -305,8 +313,10 @@ export default function InboxDarkMode() {
     // Event listener para abrir modal via notificação
     const handleOpenTicketModal = (event: CustomEvent) => {
       console.log('🔔 InboxDarkMode - Evento openTicketModal recebido:', event.detail);
-      const { ticketId } = event.detail;
-      
+      const {
+        ticketId
+      } = event.detail;
+
       // Primeiro tentar encontrar nos tickets carregados
       const ticket = tickets.find(t => t.id === ticketId);
       if (ticket) {
@@ -316,54 +326,48 @@ export default function InboxDarkMode() {
       } else {
         console.log('🔔 InboxDarkMode - Ticket não encontrado nos dados carregados, buscando diretamente...');
         // Se não encontrar, buscar diretamente no banco
-        supabase
-          .from('sla_demandas')
-          .select('*')
-          .eq('id', ticketId)
-          .single()
-          .then(({ data, error }) => {
-            if (error) {
-              console.error('Erro ao buscar ticket:', error);
-              return;
-            }
-            if (data) {
-              console.log('🔔 InboxDarkMode - Ticket encontrado no banco:', data.ticket_number);
-              setSelectedTicket(data);
-              setModalOpen(true);
-            }
-          });
+        supabase.from('sla_demandas').select('*').eq('id', ticketId).single().then(({
+          data,
+          error
+        }) => {
+          if (error) {
+            console.error('Erro ao buscar ticket:', error);
+            return;
+          }
+          if (data) {
+            console.log('🔔 InboxDarkMode - Ticket encontrado no banco:', data.ticket_number);
+            setSelectedTicket(data);
+            setModalOpen(true);
+          }
+        });
       }
     };
     window.addEventListener('openTicketModal', handleOpenTicketModal as EventListener);
-
     return () => {
       window.removeEventListener('openEditModal', handleOpenEditModal as EventListener);
       window.removeEventListener('openTicketModal', handleOpenTicketModal as EventListener);
     };
-  }, []);  // Remover dependência para evitar recriação constante
+  }, []); // Remover dependência para evitar recriação constante
 
   const loadSetores = async () => {
     try {
-      const { data, error } = await supabase
-        .from('setores')
-        .select('id, nome')
-        .eq('ativo', true)
-        .order('nome');
+      const {
+        data,
+        error
+      } = await supabase.from('setores').select('id, nome').eq('ativo', true).order('nome');
       if (error) throw error;
       setSetores(data || []);
     } catch (error) {
       console.error('Erro ao carregar setores:', error);
     }
   };
-
   const loadUserRole = async () => {
     if (!user) return;
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role, user_type')
-        .eq('user_id', user.id)
-        .single();
+      const {
+        data,
+        error
+      } = await supabase.from('profiles').select('role, user_type').eq('user_id', user.id).single();
       if (error) throw error;
 
       // Converter role/user_type para o formato esperado
@@ -393,7 +397,6 @@ export default function InboxDarkMode() {
 
   // Usar tickets diretos (já paginados)
   const ticketsWithStatus = tickets;
-  
 
   // Busca inteligente com sugestões
   const generateSearchSuggestions = useCallback((term: string) => {
@@ -460,34 +463,28 @@ export default function InboxDarkMode() {
     const searchFields = [ticket.titulo, ticket.descricao, ticket.solicitante, ticket.time_responsavel, ticket.ticket_number, ...(ticket.tags || [])].filter(Boolean).map(field => field.toLowerCase());
 
     // Buscar nos comentários
-    const commentFields = (ticket.sla_comentarios_internos || [])
-      .map((comment: any) => comment.comentario.toLowerCase())
-      .filter(Boolean);
+    const commentFields = (ticket.sla_comentarios_internos || []).map((comment: any) => comment.comentario.toLowerCase()).filter(Boolean);
 
     // Busca exata
-    const exactMatch = searchFields.some(field => field.includes(lowerTerm)) ||
-                       commentFields.some(field => field.includes(lowerTerm));
+    const exactMatch = searchFields.some(field => field.includes(lowerTerm)) || commentFields.some(field => field.includes(lowerTerm));
     if (exactMatch) return true;
 
     // Busca por palavras parciais (para busca inteligente tipo Google)
     const termWords = lowerTerm.split(' ').filter(word => word.length > 1);
-    const partialMatch = termWords.every(word => 
-      searchFields.some(field => field.includes(word)) ||
-      commentFields.some(field => field.includes(word))
-    );
+    const partialMatch = termWords.every(word => searchFields.some(field => field.includes(word)) || commentFields.some(field => field.includes(word)));
     return partialMatch;
   }, []);
 
   // Os tickets já vêm filtrados e paginados do backend
   const filteredTicketsWithStatus = ticketsWithStatus;
-  
+
   // Cálculos de paginação
   const totalPaginas = Math.ceil(totalCount / itensPorPagina);
   const totalTickets = totalCount;
-  
+
   // Usar tickets diretamente (já paginados)
   const ticketsPaginados = ticketsWithStatus;
-  
+
   // Compatibilidade com código existente
   const optimizedTicketsWithStatus = ticketsWithStatus;
 
@@ -517,17 +514,16 @@ export default function InboxDarkMode() {
       counts[setor.id] = ticketsWithStatus.filter(ticket => {
         const timeResponsavel = ticket.time_responsavel?.trim();
         const nomeSetor = setor.nome?.trim();
-        
+
         // Se time_responsavel corresponde ao nome do setor, usar isso (prioritário)
         if (timeResponsavel === nomeSetor) {
           return true;
         }
-        
+
         // Fallback: se não há time_responsavel ou não corresponde, usar setor_id
         if (!timeResponsavel && ticket.setor_id === setor.id) {
           return true;
         }
-        
         return false;
       }).length;
     });
@@ -600,19 +596,15 @@ export default function InboxDarkMode() {
     if (!ticket) {
       return;
     }
-    
     setSelectedTicket(ticket);
     setModalOpen(true);
   };
-  
   const handleOpenTicketById = async (ticketId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('sla_demandas')
-        .select('*')
-        .eq('id', ticketId)
-        .single();
-        
+      const {
+        data,
+        error
+      } = await supabase.from('sla_demandas').select('*').eq('id', ticketId).single();
       if (error) throw error;
       if (data) {
         setSelectedTicket(data as Ticket);
@@ -662,19 +654,18 @@ export default function InboxDarkMode() {
   // Função para atualizar status do ticket - vai disparar as notificações automaticamente via trigger
   const handleUpdateStatus = async (ticketId: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from('sla_demandas')
-        .update({ status: newStatus })
-        .eq('id', ticketId);
-
+      const {
+        error
+      } = await supabase.from('sla_demandas').update({
+        status: newStatus
+      }).eq('id', ticketId);
       if (error) throw error;
 
       // Recarregar tickets para refletir mudança
       reloadTickets();
-      
       toast({
         title: "Status atualizado",
-        description: `Ticket atualizado para: ${newStatus}`,
+        description: `Ticket atualizado para: ${newStatus}`
       });
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
@@ -698,22 +689,7 @@ export default function InboxDarkMode() {
         <SetorValidationAlert />
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-foreground dark:text-foreground flex items-center gap-3">
-              <InboxIcon className="h-8 w-8" />
-              Caixa de Entrada
-            </h1>
-            <p className="text-muted-foreground dark:text-muted-foreground">
-              Gerencie e acompanhe todos os tickets do sistema
-            </p>
-          </div>
-          
-          <Button onClick={reloadTickets} variant="outline" className="gap-2">
-            <Activity className="h-4 w-4" />
-            Atualizar
-          </Button>
-        </div>
+        
 
         {/* Search and Filter Controls */}
         <div className="bg-card dark:bg-card rounded-lg border border-border dark:border-border p-4 space-y-4">
@@ -723,22 +699,14 @@ export default function InboxDarkMode() {
               <Input placeholder="Buscar tickets (títulos, solicitantes, setores...)" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onFocus={() => setShowSuggestions(searchTerm.length >= 2 && searchSuggestions.length > 0)} onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} className="pl-10 bg-background text-foreground border-border focus:border-primary" />
               
               {/* Dropdown de sugestões de busca */}
-              {showSuggestions && searchSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
-                  {searchSuggestions.map((suggestion, index) => (
-                    <div 
-                      key={index} 
-                      className="px-3 py-2 hover:bg-accent cursor-pointer text-sm" 
-                      onClick={() => {
-                        setSearchTerm(suggestion);
-                        setShowSuggestions(false);
-                      }}
-                    >
+              {showSuggestions && searchSuggestions.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                  {searchSuggestions.map((suggestion, index) => <div key={index} className="px-3 py-2 hover:bg-accent cursor-pointer text-sm" onClick={() => {
+                setSearchTerm(suggestion);
+                setShowSuggestions(false);
+              }}>
                       {suggestion}
-                    </div>
-                  ))}
-                </div>
-              )}
+                    </div>)}
+                </div>}
             </div>
             
             <div className="flex gap-2 flex-wrap">
@@ -755,20 +723,18 @@ export default function InboxDarkMode() {
               </Select>
 
               {/* Filtro por tag */}
-              <Select value={tagFilter} onValueChange={(value) => {
-                console.log('🔄 Tag filter mudando de:', tagFilter, 'para:', value);
-                setTagFilter(value);
-              }}>
+              <Select value={tagFilter} onValueChange={value => {
+              console.log('🔄 Tag filter mudando de:', tagFilter, 'para:', value);
+              setTagFilter(value);
+            }}>
                 <SelectTrigger className="w-[140px] bg-background dark:bg-background text-foreground dark:text-foreground border-border dark:border-border">
                   <SelectValue placeholder="Tags" />
                 </SelectTrigger>
                 <SelectContent className="dropdown-filter max-h-60 overflow-y-auto">
                   <SelectItem value="todas">Todas Tags</SelectItem>
-                  {allTags.map(tag => (
-                    <SelectItem key={tag} value={tag}>
+                  {allTags.map(tag => <SelectItem key={tag} value={tag}>
                       {tag}
-                    </SelectItem>
-                  ))}
+                    </SelectItem>)}
                 </SelectContent>
               </Select>
 
@@ -802,13 +768,13 @@ export default function InboxDarkMode() {
         {/* Status Cards - Sistema de filtro unificado usando dados centralizados */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
           <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'aberto' ? 'ring-2 ring-slate-500 border-l-slate-500 bg-slate-50 dark:bg-slate-800' : 'border-l-slate-400 hover:border-l-slate-500')} onClick={() => {
-            const newFilter = activeFilter === 'aberto' ? 'all' : 'aberto';
-            setActiveFilter(newFilter);
-            if (newFilter !== 'all') {
-              // Recarregar tickets para mostrar todos os relevantes
-              reloadTickets();
-            }
-          }}>
+          const newFilter = activeFilter === 'aberto' ? 'all' : 'aberto';
+          setActiveFilter(newFilter);
+          if (newFilter !== 'all') {
+            // Recarregar tickets para mostrar todos os relevantes
+            reloadTickets();
+          }
+        }}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <Circle className="h-6 w-6 text-slate-400 dark:text-slate-300" />
@@ -819,12 +785,12 @@ export default function InboxDarkMode() {
           </Card>
 
           <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'em_andamento' ? 'ring-2 ring-blue-500 border-l-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-l-blue-400 hover:border-l-blue-500')} onClick={() => {
-            const newFilter = activeFilter === 'em_andamento' ? 'all' : 'em_andamento';
-            setActiveFilter(newFilter);
-            if (newFilter !== 'all') {
-              reloadTickets();
-            }
-          }}>
+          const newFilter = activeFilter === 'em_andamento' ? 'all' : 'em_andamento';
+          setActiveFilter(newFilter);
+          if (newFilter !== 'all') {
+            reloadTickets();
+          }
+        }}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <Activity className="h-6 w-6 text-blue-500 dark:text-blue-400" />
@@ -835,12 +801,12 @@ export default function InboxDarkMode() {
           </Card>
 
           <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'resolvido' ? 'ring-2 ring-green-500 border-l-green-500 bg-green-50 dark:bg-green-900/20' : 'border-l-green-400 hover:border-l-green-500')} onClick={() => {
-            const newFilter = activeFilter === 'resolvido' ? 'all' : 'resolvido';
-            setActiveFilter(newFilter);
-            if (newFilter !== 'all') {
-              reloadTickets();
-            }
-          }}>
+          const newFilter = activeFilter === 'resolvido' ? 'all' : 'resolvido';
+          setActiveFilter(newFilter);
+          if (newFilter !== 'all') {
+            reloadTickets();
+          }
+        }}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <CheckCircle className="h-6 w-6 text-green-500 dark:text-green-400" />
@@ -851,12 +817,12 @@ export default function InboxDarkMode() {
           </Card>
 
           <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'fechado' ? 'ring-2 ring-gray-500 border-l-gray-500 bg-gray-50 dark:bg-gray-800' : 'border-l-gray-400 hover:border-l-gray-500')} onClick={() => {
-            const newFilter = activeFilter === 'fechado' ? 'all' : 'fechado';
-            setActiveFilter(newFilter);
-            if (newFilter !== 'all') {
-              reloadTickets();
-            }
-          }}>
+          const newFilter = activeFilter === 'fechado' ? 'all' : 'fechado';
+          setActiveFilter(newFilter);
+          if (newFilter !== 'all') {
+            reloadTickets();
+          }
+        }}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <X className="h-6 w-6 text-gray-500 dark:text-gray-400" />
@@ -867,12 +833,12 @@ export default function InboxDarkMode() {
           </Card>
 
           <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'atrasado' ? 'ring-2 ring-red-500 border-l-red-500 bg-red-50 dark:bg-red-900/20' : 'border-l-red-400 hover:border-l-red-500')} onClick={() => {
-            const newFilter = activeFilter === 'atrasado' ? 'all' : 'atrasado';
-            setActiveFilter(newFilter);
-            if (newFilter !== 'all') {
-              reloadTickets();
-            }
-          }}>
+          const newFilter = activeFilter === 'atrasado' ? 'all' : 'atrasado';
+          setActiveFilter(newFilter);
+          if (newFilter !== 'all') {
+            reloadTickets();
+          }
+        }}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <AlertTriangle className="h-6 w-6 text-red-500 dark:text-red-400" />
@@ -883,12 +849,12 @@ export default function InboxDarkMode() {
           </Card>
 
           <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'critico' ? 'ring-2 ring-red-600 border-l-red-600 bg-red-50 dark:bg-red-900/20' : 'border-l-red-500 hover:border-l-red-600')} onClick={() => {
-            const newFilter = activeFilter === 'critico' ? 'all' : 'critico';
-            setActiveFilter(newFilter);
-            if (newFilter !== 'all') {
-              reloadTickets();
-            }
-          }}>
+          const newFilter = activeFilter === 'critico' ? 'all' : 'critico';
+          setActiveFilter(newFilter);
+          if (newFilter !== 'all') {
+            reloadTickets();
+          }
+        }}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <Flag className="h-6 w-6 text-red-600 dark:text-red-500" />
@@ -900,15 +866,7 @@ export default function InboxDarkMode() {
             </CardContent>
           </Card>
 
-          <Card 
-            className={cn(
-              "cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card",
-              activeFilter === 'info-incompleta' 
-                ? 'ring-2 ring-yellow-500 border-l-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' 
-                : 'border-l-yellow-400 hover:border-l-yellow-500'
-            )} 
-            onClick={() => setActiveFilter(activeFilter === 'info-incompleta' ? 'all' : 'info-incompleta')}
-          >
+          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'info-incompleta' ? 'ring-2 ring-yellow-500 border-l-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : 'border-l-yellow-400 hover:border-l-yellow-500')} onClick={() => setActiveFilter(activeFilter === 'info-incompleta' ? 'all' : 'info-incompleta')}>
             <CardContent className="p-4 text-center">
               <div className="flex justify-center mb-2">
                 <HelpCircle className="h-6 w-6 text-yellow-600 dark:text-yellow-500" />
@@ -972,15 +930,9 @@ export default function InboxDarkMode() {
             </Card> : ticketsPaginados.map(ticket => <JiraTicketCard key={ticket.id} ticket={ticket} onOpenDetail={handleOpenTicketDetail} onUpdateStatus={handleUpdateStatus} onEditTicket={handleEditTicket} onDeleteTicket={handleDeleteTicket} userCanEdit={canEdit} userCanDelete={canDelete} />)}
 
           {/* Paginação */}
-          {totalPaginas > 1 && (
-            <div className="flex justify-center py-6">
-              <SmartPagination 
-                currentPage={paginaAtual}
-                totalPages={totalPaginas}
-                onPageChange={handlePageChange}
-              />
-            </div>
-          )}
+          {totalPaginas > 1 && <div className="flex justify-center py-6">
+              <SmartPagination currentPage={paginaAtual} totalPages={totalPaginas} onPageChange={handlePageChange} />
+            </div>}
         </div>
 
         {/* Modals */}
