@@ -1,11 +1,12 @@
-import { useState, useCallback, useRef, memo, useMemo } from 'react';
+import { useState, useCallback, useRef, memo, useMemo, useEffect } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, pointerWithin, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, HelpCircle, Edit, Eye } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { AlertTriangle, HelpCircle, Edit, Eye, User, Clock, Target, Tag, MessageSquare, Activity, CheckCircle, X, Circle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -64,12 +65,14 @@ const KanbanCard = memo(({
   userCanEdit
 }: KanbanCardProps) => {
   const [isDragActive, setIsDragActive] = useState(false);
+  const [commentsCount, setCommentsCount] = useState<number>(0);
   const pointerEventRef = useRef<any>(null);
   const dragTimeout = useRef<NodeJS.Timeout | null>(null);
   const startPosition = useRef<{
     x: number;
     y: number;
   } | null>(null);
+  
   const {
     attributes,
     listeners,
@@ -81,10 +84,39 @@ const KanbanCard = memo(({
     id: ticket.id,
     disabled: !userCanEdit
   });
+  
   const style = {
     transform: CSS.Transform.toString(transform),
     transition
   };
+
+  // Carregar comentários de forma otimizada
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCommentsCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('sla_comentarios_internos')
+          .select('id', { count: 'exact', head: true })
+          .eq('sla_id', ticket.id);
+        
+        if (error) throw error;
+        if (isMounted) {
+          setCommentsCount(count || 0);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar contagem de comentários:', error);
+      }
+    };
+
+    loadCommentsCount();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [ticket.id]);
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!userCanEdit) return;
     startPosition.current = {
@@ -97,6 +129,7 @@ const KanbanCard = memo(({
       listeners?.onPointerDown?.(pointerEventRef.current);
     }, 200);
   };
+  
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!startPosition.current) return;
     const dx = Math.abs(e.clientX - startPosition.current.x);
@@ -108,6 +141,7 @@ const KanbanCard = memo(({
       }
     }
   };
+  
   const handleMouseUp = () => {
     if (dragTimeout.current) {
       clearTimeout(dragTimeout.current);
@@ -117,6 +151,7 @@ const KanbanCard = memo(({
     pointerEventRef.current = null;
     setIsDragActive(false);
   };
+  
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isDragActive && !isSortableDragging) {
@@ -131,102 +166,226 @@ const KanbanCard = memo(({
     }
   };
 
-  // Configurações de prioridade
-  const getPriorityColor = (nivel: string) => {
-    switch (nivel) {
-      case 'P0':
-        return 'text-red-600 dark:text-red-400';
-      case 'P1':
-        return 'text-orange-600 dark:text-orange-400';
-      case 'P2':
-        return 'text-yellow-600 dark:text-yellow-400';
-      case 'P3':
-        return 'text-blue-600 dark:text-blue-400';
-      default:
-        return 'text-gray-600 dark:text-gray-400';
-    }
+  // Configuração de status (igual ao JiraTicketCard)
+  const getStatusConfig = (status: string) => {
+    const configs = {
+      em_andamento: {
+        icon: Activity,
+        bgColor: "bg-blue-500/10 dark:bg-blue-500/15",
+        textColor: "text-blue-700 dark:text-blue-400",
+        borderColor: "border-blue-500/20 dark:border-blue-500/30",
+        label: "Em Andamento"
+      },
+      resolvido: {
+        icon: CheckCircle,
+        bgColor: "bg-green-500/10 dark:bg-green-500/15",
+        textColor: "text-green-700 dark:text-green-400",
+        borderColor: "border-green-500/20 dark:border-green-500/30",
+        label: "Resolvido"
+      },
+      fechado: {
+        icon: X,
+        bgColor: "bg-gray-500/10 dark:bg-gray-500/15",
+        textColor: "text-gray-700 dark:text-gray-400",
+        borderColor: "border-gray-500/20 dark:border-gray-500/30",
+        label: "Fechado"
+      }
+    };
+    return configs[status as keyof typeof configs] || {
+      icon: Circle,
+      bgColor: "bg-slate-500/10 dark:bg-slate-500/15",
+      textColor: "text-slate-700 dark:text-slate-400",
+      borderColor: "border-slate-500/20 dark:border-slate-500/30",
+      label: "Aberto"
+    };
   };
-  return <Card ref={setNodeRef} style={style} {...attributes} className={cn("group bg-card animate-fade-in relative cursor-pointer macos-card-kanban", "border border-border", isDragging && "opacity-90 rotate-2 scale-105 shadow-2xl z-50 ring-2 ring-primary", isSortableDragging && "shadow-xl scale-105 rotate-2 border-primary")} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onClick={handleClick}>
-      <CardContent className="p-3 space-y-3 macos-card">
-        {/* Header com número, prioridade P0 e botões de ação */}
-        <div className="flex items-center justify-between">
-          <Badge variant="default" className="text-xs font-mono bg-primary text-primary-foreground">
-            {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
+
+  // Configuração de prioridade (igual ao JiraTicketCard)
+  const getPriorityConfig = (priority: string) => {
+    const configs = {
+      P0: {
+        color: "bg-red-500/10 dark:bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/20 dark:border-red-500/30",
+        label: "Crítico",
+        borderLeft: "border-l-4 border-l-red-500"
+      },
+      P1: {
+        color: "bg-orange-500/10 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20 dark:border-orange-500/30",
+        label: "Alto",
+        borderLeft: "border-l-4 border-l-orange-500"
+      },
+      P2: {
+        color: "bg-yellow-500/10 dark:bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/20 dark:border-yellow-500/30",
+        label: "Médio",
+        borderLeft: "border-l-4 border-l-yellow-500"
+      },
+      P3: {
+        color: "bg-blue-500/10 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/20 dark:border-blue-500/30",
+        label: "Baixo",
+        borderLeft: "border-l-4 border-l-blue-500"
+      }
+    };
+    return configs[priority as keyof typeof configs] || configs.P3;
+  };
+
+  const statusConfig = getStatusConfig(ticket.status);
+  const priorityConfig = getPriorityConfig(ticket.nivel_criticidade);
+  const StatusIcon = statusConfig.icon;
+  const formattedDate = format(new Date(ticket.data_criacao), "dd/MM 'às' HH:mm", { locale: ptBR });
+
+  return <Card 
+    ref={setNodeRef} 
+    style={style} 
+    {...attributes} 
+    className={cn(
+      "group macos-card border border-border bg-card",
+      priorityConfig.borderLeft,
+      ticket.status === 'resolvido' && "bg-green-50 dark:bg-green-900/10",
+      isDragging && "opacity-90 rotate-2 scale-105 shadow-2xl z-50 ring-2 ring-primary", 
+      isSortableDragging && "shadow-xl scale-105 rotate-2 border-primary"
+    )} 
+    onMouseDown={handleMouseDown} 
+    onMouseMove={handleMouseMove} 
+    onMouseUp={handleMouseUp} 
+    onMouseLeave={handleMouseUp} 
+    onClick={handleClick}
+  >
+    <CardContent className="py-2 px-3 space-y-2">
+      {/* Header - Número e badges */}
+      <div className="flex items-center justify-between">
+        <Badge variant="outline" className="text-xs font-mono text-muted-foreground">
+          {ticket.ticket_number || `#${ticket.id.slice(0, 8)}`}
+        </Badge>
+        
+        <div className="flex items-center gap-2">
+          {/* Status badge */}
+          <Badge className={cn("text-xs flex items-center gap-1 border", statusConfig.bgColor, statusConfig.textColor, statusConfig.borderColor)}>
+            <StatusIcon size={10} />
+            {statusConfig.label}
           </Badge>
-          <div className="flex items-center gap-1">
-            {ticket.nivel_criticidade === 'P0' && (
-              <div className="flex items-center gap-1">
-                <AlertTriangle className="h-4 w-4 text-red-500" />
-                <span className="text-xs font-medium text-red-600 dark:text-red-400">P0</span>
-              </div>
-            )}
-            {/* Botões de ação - aparecem no hover */}
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 w-6 p-0 hover:bg-primary/10"
-                onClick={handleClick}
-                title="Ver detalhes"
-              >
-                <Eye className="h-3 w-3" />
-              </Button>
-              {userCanEdit && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 w-6 p-0 hover:bg-primary/10"
-                  onClick={handleEditClick}
-                  title="Editar ticket"
-                >
-                  <Edit className="h-3 w-3" />
-                </Button>
-              )}
-            </div>
-          </div>
+          
+          {/* Priority badge */}
+          <Badge className={cn("text-xs border", priorityConfig.color)}>
+            {ticket.nivel_criticidade}
+          </Badge>
         </div>
+      </div>
 
-        {/* Título */}
-        <h4 className="text-sm font-medium text-foreground line-clamp-2 leading-tight">
+      {/* Título principal */}
+      <div className="space-y-0.5">
+        <h3 className="font-semibold text-foreground text-base leading-tight line-clamp-2">
           {ticket.titulo}
-        </h4>
+        </h3>
+        <p className="text-xs text-muted-foreground line-clamp-1">
+          {ticket.descricao}
+        </p>
+      </div>
 
-        {/* Informações adicionais */}
-        <div className="space-y-2">
-          {/* Setor responsável */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="w-2 h-2 rounded-full bg-primary"></div>
-            <span className="truncate font-medium">{ticket.time_responsavel}</span>
+      {/* Tags discretas */}
+      {ticket.tags && ticket.tags.length > 0 && <div className="flex gap-1 flex-wrap">
+          {ticket.tags.slice(0, 3).map((tag: string, index: number) => {
+            const isInfoIncompleta = tag === "info-incompleta";
+            return (
+              <div 
+                key={index} 
+                className={cn(
+                  "flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm border",
+                  isInfoIncompleta 
+                    ? "bg-yellow-500/10 dark:bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/20 dark:border-yellow-500/30" 
+                    : "bg-muted/30 text-muted-foreground border-border/50"
+                )}
+              >
+                {isInfoIncompleta ? (
+                  <HelpCircle className="h-2.5 w-2.5" />
+                ) : (
+                  <Tag className="h-2.5 w-2.5" />
+                )}
+                {isInfoIncompleta ? "Info incompleta" : tag}
+              </div>
+            );
+          })}
+          {ticket.tags.length > 3 && <div className="flex items-center gap-1 text-xs px-2 py-0.5 bg-muted/50 text-muted-foreground rounded-sm border border-border/30">
+              <Tag className="h-2.5 w-2.5" />
+              +{ticket.tags.length - 3}
+            </div>}
+        </div>}
+
+      {/* Metadados */}
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <div className="flex items-center gap-1.5">
+          <Avatar className="h-5 w-5">
+            <AvatarFallback className="text-[10px] text-muted-foreground bg-muted">
+              {ticket.solicitante.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] text-muted-foreground">Solicitante</span>
+            <p className="text-xs font-medium text-foreground truncate" title={ticket.solicitante}>
+              {ticket.solicitante}
+            </p>
           </div>
-
-          {/* Solicitante */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="text-xs">👤</span>
-            <span className="truncate">{ticket.solicitante}</span>
-          </div>
-
-          {/* Prioridade (se não for P0) e Data */}
-          <div className="flex items-center justify-between text-xs">
-            <span className={`font-medium ${getPriorityColor(ticket.nivel_criticidade)}`}>
-              {ticket.nivel_criticidade}
-            </span>
-            <span className="text-muted-foreground">
-              {format(new Date(ticket.data_criacao), "dd/MM", {
-              locale: ptBR
-            })}
-            </span>
-          </div>
-
-          {/* Badge para info-incompleta */}
-          {ticket.tags?.includes("info-incompleta") && (
-            <div className="flex items-center gap-1 text-xs px-2 py-1 bg-yellow-100 text-yellow-700 border border-yellow-300 rounded">
-              <HelpCircle className="h-3 w-3" />
-              <span className="font-medium">Info incompleta</span>
-            </div>
-          )}
         </div>
-      </CardContent>
-    </Card>;
+        
+        <div className="flex items-center gap-1.5">
+          <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
+            <User className="h-2.5 w-2.5 text-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] text-muted-foreground">Time</span>
+            <p className="text-xs font-medium text-foreground truncate" title={ticket.time_responsavel}>
+              {ticket.time_responsavel}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer - Data e pontuação */}
+      <div className="flex items-center justify-between pt-1.5 border-t border-border">
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            <span>{formattedDate}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Target className="h-3 w-3" />
+            <span className={cn("font-medium", (ticket.nivel_criticidade === 'P0' || ticket.nivel_criticidade === 'P1') && "text-destructive")}>
+              {ticket.pontuacao_total}pts
+            </span>
+          </div>
+          {/* Contador de comentários discreto */}
+          <div className="flex items-center gap-1">
+            <MessageSquare className="h-3 w-3" />
+            <span className="font-medium">
+              {commentsCount}
+            </span>
+          </div>
+        </div>
+        
+        {/* Ações rápidas (aparecem no hover) */}
+        {userCanEdit && <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="h-6 px-2 text-xs bg-muted/30 dark:bg-muted/20 border-border/50 dark:border-border/40 hover:bg-muted/50 dark:hover:bg-muted/30" 
+              onClick={handleClick}
+              title="Ver detalhes"
+            >
+              <Eye className="h-3 w-3 mr-1" />
+              Ver
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="h-6 px-2 text-xs bg-muted/30 dark:bg-muted/20 border-border/50 dark:border-border/40 hover:bg-muted/50 dark:hover:bg-muted/30" 
+              onClick={handleEditClick}
+              title="Editar ticket"
+            >
+              <Edit className="h-3 w-3 mr-1" />
+              Editar
+            </Button>
+          </div>}
+      </div>
+    </CardContent>
+  </Card>;
 });
 KanbanCard.displayName = 'KanbanCard';
 const DroppableColumn = memo(({
