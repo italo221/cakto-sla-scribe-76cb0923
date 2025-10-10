@@ -17,7 +17,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useTags } from "@/hooks/useTags";
 import { supabase } from "@/integrations/supabase/client";
-import { RefreshCw, Kanban as KanbanIcon, TrendingUp, Clock, AlertTriangle, Search, Filter, Building2, Tags, BarChart3 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { RefreshCw, Kanban as KanbanIcon, TrendingUp, Clock, AlertTriangle, Search, Filter, Building2, Tags, BarChart3, Activity, CheckCircle, X, Circle } from "lucide-react";
 
 interface Ticket {
   id: string;
@@ -423,76 +424,75 @@ export default function KanbanPage() {
 
         {/* Stats Cards - Usando dados centralizados */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-
-          <Card className="bg-card hover:bg-card-hover transition-colors">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Abertos</p>
-                  <p className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.abertos}</p>
-                </div>
-                <Clock className="h-5 w-5 text-red-500" />
+          <Card className={cn(
+            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-blue-500/30"
+          )}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Abertos</span>
+                <Circle className="text-muted-foreground w-4 h-4" />
               </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.abertos}</h2>
             </CardContent>
           </Card>
 
-          <Card className="bg-card hover:bg-card-hover transition-colors">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Em Andamento</p>
-                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.em_andamento}</p>
-                </div>
-                <RefreshCw className="h-5 w-5 text-blue-500" />
+          <Card className={cn(
+            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-blue-400/30"
+          )}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Em Andamento</span>
+                <Activity className="text-muted-foreground w-4 h-4" />
               </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.em_andamento}</h2>
             </CardContent>
           </Card>
 
-          <Card className="bg-card hover:bg-card-hover transition-colors">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Resolvidos</p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.resolvidos}</p>
-                </div>
-                <div className="h-5 w-5 rounded-full bg-green-500" />
+          <Card className={cn(
+            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-green-500/30"
+          )}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Resolvidos</span>
+                <CheckCircle className="text-muted-foreground w-4 h-4" />
               </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.resolvidos}</h2>
             </CardContent>
           </Card>
 
-          <Card className="bg-card hover:bg-card-hover transition-colors">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Fechados</p>
-                  <p className="text-2xl font-bold text-gray-600 dark:text-gray-400">{stats.fechados}</p>
-                </div>
-                <div className="h-5 w-5 rounded-full bg-gray-500" />
+          <Card className={cn(
+            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-neutral-500/20"
+          )}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Fechados</span>
+                <X className="text-muted-foreground w-4 h-4" />
               </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.fechados}</h2>
             </CardContent>
           </Card>
 
-          <Card className="bg-card hover:bg-card-hover transition-colors">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Críticos</p>
-                  <p className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.criticos}</p>
-                </div>
-                <AlertTriangle className="h-5 w-5 text-red-500" />
+          <Card className={cn(
+            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-red-600/35"
+          )}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Críticos</span>
+                <AlertTriangle className="text-muted-foreground w-4 h-4" />
               </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.criticos}</h2>
             </CardContent>
           </Card>
 
-          <Card className="bg-card hover:bg-card-hover transition-colors">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Atrasados</p>
-                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.atrasados}</p>
-                </div>
-                <AlertTriangle className="h-5 w-5 text-orange-500" />
+          <Card className={cn(
+            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-red-500/30"
+          )}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Atrasados</span>
+                <Clock className="text-muted-foreground w-4 h-4" />
               </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.atrasados}</h2>
             </CardContent>
           </Card>
         </div>
