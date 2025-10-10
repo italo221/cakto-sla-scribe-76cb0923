@@ -44,59 +44,59 @@ const getStatusConfig = (status: string, isExpired: boolean) => {
   if (isExpired) {
     return {
       icon: AlertTriangle,
-      bgColor: "bg-red-50",
-      textColor: "text-red-700",
-      borderColor: "border-red-200",
+      bgColor: "bg-red-500/10 dark:bg-red-500/15",
+      textColor: "text-red-700 dark:text-red-400",
+      borderColor: "border-red-500/20 dark:border-red-500/30",
       label: "Atrasado"
     };
   }
   const configs = {
     em_andamento: {
       icon: Activity,
-      bgColor: "bg-blue-50",
-      textColor: "text-blue-700",
-      borderColor: "border-blue-200",
+      bgColor: "bg-blue-500/10 dark:bg-blue-500/15",
+      textColor: "text-blue-700 dark:text-blue-400",
+      borderColor: "border-blue-500/20 dark:border-blue-500/30",
       label: "Em Andamento"
     },
     resolvido: {
       icon: CheckCircle,
-      bgColor: "bg-green-50",
-      textColor: "text-green-700",
-      borderColor: "border-green-200",
+      bgColor: "bg-green-500/10 dark:bg-green-500/15",
+      textColor: "text-green-700 dark:text-green-400",
+      borderColor: "border-green-500/20 dark:border-green-500/30",
       label: "Resolvido"
     },
     fechado: {
       icon: X,
-      bgColor: "bg-gray-50",
-      textColor: "text-gray-600",
-      borderColor: "border-gray-200",
+      bgColor: "bg-gray-500/10 dark:bg-gray-500/15",
+      textColor: "text-gray-700 dark:text-gray-400",
+      borderColor: "border-gray-500/20 dark:border-gray-500/30",
       label: "Fechado"
     }
   };
   return configs[status as keyof typeof configs] || {
     icon: Circle,
-    bgColor: "bg-gray-50",
-    textColor: "text-gray-600",
-    borderColor: "border-gray-200",
+    bgColor: "bg-slate-500/10 dark:bg-slate-500/15",
+    textColor: "text-slate-700 dark:text-slate-400",
+    borderColor: "border-slate-500/20 dark:border-slate-500/30",
     label: "Aberto"
   };
 };
 const getPriorityConfig = (priority: string) => {
   const configs = {
     P0: {
-      color: "bg-red-100 text-red-700 border-red-200",
+      color: "bg-red-500/10 dark:bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/20 dark:border-red-500/30",
       label: "Crítico"
     },
     P1: {
-      color: "bg-orange-100 text-orange-700 border-orange-200",
+      color: "bg-orange-500/10 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20 dark:border-orange-500/30",
       label: "Alto"
     },
     P2: {
-      color: "bg-yellow-100 text-yellow-700 border-yellow-200",
+      color: "bg-yellow-500/10 dark:bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/20 dark:border-yellow-500/30",
       label: "Médio"
     },
     P3: {
-      color: "bg-blue-100 text-blue-700 border-blue-200",
+      color: "bg-blue-500/10 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/20 dark:border-blue-500/30",
       label: "Baixo"
     }
   };
@@ -253,8 +253,8 @@ const JiraTicketCard = memo(({
                   className={cn(
                     "flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm border",
                     isInfoIncompleta 
-                      ? "bg-yellow-100 text-yellow-700 border-yellow-300" 
-                      : "text-muted-foreground border-border/50 bg-muted/30"
+                      ? "bg-yellow-500/10 dark:bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/20 dark:border-yellow-500/30" 
+                      : "bg-muted/30 text-muted-foreground border-border/50"
                   )}
                 >
                   {isInfoIncompleta ? (
