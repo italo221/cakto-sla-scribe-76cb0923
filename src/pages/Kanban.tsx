@@ -248,7 +248,7 @@ export default function KanbanPage() {
                 </span>
               </div>
               
-              {viewMode === 'status' ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 justify-items-center">
+              {viewMode === 'status' ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                   {/* Busca */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Buscar</label>
