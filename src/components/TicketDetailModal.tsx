@@ -900,17 +900,41 @@ const toggleCommentsFocusMode = () => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'aberto': { color: 'destructive', label: 'Aberto', icon: AlertCircle },
-      'em_andamento': { color: 'default', label: 'Em Andamento', icon: Clock },
-      'resolvido': { color: 'secondary', label: 'Resolvido', icon: CheckCircle },
-      'fechado': { color: 'outline', label: 'Fechado', icon: X }
+      'aberto': { 
+        bgColor: "bg-slate-500/10 dark:bg-slate-500/15",
+        textColor: "text-slate-700 dark:text-slate-400",
+        borderColor: "border-slate-500/20 dark:border-slate-500/30",
+        label: 'Aberto', 
+        icon: AlertCircle 
+      },
+      'em_andamento': { 
+        bgColor: "bg-blue-500/10 dark:bg-blue-500/15",
+        textColor: "text-blue-700 dark:text-blue-400",
+        borderColor: "border-blue-500/20 dark:border-blue-500/30",
+        label: 'Em Andamento', 
+        icon: Clock 
+      },
+      'resolvido': { 
+        bgColor: "bg-green-500/10 dark:bg-green-500/15",
+        textColor: "text-green-700 dark:text-green-400",
+        borderColor: "border-green-500/20 dark:border-green-500/30",
+        label: 'Resolvido', 
+        icon: CheckCircle 
+      },
+      'fechado': { 
+        bgColor: "bg-gray-500/10 dark:bg-gray-500/15",
+        textColor: "text-gray-700 dark:text-gray-400",
+        borderColor: "border-gray-500/20 dark:border-gray-500/30",
+        label: 'Fechado', 
+        icon: X 
+      }
     };
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.aberto;
     const Icon = config.icon;
     
     return (
-      <Badge variant={config.color as any} className="gap-1">
+      <Badge className={cn("text-xs flex items-center gap-1 border", config.bgColor, config.textColor, config.borderColor)}>
         <Icon className="h-3 w-3" />
         {config.label}
       </Badge>
@@ -919,16 +943,28 @@ const toggleCommentsFocusMode = () => {
 
   const getCriticalityBadge = (criticidade: string) => {
     const criticalityConfig = {
-      'P0': { color: 'destructive', label: 'Crítico' },
-      'P1': { color: 'destructive', label: 'Alto' },
-      'P2': { color: 'default', label: 'Médio' },
-      'P3': { color: 'secondary', label: 'Baixo' }
+      'P0': { 
+        color: "bg-red-500/10 dark:bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/20 dark:border-red-500/30", 
+        label: 'Crítico' 
+      },
+      'P1': { 
+        color: "bg-orange-500/10 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20 dark:border-orange-500/30", 
+        label: 'Alto' 
+      },
+      'P2': { 
+        color: "bg-yellow-500/10 dark:bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/20 dark:border-yellow-500/30", 
+        label: 'Médio' 
+      },
+      'P3': { 
+        color: "bg-blue-500/10 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/20 dark:border-blue-500/30", 
+        label: 'Baixo' 
+      }
     };
     
     const config = criticalityConfig[criticidade as keyof typeof criticalityConfig] || criticalityConfig.P3;
     
     return (
-      <Badge variant={config.color as any}>
+      <Badge className={cn("text-xs border", config.color)}>
         {config.label} ({criticidade})
       </Badge>
     );
