@@ -212,7 +212,7 @@ const JiraTicketCard = memo(({
   isExpired && "bg-red-50/30 dark:bg-red-900/10",
   // Fundo verde claro para tickets resolvidos (apenas no modo lista)
   ticket.status === 'resolvido' && "bg-green-50 dark:bg-green-900/10")} onClick={() => onOpenDetail(ticket)}>
-      <CardContent className="py-3 px-4 space-y-3">
+      <CardContent className="py-2 px-3 space-y-2">
         {/* Header - Número e badges */}
         <div className="flex items-center justify-between">
           <Badge variant="outline" className="text-xs font-mono text-muted-foreground">
@@ -234,11 +234,11 @@ const JiraTicketCard = memo(({
         </div>
 
         {/* Título principal - estilo Jira */}
-        <div className="space-y-1">
-          <h3 className="font-bold text-foreground text-lg leading-tight line-clamp-2">
+        <div className="space-y-0.5">
+          <h3 className="font-semibold text-foreground text-base leading-tight line-clamp-2">
             {ticket.titulo}
           </h3>
-          <p className="text-sm text-muted-foreground line-clamp-1 leading-relaxed">
+          <p className="text-xs text-muted-foreground line-clamp-1">
             {ticket.descricao}
           </p>
         </div>
@@ -273,28 +273,28 @@ const JiraTicketCard = memo(({
           </div>}
 
         {/* Metadados - estilo Jira clean */}
-        <div className="grid grid-cols-2 gap-3 text-xs leading-relaxed">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-6 w-6">
-              <AvatarFallback className="text-xs text-muted-foreground bg-muted">
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="flex items-center gap-1.5">
+            <Avatar className="h-5 w-5">
+              <AvatarFallback className="text-[10px] text-muted-foreground bg-muted">
                 {ticket.solicitante.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <span className="text-muted-foreground">Solicitante</span>
-              <p className="font-medium text-foreground truncate" title={ticket.solicitante}>
+              <span className="text-[10px] text-muted-foreground">Solicitante</span>
+              <p className="text-xs font-medium text-foreground truncate" title={ticket.solicitante}>
                 {ticket.solicitante}
               </p>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="h-3 w-3 text-primary" />
+          <div className="flex items-center gap-1.5">
+            <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
+              <User className="h-2.5 w-2.5 text-primary" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="text-muted-foreground">Time</span>
-              <p className="font-medium text-foreground truncate" title={ticket.time_responsavel}>
+              <span className="text-[10px] text-muted-foreground">Time</span>
+              <p className="text-xs font-medium text-foreground truncate" title={ticket.time_responsavel}>
                 {ticket.time_responsavel}
               </p>
             </div>
@@ -302,8 +302,8 @@ const JiraTicketCard = memo(({
         </div>
 
         {/* Footer - Data e pontuação */}
-        <div className="flex items-center justify-between pt-2 border-t border-border">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between pt-1.5 border-t border-border">
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
             <div className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               <span>{formattedDate}</span>
