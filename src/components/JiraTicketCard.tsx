@@ -325,7 +325,11 @@ const JiraTicketCard = memo(({
           
           {/* Ações rápidas (aparecem no hover) */}
           {(userCanEdit || userCanDelete) && <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              {userCanEdit && ticket.status === 'em_andamento' && <Button size="sm" variant="default" className="h-6 px-2 text-xs" onClick={e => handleStatusUpdate(e, 'resolvido')}>
+              {userCanEdit && ticket.status === 'em_andamento' && <Button 
+                  size="sm" 
+                  className="h-6 px-2 text-xs bg-green-500/10 dark:bg-green-500/15 text-green-700 dark:text-green-400 border border-green-500/20 dark:border-green-500/30 hover:bg-green-500/20 dark:hover:bg-green-500/25" 
+                  onClick={e => handleStatusUpdate(e, 'resolvido')}
+                >
                   <CheckCircle2 className="h-3 w-3 mr-1" />
                   Resolver
                 </Button>}
@@ -335,18 +339,27 @@ const JiraTicketCard = memo(({
                 size="sm"
                 showIcon={false}
               />
-              {userCanEdit && onEditTicket && <Button size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={e => {
-            e.stopPropagation();
-            console.log('🔧 JiraTicketCard - Editando ticket:', ticket);
-            onEditTicket(ticket);
-          }}>
+              {userCanEdit && onEditTicket && <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="h-6 px-2 text-xs bg-muted/30 dark:bg-muted/20 border-border/50 dark:border-border/40 hover:bg-muted/50 dark:hover:bg-muted/30" 
+                  onClick={e => {
+                    e.stopPropagation();
+                    console.log('🔧 JiraTicketCard - Editando ticket:', ticket);
+                    onEditTicket(ticket);
+                  }}
+                >
                   <Edit3 className="h-3 w-3 mr-1" />
                   Editar
                 </Button>}
-              {userCanDelete && onDeleteTicket && <Button size="sm" variant="destructive" className="h-6 px-2 text-xs" onClick={e => {
-            e.stopPropagation();
-            onDeleteTicket(ticket);
-          }}>
+              {userCanDelete && onDeleteTicket && <Button 
+                  size="sm" 
+                  className="h-6 px-2 text-xs bg-red-500/10 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/20 dark:border-red-500/30 hover:bg-red-500/20 dark:hover:bg-red-500/25" 
+                  onClick={e => {
+                    e.stopPropagation();
+                    onDeleteTicket(ticket);
+                  }}
+                >
                   <Trash2 className="h-3 w-3 mr-1" />
                   Excluir
                 </Button>}
