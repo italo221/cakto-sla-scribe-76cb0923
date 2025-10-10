@@ -767,114 +767,132 @@ export default function InboxDarkMode() {
 
         {/* Status Cards - Sistema de filtro unificado usando dados centralizados */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
-          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'aberto' ? 'ring-2 ring-slate-500 border-l-slate-500 bg-slate-50 dark:bg-slate-800' : 'border-l-slate-400 hover:border-l-slate-500')} onClick={() => {
-          const newFilter = activeFilter === 'aberto' ? 'all' : 'aberto';
-          setActiveFilter(newFilter);
-          if (newFilter !== 'all') {
-            // Recarregar tickets para mostrar todos os relevantes
-            reloadTickets();
-          }
-        }}>
-            <CardContent className="p-4 text-center">
-              <div className="flex justify-center mb-2">
-                <Circle className="h-6 w-6 text-slate-400 dark:text-slate-300" />
+          <Card className={cn(
+            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60",
+            activeFilter === 'aberto' ? 'border-l-[2px] border-l-blue-500/30 ring-1 ring-border/20' : 'border-l-[2px] border-l-blue-500/30'
+          )} onClick={() => {
+            const newFilter = activeFilter === 'aberto' ? 'all' : 'aberto';
+            setActiveFilter(newFilter);
+            if (newFilter !== 'all') {
+              reloadTickets();
+            }
+          }}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Abertos</span>
+                <Circle className="text-muted-foreground w-4 h-4" />
               </div>
-              <div className="text-2xl font-bold text-slate-700 dark:text-slate-100">{stats.abertos}</div>
-              <div className="text-sm text-slate-600 dark:text-slate-300">Abertos</div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.abertos}</h2>
             </CardContent>
           </Card>
 
-          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'em_andamento' ? 'ring-2 ring-blue-500 border-l-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-l-blue-400 hover:border-l-blue-500')} onClick={() => {
-          const newFilter = activeFilter === 'em_andamento' ? 'all' : 'em_andamento';
-          setActiveFilter(newFilter);
-          if (newFilter !== 'all') {
-            reloadTickets();
-          }
-        }}>
-            <CardContent className="p-4 text-center">
-              <div className="flex justify-center mb-2">
-                <Activity className="h-6 w-6 text-blue-500 dark:text-blue-400" />
+          <Card className={cn(
+            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60",
+            activeFilter === 'em_andamento' ? 'border-l-[2px] border-l-blue-400/30 ring-1 ring-border/20' : 'border-l-[2px] border-l-blue-400/30'
+          )} onClick={() => {
+            const newFilter = activeFilter === 'em_andamento' ? 'all' : 'em_andamento';
+            setActiveFilter(newFilter);
+            if (newFilter !== 'all') {
+              reloadTickets();
+            }
+          }}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Em Andamento</span>
+                <Activity className="text-muted-foreground w-4 h-4" />
               </div>
-              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{stats.em_andamento}</div>
-              <div className="text-sm text-blue-600 dark:text-blue-400">Em Andamento</div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.em_andamento}</h2>
             </CardContent>
           </Card>
 
-          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'resolvido' ? 'ring-2 ring-green-500 border-l-green-500 bg-green-50 dark:bg-green-900/20' : 'border-l-green-400 hover:border-l-green-500')} onClick={() => {
-          const newFilter = activeFilter === 'resolvido' ? 'all' : 'resolvido';
-          setActiveFilter(newFilter);
-          if (newFilter !== 'all') {
-            reloadTickets();
-          }
-        }}>
-            <CardContent className="p-4 text-center">
-              <div className="flex justify-center mb-2">
-                <CheckCircle className="h-6 w-6 text-green-500 dark:text-green-400" />
+          <Card className={cn(
+            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60",
+            activeFilter === 'resolvido' ? 'border-l-[2px] border-l-green-500/30 ring-1 ring-border/20' : 'border-l-[2px] border-l-green-500/30'
+          )} onClick={() => {
+            const newFilter = activeFilter === 'resolvido' ? 'all' : 'resolvido';
+            setActiveFilter(newFilter);
+            if (newFilter !== 'all') {
+              reloadTickets();
+            }
+          }}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Resolvidos</span>
+                <CheckCircle className="text-muted-foreground w-4 h-4" />
               </div>
-              <div className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.resolvidos}</div>
-              <div className="text-sm text-green-600 dark:text-green-400">Resolvidos</div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.resolvidos}</h2>
             </CardContent>
           </Card>
 
-          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'fechado' ? 'ring-2 ring-gray-500 border-l-gray-500 bg-gray-50 dark:bg-gray-800' : 'border-l-gray-400 hover:border-l-gray-500')} onClick={() => {
-          const newFilter = activeFilter === 'fechado' ? 'all' : 'fechado';
-          setActiveFilter(newFilter);
-          if (newFilter !== 'all') {
-            reloadTickets();
-          }
-        }}>
-            <CardContent className="p-4 text-center">
-              <div className="flex justify-center mb-2">
-                <X className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+          <Card className={cn(
+            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60",
+            activeFilter === 'fechado' ? 'border-l-[2px] border-l-neutral-500/20 ring-1 ring-border/20' : 'border-l-[2px] border-l-neutral-500/20'
+          )} onClick={() => {
+            const newFilter = activeFilter === 'fechado' ? 'all' : 'fechado';
+            setActiveFilter(newFilter);
+            if (newFilter !== 'all') {
+              reloadTickets();
+            }
+          }}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Fechados</span>
+                <X className="text-muted-foreground w-4 h-4" />
               </div>
-              <div className="text-2xl font-bold text-gray-700 dark:text-gray-300">{stats.fechados}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Fechados</div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.fechados}</h2>
             </CardContent>
           </Card>
 
-          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'atrasado' ? 'ring-2 ring-red-500 border-l-red-500 bg-red-50 dark:bg-red-900/20' : 'border-l-red-400 hover:border-l-red-500')} onClick={() => {
-          const newFilter = activeFilter === 'atrasado' ? 'all' : 'atrasado';
-          setActiveFilter(newFilter);
-          if (newFilter !== 'all') {
-            reloadTickets();
-          }
-        }}>
-            <CardContent className="p-4 text-center">
-              <div className="flex justify-center mb-2">
-                <AlertTriangle className="h-6 w-6 text-red-500 dark:text-red-400" />
+          <Card className={cn(
+            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60",
+            activeFilter === 'atrasado' ? 'border-l-[2px] border-l-red-500/30 ring-1 ring-border/20' : 'border-l-[2px] border-l-red-500/30'
+          )} onClick={() => {
+            const newFilter = activeFilter === 'atrasado' ? 'all' : 'atrasado';
+            setActiveFilter(newFilter);
+            if (newFilter !== 'all') {
+              reloadTickets();
+            }
+          }}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Atrasados</span>
+                <AlertTriangle className="text-muted-foreground w-4 h-4" />
               </div>
-              <div className="text-2xl font-bold text-red-700 dark:text-red-300">{stats.atrasados}</div>
-              <div className="text-sm text-red-600 dark:text-red-400">Atrasados</div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.atrasados}</h2>
             </CardContent>
           </Card>
 
-          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'critico' ? 'ring-2 ring-red-600 border-l-red-600 bg-red-50 dark:bg-red-900/20' : 'border-l-red-500 hover:border-l-red-600')} onClick={() => {
-          const newFilter = activeFilter === 'critico' ? 'all' : 'critico';
-          setActiveFilter(newFilter);
-          if (newFilter !== 'all') {
-            reloadTickets();
-          }
-        }}>
-            <CardContent className="p-4 text-center">
-              <div className="flex justify-center mb-2">
-                <Flag className="h-6 w-6 text-red-600 dark:text-red-500" />
+          <Card className={cn(
+            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60",
+            activeFilter === 'critico' ? 'border-l-[2px] border-l-red-600/35 ring-1 ring-border/20' : 'border-l-[2px] border-l-red-600/35'
+          )} onClick={() => {
+            const newFilter = activeFilter === 'critico' ? 'all' : 'critico';
+            setActiveFilter(newFilter);
+            if (newFilter !== 'all') {
+              reloadTickets();
+            }
+          }}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Críticos</span>
+                <Flag className="text-muted-foreground w-4 h-4" />
               </div>
-              <div className="text-2xl font-bold text-red-800 dark:text-red-300">
-                {stats.criticos}
-              </div>
-              <div className="text-sm text-red-700 dark:text-red-400">Críticos</div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.criticos}</h2>
             </CardContent>
           </Card>
 
-          <Card className={cn("cursor-pointer transition-all hover:shadow-md border-l-4 bg-card dark:bg-card", activeFilter === 'info-incompleta' ? 'ring-2 ring-yellow-500 border-l-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : 'border-l-yellow-400 hover:border-l-yellow-500')} onClick={() => setActiveFilter(activeFilter === 'info-incompleta' ? 'all' : 'info-incompleta')}>
-            <CardContent className="p-4 text-center">
-              <div className="flex justify-center mb-2">
-                <HelpCircle className="h-6 w-6 text-yellow-600 dark:text-yellow-500" />
+          <Card className={cn(
+            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60",
+            activeFilter === 'info-incompleta' ? 'border-l-[2px] border-l-yellow-400/30 ring-1 ring-border/20' : 'border-l-[2px] border-l-yellow-400/30'
+          )} onClick={() => setActiveFilter(activeFilter === 'info-incompleta' ? 'all' : 'info-incompleta')}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Info Incompleta</span>
+                <HelpCircle className="text-muted-foreground w-4 h-4" />
               </div>
-              <div className="text-2xl font-bold text-yellow-800 dark:text-yellow-300">
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">
                 {optimizedTicketsWithStatus.filter(ticket => ticket.tags?.includes("info-incompleta")).length}
-              </div>
-              <div className="text-sm text-yellow-700 dark:text-yellow-400">Info Incompleta</div>
+              </h2>
             </CardContent>
           </Card>
         </div>
