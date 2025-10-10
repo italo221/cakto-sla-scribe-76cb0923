@@ -70,8 +70,10 @@ export default function KanbanPage() {
 
   // Estados do filtro do Kanban
   const [setores, setSetores] = useState<Setor[]>([]);
+  const [usuarios, setUsuarios] = useState<Array<{ email: string; nome_completo: string }>>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [setorFilter, setSetorFilter] = useState('all');
+  const [usuarioFilter, setUsuarioFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('todas');
   const [criticalityFilter, setCriticalityFilter] = useState('all');
   const [infoIncompletaFilter, setInfoIncompletaFilter] = useState(false);
@@ -114,10 +116,12 @@ export default function KanbanPage() {
     });
   };
 
-  // Carregar setores
+  // Carregar setores e usuários
   useEffect(() => {
     loadSetores();
+    loadUsuarios();
   }, []);
+  
   const loadSetores = async () => {
     try {
       const {
@@ -128,6 +132,20 @@ export default function KanbanPage() {
       setSetores(data || []);
     } catch (error) {
       console.error('Erro ao carregar setores:', error);
+    }
+  };
+
+  const loadUsuarios = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('email, nome_completo')
+        .eq('ativo', true)
+        .order('nome_completo');
+      if (error) throw error;
+      setUsuarios(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
     }
   };
 
@@ -158,6 +176,11 @@ export default function KanbanPage() {
       });
     }
 
+    // Filtro por usuário (solicitante)
+    if (usuarioFilter !== 'all') {
+      filtered = filtered.filter(ticket => ticket.solicitante === usuarioFilter);
+    }
+
     // Filtro por tag (apenas no modo status)
     if (viewMode === 'status' && tagFilter !== 'todas') {
       filtered = filtered.filter(ticket => {
@@ -176,7 +199,7 @@ export default function KanbanPage() {
       filtered = filtered.filter(ticket => ticket.tags?.includes("info-incompleta"));
     }
     return filtered;
-  }, [tickets, searchTerm, setorFilter, tagFilter, criticalityFilter, infoIncompletaFilter, setores, viewMode]);
+  }, [tickets, searchTerm, setorFilter, usuarioFilter, tagFilter, criticalityFilter, infoIncompletaFilter, setores, viewMode]);
   return <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto p-6 space-y-6">
         {/* Alerta de validação de setor */}
@@ -225,7 +248,7 @@ export default function KanbanPage() {
                 </span>
               </div>
               
-              {viewMode === 'status' ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {viewMode === 'status' ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                   {/* Busca */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Buscar</label>
@@ -250,6 +273,24 @@ export default function KanbanPage() {
                               {setor.nome}
                             </div>
                           </SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Filtro por Usuário */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Usuário</label>
+                    <Select value={usuarioFilter} onValueChange={setUsuarioFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todos os usuários" />
+                      </SelectTrigger>
+                      <SelectContent className="dropdown-filter">
+                        <SelectItem value="all">Todos os usuários</SelectItem>
+                        {usuarios.map(usuario => (
+                          <SelectItem key={usuario.email} value={usuario.email}>
+                            {usuario.nome_completo}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
