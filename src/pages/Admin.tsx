@@ -17,8 +17,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import AdminUserEditor from "@/components/AdminUserEditor";
-import { AdminPasswordReset } from "@/components/AdminPasswordReset";
-import { PasswordChecker } from "@/components/PasswordChecker";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SupabaseStatus from "@/components/SupabaseStatus";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
@@ -728,25 +726,6 @@ const Admin = () => {
                     </div>
                   </DialogContent>
                 </Dialog>
-              </CardContent>
-            </Card>
-
-            {/* Card para reset de senha */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Reset de Senha de Usuário
-                </CardTitle>
-                <CardDescription>
-                  Altere a senha de qualquer usuário do sistema
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <AdminPasswordReset />
-                <div className="border-t pt-4">
-                  <PasswordChecker />
-                </div>
               </CardContent>
             </Card>
 
