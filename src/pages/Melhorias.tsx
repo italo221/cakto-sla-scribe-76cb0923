@@ -72,8 +72,8 @@ export default function MelhoriasPage() {
   const { user, canEdit, profile } = useAuth();
   const { toast } = useToast();
 
-  // Filtrar APENAS tickets de melhoria
-  const melhoriaTickets = useMemo(() => {
+  // Filtrar APENAS tickets de melhoria (incluindo excluídos para stats)
+  const melhoriaTicketsAll = useMemo(() => {
     const filtered = tickets.filter(ticket => 
       ticket.tipo_ticket === 'feedback_sugestao' || 
       ticket.tipo_ticket === 'atualizacao_projeto'
@@ -84,13 +84,18 @@ export default function MelhoriasPage() {
     return filtered;
   }, [tickets]);
 
-  // Calcular estatísticas personalizadas para melhorias
+  // Filtrar tickets excluídos para o Kanban
+  const melhoriaTickets = useMemo(() => {
+    return melhoriaTicketsAll.filter(t => t.status !== 'excluido');
+  }, [melhoriaTicketsAll]);
+
+  // Calcular estatísticas personalizadas para melhorias (usando todos os tickets incluindo excluídos)
   const melhoriaStats = useMemo(() => {
-    const total = melhoriaTickets.length;
-    const abertos = melhoriaTickets.filter(t => t.status === 'aberto').length;
-    const em_andamento = melhoriaTickets.filter(t => t.status === 'em_andamento').length;
-    const resolvidos = melhoriaTickets.filter(t => t.status === 'resolvido').length;
-    const excluidos = melhoriaTickets.filter(t => t.status === 'excluido').length;
+    const total = melhoriaTicketsAll.length;
+    const abertos = melhoriaTicketsAll.filter(t => t.status === 'aberto').length;
+    const em_andamento = melhoriaTicketsAll.filter(t => t.status === 'em_andamento').length;
+    const resolvidos = melhoriaTicketsAll.filter(t => t.status === 'resolvido').length;
+    const excluidos = melhoriaTicketsAll.filter(t => t.status === 'excluido').length;
 
     return {
       total,
@@ -99,7 +104,7 @@ export default function MelhoriasPage() {
       resolvidos,
       excluidos
     };
-  }, [melhoriaTickets]);
+  }, [melhoriaTicketsAll]);
 
   useEffect(() => {
     loadSetores();
