@@ -304,7 +304,7 @@ export default function MelhoriasPage() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-blue-500/30">
+          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Total</span>
@@ -314,7 +314,7 @@ export default function MelhoriasPage() {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-blue-500/30">
+          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Abertos</span>
@@ -324,7 +324,7 @@ export default function MelhoriasPage() {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-blue-400/30">
+          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Em Andamento</span>
@@ -334,7 +334,7 @@ export default function MelhoriasPage() {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-green-500/30">
+          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Resolvidos</span>
@@ -344,7 +344,7 @@ export default function MelhoriasPage() {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-neutral-500/20">
+          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Fechados</span>
@@ -354,7 +354,7 @@ export default function MelhoriasPage() {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-red-600/35">
+          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Críticos</span>
