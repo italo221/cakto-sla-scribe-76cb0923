@@ -104,6 +104,7 @@ const KanbanCard = memo(({
   onDeleteTicket,
   userCanEdit
 }: KanbanCardProps) => {
+  console.log('🔍 KanbanCard - userCanEdit:', userCanEdit);
   const [isDragActive, setIsDragActive] = useState(false);
   const [commentsCount, setCommentsCount] = useState<number>(0);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -577,7 +578,9 @@ const MelhoriaKanban = memo(({
   const [draggedTicket, setDraggedTicket] = useState<Ticket | null>(null);
   const { toast } = useToast();
   
+  console.log('🔍 MelhoriaKanban - userRole:', userRole);
   const userCanEdit = userRole === 'operador' || userRole === 'admin';
+  console.log('🔍 MelhoriaKanban - userCanEdit:', userCanEdit);
 
   // Organizar tickets por status (sem excluídos no kanban)
   const ticketsByStatus = {
