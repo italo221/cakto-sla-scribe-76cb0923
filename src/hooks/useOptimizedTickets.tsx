@@ -97,7 +97,7 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
     autoFetch = true
   } = options;
 
-  const { cachedQuery, compactData, egressStats } = useOptimizedEgressV2();
+  const { cachedQuery, compactData, egressStats, clearCache: clearEgressCache } = useOptimizedEgressV2();
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -303,10 +303,13 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
 
   // Função de reload otimizada
   const reloadTickets = useCallback(() => {
+    console.log('🔄 Limpando TODOS os caches...');
     setCurrentPage(1);
     ticketCache.clear();
+    clearEgressCache(); // Limpar cache do egress também
+    console.log('✅ Caches limpos, iniciando fetch...');
     return fetchTickets(1, true);
-  }, [fetchTickets]);
+  }, [fetchTickets, clearEgressCache]);
 
   const loadMoreTickets = useCallback(() => {
     if (!hasMore) return Promise.resolve([]);
