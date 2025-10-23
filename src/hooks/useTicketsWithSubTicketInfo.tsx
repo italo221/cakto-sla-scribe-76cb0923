@@ -24,22 +24,46 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
       try {
         console.log('🔍 useTicketsWithSubTicketInfo - Buscando info para', ticketIds.length, 'tickets');
         
-        const { data, error } = await supabase
-          .from('subtickets')
-          .select(`
-            child_ticket_id,
-            sequence_number,
-            parent_ticket_id,
-            sla_demandas!subtickets_parent_ticket_id_fkey (
-              ticket_number
-            )
-          `)
-          .in('child_ticket_id', ticketIds);
+        // Dividir em lotes de 100 para evitar URL muito longa
+        const BATCH_SIZE = 100;
+        const batches: string[][] = [];
+        
+        for (let i = 0; i < ticketIds.length; i += BATCH_SIZE) {
+          batches.push(ticketIds.slice(i, i + BATCH_SIZE));
+        }
+        
+        console.log(`📦 Dividido em ${batches.length} lotes de até ${BATCH_SIZE} tickets`);
+        
+        // Buscar dados de todos os lotes
+        const allData: any[] = [];
+        
+        for (let i = 0; i < batches.length; i++) {
+          const batch = batches[i];
+          console.log(`🔄 Processando lote ${i + 1}/${batches.length} com ${batch.length} tickets`);
+          
+          const { data, error } = await supabase
+            .from('subtickets')
+            .select(`
+              child_ticket_id,
+              sequence_number,
+              parent_ticket_id,
+              sla_demandas!subtickets_parent_ticket_id_fkey (
+                ticket_number
+              )
+            `)
+            .in('child_ticket_id', batch);
 
-        if (error) throw error;
+          if (error) {
+            console.error(`❌ Erro no lote ${i + 1}:`, error);
+            throw error;
+          }
+          
+          if (data && data.length > 0) {
+            allData.push(...data);
+          }
+        }
 
-        console.log('✅ useTicketsWithSubTicketInfo - Dados retornados:', data?.length || 0, 'sub-tickets');
-        console.log('📊 useTicketsWithSubTicketInfo - Dados completos:', data);
+        console.log('✅ useTicketsWithSubTicketInfo - Total de sub-tickets encontrados:', allData.length);
 
         const info: SubTicketInfo = {};
         
@@ -49,8 +73,8 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
         });
 
         // Marcar os que são subtickets
-        data?.forEach((item: any) => {
-          console.log('🎯 Sub-ticket detectado:', item.child_ticket_id, '| Parent:', item.sla_demandas?.ticket_number);
+        allData.forEach((item: any) => {
+          console.log('🎯 Sub-ticket detectado:', item.child_ticket_id, '| Seq:', item.sequence_number, '| Parent:', item.sla_demandas?.ticket_number);
           info[item.child_ticket_id] = {
             isSubTicket: true,
             sequenceNumber: item.sequence_number,
@@ -58,7 +82,7 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
           };
         });
 
-        console.log('📋 useTicketsWithSubTicketInfo - Info final:', Object.keys(info).filter(k => info[k].isSubTicket).length, 'sub-tickets identificados');
+        console.log('📋 useTicketsWithSubTicketInfo - Total identificado:', Object.keys(info).filter(k => info[k].isSubTicket).length, 'sub-tickets');
         setSubTicketInfo(info);
       } catch (error) {
         console.error('❌ Erro ao carregar informações de subtickets:', error);
