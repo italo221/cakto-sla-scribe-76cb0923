@@ -69,7 +69,7 @@ export default function MelhoriasPage() {
   const [usuarioFilter, setUsuarioFilter] = useState('all');
   const [criticalityFilter, setCriticalityFilter] = useState('all');
 
-  const { user, canEdit } = useAuth();
+  const { user, canEdit, profile } = useAuth();
   const { toast } = useToast();
 
   // Filtrar APENAS tickets de melhoria
@@ -391,7 +391,7 @@ export default function MelhoriasPage() {
               onOpenDetail={handleOpenTicketDetail}
               onEditTicket={handleEditTicket}
               onTicketUpdate={handleTicketUpdate}
-              userRole={user?.email || ''}
+              userRole={profile?.role || 'viewer'}
             />
           )}
         </div>
