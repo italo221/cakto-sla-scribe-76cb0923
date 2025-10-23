@@ -579,19 +579,17 @@ const MelhoriaKanban = memo(({
   
   const userCanEdit = userRole === 'operador' || userRole === 'admin';
 
-  // Organizar tickets por status (incluindo excluídos)
+  // Organizar tickets por status (sem excluídos no kanban)
   const ticketsByStatus = {
     aberto: tickets.filter(t => t.status === 'aberto'),
     em_andamento: tickets.filter(t => t.status === 'em_andamento'),
-    resolvido: tickets.filter(t => t.status === 'resolvido'),
-    excluido: tickets.filter(t => t.status === 'excluido')
+    resolvido: tickets.filter(t => t.status === 'resolvido')
   };
 
   const columns = [
     { id: 'aberto', title: 'Aberto', tickets: ticketsByStatus.aberto },
     { id: 'em_andamento', title: 'Em Andamento', tickets: ticketsByStatus.em_andamento },
-    { id: 'resolvido', title: 'Finalizado', tickets: ticketsByStatus.resolvido },
-    { id: 'excluido', title: 'Excluídos', tickets: ticketsByStatus.excluido }
+    { id: 'resolvido', title: 'Finalizado', tickets: ticketsByStatus.resolvido }
   ];
 
   const handleDeleteTicket = useCallback(async (ticketId: string) => {
@@ -717,7 +715,7 @@ const MelhoriaKanban = memo(({
       </div>
 
       {/* Desktop: Grid */}
-      <div className="hidden md:grid md:grid-cols-4 gap-4 px-4">
+      <div className="hidden md:grid md:grid-cols-3 gap-4 px-4">
         {columns.map(column => (
           <DroppableColumn
             key={column.id}
