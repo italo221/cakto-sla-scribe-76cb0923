@@ -52,7 +52,7 @@ export default function MelhoriasPage() {
     hasMore,
     totalCount
   } = useOptimizedTickets({
-    enableRealtime: false,
+    enableRealtime: true,
     batchSize: 200
   });
 
