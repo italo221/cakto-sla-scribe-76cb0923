@@ -22,6 +22,8 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
     const loadSubTicketInfo = async () => {
       setIsLoading(true);
       try {
+        console.log('🔍 useTicketsWithSubTicketInfo - Buscando info para', ticketIds.length, 'tickets');
+        
         const { data, error } = await supabase
           .from('subtickets')
           .select(`
@@ -36,6 +38,9 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
 
         if (error) throw error;
 
+        console.log('✅ useTicketsWithSubTicketInfo - Dados retornados:', data?.length || 0, 'sub-tickets');
+        console.log('📊 useTicketsWithSubTicketInfo - Dados completos:', data);
+
         const info: SubTicketInfo = {};
         
         // Inicializar todos os tickets como não sendo subtickets
@@ -45,6 +50,7 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
 
         // Marcar os que são subtickets
         data?.forEach((item: any) => {
+          console.log('🎯 Sub-ticket detectado:', item.child_ticket_id, '| Parent:', item.sla_demandas?.ticket_number);
           info[item.child_ticket_id] = {
             isSubTicket: true,
             sequenceNumber: item.sequence_number,
@@ -52,9 +58,10 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
           };
         });
 
+        console.log('📋 useTicketsWithSubTicketInfo - Info final:', Object.keys(info).filter(k => info[k].isSubTicket).length, 'sub-tickets identificados');
         setSubTicketInfo(info);
       } catch (error) {
-        console.error('Erro ao carregar informações de subtickets:', error);
+        console.error('❌ Erro ao carregar informações de subtickets:', error);
         // Em caso de erro, marcar todos como não sendo subtickets
         const info: SubTicketInfo = {};
         ticketIds.forEach(id => {
