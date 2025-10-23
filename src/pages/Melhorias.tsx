@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useOptimizedTickets } from "@/hooks/useOptimizedTickets";
 import { useTicketStats } from "@/hooks/useTicketStats";
-import TicketKanban from "@/components/TicketKanban";
+import MelhoriaKanban from "@/components/MelhoriaKanban";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import TicketEditModal from "@/components/TicketEditModal";
 import MelhoriaTicketCreator from "@/components/MelhoriaTicketCreator";
@@ -74,10 +74,14 @@ export default function MelhoriasPage() {
 
   // Filtrar APENAS tickets de melhoria
   const melhoriaTickets = useMemo(() => {
-    return tickets.filter(ticket => 
+    const filtered = tickets.filter(ticket => 
       ticket.tipo_ticket === 'feedback_sugestao' || 
       ticket.tipo_ticket === 'atualizacao_projeto'
     );
+    console.log('📊 Total de tickets:', tickets.length);
+    console.log('🎯 Tickets de melhoria filtrados:', filtered.length);
+    console.log('🎯 Tipos encontrados:', tickets.map(t => t.tipo_ticket).filter((v, i, a) => a.indexOf(v) === i));
+    return filtered;
   }, [tickets]);
 
   const { stats } = useTicketStats(melhoriaTickets.map(t => ({
@@ -392,7 +396,7 @@ export default function MelhoriasPage() {
               </Button>
             </div>
           ) : (
-            <TicketKanban 
+            <MelhoriaKanban 
               tickets={filteredTickets}
               onOpenDetail={handleOpenTicketDetail}
               onEditTicket={handleEditTicket}

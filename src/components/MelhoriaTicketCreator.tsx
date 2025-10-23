@@ -93,7 +93,7 @@ export default function MelhoriaTicketCreator({ open, onOpenChange, onSuccess }:
         descricao: formData.descricao,
         setor_id: formData.setor_id,
         time_responsavel: setorSelecionado?.nome || "",
-        solicitante: profile?.email || user?.email || "",
+        solicitante: profile?.nome_completo || profile?.email || user?.email || "",
         tipo_ticket: "feedback_sugestao",
         status: "aberto",
         nivel_criticidade: "P3",
@@ -106,13 +106,20 @@ export default function MelhoriaTicketCreator({ open, onOpenChange, onSuccess }:
         anexos: uploadedFiles.length > 0 ? uploadedFiles : null,
       };
 
+      console.log('🎯 Criando ticket de melhoria:', ticketData);
+
       const { data, error } = await supabase
         .from('sla_demandas')
         .insert([ticketData])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao criar ticket:', error);
+        throw error;
+      }
+
+      console.log('✅ Ticket criado com sucesso:', data);
 
       toast({
         title: "Sucesso!",
@@ -122,7 +129,7 @@ export default function MelhoriaTicketCreator({ open, onOpenChange, onSuccess }:
       onSuccess?.();
       onOpenChange(false);
     } catch (error) {
-      console.error('Erro ao criar ticket:', error);
+      console.error('❌ Erro ao criar ticket:', error);
       toast({
         title: "Erro",
         description: "Não foi possível criar o ticket de melhoria.",
