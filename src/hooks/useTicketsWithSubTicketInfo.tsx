@@ -14,7 +14,10 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    console.log('🚀 useTicketsWithSubTicketInfo - useEffect disparado! IDs recebidos:', ticketIds.length);
+    
     if (ticketIds.length === 0) {
+      console.log('⚠️ useTicketsWithSubTicketInfo - Nenhum ticket ID, pulando...');
       setSubTicketInfo({});
       return;
     }
