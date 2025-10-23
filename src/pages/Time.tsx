@@ -328,6 +328,9 @@ export default function Time() {
   
   // Toggle para mostrar/ocultar tickets de melhoria
   const [showMelhoriaTickets, setShowMelhoriaTickets] = useState(false);
+  
+  // Toggle para mostrar/ocultar sub-tickets
+  const [showSubTickets, setShowSubTickets] = useState(false);
 
   // Subtickets info
   const ticketIds = useMemo(() => tickets.map(t => t.id), [tickets]);
@@ -703,11 +706,15 @@ export default function Time() {
 
   // Separar e filtrar tickets
   const { pinnedTicketsData, regularTicketsData, groupedTicketsData } = useMemo(() => {
-    // Filtrar subtickets - mostrar apenas tickets pais
-    let allFiltered = tickets.filter(ticket => {
-      const info = getSubTicketInfo(ticket.id);
-      return !info.isSubTicket; // Ocultar subtickets da lista principal
-    });
+    let allFiltered = tickets;
+    
+    // Filtrar subtickets se o toggle estiver desativado
+    if (!showSubTickets) {
+      allFiltered = allFiltered.filter(ticket => {
+        const info = getSubTicketInfo(ticket.id);
+        return !info.isSubTicket; // Ocultar subtickets da lista principal
+      });
+    }
     
     // Filtrar tickets de melhoria se o toggle estiver desativado
     if (!showMelhoriaTickets) {
@@ -833,7 +840,7 @@ export default function Time() {
       regularTicketsData: sortedRegular,
       groupedTicketsData: grouped
     };
-  }, [tickets, searchTerm, priorityFilter, statusFilter, tagFilter, sortBy, pinnedTickets, groupByTeam, isSuperAdmin, availableSetores, getSubTicketInfo, showMelhoriaTickets]);
+  }, [tickets, searchTerm, priorityFilter, statusFilter, tagFilter, sortBy, pinnedTickets, groupByTeam, isSuperAdmin, availableSetores, getSubTicketInfo, showMelhoriaTickets, showSubTickets]);
 
   const clearAllFilters = () => {
     setSearchTerm('');
@@ -1354,6 +1361,18 @@ export default function Time() {
           />
           <Label htmlFor="show-melhoria-tickets" className="text-sm">
             Exibir tickets de melhoria
+          </Label>
+        </div>
+
+        {/* Toggle "Exibir sub-tickets" */}
+        <div className="flex items-center space-x-2 mb-4">
+          <Switch
+            id="show-sub-tickets"
+            checked={showSubTickets}
+            onCheckedChange={setShowSubTickets}
+          />
+          <Label htmlFor="show-sub-tickets" className="text-sm">
+            Exibir sub-tickets
           </Label>
         </div>
 
