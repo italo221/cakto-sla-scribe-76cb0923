@@ -6,16 +6,33 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { HelpCircle, Edit, Eye, User, Clock, Target, Tag, MessageSquare, Activity, CheckCircle, Circle } from "lucide-react";
+import { HelpCircle, Edit, Eye, User, Clock, Target, Tag, MessageSquare, Activity, CheckCircle, Circle, MoreVertical, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 
-// Tipos de status específicos para melhorias
-type MelhoriaStatusType = 'aberto' | 'em_andamento' | 'resolvido';
+// Tipos de status específicos para melhorias (incluindo excluído)
+type MelhoriaStatusType = 'aberto' | 'em_andamento' | 'resolvido' | 'excluido';
 
 interface Ticket {
   id: string;
@@ -45,6 +62,7 @@ interface MelhoriaKanbanProps {
   onEditTicket: (ticket: Ticket) => void;
   onTicketUpdate: () => void;
   userRole: string;
+  onDeleteTicket?: (ticketId: string) => void;
 }
 
 interface DroppableColumnProps {
@@ -53,6 +71,7 @@ interface DroppableColumnProps {
   tickets: Ticket[];
   onOpenDetail: (ticket: Ticket) => void;
   onEditTicket: (ticket: Ticket) => void;
+  onDeleteTicket?: (ticketId: string) => void;
   userCanEdit: boolean;
 }
 
@@ -61,14 +80,16 @@ interface KanbanCardProps {
   isDragging: boolean;
   onOpenDetail: (ticket: Ticket) => void;
   onEditTicket: (ticket: Ticket) => void;
+  onDeleteTicket?: (ticketId: string) => void;
   userCanEdit: boolean;
 }
 
 // Validação de transição de status para melhorias
 const ALLOWED_TRANSITIONS: Record<MelhoriaStatusType, MelhoriaStatusType[]> = {
-  'aberto': ['em_andamento'],
-  'em_andamento': ['aberto', 'resolvido'],
-  'resolvido': ['em_andamento']
+  'aberto': ['em_andamento', 'excluido'],
+  'em_andamento': ['aberto', 'resolvido', 'excluido'],
+  'resolvido': ['em_andamento', 'excluido'],
+  'excluido': []
 };
 
 const validateStatusChange = (currentStatus: MelhoriaStatusType, newStatus: MelhoriaStatusType): boolean => {
@@ -80,10 +101,13 @@ const KanbanCard = memo(({
   isDragging,
   onOpenDetail,
   onEditTicket,
+  onDeleteTicket,
   userCanEdit
 }: KanbanCardProps) => {
   const [isDragActive, setIsDragActive] = useState(false);
   const [commentsCount, setCommentsCount] = useState<number>(0);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const pointerEventRef = useRef<any>(null);
   const dragTimeout = useRef<NodeJS.Timeout | null>(null);
   const startPosition = useRef<{
@@ -184,6 +208,19 @@ const KanbanCard = memo(({
     }
   };
 
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteConfirmText === 'EXCLUIR' && onDeleteTicket) {
+      onDeleteTicket(ticket.id);
+      setDeleteDialogOpen(false);
+      setDeleteConfirmText('');
+    }
+  };
+
   // Configuração de status
   const getStatusConfig = (status: string) => {
     const configs = {
@@ -279,8 +316,64 @@ const KanbanCard = memo(({
             <Badge className={cn("text-xs border", priorityConfig.color)}>
               {ticket.nivel_criticidade}
             </Badge>
+
+            {/* Menu de opções */}
+            {userCanEdit && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0 hover:bg-muted/50"
+                  >
+                    <MoreVertical className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenuItem onClick={handleEditClick}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={handleDeleteClick}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Excluir
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
+
+        {/* Dialog de confirmação de exclusão */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação moverá o ticket para "Excluídos". Para confirmar, digite <strong>EXCLUIR</strong> no campo abaixo.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <Input
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="Digite EXCLUIR para confirmar"
+              className="mt-2"
+            />
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setDeleteConfirmText('')}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleConfirmDelete}
+                disabled={deleteConfirmText !== 'EXCLUIR'}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Título principal */}
         <div className="space-y-0.5">
@@ -414,6 +507,7 @@ const DroppableColumn = memo(({
   tickets,
   onOpenDetail,
   onEditTicket,
+  onDeleteTicket,
   userCanEdit
 }: DroppableColumnProps) => {
   const {
@@ -453,6 +547,7 @@ const DroppableColumn = memo(({
                 isDragging={false} 
                 onOpenDetail={onOpenDetail} 
                 onEditTicket={onEditTicket} 
+                onDeleteTicket={onDeleteTicket}
                 userCanEdit={userCanEdit} 
               />
             ))}
@@ -475,7 +570,8 @@ const MelhoriaKanban = memo(({
   onOpenDetail,
   onEditTicket,
   onTicketUpdate,
-  userRole
+  userRole,
+  onDeleteTicket
 }: MelhoriaKanbanProps) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedTicket, setDraggedTicket] = useState<Ticket | null>(null);
@@ -483,18 +579,48 @@ const MelhoriaKanban = memo(({
   
   const userCanEdit = userRole === 'operador' || userRole === 'admin';
 
-  // Organizar tickets por status (apenas 3 colunas)
+  // Organizar tickets por status (incluindo excluídos)
   const ticketsByStatus = {
     aberto: tickets.filter(t => t.status === 'aberto'),
     em_andamento: tickets.filter(t => t.status === 'em_andamento'),
-    resolvido: tickets.filter(t => t.status === 'resolvido')
+    resolvido: tickets.filter(t => t.status === 'resolvido'),
+    excluido: tickets.filter(t => t.status === 'excluido')
   };
 
   const columns = [
     { id: 'aberto', title: 'Aberto', tickets: ticketsByStatus.aberto },
     { id: 'em_andamento', title: 'Em Andamento', tickets: ticketsByStatus.em_andamento },
-    { id: 'resolvido', title: 'Finalizado', tickets: ticketsByStatus.resolvido }
+    { id: 'resolvido', title: 'Finalizado', tickets: ticketsByStatus.resolvido },
+    { id: 'excluido', title: 'Excluídos', tickets: ticketsByStatus.excluido }
   ];
+
+  const handleDeleteTicket = useCallback(async (ticketId: string) => {
+    try {
+      const { error } = await supabase
+        .from('sla_demandas')
+        .update({ 
+          status: 'excluido',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', ticketId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Ticket excluído",
+        description: "O ticket foi movido para Excluídos",
+      });
+
+      onTicketUpdate();
+    } catch (error) {
+      console.error('Erro ao excluir ticket:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o ticket",
+        variant: "destructive"
+      });
+    }
+  }, [toast, onTicketUpdate]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
@@ -582,6 +708,7 @@ const MelhoriaKanban = memo(({
                 tickets={column.tickets}
                 onOpenDetail={onOpenDetail}
                 onEditTicket={onEditTicket}
+                onDeleteTicket={handleDeleteTicket}
                 userCanEdit={userCanEdit}
               />
             </div>
@@ -590,7 +717,7 @@ const MelhoriaKanban = memo(({
       </div>
 
       {/* Desktop: Grid */}
-      <div className="hidden md:grid md:grid-cols-3 gap-4 px-4">
+      <div className="hidden md:grid md:grid-cols-4 gap-4 px-4">
         {columns.map(column => (
           <DroppableColumn
             key={column.id}
@@ -599,6 +726,7 @@ const MelhoriaKanban = memo(({
             tickets={column.tickets}
             onOpenDetail={onOpenDetail}
             onEditTicket={onEditTicket}
+            onDeleteTicket={handleDeleteTicket}
             userCanEdit={userCanEdit}
           />
         ))}
@@ -612,6 +740,7 @@ const MelhoriaKanban = memo(({
             isDragging={true}
             onOpenDetail={onOpenDetail}
             onEditTicket={onEditTicket}
+            onDeleteTicket={handleDeleteTicket}
             userCanEdit={userCanEdit}
           />
         ) : null}

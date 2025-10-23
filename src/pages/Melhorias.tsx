@@ -84,10 +84,22 @@ export default function MelhoriasPage() {
     return filtered;
   }, [tickets]);
 
-  const { stats } = useTicketStats(melhoriaTickets.map(t => ({
-    ...t,
-    isExpired: false
-  })));
+  // Calcular estatísticas personalizadas para melhorias
+  const melhoriaStats = useMemo(() => {
+    const total = melhoriaTickets.length;
+    const abertos = melhoriaTickets.filter(t => t.status === 'aberto').length;
+    const em_andamento = melhoriaTickets.filter(t => t.status === 'em_andamento').length;
+    const resolvidos = melhoriaTickets.filter(t => t.status === 'resolvido').length;
+    const excluidos = melhoriaTickets.filter(t => t.status === 'excluido').length;
+
+    return {
+      total,
+      abertos,
+      em_andamento,
+      resolvidos,
+      excluidos
+    };
+  }, [melhoriaTickets]);
 
   useEffect(() => {
     loadSetores();
@@ -303,14 +315,14 @@ export default function MelhoriasPage() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Total</span>
                 <Activity className="text-muted-foreground w-4 h-4" />
               </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.total}</h2>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{melhoriaStats.total}</h2>
             </CardContent>
           </Card>
 
@@ -320,7 +332,7 @@ export default function MelhoriasPage() {
                 <span className="text-sm text-muted-foreground">Abertos</span>
                 <Circle className="text-muted-foreground w-4 h-4" />
               </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.abertos}</h2>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{melhoriaStats.abertos}</h2>
             </CardContent>
           </Card>
 
@@ -330,37 +342,27 @@ export default function MelhoriasPage() {
                 <span className="text-sm text-muted-foreground">Em Andamento</span>
                 <Activity className="text-muted-foreground w-4 h-4" />
               </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.em_andamento}</h2>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{melhoriaStats.em_andamento}</h2>
             </CardContent>
           </Card>
 
           <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Resolvidos</span>
+                <span className="text-sm text-muted-foreground">Finalizado</span>
                 <CheckCircle className="text-muted-foreground w-4 h-4" />
               </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.resolvidos}</h2>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{melhoriaStats.resolvidos}</h2>
             </CardContent>
           </Card>
 
           <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Fechados</span>
+                <span className="text-sm text-muted-foreground">Excluídos</span>
                 <X className="text-muted-foreground w-4 h-4" />
               </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.fechados}</h2>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Críticos</span>
-                <AlertTriangle className="text-muted-foreground w-4 h-4" />
-              </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.criticos}</h2>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{melhoriaStats.excluidos}</h2>
             </CardContent>
           </Card>
         </div>
