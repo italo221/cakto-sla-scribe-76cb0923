@@ -78,10 +78,6 @@ export default function MelhoriasPage() {
       ticket.tipo_ticket === 'feedback_sugestao' || 
       ticket.tipo_ticket === 'atualizacao_projeto'
     );
-    console.log('📊 Total de tickets:', tickets.length);
-    console.log('🎯 Tickets de melhoria filtrados (ALL):', filtered.length);
-    console.log('🎯 Tipos encontrados:', tickets.map(t => t.tipo_ticket).filter((v, i, a) => a.indexOf(v) === i));
-    console.log('📋 Status dos tickets de melhoria:', filtered.map(t => t.status));
     return filtered;
   }, [tickets]);
 
@@ -97,8 +93,6 @@ export default function MelhoriasPage() {
     const em_andamento = melhoriaTicketsAll.filter(t => t.status === 'em_andamento').length;
     const resolvidos = melhoriaTicketsAll.filter(t => t.status === 'resolvido').length;
     const excluidos = melhoriaTicketsAll.filter(t => t.status === 'excluido').length;
-
-    console.log('📈 Stats calculados:', { total, abertos, em_andamento, resolvidos, excluidos });
 
     return {
       total,
@@ -152,19 +146,17 @@ export default function MelhoriasPage() {
     setEditModalOpen(true);
   };
 
-  const handleTicketUpdate = () => {
-    console.log('🔄 handleTicketUpdate called - reloading tickets');
-    reloadTickets();
+  const handleTicketUpdate = async () => {
+    await reloadTickets();
     toast({
       title: "Ticket atualizado",
       description: "O ticket de melhoria foi atualizado com sucesso."
     });
   };
 
-  const handleTicketCreated = () => {
-    console.log('✅ handleTicketCreated called - reloading tickets');
+  const handleTicketCreated = async () => {
     setCreateModalOpen(false);
-    reloadTickets();
+    await reloadTickets();
     toast({
       title: "Ticket criado!",
       description: "O ticket de melhoria foi criado com sucesso."

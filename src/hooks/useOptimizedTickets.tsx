@@ -175,11 +175,12 @@ export const useOptimizedTickets = (options: UseOptimizedTicketsOptions = {}) =>
         // - Todos os abertos
         // - Todos os em andamento  
         // - Todos os resolvidos
+        // - Todos os excluídos (para stats de melhorias)
         // - Fechados apenas dos últimos 7 dias
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         
-        query = query.or(`status.in.(aberto,em_andamento,resolvido),and(status.eq.fechado,updated_at.gte.${sevenDaysAgo.toISOString()})`);
+        query = query.or(`status.in.(aberto,em_andamento,resolvido,excluido),and(status.eq.fechado,updated_at.gte.${sevenDaysAgo.toISOString()})`);
         
         const { data, error, status, count } = await query
           .order('data_criacao', { ascending: false })
