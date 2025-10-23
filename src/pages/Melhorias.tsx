@@ -79,8 +79,9 @@ export default function MelhoriasPage() {
       ticket.tipo_ticket === 'atualizacao_projeto'
     );
     console.log('📊 Total de tickets:', tickets.length);
-    console.log('🎯 Tickets de melhoria filtrados:', filtered.length);
+    console.log('🎯 Tickets de melhoria filtrados (ALL):', filtered.length);
     console.log('🎯 Tipos encontrados:', tickets.map(t => t.tipo_ticket).filter((v, i, a) => a.indexOf(v) === i));
+    console.log('📋 Status dos tickets de melhoria:', filtered.map(t => t.status));
     return filtered;
   }, [tickets]);
 
@@ -96,6 +97,8 @@ export default function MelhoriasPage() {
     const em_andamento = melhoriaTicketsAll.filter(t => t.status === 'em_andamento').length;
     const resolvidos = melhoriaTicketsAll.filter(t => t.status === 'resolvido').length;
     const excluidos = melhoriaTicketsAll.filter(t => t.status === 'excluido').length;
+
+    console.log('📈 Stats calculados:', { total, abertos, em_andamento, resolvidos, excluidos });
 
     return {
       total,
@@ -150,6 +153,7 @@ export default function MelhoriasPage() {
   };
 
   const handleTicketUpdate = () => {
+    console.log('🔄 handleTicketUpdate called - reloading tickets');
     reloadTickets();
     toast({
       title: "Ticket atualizado",
@@ -158,6 +162,7 @@ export default function MelhoriasPage() {
   };
 
   const handleTicketCreated = () => {
+    console.log('✅ handleTicketCreated called - reloading tickets');
     setCreateModalOpen(false);
     reloadTickets();
     toast({
