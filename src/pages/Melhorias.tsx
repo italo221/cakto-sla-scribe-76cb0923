@@ -225,7 +225,11 @@ export default function MelhoriasPage() {
                 Nova Melhoria
               </Button>
               
-              <Button onClick={reloadTickets} variant="outline" size="sm" disabled={loading}>
+              <Button onClick={async () => {
+                console.log('🔄 Botão Atualizar clicado');
+                await reloadTickets();
+                console.log('✅ Reload completo');
+              }} variant="outline" size="sm" disabled={loading}>
                 <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Atualizar
               </Button>
