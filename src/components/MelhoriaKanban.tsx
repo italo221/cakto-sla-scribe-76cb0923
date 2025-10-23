@@ -609,7 +609,11 @@ const MelhoriaKanban = memo(({
         description: "O ticket foi movido para Excluídos",
       });
 
-      onTicketUpdate();
+      // Aguardar um pouco para garantir que o update foi processado
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Forçar atualização
+      await onTicketUpdate();
     } catch (error) {
       console.error('Erro ao excluir ticket:', error);
       toast({
