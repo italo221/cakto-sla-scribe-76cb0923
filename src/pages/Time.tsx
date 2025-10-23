@@ -92,6 +92,7 @@ interface TeamTicket {
   prazo_interno?: string;
   prioridade_operacional?: string;
   tags?: string[];
+  tipo_ticket?: string;
   age_days: number;
   is_overdue: boolean;
   sla_comentarios_internos?: Array<{ comentario: string }>;
@@ -324,6 +325,9 @@ export default function Time() {
   const [pinnedTickets, setPinnedTickets] = useState<string[]>([]);
   const [showOnlyPinned, setShowOnlyPinned] = useState(false);
   const [pinnedLoading, setPinnedLoading] = useState(false);
+  
+  // Toggle para mostrar/ocultar tickets de melhoria
+  const [showMelhoriaTickets, setShowMelhoriaTickets] = useState(false);
 
   // Subtickets info
   const ticketIds = useMemo(() => tickets.map(t => t.id), [tickets]);
@@ -468,6 +472,7 @@ export default function Time() {
             prazo_interno,
             prioridade_operacional,
             tags,
+            tipo_ticket,
             setores(nome)
           `);
 
@@ -704,6 +709,14 @@ export default function Time() {
       return !info.isSubTicket; // Ocultar subtickets da lista principal
     });
     
+    // Filtrar tickets de melhoria se o toggle estiver desativado
+    if (!showMelhoriaTickets) {
+      allFiltered = allFiltered.filter(ticket => {
+        // Excluir tickets do tipo 'feedback_sugestao' e 'atualizacao_projeto'
+        return ticket.tipo_ticket !== 'feedback_sugestao' && ticket.tipo_ticket !== 'atualizacao_projeto';
+      });
+    }
+    
     // Aplicar busca
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -820,7 +833,7 @@ export default function Time() {
       regularTicketsData: sortedRegular,
       groupedTicketsData: grouped
     };
-  }, [tickets, searchTerm, priorityFilter, statusFilter, tagFilter, sortBy, pinnedTickets, groupByTeam, isSuperAdmin, availableSetores, getSubTicketInfo]);
+  }, [tickets, searchTerm, priorityFilter, statusFilter, tagFilter, sortBy, pinnedTickets, groupByTeam, isSuperAdmin, availableSetores, getSubTicketInfo, showMelhoriaTickets]);
 
   const clearAllFilters = () => {
     setSearchTerm('');
@@ -1330,6 +1343,18 @@ export default function Time() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
+
+        {/* Toggle "Exibir tickets de melhoria" */}
+        <div className="flex items-center space-x-2 mb-4">
+          <Switch
+            id="show-melhoria-tickets"
+            checked={showMelhoriaTickets}
+            onCheckedChange={setShowMelhoriaTickets}
+          />
+          <Label htmlFor="show-melhoria-tickets" className="text-sm">
+            Exibir tickets de melhoria
+          </Label>
         </div>
 
         {/* Toggle "Só meus tickets" */}
