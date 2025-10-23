@@ -331,6 +331,8 @@ export default function Time() {
   
   // Toggle para mostrar/ocultar sub-tickets
   const [showSubTickets, setShowSubTickets] = useState(false);
+  
+  console.log('🔍 Time.tsx - Estado showSubTickets:', showSubTickets);
 
   // Subtickets info
   const ticketIds = useMemo(() => tickets.map(t => t.id), [tickets]);
@@ -1369,9 +1371,12 @@ export default function Time() {
           <Switch
             id="show-sub-tickets"
             checked={showSubTickets}
-            onCheckedChange={setShowSubTickets}
+            onCheckedChange={(checked) => {
+              console.log('✅ Toggle sub-tickets alterado para:', checked);
+              setShowSubTickets(checked);
+            }}
           />
-          <Label htmlFor="show-sub-tickets" className="text-sm">
+          <Label htmlFor="show-sub-tickets" className="text-sm font-medium">
             Exibir sub-tickets
           </Label>
         </div>
