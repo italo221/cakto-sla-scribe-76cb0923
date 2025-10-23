@@ -450,7 +450,11 @@ export default function Time() {
   // Carregar tickets
   useEffect(() => {
     const loadTickets = async () => {
-      if (selectedSetores.length === 0) return;
+      console.log('🎫 loadTickets - selectedSetores:', selectedSetores);
+      if (selectedSetores.length === 0) {
+        console.log('⚠️ loadTickets - Nenhum setor selecionado, pulando...');
+        return;
+      }
       
       try {
         let query = supabase
@@ -548,6 +552,7 @@ export default function Time() {
           sla_comentarios_internos: commentsByTicket[ticket.id] || []
         }));
         
+        console.log('✅ loadTickets - Tickets carregados:', processedTickets.length);
         setTickets(processedTickets);
       } catch (error) {
         console.error('Erro ao carregar tickets:', error);
