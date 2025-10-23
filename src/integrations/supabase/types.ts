@@ -242,7 +242,7 @@ export type Database = {
           clicked_at: string | null
           country: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           link_id: string | null
           referrer: string | null
           user_agent: string | null
@@ -252,7 +252,7 @@ export type Database = {
           clicked_at?: string | null
           country?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           link_id?: string | null
           referrer?: string | null
           user_agent?: string | null
@@ -262,7 +262,7 @@ export type Database = {
           clicked_at?: string | null
           country?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           link_id?: string | null
           referrer?: string | null
           user_agent?: string | null
@@ -1258,7 +1258,7 @@ export type Database = {
       ticket_external_link_views: {
         Row: {
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           link_id: string
           success: boolean
           user_agent: string | null
@@ -1266,7 +1266,7 @@ export type Database = {
         }
         Insert: {
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           link_id: string
           success?: boolean
           user_agent?: string | null
@@ -1274,7 +1274,7 @@ export type Database = {
         }
         Update: {
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           link_id?: string
           success?: boolean
           user_agent?: string | null
@@ -1538,38 +1538,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      add_hidden_tag: {
-        Args: { p_tag: string }
-        Returns: boolean
-      }
+      add_hidden_tag: { Args: { p_tag: string }; Returns: boolean }
       add_sla_comment: {
         Args: { p_comentario: string; p_setor_id: string; p_sla_id: string }
         Returns: string
       }
-      backfill_legacy_subtickets: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      can_edit: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      delete_ticket_cascade: {
-        Args: { ticket_id: string }
-        Returns: boolean
-      }
-      generate_share_token: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_ticket_number: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_hidden_tags: {
-        Args: Record<PropertyKey, never>
-        Returns: string[]
-      }
+      backfill_legacy_subtickets: { Args: never; Returns: undefined }
+      can_edit: { Args: never; Returns: boolean }
+      delete_ticket_cascade: { Args: { ticket_id: string }; Returns: boolean }
+      generate_share_token: { Args: never; Returns: string }
+      generate_ticket_number: { Args: never; Returns: string }
+      get_hidden_tags: { Args: never; Returns: string[] }
       get_next_subticket_sequence: {
         Args: { p_parent_ticket_id: string }
         Returns: number
@@ -1591,10 +1570,7 @@ export type Database = {
           team_name: string
         }[]
       }
-      get_tag_team_assignments: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      get_tag_team_assignments: { Args: never; Returns: Json }
       get_user_stats: {
         Args: { user_email: string }
         Returns: {
@@ -1612,14 +1588,8 @@ export type Database = {
         Args: { _role: Database["public"]["Enums"]["user_role"] }
         Returns: boolean
       }
-      is_admin: {
-        Args: { user_uuid?: string }
-        Returns: boolean
-      }
-      is_super_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_admin: { Args: { user_uuid?: string }; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
       log_external_link_access: {
         Args: {
           p_ip_address?: unknown
@@ -1649,10 +1619,7 @@ export type Database = {
           user_id: string
         }[]
       }
-      migrate_existing_tags_to_organized: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      migrate_existing_tags_to_organized: { Args: never; Returns: undefined }
       pin_ticket: {
         Args: { p_team_id: string; p_ticket_id: string }
         Returns: boolean
