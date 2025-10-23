@@ -5,8 +5,8 @@ import { useTheme } from "@/hooks/useTheme";
 export function ThemeToggle() {
   const { theme, setTheme, isDark } = useTheme();
 
-  const toggleTheme = () => {
-    setTheme(isDark ? "light" : "dark");
+  const toggleTheme = (e: React.MouseEvent<HTMLButtonElement>) => {
+    setTheme(isDark ? "light" : "dark", e);
   };
 
   return (

@@ -10,7 +10,7 @@ type ThemeProviderProps = {
 
 type ThemeProviderState = {
   theme: Theme;
-  setTheme: (theme: Theme) => void;
+  setTheme: (theme: Theme, event?: React.MouseEvent) => void;
   isDark: boolean;
 };
 
@@ -37,37 +37,55 @@ export function ThemeProvider({
   useEffect(() => {
     const root = window.document.documentElement;
 
-    const updateTheme = () => {
-      root.classList.remove("light", "dark");
+    root.classList.remove("light", "dark");
 
-      if (theme === "system") {
-        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-          .matches
-          ? "dark"
-          : "light";
+    if (theme === "system") {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+        .matches
+        ? "dark"
+        : "light";
 
-        root.classList.add(systemTheme);
-        setIsDark(systemTheme === "dark");
-        return;
-      }
-
-      root.classList.add(theme);
-      setIsDark(theme === "dark");
-    };
-
-    // Check if View Transitions API is supported
-    if (document.startViewTransition) {
-      document.startViewTransition(() => updateTheme());
-    } else {
-      updateTheme();
+      root.classList.add(systemTheme);
+      setIsDark(systemTheme === "dark");
+      return;
     }
+
+    root.classList.add(theme);
+    setIsDark(theme === "dark");
   }, [theme]);
 
   const value = {
     theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
+    setTheme: (newTheme: Theme, event?: React.MouseEvent) => {
+      const root = window.document.documentElement;
+
+      const updateTheme = () => {
+        localStorage.setItem(storageKey, newTheme);
+        setTheme(newTheme);
+      };
+
+      // If View Transitions API is supported and we have click coordinates
+      if (document.startViewTransition && event) {
+        const x = event.clientX;
+        const y = event.clientY;
+        
+        // Calculate the maximum distance from click point to screen corners
+        const endRadius = Math.hypot(
+          Math.max(x, window.innerWidth - x),
+          Math.max(y, window.innerHeight - y)
+        );
+
+        // Set CSS variables for the animation
+        root.style.setProperty('--x', `${x}px`);
+        root.style.setProperty('--y', `${y}px`);
+        root.style.setProperty('--end-radius', `${endRadius}px`);
+
+        document.startViewTransition(() => updateTheme());
+      } else if (document.startViewTransition) {
+        document.startViewTransition(() => updateTheme());
+      } else {
+        updateTheme();
+      }
     },
     isDark,
   };
