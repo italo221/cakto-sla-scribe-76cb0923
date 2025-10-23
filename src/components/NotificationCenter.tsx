@@ -42,8 +42,8 @@ export default function NotificationCenter() {
     });
   };
 
-  // Usar Popover para sidebar esquerda (mais confiável)
-  const usePopover = settings.navbar_position === 'left';
+  // Sempre usar Popover para sidebar esquerda
+  const usePopover = true;
 
   const NotificationButton = (
     <Button 

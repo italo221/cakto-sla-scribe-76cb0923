@@ -4,14 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Monitor, PanelLeft } from 'lucide-react';
 import { useNavbarSettings, NavbarSettings } from '@/hooks/useNavbarSettings';
 
 export default function NavbarCustomization() {
   const { settings, updateSettings, loading } = useNavbarSettings();
   const [previewSettings, setPreviewSettings] = useState<NavbarSettings>({
-    navbar_position: 'top',
     navbar_glass: false,
   });
 
@@ -20,113 +17,26 @@ export default function NavbarCustomization() {
     setPreviewSettings(settings);
   }, [settings]);
 
-  const handlePositionChange = (position: 'top' | 'left') => {
-    console.log('📍 Mudando posição para:', position);
-    setPreviewSettings(prev => ({ ...prev, navbar_position: position }));
-  };
-
   const handleGlassChange = (enabled: boolean) => {
     setPreviewSettings(prev => ({ ...prev, navbar_glass: enabled }));
   };
 
   const handleSave = () => {
-    console.log('🎯 NavbarCustomization - Tentando salvar:', previewSettings);
     updateSettings(previewSettings);
   };
 
-  const hasChanges = 
-    previewSettings.navbar_position !== settings.navbar_position ||
-    previewSettings.navbar_glass !== settings.navbar_glass;
-
-  console.log('🔄 NavbarCustomization - Estado atual:', {
-    settings,
-    previewSettings,
-    hasChanges,
-    loading
-  });
+  const hasChanges = previewSettings.navbar_glass !== settings.navbar_glass;
 
   return (
     <div className="space-y-6 max-h-[calc(100vh-120px)] overflow-y-auto">
       <div>
         <h3 className="text-lg font-semibold">Customização da Navbar</h3>
         <p className="text-sm text-muted-foreground">
-          Configure a posição e o efeito visual da barra de navegação.
+          Configure o efeito visual da barra de navegação lateral.
         </p>
       </div>
 
       <Card className="p-6 space-y-6">
-        {/* Position Selection */}
-        <div className="space-y-4">
-          <div>
-            <Label className="text-base font-medium">Posição da Navegação</Label>
-            <p className="text-sm text-muted-foreground">
-              Escolha onde exibir a barra de navegação
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Top Navigation */}
-            <Card 
-              className={`p-4 cursor-pointer transition-all ${
-                previewSettings.navbar_position === 'top' 
-                  ? 'ring-2 ring-primary border-primary' 
-                  : 'hover:border-primary/50'
-              }`}
-              onClick={() => handlePositionChange('top')}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Monitor className="h-5 w-5" />
-                  <span className="font-medium">Topo</span>
-                </div>
-                {previewSettings.navbar_position === 'top' && (
-                  <Badge variant="default">Atual</Badge>
-                )}
-              </div>
-              <div className="space-y-2">
-                <div className="h-3 bg-primary/20 rounded"></div>
-                <div className="h-8 bg-muted rounded"></div>
-                <div className="h-16 bg-muted/50 rounded"></div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Barra horizontal no topo da página
-              </p>
-            </Card>
-
-            {/* Left Sidebar */}
-            <Card 
-              className={`p-4 cursor-pointer transition-all ${
-                previewSettings.navbar_position === 'left' 
-                  ? 'ring-2 ring-primary border-primary' 
-                  : 'hover:border-primary/50'
-              }`}
-              onClick={() => handlePositionChange('left')}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <PanelLeft className="h-5 w-5" />
-                  <span className="font-medium">Esquerda</span>
-                </div>
-                {previewSettings.navbar_position === 'left' && (
-                  <Badge variant="default">Atual</Badge>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <div className="w-8 bg-primary/20 rounded"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-8 bg-muted rounded"></div>
-                  <div className="h-16 bg-muted/50 rounded"></div>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Sidebar compacta com expansão ao hover
-              </p>
-            </Card>
-          </div>
-        </div>
-
-        <Separator />
-
         {/* Glass Effect */}
         <div className="space-y-4">
           <div>
@@ -177,14 +87,11 @@ export default function NavbarCustomization() {
 
         <Separator />
 
-        {/* Save Button - FIXO no final */}
+        {/* Save Button */}
         <div className="sticky bottom-0 bg-card pt-4 border-t border-border/40">
           <div className="flex justify-end">
             <Button 
-              onClick={(e) => {
-                console.log('🔘 Botão Salvar clicado!', e);
-                handleSave();
-              }} 
+              onClick={handleSave} 
               disabled={!hasChanges || loading}
               className="min-w-[100px]"
             >
