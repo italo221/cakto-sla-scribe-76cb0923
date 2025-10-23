@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { RefreshCw, Lightbulb, TrendingUp, Clock, AlertTriangle, Search, Filter, Building2, Activity, CheckCircle, Circle, Plus } from "lucide-react";
+import { RefreshCw, Lightbulb, TrendingUp, Clock, AlertTriangle, Search, Filter, Building2, Activity, CheckCircle, Circle, Plus, X } from "lucide-react";
 
 interface Ticket {
   id: string;
@@ -304,75 +304,63 @@ export default function MelhoriasPage() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total</p>
-                  <h3 className="text-2xl font-bold">{stats.total}</h3>
-                </div>
-                <Activity className="h-8 w-8 text-blue-500" />
+          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-blue-500/30">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Total</span>
+                <Activity className="text-muted-foreground w-4 h-4" />
               </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.total}</h2>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 border-yellow-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Abertos</p>
-                  <h3 className="text-2xl font-bold">{stats.abertos}</h3>
-                </div>
-                <Circle className="h-8 w-8 text-yellow-500" />
+          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-blue-500/30">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Abertos</span>
+                <Circle className="text-muted-foreground w-4 h-4" />
               </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.abertos}</h2>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border-purple-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Em Andamento</p>
-                  <h3 className="text-2xl font-bold">{stats.em_andamento}</h3>
-                </div>
-                <Clock className="h-8 w-8 text-purple-500" />
+          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-blue-400/30">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Em Andamento</span>
+                <Activity className="text-muted-foreground w-4 h-4" />
               </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.em_andamento}</h2>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-500/10 to-green-600/10 border-green-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Resolvidos</p>
-                  <h3 className="text-2xl font-bold">{stats.resolvidos}</h3>
-                </div>
-                <CheckCircle className="h-8 w-8 text-green-500" />
+          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-green-500/30">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Resolvidos</span>
+                <CheckCircle className="text-muted-foreground w-4 h-4" />
               </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.resolvidos}</h2>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-gray-500/10 to-gray-600/10 border-gray-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Fechados</p>
-                  <h3 className="text-2xl font-bold">{stats.fechados}</h3>
-                </div>
-                <CheckCircle className="h-8 w-8 text-gray-500" />
+          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-neutral-500/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Fechados</span>
+                <X className="text-muted-foreground w-4 h-4" />
               </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.fechados}</h2>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-red-500/10 to-red-600/10 border-red-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Críticos</p>
-                  <h3 className="text-2xl font-bold">{stats.criticos}</h3>
-                </div>
-                <AlertTriangle className="h-8 w-8 text-red-500" />
+          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-red-600/35">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Críticos</span>
+                <AlertTriangle className="text-muted-foreground w-4 h-4" />
               </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.criticos}</h2>
             </CardContent>
           </Card>
         </div>
