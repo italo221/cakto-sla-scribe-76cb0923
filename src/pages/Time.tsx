@@ -710,12 +710,23 @@ export default function Time() {
   const { pinnedTicketsData, regularTicketsData, groupedTicketsData } = useMemo(() => {
     let allFiltered = tickets;
     
+    console.log('🔍 Total de tickets ANTES do filtro:', allFiltered.length);
+    console.log('🔍 showSubTickets está:', showSubTickets);
+    
     // Filtrar subtickets se o toggle estiver desativado
     if (!showSubTickets) {
+      const antesDoFiltro = allFiltered.length;
       allFiltered = allFiltered.filter(ticket => {
         const info = getSubTicketInfo(ticket.id);
-        return !info.isSubTicket; // Ocultar subtickets da lista principal
+        const isSubticket = info.isSubTicket;
+        
+        if (isSubticket) {
+          console.log('🎯 Sub-ticket encontrado:', ticket.titulo, '| Info:', info);
+        }
+        
+        return !isSubticket; // Ocultar subtickets da lista principal
       });
+      console.log(`✅ Filtro de sub-tickets aplicado. Antes: ${antesDoFiltro}, Depois: ${allFiltered.length}`);
     }
     
     // Filtrar tickets de melhoria se o toggle estiver desativado
