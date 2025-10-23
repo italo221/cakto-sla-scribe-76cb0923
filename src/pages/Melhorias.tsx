@@ -391,7 +391,7 @@ export default function MelhoriasPage() {
               onOpenDetail={handleOpenTicketDetail}
               onEditTicket={handleEditTicket}
               onTicketUpdate={handleTicketUpdate}
-              userRole={profile?.role || 'viewer'}
+              userRole={canEdit ? 'operador' : 'viewer'}
             />
           )}
         </div>
