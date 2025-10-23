@@ -27,8 +27,8 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
       try {
         console.log('🔍 useTicketsWithSubTicketInfo - Buscando info para', ticketIds.length, 'tickets');
         
-        // Dividir em lotes de 100 para evitar URL muito longa
-        const BATCH_SIZE = 100;
+        // Dividir em lotes de 50 para evitar URL muito longa (UUIDs são grandes!)
+        const BATCH_SIZE = 50;
         const batches: string[][] = [];
         
         for (let i = 0; i < ticketIds.length; i += BATCH_SIZE) {
@@ -58,7 +58,8 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
 
           if (error) {
             console.error(`❌ Erro no lote ${i + 1}:`, error);
-            throw error;
+            // Continuar processando os próximos lotes mesmo se um falhar
+            continue;
           }
           
           if (data && data.length > 0) {
