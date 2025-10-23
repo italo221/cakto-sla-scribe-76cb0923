@@ -122,9 +122,11 @@ export default function InboxDarkMode() {
   } = useTags();
   const [userRole, setUserRole] = useState<string>('viewer');
 
-  // Função para construir query com filtros
+  // Função para construir query com filtros (EXCLUINDO tickets de melhoria)
   const buildQuery = useCallback(() => {
-    let query = supabase.from('sla_demandas').select('*');
+    let query = supabase.from('sla_demandas').select('*')
+      .not('tipo_ticket', 'eq', 'feedback_sugestao')
+      .not('tipo_ticket', 'eq', 'atualizacao_projeto');
 
     // Aplicar filtros na query
     if (activeFilter !== 'all') {
@@ -153,13 +155,15 @@ export default function InboxDarkMode() {
     return query;
   }, [activeFilter, setorFilter, tagFilter, searchTerm, setores]);
 
-  // Função para buscar total de tickets
+  // Função para buscar total de tickets (EXCLUINDO tickets de melhoria)
   const fetchTotalCount = useCallback(async () => {
     try {
       let query = supabase.from('sla_demandas').select('*', {
         count: 'exact',
         head: true
-      });
+      })
+        .not('tipo_ticket', 'eq', 'feedback_sugestao')
+        .not('tipo_ticket', 'eq', 'atualizacao_projeto');
 
       // Aplicar os mesmos filtros da query principal
       if (activeFilter !== 'all') {

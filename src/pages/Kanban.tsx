@@ -149,9 +149,12 @@ export default function KanbanPage() {
     }
   };
 
-  // Filtrar tickets para o Kanban
+  // Filtrar tickets para o Kanban (EXCLUINDO tickets de melhoria)
   const filteredTickets = useMemo(() => {
-    let filtered = tickets;
+    let filtered = tickets.filter(ticket => 
+      ticket.tipo_ticket !== 'feedback_sugestao' && 
+      ticket.tipo_ticket !== 'atualizacao_projeto'
+    );
 
     // Busca por termo
     if (searchTerm) {

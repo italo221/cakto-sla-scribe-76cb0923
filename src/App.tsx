@@ -14,6 +14,7 @@ import Time from "./pages/Time";
 import Integrations from "./pages/Integrations";
 import Inbox from "./pages/Inbox";
 import Kanban from "./pages/Kanban";
+import Melhorias from "./pages/Melhorias";
 import Documentation from "./pages/Documentation";
 import Admin from "./pages/Admin";
 import Customization from "./pages/Customization";
@@ -103,6 +104,15 @@ function App() {
                   <div className="animate-fade-in">
                     <ProtectedRoute>
                       <Kanban />
+                    </ProtectedRoute>
+                  </div>
+                </AppLayout>
+              } />
+              <Route path="/melhorias" element={
+                <AppLayout>
+                  <div className="animate-fade-in">
+                    <ProtectedRoute>
+                      <Melhorias />
                     </ProtectedRoute>
                   </div>
                 </AppLayout>

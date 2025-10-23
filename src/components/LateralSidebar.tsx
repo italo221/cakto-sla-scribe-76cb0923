@@ -18,7 +18,8 @@ import {
   Menu,
   User,
   Bell,
-  Users
+  Users,
+  Lightbulb
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -48,6 +49,7 @@ const navItems: NavItem[] = [
   { path: "/time", label: "Time", icon: Users, hideForViewer: true },
   { path: "/inbox", label: "Caixa de Entrada", icon: Inbox, hideForViewer: true },
   { path: "/kanban", label: "Kanban", icon: Columns3, hideForViewer: true },
+  { path: "/melhorias", label: "Melhorias", icon: Lightbulb, hideForViewer: true },
   { path: "/integrations", label: "Integrações", icon: Settings, adminOnly: true },
   { path: "/customization", label: "Personalização", icon: Palette, adminOnly: true },
   { path: "/admin", label: "Admin", icon: Shield, adminOnly: true },
