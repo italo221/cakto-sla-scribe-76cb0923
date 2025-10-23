@@ -49,10 +49,7 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
             .select(`
               child_ticket_id,
               sequence_number,
-              parent_ticket_id,
-              sla_demandas!subtickets_parent_ticket_id_fkey (
-                ticket_number
-              )
+              parent_ticket_id
             `)
             .in('child_ticket_id', batch);
 
@@ -60,6 +57,28 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
             console.error(`❌ Erro no lote ${i + 1}:`, error);
             // Continuar processando os próximos lotes mesmo se um falhar
             continue;
+          }
+          
+          // Buscar os ticket_numbers dos pais separadamente
+          if (data && data.length > 0) {
+            const parentIds = data.map(item => item.parent_ticket_id).filter(Boolean);
+            
+            if (parentIds.length > 0) {
+              const { data: parentTickets, error: parentError } = await supabase
+                .from('sla_demandas')
+                .select('id, ticket_number')
+                .in('id', parentIds);
+              
+              if (!parentError && parentTickets) {
+                // Mapear parent_id para ticket_number
+                const parentMap = new Map(parentTickets.map(p => [p.id, p.ticket_number]));
+                
+                // Adicionar ticket_number aos dados
+                data.forEach((item: any) => {
+                  item.parent_ticket_number = parentMap.get(item.parent_ticket_id);
+                });
+              }
+            }
           }
           
           if (data && data.length > 0) {
@@ -78,11 +97,11 @@ export function useTicketsWithSubTicketInfo(ticketIds: string[]) {
 
         // Marcar os que são subtickets
         allData.forEach((item: any) => {
-          console.log('🎯 Sub-ticket detectado:', item.child_ticket_id, '| Seq:', item.sequence_number, '| Parent:', item.sla_demandas?.ticket_number);
+          console.log('🎯 Sub-ticket detectado:', item.child_ticket_id, '| Seq:', item.sequence_number, '| Parent:', item.parent_ticket_number);
           info[item.child_ticket_id] = {
             isSubTicket: true,
             sequenceNumber: item.sequence_number,
-            parentTicketNumber: item.sla_demandas?.ticket_number
+            parentTicketNumber: item.parent_ticket_number
           };
         });
 
