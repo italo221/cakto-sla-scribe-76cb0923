@@ -381,6 +381,8 @@ export type Database = {
       }
       lib_user_links: {
         Row: {
+          animation_intensity: string | null
+          animation_type: string | null
           badge_text: string | null
           created_at: string | null
           icon_url: string | null
@@ -395,6 +397,8 @@ export type Database = {
           url: string
         }
         Insert: {
+          animation_intensity?: string | null
+          animation_type?: string | null
           badge_text?: string | null
           created_at?: string | null
           icon_url?: string | null
@@ -409,6 +413,8 @@ export type Database = {
           url: string
         }
         Update: {
+          animation_intensity?: string | null
+          animation_type?: string | null
           badge_text?: string | null
           created_at?: string | null
           icon_url?: string | null
