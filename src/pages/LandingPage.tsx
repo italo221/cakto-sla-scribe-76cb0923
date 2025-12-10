@@ -70,7 +70,7 @@ const LandingPage = () => {
               <div className="space-y-4">
                 <h1 className="text-5xl md:text-7xl font-serif font-medium tracking-tight text-foreground">
                   <span className="block font-inter font-semibold">Sistema Inteligente</span>
-                  <span className="block italic text-foreground/90">de Tickets</span>
+                  <span className="block font-instrument-serif italic text-foreground/90">de Tickets</span>
                 </h1>
                 <p className="text-lg md:text-xl text-foreground/70 max-w-3xl mx-auto leading-relaxed">
                   Utilize nosso assistente de IA para criar tickets de forma rápida e precisa, com classificação automática.
