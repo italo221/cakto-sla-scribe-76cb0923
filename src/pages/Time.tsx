@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -301,11 +301,11 @@ export default function Time() {
   const [selectedSetores, setSelectedSetores] = useState<string[]>([]);
   const [allTeamsSelected, setAllTeamsSelected] = useState(true);
   const [groupByTeam, setGroupByTeam] = useState(false);
-  const [dateRange, setDateRange] = useState('30');
+  const [dateRange, setDateRange] = useState('all'); // Padrão: "SEMPRE"
   const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string[]>(['aberto', 'em_andamento']); // Padrão: Abertos e Em Andamento
   const [tagFilter, setTagFilter] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState('priority');
+  const [sortBy, setSortBy] = useState('priority'); // Padrão: ordenar por prioridade (P0 > P3)
   const [showOnlyMyTickets, setShowOnlyMyTickets] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -317,6 +317,9 @@ export default function Time() {
   // Modal states
   const [selectedTicket, setSelectedTicket] = useState<TeamTicket | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  
+  // Ref para evitar refresh ao voltar de outra aba
+  const isClosingModalRef = useRef(false);
   
   // Responsive filter sidebar
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
@@ -416,7 +419,10 @@ export default function Time() {
       
       setLoading(true);
       try {
-        const dateFrom = format(subDays(new Date(), parseInt(dateRange)), 'yyyy-MM-dd');
+        // Se dateRange for 'all', não aplicar filtro de data
+        const dateFrom = dateRange === 'all' 
+          ? format(new Date('2000-01-01'), 'yyyy-MM-dd') // Data muito antiga para pegar tudo
+          : format(subDays(new Date(), parseInt(dateRange)), 'yyyy-MM-dd');
         const dateTo = format(new Date(), 'yyyy-MM-dd');
         
         // Para Super Admin com "Todos os times", não enviar setor_ids (busca todos)
@@ -863,10 +869,11 @@ export default function Time() {
   const clearAllFilters = () => {
     setSearchTerm('');
     setPriorityFilter([]);
-    setStatusFilter([]);
+    setStatusFilter(['aberto', 'em_andamento']); // Restaurar padrão: Abertos e Em Andamento
     setTagFilter([]);
-    setSortBy('priority');
+    setSortBy('priority'); // Manter ordenação por prioridade
     setShowOnlyMyTickets(false);
+    setDateRange('all'); // Restaurar padrão: Sempre
   };
 
   // Pinned tickets functions
@@ -1037,12 +1044,24 @@ export default function Time() {
     setModalOpen(true);
   };
 
-  const handleModalClose = () => {
+  const handleModalClose = useCallback(() => {
+    // Marcar que estamos fechando o modal para evitar refresh
+    isClosingModalRef.current = true;
     setModalOpen(false);
     setSelectedTicket(null);
-  };
+    
+    // Resetar a flag após um curto período
+    setTimeout(() => {
+      isClosingModalRef.current = false;
+    }, 500);
+  }, []);
 
-  const handleTicketUpdate = () => {
+  const handleTicketUpdate = useCallback(() => {
+    // Não recarregar se estamos apenas fechando o modal (ex: voltando de outra aba)
+    if (isClosingModalRef.current) {
+      return;
+    }
+    
     // Recarregar dados após atualização
     const loadTickets = async () => {
       if (selectedSetores.length === 0) return;
@@ -1118,8 +1137,7 @@ export default function Time() {
     };
     
     loadTickets();
-  };
-
+  }, [selectedSetores, isSuperAdmin, allTeamsSelected, priorityFilter, statusFilter, showOnlyMyTickets, user]);
   const getStatusLabel = (status: string) => {
     const labels = {
       'aberto': 'Aberto',
@@ -1257,6 +1275,7 @@ export default function Time() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">Sempre</SelectItem>
               <SelectItem value="7">Últimos 7 dias</SelectItem>
               <SelectItem value="30">Últimos 30 dias</SelectItem>
               <SelectItem value="90">Últimos 90 dias</SelectItem>
@@ -1286,7 +1305,12 @@ export default function Time() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full justify-between">
-                {statusFilter.length > 0 ? `${statusFilter.length} selecionados` : 'Todos os status'}
+                {statusFilter.length === 0 
+                  ? 'Todos os status' 
+                  : statusFilter.length === 2 && statusFilter.includes('aberto') && statusFilter.includes('em_andamento')
+                    ? 'Abertos e Em Andamento'
+                    : `${statusFilter.length} selecionados`
+                }
                 <Filter className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -1692,6 +1716,39 @@ export default function Time() {
             isOpen={modalOpen}
             onClose={handleModalClose}
             onUpdate={handleTicketUpdate}
+            setSelectedSLA={(sla) => {
+              if (sla) {
+                // Converter SLA para TeamTicket para manter compatibilidade
+                const teamTicket: TeamTicket = {
+                  id: sla.id,
+                  ticket_number: sla.ticket_number || '',
+                  titulo: sla.titulo,
+                  time_responsavel: sla.time_responsavel,
+                  solicitante: sla.solicitante,
+                  descricao: sla.descricao,
+                  responsavel_interno: sla.responsavel_interno,
+                  status: sla.status,
+                  nivel_criticidade: sla.nivel_criticidade,
+                  pontuacao_total: sla.pontuacao_total,
+                  pontuacao_financeiro: sla.pontuacao_financeiro,
+                  pontuacao_cliente: sla.pontuacao_cliente,
+                  pontuacao_reputacao: sla.pontuacao_reputacao,
+                  pontuacao_urgencia: sla.pontuacao_urgencia,
+                  pontuacao_operacional: sla.pontuacao_operacional,
+                  data_criacao: sla.data_criacao,
+                  observacoes: sla.observacoes,
+                  setor_id: sla.setor_id,
+                  prazo_interno: sla.prazo_interno,
+                  prioridade_operacional: sla.prioridade_operacional,
+                  tags: sla.tags,
+                  age_days: Math.floor((new Date().getTime() - new Date(sla.data_criacao).getTime()) / (1000 * 60 * 60 * 24)),
+                  is_overdue: sla.prazo_interno ? new Date(sla.prazo_interno) < new Date() && !['resolvido', 'fechado'].includes(sla.status) : false
+                };
+                setSelectedTicket(teamTicket);
+              } else {
+                setSelectedTicket(null);
+              }
+            }}
           />
         )}
       </div>
