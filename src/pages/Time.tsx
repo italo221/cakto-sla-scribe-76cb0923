@@ -799,13 +799,20 @@ export default function Time() {
     // Aplicar ordenação apenas aos tickets regulares
     const sortTickets = (ticketList: TeamTicket[]) => {
       const sorted = [...ticketList];
+      const priorityOrder: Record<string, number> = { 'P0': 0, 'P1': 1, 'P2': 2, 'P3': 3 };
+      
       switch (sortBy) {
         case 'priority':
-          const priorityOrder = { 'P0': 0, 'P1': 1, 'P2': 2, 'P3': 3 };
-          sorted.sort((a, b) => 
-            (priorityOrder[a.nivel_criticidade as keyof typeof priorityOrder] || 4) - 
-            (priorityOrder[b.nivel_criticidade as keyof typeof priorityOrder] || 4)
-          );
+          // Ordenar por criticidade: P0 (mais crítico) primeiro, depois P1, P2, P3
+          sorted.sort((a, b) => {
+            const priorityA = priorityOrder[a.nivel_criticidade] ?? 4;
+            const priorityB = priorityOrder[b.nivel_criticidade] ?? 4;
+            if (priorityA !== priorityB) {
+              return priorityA - priorityB;
+            }
+            // Desempate por data de criação (mais antigo primeiro)
+            return new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime();
+          });
           break;
         case 'oldest':
           sorted.sort((a, b) => new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime());
