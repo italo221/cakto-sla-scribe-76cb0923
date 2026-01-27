@@ -202,91 +202,76 @@ export default function InboxDarkMode() {
     }
   }, [activeFilter, setorFilter, tagFilter, searchTerm, setores]);
 
-  // Função para buscar tickets paginados
+  // Função para buscar tickets paginados usando RPC com ordenação global
   const fetchTickets = useCallback(async (page = 1, pageSize = 30) => {
     setLoading(true);
     setError(null);
     try {
-      // Buscar total de tickets
-      const total = await fetchTotalCount();
+      // Preparar filtros para a função RPC
+      let statusFilter: string[] | null = null;
+      let criticalityFilter: string[] | null = null;
+      let setorId: string | null = null;
+      let searchTermParam: string | null = searchTerm || null;
+
+      // Aplicar filtros
+      if (activeFilter !== 'all') {
+        if (activeFilter === 'atrasado') {
+          // Para atrasados, buscar todos e filtrar no frontend
+          statusFilter = null;
+        } else if (activeFilter === 'critico') {
+          criticalityFilter = ['P0'];
+          statusFilter = ['aberto', 'em_andamento'];
+        } else if (activeFilter !== 'info-incompleta') {
+          statusFilter = [activeFilter];
+        }
+      }
+
+      if (setorFilter !== 'all') {
+        setorId = setorFilter;
+      }
+
+      // Calcular offset
+      const offset = (page - 1) * pageSize;
+
+      // Chamar a função RPC com ordenação global
+      const { data, error: rpcError } = await supabase.rpc('get_inbox_tickets_ordered', {
+        p_status_filter: statusFilter,
+        p_criticality_filter: criticalityFilter,
+        p_setor_id: setorId,
+        p_search_term: searchTermParam,
+        p_date_sort: dateSort,
+        p_criticality_sort: criticalitySort,
+        p_limit: pageSize,
+        p_offset: offset
+      });
+
+      if (rpcError) {
+        console.error('Erro RPC:', rpcError);
+        throw rpcError;
+      }
+
+      // Extrair total_count do primeiro resultado (todos têm o mesmo valor)
+      const total = data && data.length > 0 ? Number(data[0].total_count) : 0;
       setTotalCount(total);
 
       // Verificar se página está dentro do limite
       const maxPage = Math.ceil(total / pageSize) || 1;
       const safePage = Math.min(page, maxPage);
 
-      // Calcular range
-      const from = (safePage - 1) * pageSize;
-      const to = from + pageSize - 1;
+      // Filtrar por tag se necessário (RPC não suporta tags)
+      let filteredData = data || [];
+      if (tagFilter !== 'todas') {
+        filteredData = filteredData.filter((t: any) => 
+          t.tags && Array.isArray(t.tags) && t.tags.includes(tagFilter)
+        );
+      }
 
-      // Buscar tickets da página
-      const query = buildQuery();
+      // Filtrar tickets de melhoria (tipo_ticket específicos)
+      filteredData = filteredData.filter((t: any) => 
+        t.tipo_ticket !== 'feedback_sugestao' && t.tipo_ticket !== 'atualizacao_projeto'
+      );
 
-      // Buscar todos os tickets da página sem ordenação específica do banco
-      // A ordenação será feita no frontend para aplicar regra de status + criticidade
-      query.order('data_criacao', { ascending: false });
-      
-      const {
-        data,
-        error
-      } = await query.range(from, to);
-      if (error) throw error;
-      
-      // Aplicar ordenação no frontend
-      // REGRA: Sempre priorizar tickets abertos/em_andamento antes de resolvidos/fechados
-      // Depois aplicar a ordenação selecionada (criticidade ou data)
-      let sortedData = data || [];
-      
-      // Ordem de prioridade de status: aberto (0), em_andamento (1), resolvido (2), fechado (3)
-      const statusOrder: Record<string, number> = { 
-        'aberto': 0, 
-        'em_andamento': 1, 
-        'resolvido': 2, 
-        'fechado': 3 
-      };
-      
-      // Ordem de criticidade: P0 (0) é mais crítico, P3 (3) é menos crítico
-      const criticalityOrder: Record<string, number> = { 
-        'P0': 0, 
-        'P1': 1, 
-        'P2': 2, 
-        'P3': 3 
-      };
-      
-      sortedData = [...sortedData].sort((a, b) => {
-        // 1. Primeiro ordenar por status (aberto/em_andamento antes de resolvido/fechado)
-        const statusA = statusOrder[a.status] ?? 4;
-        const statusB = statusOrder[b.status] ?? 4;
-        if (statusA !== statusB) {
-          return statusA - statusB;
-        }
-        
-        // 2. Dentro do mesmo "grupo de status", aplicar ordenação selecionada
-        if (dateSort !== 'none') {
-          const dateA = new Date(a.data_criacao).getTime();
-          const dateB = new Date(b.data_criacao).getTime();
-          return dateSort === 'oldest' ? dateA - dateB : dateB - dateA;
-        } else if (criticalitySort !== 'none') {
-          const critA = criticalityOrder[a.nivel_criticidade] ?? 4;
-          const critB = criticalityOrder[b.nivel_criticidade] ?? 4;
-          if (critA !== critB) {
-            return criticalitySort === 'highest' ? critA - critB : critB - critA;
-          }
-          // Desempate por data (mais antigo primeiro)
-          return new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime();
-        } else {
-          // Padrão: ordenar por criticidade (mais críticos primeiro)
-          const critA = criticalityOrder[a.nivel_criticidade] ?? 4;
-          const critB = criticalityOrder[b.nivel_criticidade] ?? 4;
-          if (critA !== critB) {
-            return critA - critB;
-          }
-          // Desempate por data (mais antigo primeiro)
-          return new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime();
-        }
-      });
-      
-      setTickets(sortedData);
+      setTickets(filteredData);
 
       // Atualizar página atual se foi ajustada
       if (safePage !== page) {
@@ -300,7 +285,7 @@ export default function InboxDarkMode() {
     } finally {
       setLoading(false);
     }
-  }, [buildQuery, fetchTotalCount, dateSort, criticalitySort]);
+  }, [activeFilter, setorFilter, tagFilter, searchTerm, dateSort, criticalitySort]);
 
   // Função para atualizar URL
   const updateURL = useCallback((page: number, pageSize: number) => {

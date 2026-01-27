@@ -1555,6 +1555,39 @@ export type Database = {
       generate_share_token: { Args: never; Returns: string }
       generate_ticket_number: { Args: never; Returns: string }
       get_hidden_tags: { Args: never; Returns: string[] }
+      get_inbox_tickets_ordered: {
+        Args: {
+          p_criticality_filter?: string[]
+          p_criticality_sort?: string
+          p_date_sort?: string
+          p_limit?: number
+          p_offset?: number
+          p_search_term?: string
+          p_setor_id?: string
+          p_status_filter?: string[]
+        }
+        Returns: {
+          assignee_user_id: string
+          data_criacao: string
+          descricao: string
+          id: string
+          nivel_criticidade: string
+          observacoes: string
+          pontuacao_total: number
+          prazo_interno: string
+          resolved_at: string
+          setor_id: string
+          solicitante: string
+          status: string
+          tags: string[]
+          ticket_number: string
+          time_responsavel: string
+          tipo_ticket: string
+          titulo: string
+          total_count: number
+          updated_at: string
+        }[]
+      }
       get_next_subticket_sequence: {
         Args: { p_parent_ticket_id: string }
         Returns: number
