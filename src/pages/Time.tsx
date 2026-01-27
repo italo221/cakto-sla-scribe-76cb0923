@@ -321,6 +321,10 @@ export default function Time() {
   // Ref para evitar refresh ao voltar de outra aba
   const isClosingModalRef = useRef(false);
   
+  // Ref para preservar a posição de scroll
+  const scrollPositionRef = useRef(0);
+  const scrollAreaRef = useRef<HTMLDivElement | null>(null);
+  
   // Responsive filter sidebar
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
   
@@ -1046,7 +1050,44 @@ export default function Time() {
     loadPinnedTickets();
   }, [loadPinnedTickets]);
 
+  // Preservar posição de scroll ao trocar de aba do browser
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        // Salvar posição atual quando sair da aba
+        if (scrollAreaRef.current) {
+          const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+          if (viewport) {
+            scrollPositionRef.current = viewport.scrollTop;
+          }
+        }
+      } else if (document.visibilityState === 'visible') {
+        // Restaurar posição quando voltar para a aba
+        requestAnimationFrame(() => {
+          if (scrollAreaRef.current) {
+            const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+            if (viewport) {
+              viewport.scrollTop = scrollPositionRef.current;
+            }
+          }
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const handleTicketClick = (ticket: TeamTicket) => {
+    // Salvar posição de scroll antes de abrir o modal
+    if (scrollAreaRef.current) {
+      const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        scrollPositionRef.current = viewport.scrollTop;
+      }
+    }
     setSelectedTicket(ticket);
     setModalOpen(true);
   };
@@ -1056,6 +1097,16 @@ export default function Time() {
     isClosingModalRef.current = true;
     setModalOpen(false);
     setSelectedTicket(null);
+    
+    // Restaurar posição de scroll após fechar o modal
+    requestAnimationFrame(() => {
+      if (scrollAreaRef.current) {
+        const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+        if (viewport) {
+          viewport.scrollTop = scrollPositionRef.current;
+        }
+      }
+    });
     
     // Resetar a flag após um curto período
     setTimeout(() => {
@@ -1529,6 +1580,7 @@ export default function Time() {
             {/* Ticket List - Left Column */}
             <div className="min-w-0">
               <ScrollArea 
+                ref={scrollAreaRef}
                 className="rounded-lg border bg-card"
                 style={{ 
                   height: 'calc(100vh - var(--header-height, 80px) - 120px)',
