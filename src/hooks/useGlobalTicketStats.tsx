@@ -9,6 +9,7 @@ export interface GlobalTicketStats {
   fechados: number;
   atrasados: number;
   criticos: number;
+  infoIncompleta: number;
 }
 
 // Hook especializado para estatísticas globais usando agregações SQL eficientes
@@ -20,7 +21,8 @@ export const useGlobalTicketStats = () => {
     resolvidos: 0,
     fechados: 0,
     atrasados: 0,
-    criticos: 0
+    criticos: 0,
+    infoIncompleta: 0
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,41 +32,42 @@ export const useGlobalTicketStats = () => {
       setLoading(true);
       setError(null);
 
-      // Buscar contagem por status usando agregação SQL
-      const { data: statusCounts, error: statusError } = await supabase
-        .from('sla_demandas')
-        .select('status')
-        .then(async ({ data, error }) => {
-          if (error) throw error;
-          
-          // Contar manualmente para garantir compatibilidade
-          const counts = {
-            total: data?.length || 0,
-            abertos: data?.filter(t => t.status === 'aberto').length || 0,
-            em_andamento: data?.filter(t => t.status === 'em_andamento').length || 0,
-            resolvidos: data?.filter(t => t.status === 'resolvido').length || 0,
-            fechados: data?.filter(t => t.status === 'fechado').length || 0,
-          };
-          
-          return { data: counts, error: null };
-        });
+      // Buscar contagem por status usando consultas count separadas para evitar limite de 1000
+      const [
+        { count: totalCount },
+        { count: abertosCount },
+        { count: emAndamentoCount },
+        { count: resolvidosCount },
+        { count: fechadosCount },
+        { count: criticosCount },
+        { count: infoIncompletaCount }
+      ] = await Promise.all([
+        // Total de tickets
+        supabase.from('sla_demandas').select('*', { count: 'exact', head: true }),
+        // Abertos
+        supabase.from('sla_demandas').select('*', { count: 'exact', head: true }).eq('status', 'aberto'),
+        // Em andamento
+        supabase.from('sla_demandas').select('*', { count: 'exact', head: true }).eq('status', 'em_andamento'),
+        // Resolvidos
+        supabase.from('sla_demandas').select('*', { count: 'exact', head: true }).eq('status', 'resolvido'),
+        // Fechados
+        supabase.from('sla_demandas').select('*', { count: 'exact', head: true }).eq('status', 'fechado'),
+        // Críticos (P0 abertos ou em andamento)
+        supabase.from('sla_demandas').select('*', { count: 'exact', head: true })
+          .eq('nivel_criticidade', 'P0')
+          .in('status', ['aberto', 'em_andamento']),
+        // Info incompleta (tag específica)
+        supabase.from('sla_demandas').select('*', { count: 'exact', head: true })
+          .contains('tags', ['info-incompleta'])
+      ]);
 
-      if (statusError) throw statusError;
-
-      // Buscar tickets críticos P0 que estão abertos ou em andamento
-      const { data: criticosData, error: criticosError } = await supabase
-        .from('sla_demandas')
-        .select('id')
-        .eq('nivel_criticidade', 'P0')
-        .in('status', ['aberto', 'em_andamento']);
-
-      if (criticosError) throw criticosError;
-
-      // Buscar tickets atrasados (precisa calcular com dados de data_criacao e prazo_interno)
+      // Buscar tickets atrasados - precisa calcular com dados de data_criacao e prazo_interno
+      // Buscar apenas tickets não resolvidos/fechados (limitando a 3000 para performance)
       const { data: atrasadosData, error: atrasadosError } = await supabase
         .from('sla_demandas')
         .select('id, status, nivel_criticidade, data_criacao, prazo_interno')
-        .not('status', 'in', '(resolvido,fechado)');
+        .not('status', 'in', '(resolvido,fechado)')
+        .limit(3000);
 
       if (atrasadosError) throw atrasadosError;
 
@@ -90,13 +93,14 @@ export const useGlobalTicketStats = () => {
       }).length || 0;
 
       setStats({
-        total: statusCounts?.total || 0,
-        abertos: statusCounts?.abertos || 0,
-        em_andamento: statusCounts?.em_andamento || 0,
-        resolvidos: statusCounts?.resolvidos || 0,
-        fechados: statusCounts?.fechados || 0,
+        total: totalCount || 0,
+        abertos: abertosCount || 0,
+        em_andamento: emAndamentoCount || 0,
+        resolvidos: resolvidosCount || 0,
+        fechados: fechadosCount || 0,
         atrasados: atrasadosCount,
-        criticos: criticosData?.length || 0
+        criticos: criticosCount || 0,
+        infoIncompleta: infoIncompletaCount || 0
       });
 
     } catch (err: any) {
