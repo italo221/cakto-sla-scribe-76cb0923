@@ -808,8 +808,14 @@ export default function InboxDarkMode() {
           )} onClick={() => {
             const newFilter = activeFilter === 'aberto' ? 'all' : 'aberto';
             setActiveFilter(newFilter);
+            // Quando card está ativo, desativar ordenação por criticidade e usar data mais recente
             if (newFilter !== 'all') {
-              reloadTickets();
+              setCriticalitySort('none');
+              setDateSort('newest');
+            } else {
+              // Voltar ao padrão P0 no topo quando nenhum card ativo
+              setCriticalitySort('highest');
+              setDateSort('none');
             }
           }}>
             <CardContent className="p-6">
@@ -829,8 +835,14 @@ export default function InboxDarkMode() {
           )} onClick={() => {
             const newFilter = activeFilter === 'em_andamento' ? 'all' : 'em_andamento';
             setActiveFilter(newFilter);
+            // Quando card está ativo, desativar ordenação por criticidade e usar data mais recente
             if (newFilter !== 'all') {
-              reloadTickets();
+              setCriticalitySort('none');
+              setDateSort('newest');
+            } else {
+              // Voltar ao padrão P0 no topo quando nenhum card ativo
+              setCriticalitySort('highest');
+              setDateSort('none');
             }
           }}>
             <CardContent className="p-6">
@@ -850,8 +862,14 @@ export default function InboxDarkMode() {
           )} onClick={() => {
             const newFilter = activeFilter === 'resolvido' ? 'all' : 'resolvido';
             setActiveFilter(newFilter);
+            // Quando card está ativo, desativar ordenação por criticidade e usar data mais recente
             if (newFilter !== 'all') {
-              reloadTickets();
+              setCriticalitySort('none');
+              setDateSort('newest');
+            } else {
+              // Voltar ao padrão P0 no topo quando nenhum card ativo
+              setCriticalitySort('highest');
+              setDateSort('none');
             }
           }}>
             <CardContent className="p-6">
@@ -871,8 +889,14 @@ export default function InboxDarkMode() {
           )} onClick={() => {
             const newFilter = activeFilter === 'fechado' ? 'all' : 'fechado';
             setActiveFilter(newFilter);
+            // Quando card está ativo, desativar ordenação por criticidade e usar data mais recente
             if (newFilter !== 'all') {
-              reloadTickets();
+              setCriticalitySort('none');
+              setDateSort('newest');
+            } else {
+              // Voltar ao padrão P0 no topo quando nenhum card ativo
+              setCriticalitySort('highest');
+              setDateSort('none');
             }
           }}>
             <CardContent className="p-6">
@@ -892,8 +916,14 @@ export default function InboxDarkMode() {
           )} onClick={() => {
             const newFilter = activeFilter === 'atrasado' ? 'all' : 'atrasado';
             setActiveFilter(newFilter);
+            // Quando card está ativo, desativar ordenação por criticidade e usar data mais recente
             if (newFilter !== 'all') {
-              reloadTickets();
+              setCriticalitySort('none');
+              setDateSort('newest');
+            } else {
+              // Voltar ao padrão P0 no topo quando nenhum card ativo
+              setCriticalitySort('highest');
+              setDateSort('none');
             }
           }}>
             <CardContent className="p-6">
@@ -913,8 +943,10 @@ export default function InboxDarkMode() {
           )} onClick={() => {
             const newFilter = activeFilter === 'critico' ? 'all' : 'critico';
             setActiveFilter(newFilter);
-            if (newFilter !== 'all') {
-              reloadTickets();
+            // Para críticos, manter ordenação P0 faz sentido
+            if (newFilter === 'all') {
+              setCriticalitySort('highest');
+              setDateSort('none');
             }
           }}>
             <CardContent className="p-6">
@@ -931,7 +963,19 @@ export default function InboxDarkMode() {
             activeFilter === 'info-incompleta' 
               ? 'border-yellow-400 bg-yellow-400/10 ring-2 ring-yellow-400/30 shadow-md' 
               : 'border-border/10 border-l-[2px] border-l-yellow-400/30'
-          )} onClick={() => setActiveFilter(activeFilter === 'info-incompleta' ? 'all' : 'info-incompleta')}>
+          )} onClick={() => {
+            const newFilter = activeFilter === 'info-incompleta' ? 'all' : 'info-incompleta';
+            setActiveFilter(newFilter);
+            // Quando card está ativo, desativar ordenação por criticidade e usar data mais recente
+            if (newFilter !== 'all') {
+              setCriticalitySort('none');
+              setDateSort('newest');
+            } else {
+              // Voltar ao padrão P0 no topo quando nenhum card ativo
+              setCriticalitySort('highest');
+              setDateSort('none');
+            }
+          }}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className={cn("text-sm", activeFilter === 'info-incompleta' ? 'text-yellow-600 dark:text-yellow-400 font-medium' : 'text-muted-foreground')}>Info Incompleta</span>
