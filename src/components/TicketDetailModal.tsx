@@ -1065,10 +1065,20 @@ const toggleCommentsFocusMode = () => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-4">
-          {/* Título do ticket em linha própria */}
+          {/* Título do ticket em linha própria - clicável para copiar */}
           {!isCommentsFocusMode && (
             <div className="w-full">
-              <DialogTitle className="text-xl font-bold break-words">
+              <DialogTitle 
+                className="text-xl font-bold break-words cursor-pointer hover:text-primary transition-colors"
+                onClick={() => {
+                  navigator.clipboard.writeText(currentSLA.titulo);
+                  toast({
+                    title: "Título copiado!",
+                    description: currentSLA.titulo.length > 50 ? currentSLA.titulo.substring(0, 50) + "..." : currentSLA.titulo,
+                  });
+                }}
+                title="Clique para copiar o título"
+              >
                 {currentSLA.ticket_number || `#${currentSLA.id.slice(0, 8)}`} - {currentSLA.titulo}
               </DialogTitle>
             </div>
