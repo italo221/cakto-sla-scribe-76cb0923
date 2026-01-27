@@ -73,7 +73,8 @@ export default function InboxDarkMode() {
   const [setorFilter, setSetorFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('todas');
   const [dateSort, setDateSort] = useState<'newest' | 'oldest' | 'none'>('none');
-  const [criticalitySort, setCriticalitySort] = useState<'highest' | 'lowest' | 'none'>('none');
+  // Por padrão, ordenar por mais críticos (P0 primeiro)
+  const [criticalitySort, setCriticalitySort] = useState<'highest' | 'lowest' | 'none'>('highest');
 
   // Estados para paginação e URL
   const [searchParams, setSearchParams] = useSearchParams();
@@ -227,15 +228,19 @@ export default function InboxDarkMode() {
           ascending: dateSort === 'oldest'
         });
       } else if (criticalitySort !== 'none') {
-        // Para ordenação por criticidade, usar SQL CASE
-        const order = criticalitySort === 'highest' ? 'desc' : 'asc';
+        // Para ordenação por criticidade, P0 é mais crítico que P3
+        // Usar ordenação correta: highest = P0 primeiro (ascending), lowest = P3 primeiro (descending)
+        // Como P0 < P1 < P2 < P3 alfabeticamente, ascending = P0 primeiro
+        const ascending = criticalitySort === 'highest';
         query.order('nivel_criticidade', {
-          ascending: order === 'asc'
+          ascending: ascending
         });
+        // Ordenar secundariamente por data (mais antigo primeiro para mesma criticidade)
+        query.order('data_criacao', { ascending: true });
       } else {
-        query.order('data_criacao', {
-          ascending: false
-        }); // Padrão: mais recente primeiro
+        // Padrão: ordenar por criticidade (mais críticos primeiro)
+        query.order('nivel_criticidade', { ascending: true });
+        query.order('data_criacao', { ascending: true });
       }
       const {
         data,
@@ -772,8 +777,10 @@ export default function InboxDarkMode() {
         {/* Status Cards - Sistema de filtro unificado usando dados centralizados */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
           <Card className={cn(
-            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60",
-            activeFilter === 'aberto' ? 'border-l-[2px] border-l-blue-500/30 ring-1 ring-border/20' : 'border-l-[2px] border-l-blue-500/30'
+            "cursor-pointer transition-all duration-200 bg-card border rounded-xl hover:bg-muted/60",
+            activeFilter === 'aberto' 
+              ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30 shadow-md' 
+              : 'border-border/10 border-l-[2px] border-l-blue-500/30'
           )} onClick={() => {
             const newFilter = activeFilter === 'aberto' ? 'all' : 'aberto';
             setActiveFilter(newFilter);
@@ -783,16 +790,18 @@ export default function InboxDarkMode() {
           }}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Abertos</span>
-                <Circle className="text-muted-foreground w-4 h-4" />
+                <span className={cn("text-sm", activeFilter === 'aberto' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-muted-foreground')}>Abertos</span>
+                <Circle className={cn("w-4 h-4", activeFilter === 'aberto' ? 'text-blue-500' : 'text-muted-foreground')} />
               </div>
               <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.abertos}</h2>
             </CardContent>
           </Card>
 
           <Card className={cn(
-            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60",
-            activeFilter === 'em_andamento' ? 'border-l-[2px] border-l-blue-400/30 ring-1 ring-border/20' : 'border-l-[2px] border-l-blue-400/30'
+            "cursor-pointer transition-all duration-200 bg-card border rounded-xl hover:bg-muted/60",
+            activeFilter === 'em_andamento' 
+              ? 'border-blue-400 bg-blue-400/10 ring-2 ring-blue-400/30 shadow-md' 
+              : 'border-border/10 border-l-[2px] border-l-blue-400/30'
           )} onClick={() => {
             const newFilter = activeFilter === 'em_andamento' ? 'all' : 'em_andamento';
             setActiveFilter(newFilter);
@@ -802,16 +811,18 @@ export default function InboxDarkMode() {
           }}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Em Andamento</span>
-                <Activity className="text-muted-foreground w-4 h-4" />
+                <span className={cn("text-sm", activeFilter === 'em_andamento' ? 'text-blue-500 dark:text-blue-300 font-medium' : 'text-muted-foreground')}>Em Andamento</span>
+                <Activity className={cn("w-4 h-4", activeFilter === 'em_andamento' ? 'text-blue-400' : 'text-muted-foreground')} />
               </div>
               <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.em_andamento}</h2>
             </CardContent>
           </Card>
 
           <Card className={cn(
-            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60",
-            activeFilter === 'resolvido' ? 'border-l-[2px] border-l-green-500/30 ring-1 ring-border/20' : 'border-l-[2px] border-l-green-500/30'
+            "cursor-pointer transition-all duration-200 bg-card border rounded-xl hover:bg-muted/60",
+            activeFilter === 'resolvido' 
+              ? 'border-green-500 bg-green-500/10 ring-2 ring-green-500/30 shadow-md' 
+              : 'border-border/10 border-l-[2px] border-l-green-500/30'
           )} onClick={() => {
             const newFilter = activeFilter === 'resolvido' ? 'all' : 'resolvido';
             setActiveFilter(newFilter);
@@ -821,16 +832,18 @@ export default function InboxDarkMode() {
           }}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Resolvidos</span>
-                <CheckCircle className="text-muted-foreground w-4 h-4" />
+                <span className={cn("text-sm", activeFilter === 'resolvido' ? 'text-green-600 dark:text-green-400 font-medium' : 'text-muted-foreground')}>Resolvidos</span>
+                <CheckCircle className={cn("w-4 h-4", activeFilter === 'resolvido' ? 'text-green-500' : 'text-muted-foreground')} />
               </div>
               <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.resolvidos}</h2>
             </CardContent>
           </Card>
 
           <Card className={cn(
-            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60",
-            activeFilter === 'fechado' ? 'border-l-[2px] border-l-neutral-500/20 ring-1 ring-border/20' : 'border-l-[2px] border-l-neutral-500/20'
+            "cursor-pointer transition-all duration-200 bg-card border rounded-xl hover:bg-muted/60",
+            activeFilter === 'fechado' 
+              ? 'border-neutral-500 bg-neutral-500/10 ring-2 ring-neutral-500/30 shadow-md' 
+              : 'border-border/10 border-l-[2px] border-l-neutral-500/20'
           )} onClick={() => {
             const newFilter = activeFilter === 'fechado' ? 'all' : 'fechado';
             setActiveFilter(newFilter);
@@ -840,16 +853,18 @@ export default function InboxDarkMode() {
           }}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Fechados</span>
-                <X className="text-muted-foreground w-4 h-4" />
+                <span className={cn("text-sm", activeFilter === 'fechado' ? 'text-neutral-600 dark:text-neutral-400 font-medium' : 'text-muted-foreground')}>Fechados</span>
+                <X className={cn("w-4 h-4", activeFilter === 'fechado' ? 'text-neutral-500' : 'text-muted-foreground')} />
               </div>
               <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.fechados}</h2>
             </CardContent>
           </Card>
 
           <Card className={cn(
-            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60",
-            activeFilter === 'atrasado' ? 'border-l-[2px] border-l-red-500/30 ring-1 ring-border/20' : 'border-l-[2px] border-l-red-500/30'
+            "cursor-pointer transition-all duration-200 bg-card border rounded-xl hover:bg-muted/60",
+            activeFilter === 'atrasado' 
+              ? 'border-red-500 bg-red-500/10 ring-2 ring-red-500/30 shadow-md' 
+              : 'border-border/10 border-l-[2px] border-l-red-500/30'
           )} onClick={() => {
             const newFilter = activeFilter === 'atrasado' ? 'all' : 'atrasado';
             setActiveFilter(newFilter);
@@ -859,16 +874,18 @@ export default function InboxDarkMode() {
           }}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Atrasados</span>
-                <AlertTriangle className="text-muted-foreground w-4 h-4" />
+                <span className={cn("text-sm", activeFilter === 'atrasado' ? 'text-red-600 dark:text-red-400 font-medium' : 'text-muted-foreground')}>Atrasados</span>
+                <AlertTriangle className={cn("w-4 h-4", activeFilter === 'atrasado' ? 'text-red-500' : 'text-muted-foreground')} />
               </div>
               <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.atrasados}</h2>
             </CardContent>
           </Card>
 
           <Card className={cn(
-            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60",
-            activeFilter === 'critico' ? 'border-l-[2px] border-l-red-600/35 ring-1 ring-border/20' : 'border-l-[2px] border-l-red-600/35'
+            "cursor-pointer transition-all duration-200 bg-card border rounded-xl hover:bg-muted/60",
+            activeFilter === 'critico' 
+              ? 'border-red-600 bg-red-600/10 ring-2 ring-red-600/30 shadow-md' 
+              : 'border-border/10 border-l-[2px] border-l-red-600/35'
           )} onClick={() => {
             const newFilter = activeFilter === 'critico' ? 'all' : 'critico';
             setActiveFilter(newFilter);
@@ -878,21 +895,23 @@ export default function InboxDarkMode() {
           }}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Críticos</span>
-                <Flag className="text-muted-foreground w-4 h-4" />
+                <span className={cn("text-sm", activeFilter === 'critico' ? 'text-red-700 dark:text-red-300 font-medium' : 'text-muted-foreground')}>Críticos</span>
+                <Flag className={cn("w-4 h-4", activeFilter === 'critico' ? 'text-red-600' : 'text-muted-foreground')} />
               </div>
               <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.criticos}</h2>
             </CardContent>
           </Card>
 
           <Card className={cn(
-            "cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60",
-            activeFilter === 'info-incompleta' ? 'border-l-[2px] border-l-yellow-400/30 ring-1 ring-border/20' : 'border-l-[2px] border-l-yellow-400/30'
+            "cursor-pointer transition-all duration-200 bg-card border rounded-xl hover:bg-muted/60",
+            activeFilter === 'info-incompleta' 
+              ? 'border-yellow-400 bg-yellow-400/10 ring-2 ring-yellow-400/30 shadow-md' 
+              : 'border-border/10 border-l-[2px] border-l-yellow-400/30'
           )} onClick={() => setActiveFilter(activeFilter === 'info-incompleta' ? 'all' : 'info-incompleta')}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Info Incompleta</span>
-                <HelpCircle className="text-muted-foreground w-4 h-4" />
+                <span className={cn("text-sm", activeFilter === 'info-incompleta' ? 'text-yellow-600 dark:text-yellow-400 font-medium' : 'text-muted-foreground')}>Info Incompleta</span>
+                <HelpCircle className={cn("w-4 h-4", activeFilter === 'info-incompleta' ? 'text-yellow-500' : 'text-muted-foreground')} />
               </div>
               <h2 className="text-2xl font-semibold tracking-tight text-foreground">
                 {optimizedTicketsWithStatus.filter(ticket => ticket.tags?.includes("info-incompleta")).length}
@@ -914,13 +933,13 @@ export default function InboxDarkMode() {
             <span className="mx-0 px-0 my-[5px] py-0 text-base text-center">
               {totalTickets} tickets encontrados | Página {paginaAtual} de {totalPaginas}
             </span>
-            {(searchTerm || activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'none') && <Button variant="ghost" size="sm" onClick={() => {
+            {(searchTerm || activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'highest') && <Button variant="ghost" size="sm" onClick={() => {
             setSearchTerm('');
             setActiveFilter('all');
             setSetorFilter('all');
             setTagFilter('todas');
             setDateSort('none');
-            setCriticalitySort('none');
+            setCriticalitySort('highest'); // Restaurar para mais críticos (padrão)
             setShowSuggestions(false);
           }} className="text-xs">
                 Limpar filtros
@@ -943,10 +962,10 @@ export default function InboxDarkMode() {
               <CardContent className="p-8 text-center">
                 <InboxIcon className="h-12 w-12 text-muted-foreground dark:text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground dark:text-foreground mb-2">
-                 {searchTerm || activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'none' ? 'Nenhum ticket encontrado' : 'Nenhum ticket cadastrado'}
+                 {searchTerm || activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'highest' ? 'Nenhum ticket encontrado' : 'Nenhum ticket cadastrado'}
                 </h3>
                 <p className="text-muted-foreground dark:text-muted-foreground">
-                  {searchTerm || activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'none' ? 'Tente ajustar os filtros de busca.' : 'Quando houver tickets, eles aparecerão aqui.'}
+                  {searchTerm || activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'highest' ? 'Tente ajustar os filtros de busca.' : 'Quando houver tickets, eles aparecerão aqui.'}
                 </p>
               </CardContent>
             </Card> : ticketsPaginados.map(ticket => <JiraTicketCard key={ticket.id} ticket={ticket} onOpenDetail={handleOpenTicketDetail} onUpdateStatus={handleUpdateStatus} onEditTicket={handleEditTicket} onDeleteTicket={handleDeleteTicket} userCanEdit={canEdit} userCanDelete={canDelete} />)}
