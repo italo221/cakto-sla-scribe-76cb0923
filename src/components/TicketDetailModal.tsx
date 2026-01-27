@@ -1071,13 +1071,14 @@ const toggleCommentsFocusMode = () => {
               <DialogTitle 
                 className="text-xl font-bold break-words cursor-pointer hover:text-primary transition-colors"
                 onClick={() => {
-                  navigator.clipboard.writeText(currentSLA.titulo);
+                  const fullTitle = `${currentSLA.ticket_number || `#${currentSLA.id.slice(0, 8)}`} - ${currentSLA.titulo}`;
+                  navigator.clipboard.writeText(fullTitle);
                   toast({
                     title: "Título copiado!",
-                    description: currentSLA.titulo.length > 50 ? currentSLA.titulo.substring(0, 50) + "..." : currentSLA.titulo,
+                    description: fullTitle.length > 60 ? fullTitle.substring(0, 60) + "..." : fullTitle,
                   });
                 }}
-                title="Clique para copiar o título"
+                title="Clique para copiar o título completo"
               >
                 {currentSLA.ticket_number || `#${currentSLA.id.slice(0, 8)}`} - {currentSLA.titulo}
               </DialogTitle>
