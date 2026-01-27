@@ -235,18 +235,7 @@ const JiraTicketCard = memo(({
 
         {/* Título principal - estilo Jira */}
         <div className="space-y-0.5">
-          <h3 
-            className="font-semibold text-foreground text-base leading-tight line-clamp-2 cursor-pointer hover:text-primary transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigator.clipboard.writeText(ticket.titulo);
-              toast({
-                title: "Título copiado!",
-                description: ticket.titulo.length > 50 ? ticket.titulo.substring(0, 50) + "..." : ticket.titulo,
-              });
-            }}
-            title="Clique para copiar o título"
-          >
+          <h3 className="font-semibold text-foreground text-base leading-tight line-clamp-2">
             {ticket.titulo}
           </h3>
           <p className="text-xs text-muted-foreground line-clamp-1">
