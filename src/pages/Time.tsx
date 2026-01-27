@@ -324,6 +324,7 @@ export default function Time() {
   // Ref para preservar a posição de scroll
   const scrollPositionRef = useRef(0);
   const scrollAreaRef = useRef<HTMLDivElement | null>(null);
+  const shouldRestoreScrollRef = useRef(false);
   
   // Responsive filter sidebar
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
@@ -1050,6 +1051,31 @@ export default function Time() {
     loadPinnedTickets();
   }, [loadPinnedTickets]);
 
+  // Salvar posição de scroll continuamente (apenas quando modal está fechado)
+  const handleScrollChange = useCallback(() => {
+    // Não atualizar se estamos restaurando ou se o modal está aberto
+    if (scrollAreaRef.current && !shouldRestoreScrollRef.current && !modalOpen) {
+      const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        scrollPositionRef.current = viewport.scrollTop;
+      }
+    }
+  }, [modalOpen]);
+
+  // Configurar listener de scroll
+  useEffect(() => {
+    const scrollArea = scrollAreaRef.current;
+    if (!scrollArea) return;
+    
+    const viewport = scrollArea.querySelector('[data-radix-scroll-area-viewport]');
+    if (!viewport) return;
+
+    viewport.addEventListener('scroll', handleScrollChange);
+    return () => {
+      viewport.removeEventListener('scroll', handleScrollChange);
+    };
+  }, [handleScrollChange, tickets]); // Re-attach quando tickets mudam
+
   // Preservar posição de scroll ao trocar de aba do browser
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -1059,18 +1085,25 @@ export default function Time() {
           const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
           if (viewport) {
             scrollPositionRef.current = viewport.scrollTop;
+            shouldRestoreScrollRef.current = true;
           }
         }
       } else if (document.visibilityState === 'visible') {
+        // Marcar para restaurar após re-renders
+        shouldRestoreScrollRef.current = true;
         // Restaurar posição quando voltar para a aba
-        requestAnimationFrame(() => {
-          if (scrollAreaRef.current) {
+        const restoreScroll = () => {
+          if (scrollAreaRef.current && shouldRestoreScrollRef.current) {
             const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
             if (viewport) {
               viewport.scrollTop = scrollPositionRef.current;
             }
           }
-        });
+        };
+        // Tentar restaurar imediatamente e também após um delay para cobrir re-renders
+        requestAnimationFrame(restoreScroll);
+        setTimeout(restoreScroll, 100);
+        setTimeout(restoreScroll, 300);
       }
     };
 
@@ -1079,6 +1112,21 @@ export default function Time() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
+
+  // Restaurar scroll após re-renders quando necessário
+  useEffect(() => {
+    if (shouldRestoreScrollRef.current && scrollAreaRef.current && scrollPositionRef.current > 0) {
+      const restoreScroll = () => {
+        const viewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+        if (viewport) {
+          viewport.scrollTop = scrollPositionRef.current;
+        }
+      };
+      requestAnimationFrame(restoreScroll);
+      setTimeout(restoreScroll, 50);
+      setTimeout(restoreScroll, 150);
+    }
+  }, [tickets]); // Executar quando tickets mudam (após re-render)
 
   const handleTicketClick = (ticket: TeamTicket) => {
     // Salvar posição de scroll antes de abrir o modal
@@ -1095,23 +1143,30 @@ export default function Time() {
   const handleModalClose = useCallback(() => {
     // Marcar que estamos fechando o modal para evitar refresh
     isClosingModalRef.current = true;
+    shouldRestoreScrollRef.current = true;
     setModalOpen(false);
     setSelectedTicket(null);
     
-    // Restaurar posição de scroll após fechar o modal
-    requestAnimationFrame(() => {
+    // Restaurar posição de scroll após fechar o modal (múltiplas tentativas para cobrir re-renders)
+    const restoreScroll = () => {
       if (scrollAreaRef.current) {
         const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-        if (viewport) {
+        if (viewport && scrollPositionRef.current > 0) {
           viewport.scrollTop = scrollPositionRef.current;
         }
       }
-    });
+    };
     
-    // Resetar a flag após um curto período
+    requestAnimationFrame(restoreScroll);
+    setTimeout(restoreScroll, 50);
+    setTimeout(restoreScroll, 150);
+    setTimeout(restoreScroll, 300);
+    
+    // Resetar as flags após um período mais longo
     setTimeout(() => {
       isClosingModalRef.current = false;
-    }, 500);
+      shouldRestoreScrollRef.current = false;
+    }, 1000);
   }, []);
 
   const handleTicketUpdate = useCallback(() => {
