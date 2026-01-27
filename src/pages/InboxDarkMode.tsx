@@ -938,7 +938,7 @@ export default function InboxDarkMode() {
                 <HelpCircle className={cn("w-4 h-4", activeFilter === 'info-incompleta' ? 'text-yellow-500' : 'text-muted-foreground')} />
               </div>
               <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-                {optimizedTicketsWithStatus.filter(ticket => ticket.tags?.includes("info-incompleta")).length}
+                {stats.infoIncompleta}
               </h2>
             </CardContent>
           </Card>
