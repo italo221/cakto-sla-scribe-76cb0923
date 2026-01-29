@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -216,11 +216,17 @@ const Auth = () => {
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="flex flex-col gap-3">
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Entrar
                   </Button>
+                  <Link 
+                    to="/reset-password" 
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    Esqueceu sua senha? Solicite um token ao administrador
+                  </Link>
                 </CardFooter>
               </form>
             </Card>

@@ -20,6 +20,7 @@ import Admin from "./pages/Admin";
 import Customization from "./pages/Customization";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import ResetPassword from "./pages/ResetPassword";
 import { SharedTicket } from "./pages/SharedTicket";
 import { TicketPage } from "./pages/TicketPage";
 
@@ -45,6 +46,7 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/auth" element={<div className="animate-fade-in"><Auth /></div>} />
+              <Route path="/reset-password" element={<div className="animate-fade-in"><ResetPassword /></div>} />
               <Route path="/share/:token" element={<SharedTicket />} />
               <Route path="/ticket/:ticketNumber" element={
                 <AppLayout>

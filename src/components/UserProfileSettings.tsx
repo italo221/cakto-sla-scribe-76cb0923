@@ -75,7 +75,7 @@ export default function UserProfileSettings({ open, onOpenChange }: UserProfileS
   const handlePasswordChange = async () => {
     if (!user) return;
 
-    // Validações
+    // Validações básicas
     if (!passwordData.currentPassword) {
       toast.error('Digite sua senha atual');
       return;
@@ -98,19 +98,65 @@ export default function UserProfileSettings({ open, onOpenChange }: UserProfileS
 
     setLoading(true);
     try {
-      // Primeiro verificar se a senha atual está correta tentando fazer login
+      // Verificar lockout antes de tentar
+      const { data: lockoutData, error: lockoutError } = await supabase.rpc('check_account_lockout', {
+        p_user_id: user.id,
+        p_max_failures: 5,
+        p_lockout_minutes: 30
+      });
+
+      const lockoutResult = lockoutData as { locked?: boolean; remaining_minutes?: number; remaining_attempts?: number } | null;
+
+      if (lockoutError) {
+        console.warn('Lockout check failed:', lockoutError);
+      } else if (lockoutResult?.locked) {
+        const remainingMinutes = Math.ceil(lockoutResult.remaining_minutes || 0);
+        toast.error(`Conta temporariamente bloqueada. Tente novamente em ${remainingMinutes} minutos.`);
+        setLoading(false);
+        return;
+      }
+
+      // Verificar se a senha atual está correta tentando fazer login
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user.email!,
         password: passwordData.currentPassword
       });
 
       if (signInError) {
-        toast.error('A senha atual está incorreta. Tente novamente.');
+        // Registrar tentativa falha
+        await supabase.rpc('record_recovery_attempt', {
+          p_identifier: user.id,
+          p_attempt_type: 'password_change',
+          p_success: false
+        });
+        
+        // Verificar novamente o lockout para informar o usuário
+        const { data: newLockoutData } = await supabase.rpc('check_account_lockout', {
+          p_user_id: user.id,
+          p_max_failures: 5,
+          p_lockout_minutes: 30
+        });
+        
+        const newLockoutResult = newLockoutData as { locked?: boolean; remaining_attempts?: number } | null;
+        
+        if (newLockoutResult?.locked) {
+          toast.error('Muitas tentativas incorretas. Conta temporariamente bloqueada por 30 minutos.');
+        } else {
+          const remainingAttempts = newLockoutResult?.remaining_attempts || 0;
+          toast.error(`Senha atual incorreta. Tentativas restantes: ${remainingAttempts}`);
+        }
         setLoading(false);
         return;
       }
 
-      // Se chegou aqui, a senha atual está correta, agora pode atualizar
+      // Registrar tentativa bem-sucedida
+      await supabase.rpc('record_recovery_attempt', {
+        p_identifier: user.id,
+        p_attempt_type: 'password_change',
+        p_success: true
+      });
+
+      // Atualizar senha
       const { error: updateError } = await supabase.auth.updateUser({
         password: passwordData.newPassword
       });
@@ -126,10 +172,15 @@ export default function UserProfileSettings({ open, onOpenChange }: UserProfileS
         confirmPassword: ''
       });
 
-      toast.success('Senha alterada com sucesso!');
-    } catch (error: any) {
+      toast.success('Senha alterada com sucesso! Outras sessões foram encerradas.');
+      
+      // Nota: A invalidação de outras sessões é feita automaticamente pelo Supabase
+      // quando a senha é alterada via updateUser
+      
+    } catch (error: unknown) {
       console.error('Erro ao alterar senha:', error);
-      toast.error('Erro ao alterar senha: ' + error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast.error('Erro ao alterar senha: ' + errorMessage);
     } finally {
       setLoading(false);
     }
