@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImprovedPermissionsPanel from "@/components/ImprovedPermissionsPanel";
 import EnhancedPermissionsLogs from "@/components/EnhancedPermissionsLogs";
+import AdminPasswordRecovery from "@/components/AdminPasswordRecovery";
 
 import SetorDetailPanel from "@/components/SetorDetailPanel";
 import { Badge } from "@/components/ui/badge";
@@ -582,18 +583,20 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-4'} ${isMobile ? 'mb-4' : ''}`}>
+          <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-5'} ${isMobile ? 'mb-4' : ''}`}>
             <TabsTrigger value="users" className={isMobile ? 'text-xs' : ''}>Usuários</TabsTrigger>
             <TabsTrigger value="setores" className={isMobile ? 'text-xs' : ''}>Setores</TabsTrigger>
             {!isMobile && <TabsTrigger value="assignments">Atribuições</TabsTrigger>}
             {!isMobile && <TabsTrigger value="permissions">Permissões</TabsTrigger>}
+            {!isMobile && <TabsTrigger value="recovery">Recuperação</TabsTrigger>}
           </TabsList>
           
           {/* Mobile secondary tabs */}
           {isMobile && (
-            <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
               <TabsTrigger value="assignments" className="text-xs">Atribuições</TabsTrigger>
               <TabsTrigger value="permissions" className="text-xs">Permissões</TabsTrigger>
+              <TabsTrigger value="recovery" className="text-xs">Recuperação</TabsTrigger>
             </TabsList>
           )}
 
@@ -835,6 +838,10 @@ const Admin = () => {
 
           <TabsContent value="permissions" className="space-y-6">
             <ImprovedPermissionsPanel />
+          </TabsContent>
+
+          <TabsContent value="recovery" className="space-y-6">
+            <AdminPasswordRecovery />
           </TabsContent>
 
         </Tabs>

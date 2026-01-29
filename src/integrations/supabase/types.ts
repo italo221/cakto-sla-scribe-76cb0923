@@ -566,6 +566,134 @@ export type Database = {
           },
         ]
       }
+      password_recovery_attempts: {
+        Row: {
+          attempt_type: string
+          attempted_at: string
+          id: string
+          identifier: string
+          success: boolean
+        }
+        Insert: {
+          attempt_type: string
+          attempted_at?: string
+          id?: string
+          identifier: string
+          success?: boolean
+        }
+        Update: {
+          attempt_type?: string
+          attempted_at?: string
+          id?: string
+          identifier?: string
+          success?: boolean
+        }
+        Relationships: []
+      }
+      password_recovery_audit: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: unknown
+          token_id: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown
+          token_id?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown
+          token_id?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "password_recovery_audit_token_id_fkey"
+            columns: ["token_id"]
+            isOneToOne: false
+            referencedRelation: "password_recovery_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      password_recovery_tokens: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          invalidated_at: string | null
+          invalidated_reason: string | null
+          ip_address: unknown
+          token_hash: string
+          used_at: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at: string
+          id?: string
+          invalidated_at?: string | null
+          invalidated_reason?: string | null
+          ip_address?: unknown
+          token_hash: string
+          used_at?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          invalidated_at?: string | null
+          invalidated_reason?: string | null
+          ip_address?: unknown
+          token_hash?: string
+          used_at?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "password_recovery_tokens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "password_recovery_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       permissoes_cargo: {
         Row: {
           cargo_id: string
@@ -1551,7 +1679,29 @@ export type Database = {
       }
       backfill_legacy_subtickets: { Args: never; Returns: undefined }
       can_edit: { Args: never; Returns: boolean }
+      check_account_lockout: {
+        Args: {
+          p_lockout_minutes?: number
+          p_max_failures?: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      check_recovery_rate_limit: {
+        Args: {
+          p_attempt_type: string
+          p_identifier: string
+          p_max_attempts?: number
+          p_window_minutes?: number
+        }
+        Returns: boolean
+      }
+      cleanup_old_recovery_attempts: { Args: never; Returns: undefined }
       delete_ticket_cascade: { Args: { ticket_id: string }; Returns: boolean }
+      generate_recovery_token: {
+        Args: { p_expiration_minutes?: number; p_target_user_id: string }
+        Returns: Json
+      }
       generate_share_token: { Args: never; Returns: string }
       generate_ticket_number: { Args: never; Returns: string }
       get_hidden_tags: { Args: never; Returns: string[] }
@@ -1663,6 +1813,14 @@ export type Database = {
         Args: { p_team_id: string; p_ticket_id: string }
         Returns: boolean
       }
+      record_recovery_attempt: {
+        Args: {
+          p_attempt_type: string
+          p_identifier: string
+          p_success?: boolean
+        }
+        Returns: undefined
+      }
       reorder_pins: {
         Args: { p_team_id: string; p_ticket_ids: string[] }
         Returns: undefined
@@ -1685,6 +1843,15 @@ export type Database = {
           p_deadline: string
           p_note?: string
           p_ticket_id: string
+        }
+        Returns: Json
+      }
+      use_recovery_token: {
+        Args: {
+          p_ip_address?: unknown
+          p_new_password: string
+          p_token: string
+          p_user_agent?: string
         }
         Returns: Json
       }
