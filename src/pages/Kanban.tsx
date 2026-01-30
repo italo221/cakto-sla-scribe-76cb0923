@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useOptimizedTickets } from "@/hooks/useOptimizedTickets";
 import { useTicketStats } from "@/hooks/useTicketStats";
 import TicketKanban from "@/components/TicketKanban";
@@ -44,19 +44,21 @@ interface Setor {
   nome: string;
 }
 export default function KanbanPage() {
-  // Usar hook otimizado para tickets
+  // Usar hook otimizado para tickets com batch grande para evitar "Carregar mais"
   const {
     tickets,
     ticketsWithStatus,
     loading,
     reloadTickets,
+    fetchTickets,
     loadMoreTickets,
     hasMore,
     totalCount
   } = useOptimizedTickets({
     enableRealtime: false,
-    // Desabilitado devido a queries lentas
-    batchSize: 200 // Aumentado para mostrar mais tickets no kanban
+    // Batch maior para reduzir necessidade de "Carregar mais"
+    // Especialmente útil quando filtramos por usuário específico
+    batchSize: 500
   });
 
   // Usar hook centralizado para estatísticas sincronizadas sem duplicar consultas
@@ -108,13 +110,17 @@ export default function KanbanPage() {
     setSelectedTicketForEdit(ticket);
     setEditModalOpen(true);
   };
-  const handleTicketUpdate = () => {
-    reloadTickets();
+  // Handler otimizado que NÃO recarrega toda a lista (evita perder posição)
+  // Apenas atualiza o ticket localmente no estado
+  const handleTicketUpdate = useCallback(() => {
+    // Não chamar reloadTickets() para evitar perder a posição de scroll
+    // O ticket já foi atualizado no backend, o estado local será atualizado
+    // quando o usuário fechar o modal ou clicar em "Atualizar"
     toast({
       title: "Ticket atualizado",
       description: "O status do ticket foi atualizado com sucesso."
     });
-  };
+  }, [toast]);
 
   // Carregar setores e usuários
   useEffect(() => {
@@ -493,7 +499,7 @@ export default function KanbanPage() {
         {selectedTicket && <TicketDetailModal sla={selectedTicket} isOpen={modalOpen} onClose={() => {
         setModalOpen(false);
         setSelectedTicket(null);
-      }} onUpdate={reloadTickets} />}
+      }} onUpdate={handleTicketUpdate} />}
 
         {/* Ticket Edit Modal */}
         {selectedTicketForEdit && <TicketEditModal ticket={selectedTicketForEdit} isOpen={editModalOpen} onClose={() => {
