@@ -105,45 +105,74 @@ const Auth = () => {
       return;
     }
 
+    if (!signUpData.nomeCompleto.trim()) {
+      toast({
+        title: "Nome obrigatório",
+        description: "Por favor, informe seu nome completo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/dashboard`;
-      
-      const { error } = await supabase.auth.signUp({
-        email: signUpData.email,
-        password: signUpData.password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            nome_completo: signUpData.nomeCompleto,
-            // Não incluir user_type - será definido como default no trigger
-          }
+      // Usar edge function com validação de allowlist
+      const { data, error } = await supabase.functions.invoke('signup-with-allowlist', {
+        body: { 
+          email: signUpData.email.toLowerCase().trim(),
+          password: signUpData.password,
+          nome_completo: signUpData.nomeCompleto.trim()
         }
       });
 
       if (error) {
         toast({
           title: "Erro no cadastro",
-          description: error.message,
+          description: error.message || "Não foi possível criar a conta.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data?.error) {
+        toast({
+          title: "Cadastro não autorizado",
+          description: data.error,
           variant: "destructive",
         });
         return;
       }
 
       toast({
-        title: "Cadastro realizado!",
-        description: "Verifique seu email para confirmar a conta.",
+        title: "Conta criada com sucesso!",
+        description: "Fazendo login automaticamente...",
       });
 
-      // Reset form
-      setSignUpData({
-        email: '',
-        password: '',
-        confirmPassword: '',
-        nomeCompleto: ''
+      // Tentar login automático
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: signUpData.email.toLowerCase().trim(),
+        password: signUpData.password
       });
-    } catch (error) {
+
+      if (loginError) {
+        toast({
+          title: "Conta criada!",
+          description: "Faça login para continuar.",
+        });
+        // Reset form e trocar para aba de login
+        setSignUpData({
+          email: '',
+          password: '',
+          confirmPassword: '',
+          nomeCompleto: ''
+        });
+      } else {
+        // Login automático bem-sucedido
+        navigate('/inbox');
+      }
+    } catch (error: any) {
+      console.error('Erro no signup:', error);
       toast({
         title: "Erro inesperado",
         description: "Tente novamente mais tarde.",
