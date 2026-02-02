@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { 
   Inbox, 
   Plus, 
@@ -124,29 +123,12 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
       >
         {/* Header - Logo */}
         <div className="p-3 border-b border-white/[0.06]">
-          <div className="flex items-center gap-3 min-w-0">
-            {systemLogo ? (
-              <img 
-                src={systemLogo} 
-                alt="Logo" 
-                className="h-7 w-7 object-contain flex-shrink-0 rounded" 
-              />
-            ) : (
-              <div className="h-7 w-7 rounded bg-white/10 flex items-center justify-center flex-shrink-0">
-                <span className="text-xs font-bold text-white/80">
-                  {systemName?.charAt(0) || 'C'}
-                </span>
-              </div>
-            )}
-            {shouldExpand && (
-              <div className="flex items-center gap-2 truncate">
-                <span className="text-[14px] font-semibold text-white truncate">
-                  {systemName}
-                </span>
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-white/10 text-white/60 border-0">
-                  Pro
-                </Badge>
-              </div>
+          <div className="flex items-center justify-between min-w-0">
+            <span className="text-[14px] font-semibold text-white truncate">
+              {systemName}
+            </span>
+            {user && shouldExpand && (
+              <NotificationCenter />
             )}
           </div>
         </div>
@@ -167,14 +149,6 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
 
         {/* Footer - User Card */}
         <div className="mt-auto p-2 border-t border-white/[0.06]">
-          {/* Notificações quando expandida */}
-          {user && shouldExpand && (
-            <div className="flex items-center justify-between px-2 mb-2">
-              <span className="text-[12px] text-[#6B7280]">Notificações</span>
-              <NotificationCenter />
-            </div>
-          )}
-          
           {/* User Card */}
           {user && (
             <div className="flex items-center gap-2">
