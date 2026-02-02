@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Mail, Plus, Check, X, Loader2, Search, RefreshCw } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Mail, Plus, Loader2, Search, RefreshCw, MoreHorizontal, Check, X, Ban, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -278,7 +279,7 @@ export default function EmailAllowlistPanel() {
         return <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">Revogado</Badge>;
       case 'pending':
       default:
-        return <Badge variant="secondary">Pendente</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Pendente</Badge>;
     }
   };
 
@@ -387,53 +388,39 @@ export default function EmailAllowlistPanel() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {email.status === 'pending' && (
-                        <div className="flex gap-1 justify-end">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleApprove(email)}
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                            title="Aprovar"
-                          >
-                            <Check className="h-4 w-4" />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openRejectModal(email)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            title="Rejeitar"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                      {email.status === 'approved' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openRevokeModal(email)}
-                          className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                          title="Revogar acesso"
-                        >
-                          Revogar
-                        </Button>
-                      )}
-                      {(email.status === 'rejected' || email.status === 'revoked') && (
-                        <div className="flex gap-1 items-center justify-end">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleApprove(email)}
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                            title="Reaprovar"
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Reaprovar
-                          </Button>
-                        </div>
-                      )}
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {email.status === 'pending' && (
+                            <>
+                              <DropdownMenuItem onClick={() => handleApprove(email)} className="text-green-600">
+                                <Check className="h-4 w-4 mr-2" />
+                                Aprovar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openRejectModal(email)} className="text-red-600">
+                                <X className="h-4 w-4 mr-2" />
+                                Rejeitar
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {email.status === 'approved' && (
+                            <DropdownMenuItem onClick={() => openRevokeModal(email)} className="text-orange-600">
+                              <Ban className="h-4 w-4 mr-2" />
+                              Revogar Acesso
+                            </DropdownMenuItem>
+                          )}
+                          {(email.status === 'rejected' || email.status === 'revoked') && (
+                            <DropdownMenuItem onClick={() => handleApprove(email)} className="text-green-600">
+                              <RotateCcw className="h-4 w-4 mr-2" />
+                              Reaprovar
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))

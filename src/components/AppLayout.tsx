@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
 import { useNavbarSettings } from '@/hooks/useNavbarSettings';
+import { useAuth } from '@/hooks/useAuth';
 import LateralSidebar from '@/components/LateralSidebar';
+import RevokedAccessScreen from '@/components/RevokedAccessScreen';
 import { SLAPoliciesProvider } from '@/contexts/SLAPoliciesContext';
 
 interface AppLayoutProps {
@@ -8,9 +10,10 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
-  const { settings, loading } = useNavbarSettings();
+  const { settings, loading: navLoading } = useNavbarSettings();
+  const { isRevoked, loading: authLoading } = useAuth();
 
-  if (loading) {
+  if (navLoading || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
         <div className="animate-pulse">
@@ -21,6 +24,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
       </div>
     );
+  }
+
+  // Bloquear usuários com acesso revogado
+  if (isRevoked) {
+    return <RevokedAccessScreen />;
   }
 
   // Sempre usar sidebar lateral

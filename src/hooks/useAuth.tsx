@@ -34,6 +34,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isSuperAdmin: boolean;
   canEdit: boolean;
+  isRevoked: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -58,14 +59,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [setores, setSetores] = useState<UserSetor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRevoked, setIsRevoked] = useState(false);
 
   // Debounce para evitar múltiplas chamadas consecutivas
   const [fetchProfileTimer, setFetchProfileTimer] = useState<NodeJS.Timeout | null>(null);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, userEmail?: string) => {
     try {
-      // Buscar perfil e setores em paralelo para otimizar
-      const [profileResponse, setoresResponse] = await Promise.all([
+      // Buscar perfil, setores e status do allowlist em paralelo
+      const [profileResponse, setoresResponse, allowlistResponse] = await Promise.all([
         supabase
           .from('profiles')
           .select('*')
@@ -79,11 +81,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setor_id,
             setor:setores(id, nome, descricao)
           `)
-          .eq('user_id', userId)
+          .eq('user_id', userId),
+        userEmail ? supabase
+          .from('email_allowlist')
+          .select('status')
+          .eq('email', userEmail.toLowerCase())
+          .maybeSingle() : Promise.resolve({ data: null, error: null })
       ]);
 
       const { data: profileData, error: profileError } = profileResponse;
       const { data: setoresData, error: setoresError } = setoresResponse;
+      const { data: allowlistData } = allowlistResponse;
 
       if (profileError) {
         console.error('Erro ao buscar perfil:', profileError);
@@ -92,8 +100,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (setoresError) {
         console.error('Erro ao buscar setores do usuário:', setoresError);
-        // Não return aqui para que o perfil seja definido mesmo sem setores
       }
+
+      // Verificar se o usuário está revogado
+      const userIsRevoked = allowlistData?.status === 'revoked';
+      setIsRevoked(userIsRevoked);
 
       setProfile(profileData);
       setSetores(setoresData || []);
@@ -103,13 +114,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   // Função com debounce para evitar chamadas excessivas
-  const debouncedFetchProfile = (userId: string) => {
+  const debouncedFetchProfile = (userId: string, userEmail?: string) => {
     if (fetchProfileTimer) {
       clearTimeout(fetchProfileTimer);
     }
     
     const timer = setTimeout(() => {
-      fetchProfile(userId);
+      fetchProfile(userId, userEmail);
     }, 100);
     
     setFetchProfileTimer(timer);
@@ -124,10 +135,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (session?.user) {
           // Usar debounce para evitar múltiplas chamadas
-          debouncedFetchProfile(session.user.id);
+          debouncedFetchProfile(session.user.id, session.user.email);
         } else {
           setProfile(null);
           setSetores([]);
+          setIsRevoked(false);
         }
         setLoading(false);
       }
@@ -139,7 +151,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        debouncedFetchProfile(session.user.id);
+        debouncedFetchProfile(session.user.id, session.user.email);
       }
       setLoading(false);
     });
@@ -149,7 +161,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const refreshProfile = async () => {
     if (user) {
-      await fetchProfile(user.id);
+      await fetchProfile(user.id, user.email);
     }
   };
 
@@ -178,6 +190,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     isAdmin,
     isSuperAdmin,
     canEdit,
+    isRevoked,
     signOut,
     refreshProfile,
   };
