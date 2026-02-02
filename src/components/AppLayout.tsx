@@ -36,7 +36,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     <SLAPoliciesProvider>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5" data-app-layout>
         <LateralSidebar glassEffect={settings.navbar_glass} />
-        <main className="ml-16 transition-all duration-300">
+        <main className="ml-14 transition-all duration-300">
           <div className="p-4">
             {children}
           </div>

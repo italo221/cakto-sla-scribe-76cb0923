@@ -1,10 +1,8 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { 
-  MessageSquare, 
   Inbox, 
   Plus, 
   BarChart3, 
@@ -15,20 +13,18 @@ import {
   UserCog,
   Palette,
   Columns3,
-  Menu,
   User,
-  Bell,
   Users,
-  Lightbulb
+  Lightbulb,
+  MoreHorizontal
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSystemConfig } from "@/contexts/SystemConfigContext";
 import UserProfileSettings from "@/components/UserProfileSettings";
 import NotificationCenter from "@/components/NotificationCenter";
 import NavbarCustomization from "@/components/NavbarCustomization";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface NavItem {
   path: string;
@@ -85,21 +81,21 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
   const NavLink = ({ item }: { item: NavItem }) => {
     const active = isActive(item.path);
     return (
-      <Button
-        variant={active ? 'default' : 'ghost'}
-        size="sm"
-        asChild
+      <Link 
+        to={item.path} 
         className={`
-          w-full justify-start transition-all duration-200
-          ${active ? 'shadow-sm' : 'hover:bg-accent'}
-          ${shouldExpand ? 'px-3' : 'px-2 justify-center'}
+          flex items-center gap-3 px-3 h-10 rounded-md transition-all duration-150
+          text-[13px] font-medium
+          ${active 
+            ? 'bg-white/[0.08] text-[#E5E7EB] font-semibold' 
+            : 'text-[#9CA3AF] hover:bg-white/[0.04] hover:text-[#D1D5DB]'
+          }
+          ${shouldExpand ? '' : 'justify-center px-2'}
         `}
       >
-        <Link to={item.path} className="flex items-center gap-3">
-          <item.icon className="h-4 w-4 flex-shrink-0" />
-          {shouldExpand && <span className="truncate">{item.label}</span>}
-        </Link>
-      </Button>
+        <item.icon className={`h-4 w-4 flex-shrink-0 ${active ? 'text-[#E5E7EB]' : 'text-[#6B7280]'}`} />
+        {shouldExpand && <span className="truncate">{item.label}</span>}
+      </Link>
     );
   };
 
@@ -108,16 +104,6 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
     return profile?.nome_completo
       ? profile.nome_completo.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
       : user.email?.substring(0, 2).toUpperCase() || "U";
-  };
-
-  const getRoleBadge = () => {
-    if (profile?.role === 'super_admin' || profile?.user_type === 'administrador_master') {
-      return { label: 'Super Admin', variant: 'default' as const };
-    }
-    if (profile?.role === 'operador') {
-      return { label: 'Operador', variant: 'secondary' as const };
-    }
-    return { label: 'Viewer', variant: 'outline' as const };
   };
 
   const handleSignOut = async () => {
@@ -130,122 +116,133 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
       <div 
         className={`
           fixed left-0 top-0 h-full z-40 transition-all duration-300 ease-in-out flex flex-col
-          ${shouldExpand ? 'w-64' : 'w-16'}
-          ${glassEffect 
-            ? 'bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 border-r border-border/40' 
-            : 'bg-background border-r border-border'
-          }
+          ${shouldExpand ? 'w-56' : 'w-14'}
+          bg-[#0A0A0B] border-r border-white/[0.08]
         `}
         onMouseEnter={() => setExpanded(true)}
         onMouseLeave={() => !userMenuOpen && setExpanded(false)}
       >
-        {/* Header - Logo + Notificações */}
-        <div className="p-4 border-b border-border/40">
-          <div className="flex items-center justify-between">
-            {/* Logo e Nome */}
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              {systemLogo && (
-                <img 
-                  src={systemLogo} 
-                  alt="Logo" 
-                  className="h-8 w-8 object-contain flex-shrink-0" 
-                />
-              )}
-              {shouldExpand && (
-                <div className="truncate">
-                  <h1 className="text-lg font-bold text-gradient truncate">
-                    {systemName}
-                  </h1>
-                  <p className="text-xs text-muted-foreground">
-                    Sistema Tickets
-                  </p>
-                </div>
-              )}
-            </div>
-            
-            {/* Notificações - Expandida: ao lado da logo, Colapsada: canto superior direito */}
-            {user && shouldExpand && (
-              <div className="ml-4 flex-shrink-0">
-                <NotificationCenter />
+        {/* Header - Logo */}
+        <div className="p-3 border-b border-white/[0.06]">
+          <div className="flex items-center gap-3 min-w-0">
+            {systemLogo ? (
+              <img 
+                src={systemLogo} 
+                alt="Logo" 
+                className="h-7 w-7 object-contain flex-shrink-0 rounded" 
+              />
+            ) : (
+              <div className="h-7 w-7 rounded bg-white/10 flex items-center justify-center flex-shrink-0">
+                <span className="text-xs font-bold text-white/80">
+                  {systemName?.charAt(0) || 'C'}
+                </span>
+              </div>
+            )}
+            {shouldExpand && (
+              <div className="flex items-center gap-2 truncate">
+                <span className="text-[14px] font-semibold text-white truncate">
+                  {systemName}
+                </span>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-white/10 text-white/60 border-0">
+                  Pro
+                </Badge>
               </div>
             )}
           </div>
         </div>
 
-        {/* Notificações quando colapsada - ancorada no canto superior direito da sidebar */}
+        {/* Notificações quando colapsada */}
         {user && !shouldExpand && (
-          <div className="absolute top-2 right-2 z-50">
+          <div className="absolute top-2 right-1 z-50">
             <NotificationCenter />
           </div>
         )}
 
-        {/* Navigation - Flexível */}
-        <div className="flex-1 p-2 space-y-1 overflow-y-auto">
+        {/* Navigation */}
+        <div className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           {filteredNavItems.map((item) => (
             <NavLink key={item.path} item={item} />
           ))}
         </div>
 
-        {/* Footer - Fixo no rodapé */}
-        <div className="mt-auto p-2 border-t border-border/40">
-          {/* Theme Toggle - Acima do card do usuário */}
-          <div className={`flex mb-2 ${shouldExpand ? 'justify-start' : 'justify-center'}`}>
-            <ThemeToggle />
-          </div>
+        {/* Footer - User Card */}
+        <div className="mt-auto p-2 border-t border-white/[0.06]">
+          {/* Notificações quando expandida */}
+          {user && shouldExpand && (
+            <div className="flex items-center justify-between px-2 mb-2">
+              <span className="text-[12px] text-[#6B7280]">Notificações</span>
+              <NotificationCenter />
+            </div>
+          )}
           
-          {/* User Card - Sempre no rodapé */}
+          {/* User Card */}
           {user && (
-            <div>
-              <DropdownMenu open={userMenuOpen} onOpenChange={setUserMenuOpen}>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    className={`w-full transition-all duration-200 ${
-                      shouldExpand ? 'justify-start' : 'justify-center px-2'
-                    }`}
-                  >
-                    <Avatar className="h-8 w-8 flex-shrink-0">
-                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                        {getUserInitials()}
-                      </AvatarFallback>
-                    </Avatar>
-                    {shouldExpand && (
-                      <div className="ml-3 flex flex-col items-start truncate">
-                        <span className="text-sm font-medium truncate">
-                          {profile?.nome_completo || user.email}
-                        </span>
-                        <Badge variant={getRoleBadge().variant} className="text-xs">
-                          {getRoleBadge().label}
-                        </Badge>
-                      </div>
+            <div className="flex items-center gap-2">
+              <div 
+                className={`
+                  flex items-center gap-2 flex-1 min-w-0 p-2 rounded-md
+                  hover:bg-white/[0.04] cursor-pointer transition-colors
+                  ${shouldExpand ? '' : 'justify-center'}
+                `}
+                onClick={() => setProfileSettingsOpen(true)}
+              >
+                <Avatar className="h-7 w-7 flex-shrink-0">
+                  <AvatarFallback className="bg-white/10 text-[#9CA3AF] text-[11px] font-medium">
+                    {getUserInitials()}
+                  </AvatarFallback>
+                </Avatar>
+                {shouldExpand && (
+                  <span className="text-[13px] text-[#9CA3AF] truncate">
+                    {profile?.nome_completo || user.email?.split('@')[0]}
+                  </span>
+                )}
+              </div>
+              
+              {shouldExpand && (
+                <DropdownMenu open={userMenuOpen} onOpenChange={setUserMenuOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <button className="p-1.5 rounded hover:bg-white/[0.04] text-[#6B7280] hover:text-[#9CA3AF] transition-colors">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 bg-[#18181B] border-white/10">
+                    <DropdownMenuItem 
+                      onClick={() => setProfileSettingsOpen(true)}
+                      className="text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] cursor-pointer"
+                    >
+                      <UserCog className="mr-2 h-4 w-4" />
+                      Configurações
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setCustomizationOpen(true)}
+                      className="text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] cursor-pointer"
+                    >
+                      <Palette className="mr-2 h-4 w-4" />
+                      Customização
+                    </DropdownMenuItem>
+                    {isSuperAdmin && (
+                      <>
+                        <DropdownMenuSeparator className="bg-white/[0.06]" />
+                        <DropdownMenuItem 
+                          onClick={() => navigate('/admin')}
+                          className="text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] cursor-pointer"
+                        >
+                          <User className="mr-2 h-4 w-4" />
+                          Gerenciar Usuários
+                        </DropdownMenuItem>
+                      </>
                     )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => setProfileSettingsOpen(true)}>
-                    <UserCog className="mr-2 h-4 w-4" />
-                    Configurações
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setCustomizationOpen(true)}>
-                    <Palette className="mr-2 h-4 w-4" />
-                    Customização
-                  </DropdownMenuItem>
-                  {isSuperAdmin && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => navigate('/admin')}>
-                        <User className="mr-2 h-4 w-4" />
-                        Gerenciar Usuários
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sair
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <DropdownMenuSeparator className="bg-white/[0.06]" />
+                    <DropdownMenuItem 
+                      onClick={handleSignOut}
+                      className="text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] cursor-pointer"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sair
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           )}
         </div>
