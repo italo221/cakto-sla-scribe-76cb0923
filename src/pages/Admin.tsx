@@ -8,7 +8,6 @@ import ImprovedPermissionsPanel from "@/components/ImprovedPermissionsPanel";
 import EnhancedPermissionsLogs from "@/components/EnhancedPermissionsLogs";
 import AdminPasswordRecovery from "@/components/AdminPasswordRecovery";
 import EmailAllowlistPanel from "@/components/EmailAllowlistPanel";
-
 import SetorDetailPanel from "@/components/SetorDetailPanel";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -47,7 +46,6 @@ interface UserSetor {
   setor: Setor;
   profile: Pick<Profile, 'nome_completo' | 'email'>;
 }
-
 const Admin = () => {
   const [users, setUsers] = useState<Profile[]>([]);
   const [setores, setSetores] = useState<Setor[]>([]);
@@ -72,13 +70,19 @@ const Admin = () => {
   const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserType, setNewUserType] = useState<"administrador_master" | "colaborador_setor">("colaborador_setor");
   const [selectedSetorDetail, setSelectedSetorDetail] = useState<Setor | null>(null);
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const isMobile = useIsMobile();
-  const { fetchProfiles } = useOptimizedProfiles({ 
-    includeInactive: true, 
-    selectFields: ['user_id', 'id', 'nome_completo', 'email', 'role', 'user_type', 'ativo', 'created_at'] 
+  const {
+    fetchProfiles
+  } = useOptimizedProfiles({
+    includeInactive: true,
+    selectFields: ['user_id', 'id', 'nome_completo', 'email', 'role', 'user_type', 'ativo', 'created_at']
   });
-  const { fetchSetores: getSetores } = useOptimizedSetores();
+  const {
+    fetchSetores: getSetores
+  } = useOptimizedSetores();
 
   // Sistema aberto - sempre autenticado como admin
   const isAuthenticated = true;
@@ -95,7 +99,6 @@ const Admin = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedName, setEditedName] = useState(user.nome_completo);
     const [editedRole, setEditedRole] = useState(user.role);
-    
     const handleSave = async () => {
       if (!editedName.trim()) {
         toast({
@@ -106,7 +109,9 @@ const Admin = () => {
         return;
       }
       try {
-        const { error } = await supabase.from('profiles').update({
+        const {
+          error
+        } = await supabase.from('profiles').update({
           nome_completo: editedName.trim(),
           role: editedRole as 'super_admin' | 'operador' | 'viewer'
         }).eq('id', user.id);
@@ -125,10 +130,11 @@ const Admin = () => {
         });
       }
     };
-    
     const handleToggleActive = async () => {
       try {
-        const { error } = await supabase.from('profiles').update({
+        const {
+          error
+        } = await supabase.from('profiles').update({
           ativo: !user.ativo
         }).eq('id', user.id);
         if (error) throw error;
@@ -145,7 +151,6 @@ const Admin = () => {
         });
       }
     };
-    
     return <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center justify-between'} p-4 border rounded-lg`}>
         <div className={`space-y-1 ${isMobile ? 'w-full' : 'flex-1'}`}>
           {isEditing ? <div className="space-y-2">
@@ -194,19 +199,19 @@ const Admin = () => {
             <Edit className="h-3 w-3" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => {
-            console.log('🔍 Abrindo editor para usuário:', user);
-            console.log('🔍 user.user_id:', user.user_id);
-            if (!user.user_id) {
-              toast({
-                title: "Erro",
-                description: "ID do usuário não encontrado",
-                variant: "destructive"
-              });
-              return;
-            }
-            setSelectedUserForEdit(user.user_id);
-            setAdminUserEditorOpen(true);
-          }}>
+          console.log('🔍 Abrindo editor para usuário:', user);
+          console.log('🔍 user.user_id:', user.user_id);
+          if (!user.user_id) {
+            toast({
+              title: "Erro",
+              description: "ID do usuário não encontrado",
+              variant: "destructive"
+            });
+            return;
+          }
+          setSelectedUserForEdit(user.user_id);
+          setAdminUserEditorOpen(true);
+        }}>
             <Shield className="h-3 w-3" />
             {isMobile ? '' : 'Admin'}
           </Button>
@@ -226,18 +231,13 @@ const Admin = () => {
   // Fetch data
   const fetchData = async () => {
     try {
-      const [usersResponse, setoresResponse, userSetoresResponse] = await Promise.all([
-        fetchProfiles(),
-        getSetores(),
-        supabase.from('user_setores').select(`
+      const [usersResponse, setoresResponse, userSetoresResponse] = await Promise.all([fetchProfiles(), getSetores(), supabase.from('user_setores').select(`
             id,
             user_id,
             setor_id,
             setores:setor_id (id, nome, descricao, ativo),
             profiles:user_id (nome_completo, email)
-          `)
-      ]);
-      
+          `)]);
       if (userSetoresResponse.error) throw userSetoresResponse.error;
       setUsers(usersResponse || []);
       setSetores(setoresResponse || []);
@@ -569,12 +569,7 @@ const Admin = () => {
           </div>}
         
         {/* Sistema aberto - acesso total */}
-        <Alert className="mb-6">
-          <Check className="h-4 w-4" />
-          <AlertDescription>
-            🌐 <strong>Sistema Aberto:</strong> Acesso total liberado para administração
-          </AlertDescription>
-        </Alert>
+        
         
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Administração do Sistema</h1>
@@ -594,14 +589,12 @@ const Admin = () => {
           </TabsList>
           
           {/* Mobile secondary tabs */}
-          {isMobile && (
-            <TabsList className="grid w-full grid-cols-4 mb-4">
+          {isMobile && <TabsList className="grid w-full grid-cols-4 mb-4">
               <TabsTrigger value="assignments" className="text-xs">Atribuições</TabsTrigger>
               <TabsTrigger value="permissions" className="text-xs">Permissões</TabsTrigger>
               <TabsTrigger value="recovery" className="text-xs">Recuperação</TabsTrigger>
               <TabsTrigger value="allowlist" className="text-xs">Allowlist</TabsTrigger>
-            </TabsList>
-          )}
+            </TabsList>}
 
           <TabsContent value="users" className="space-y-6">
             {/* Card para criar novo usuário */}
@@ -861,12 +854,7 @@ const Admin = () => {
           </Dialog>}
 
         {/* Admin User Editor Modal */}
-        <AdminUserEditor 
-          open={adminUserEditorOpen}
-          onOpenChange={setAdminUserEditorOpen}
-          userId={selectedUserForEdit}
-          onUserUpdated={fetchData}
-        />
+        <AdminUserEditor open={adminUserEditorOpen} onOpenChange={setAdminUserEditorOpen} userId={selectedUserForEdit} onUserUpdated={fetchData} />
       </div>
     </div>;
 };
