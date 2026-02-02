@@ -124,21 +124,18 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
         {/* Header - Logo */}
         <div className="p-3 border-b border-white/[0.06]">
           <div className="flex items-center justify-between min-w-0">
-            <span className="text-[14px] font-semibold text-white truncate">
-              {systemName}
-            </span>
-            {user && shouldExpand && (
-              <NotificationCenter />
+            {shouldExpand && (
+              <span className="text-[14px] font-semibold text-white truncate">
+                {systemName}
+              </span>
+            )}
+            {user && (
+              <div className={shouldExpand ? '' : 'mx-auto'}>
+                <NotificationCenter />
+              </div>
             )}
           </div>
         </div>
-
-        {/* Notificações quando colapsada */}
-        {user && !shouldExpand && (
-          <div className="absolute top-2 right-1 z-50">
-            <NotificationCenter />
-          </div>
-        )}
 
         {/* Navigation */}
         <div className="flex-1 p-2 space-y-0.5 overflow-y-auto">
