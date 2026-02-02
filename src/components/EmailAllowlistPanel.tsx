@@ -20,7 +20,11 @@ interface AllowlistEmail {
   approved_at: string | null;
   approved_by: string | null;
   rejected_at: string | null;
+  rejected_by: string | null;
   rejection_reason: string | null;
+  revoked_at: string | null;
+  revoked_by: string | null;
+  revocation_reason: string | null;
   created_at: string;
 }
 
@@ -36,6 +40,12 @@ export default function EmailAllowlistPanel() {
   const [rejectingEmail, setRejectingEmail] = useState<AllowlistEmail | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [rejecting, setRejecting] = useState(false);
+  
+  // Revoke modal state
+  const [revokeModalOpen, setRevokeModalOpen] = useState(false);
+  const [revokingEmail, setRevokingEmail] = useState<AllowlistEmail | null>(null);
+  const [revocationReason, setRevocationReason] = useState("");
+  const [revoking, setRevoking] = useState(false);
   
   const { toast } = useToast();
   const { user, isSuperAdmin } = useAuth();
@@ -132,6 +142,13 @@ export default function EmailAllowlistPanel() {
           status: 'approved',
           approved_at: new Date().toISOString(),
           approved_by: user?.id,
+          // Limpar dados de rejeição/revogação anteriores
+          rejected_at: null,
+          rejected_by: null,
+          rejection_reason: null,
+          revoked_at: null,
+          revoked_by: null,
+          revocation_reason: null,
         })
         .eq('id', email.id);
 
@@ -201,12 +218,64 @@ export default function EmailAllowlistPanel() {
     }
   };
 
+  const openRevokeModal = (email: AllowlistEmail) => {
+    setRevokingEmail(email);
+    setRevocationReason("");
+    setRevokeModalOpen(true);
+  };
+
+  const handleRevoke = async () => {
+    if (!revokingEmail) return;
+
+    if (!revocationReason.trim()) {
+      toast({
+        title: "Motivo obrigatório",
+        description: "Informe o motivo da revogação.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setRevoking(true);
+    try {
+      const { error } = await supabase
+        .from('email_allowlist')
+        .update({
+          status: 'revoked',
+          revoked_at: new Date().toISOString(),
+          revoked_by: user?.id,
+          revocation_reason: revocationReason.trim(),
+        })
+        .eq('id', revokingEmail.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Acesso revogado",
+        description: `O acesso de ${revokingEmail.email} foi revogado.`,
+      });
+      setRevokeModalOpen(false);
+      setRevokingEmail(null);
+      fetchEmails();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao revogar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setRevoking(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
         return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Aprovado</Badge>;
       case 'rejected':
         return <Badge variant="destructive">Rejeitado</Badge>;
+      case 'revoked':
+        return <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">Revogado</Badge>;
       case 'pending':
       default:
         return <Badge variant="secondary">Pendente</Badge>;
@@ -278,7 +347,7 @@ export default function EmailAllowlistPanel() {
               <TableRow>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Data Aprovação</TableHead>
+                <TableHead>Data</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -302,7 +371,17 @@ export default function EmailAllowlistPanel() {
                     <TableCell>{getStatusBadge(email.status)}</TableCell>
                     <TableCell>
                       {email.approved_at ? (
-                        format(new Date(email.approved_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                        <span title="Data de aprovação">
+                          {format(new Date(email.approved_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </span>
+                      ) : email.rejected_at ? (
+                        <span title="Data de rejeição">
+                          {format(new Date(email.rejected_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </span>
+                      ) : email.revoked_at ? (
+                        <span title="Data de revogação">
+                          {format(new Date(email.revoked_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </span>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
@@ -315,6 +394,7 @@ export default function EmailAllowlistPanel() {
                             variant="outline"
                             onClick={() => handleApprove(email)}
                             className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            title="Aprovar"
                           >
                             <Check className="h-4 w-4" />
                           </Button>
@@ -323,15 +403,36 @@ export default function EmailAllowlistPanel() {
                             variant="outline"
                             onClick={() => openRejectModal(email)}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="Rejeitar"
                           >
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
                       )}
-                      {email.status === 'rejected' && email.rejection_reason && (
-                        <span className="text-xs text-muted-foreground" title={email.rejection_reason}>
-                          {email.rejection_reason.slice(0, 20)}...
-                        </span>
+                      {email.status === 'approved' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openRevokeModal(email)}
+                          className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                          title="Revogar acesso"
+                        >
+                          Revogar
+                        </Button>
+                      )}
+                      {(email.status === 'rejected' || email.status === 'revoked') && (
+                        <div className="flex gap-1 items-center justify-end">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleApprove(email)}
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            title="Reaprovar"
+                          >
+                            <Check className="h-4 w-4 mr-1" />
+                            Reaprovar
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
@@ -342,11 +443,12 @@ export default function EmailAllowlistPanel() {
         </div>
 
         {/* Stats */}
-        <div className="flex gap-4 text-sm text-muted-foreground">
+        <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
           <span>Total: {emails.length}</span>
           <span>Aprovados: {emails.filter(e => e.status === 'approved').length}</span>
           <span>Pendentes: {emails.filter(e => e.status === 'pending').length}</span>
           <span>Rejeitados: {emails.filter(e => e.status === 'rejected').length}</span>
+          <span>Revogados: {emails.filter(e => e.status === 'revoked').length}</span>
         </div>
       </CardContent>
 
@@ -373,6 +475,40 @@ export default function EmailAllowlistPanel() {
               <Button variant="destructive" onClick={handleReject} disabled={rejecting}>
                 {rejecting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Confirmar Rejeição
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Revoke Modal */}
+      <Dialog open={revokeModalOpen} onOpenChange={setRevokeModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Revogar Acesso</DialogTitle>
+            <DialogDescription>
+              Informe o motivo para revogar o acesso de {revokingEmail?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              placeholder="Motivo da revogação..."
+              value={revocationReason}
+              onChange={(e) => setRevocationReason(e.target.value)}
+              rows={3}
+            />
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setRevokeModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleRevoke} 
+                disabled={revoking}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                {revoking && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Confirmar Revogação
               </Button>
             </div>
           </div>
