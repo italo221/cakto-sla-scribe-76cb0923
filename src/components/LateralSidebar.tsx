@@ -83,11 +83,10 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
       <Link 
         to={item.path} 
         className={`
-          flex items-center gap-3 px-3 h-10 rounded-md transition-all duration-150
-          text-[13px] font-medium
+          sidebar-item flex items-center gap-3 px-3 h-10 rounded-md transition-all duration-150
           ${active 
-            ? 'bg-white/[0.08] text-[#E5E7EB] font-semibold' 
-            : 'text-[#9CA3AF] hover:bg-white/[0.04] hover:text-[#D1D5DB]'
+            ? 'active bg-white/[0.08]' 
+            : 'hover:bg-white/[0.04] hover:text-[#D1D5DB]'
           }
           ${shouldExpand ? '' : 'justify-center px-2'}
         `}
@@ -114,6 +113,7 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
     <>
       <div 
         className={`
+          sidebar-typography
           fixed left-0 top-0 h-full z-40 transition-all duration-300 ease-in-out flex flex-col
           ${shouldExpand ? 'w-56' : 'w-14'}
           bg-[#0A0A0B] border-r border-white/[0.08]
@@ -125,7 +125,7 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
         <div className="p-3 border-b border-white/[0.06]">
           <div className="flex items-center justify-between min-w-0">
             {shouldExpand && (
-              <span className="text-[14px] font-semibold text-white truncate">
+              <span className="sidebar-title text-white truncate">
                 {systemName}
               </span>
             )}
@@ -158,12 +158,12 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
                 onClick={() => setProfileSettingsOpen(true)}
               >
                 <Avatar className="h-7 w-7 flex-shrink-0">
-                  <AvatarFallback className="bg-white/10 text-[#9CA3AF] text-[11px] font-medium">
+                  <AvatarFallback className="bg-white/10 text-[#A1A1AA] text-[11px] font-normal">
                     {getUserInitials()}
                   </AvatarFallback>
                 </Avatar>
                 {shouldExpand && (
-                  <span className="text-[13px] text-[#9CA3AF] truncate">
+                  <span className="sidebar-user-name truncate">
                     {profile?.nome_completo || user.email?.split('@')[0]}
                   </span>
                 )}
