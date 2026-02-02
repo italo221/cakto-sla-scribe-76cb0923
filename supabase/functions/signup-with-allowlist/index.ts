@@ -191,20 +191,48 @@ serve(async (req) => {
     }
 
     // ========================================
-    // CRIAR PROFILE
+    // CRIAR/ATUALIZAR PROFILE
+    // O trigger handle_new_user já cria um profile básico
+    // Apenas atualizamos os dados adicionais se necessário
     // ========================================
-    console.log(`[signup-with-allowlist] Criando profile para user_id: ${authData.user.id}`)
+    console.log(`[signup-with-allowlist] Verificando/atualizando profile para user_id: ${authData.user.id}`)
 
-    const { error: profileError } = await supabaseAdmin
+    // Primeiro verificar se o profile já foi criado pelo trigger
+    const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
-      .insert({
-        user_id: authData.user.id,
-        email: normalizedEmail,
-        nome_completo: nome_completo || normalizedEmail.split('@')[0],
-        role: 'operador', // Role padrão para novos usuários
-        user_type: 'colaborador_setor', // Tipo padrão
-        ativo: true,
-      })
+      .select('user_id')
+      .eq('user_id', authData.user.id)
+      .maybeSingle()
+
+    let profileError = null
+
+    if (existingProfile) {
+      // Profile já existe (criado pelo trigger), apenas atualizar nome se fornecido
+      if (nome_completo && nome_completo.trim()) {
+        const { error } = await supabaseAdmin
+          .from('profiles')
+          .update({
+            nome_completo: nome_completo.trim(),
+            ativo: true,
+          })
+          .eq('user_id', authData.user.id)
+        profileError = error
+      }
+      console.log(`[signup-with-allowlist] Profile já existente, atualizado com nome: ${nome_completo}`)
+    } else {
+      // Profile não existe, criar
+      const { error } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          user_id: authData.user.id,
+          email: normalizedEmail,
+          nome_completo: nome_completo || normalizedEmail.split('@')[0],
+          role: 'operador',
+          user_type: 'colaborador_setor',
+          ativo: true,
+        })
+      profileError = error
+    }
 
     if (profileError) {
       // ROLLBACK: Deletar usuário criado no Auth
