@@ -198,23 +198,6 @@ const Admin = () => {
           <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)} disabled={isEditing}>
             <Edit className="h-3 w-3" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => {
-          console.log('🔍 Abrindo editor para usuário:', user);
-          console.log('🔍 user.user_id:', user.user_id);
-          if (!user.user_id) {
-            toast({
-              title: "Erro",
-              description: "ID do usuário não encontrado",
-              variant: "destructive"
-            });
-            return;
-          }
-          setSelectedUserForEdit(user.user_id);
-          setAdminUserEditorOpen(true);
-        }}>
-            <Shield className="h-3 w-3" />
-            {isMobile ? '' : 'Admin'}
-          </Button>
            <Button variant={user.ativo ? "destructive" : "default"} size="sm" onClick={handleToggleActive}>
              {user.ativo ? <>
                  <UserX className="h-3 w-3 mr-1" />
