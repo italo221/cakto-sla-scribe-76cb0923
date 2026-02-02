@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Filter, Clock, AlertCircle, CheckCircle, X, Grid3X3, List, Star, User, MoreVertical, Play, Pause, CheckCircle2, XCircle, Eye, Columns3, AlertTriangle, Flag, Building, Target, Users, Activity, Inbox as InboxIcon, Circle, Info, Building2, HelpCircle } from "lucide-react";
+import { Search, Filter, Clock, AlertCircle, CheckCircle, X, Grid3X3, List, Star, User, MoreVertical, Play, Pause, CheckCircle2, XCircle, Eye, Columns3, AlertTriangle, Flag, Building, Target, Users, Activity, Inbox as InboxIcon, Circle, Info, Building2, HelpCircle, Trash2 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import TicketDetailModal from "@/components/TicketDetailModal";
@@ -30,6 +30,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTags } from "@/hooks/useTags";
 import { useToast } from "@/hooks/use-toast";
 import { SmartPagination } from '@/components/SmartPagination';
+import DeletedTicketsList from '@/components/DeletedTicketsList';
 interface Ticket {
   id: string;
   ticket_number: string;
@@ -69,7 +70,9 @@ export default function InboxDarkMode() {
   } = useToast();
 
   // Estados de filtro (declarados primeiro para uso no hook)
-  const [activeFilter, setActiveFilter] = useState<'all' | 'aberto' | 'em_andamento' | 'resolvido' | 'fechado' | 'atrasado' | 'critico' | 'info-incompleta'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'aberto' | 'em_andamento' | 'resolvido' | 'fechado' | 'atrasado' | 'critico' | 'info-incompleta' | 'excluido'>('all');
+  const [deletedTickets, setDeletedTickets] = useState<any[]>([]);
+  const [deletedCount, setDeletedCount] = useState(0);
   const [setorFilter, setSetorFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('todas');
   const [dateSort, setDateSort] = useState<'newest' | 'oldest' | 'none'>('none');
@@ -334,6 +337,7 @@ export default function InboxDarkMode() {
   useEffect(() => {
     loadSetores();
     loadUserRole();
+    loadDeletedTickets();
 
     // Event listener para abrir modal de edição
     const handleOpenEditModal = (event: CustomEvent) => {
@@ -392,6 +396,23 @@ export default function InboxDarkMode() {
       setSetores(data || []);
     } catch (error) {
       console.error('Erro ao carregar setores:', error);
+    }
+  };
+
+  // Função para carregar tickets excluídos
+  const loadDeletedTickets = async () => {
+    try {
+      const { data, error, count } = await supabase
+        .from('sla_demandas_deleted')
+        .select('*', { count: 'exact' })
+        .order('deleted_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setDeletedTickets(data || []);
+      setDeletedCount(count || 0);
+    } catch (error) {
+      console.error('Erro ao carregar tickets excluídos:', error);
     }
   };
   const loadUserRole = async () => {
@@ -799,7 +820,7 @@ export default function InboxDarkMode() {
         </div>
 
         {/* Status Cards - Sistema de filtro unificado usando dados centralizados */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
           <Card className={cn(
             "cursor-pointer transition-all duration-200 bg-card border rounded-xl hover:bg-muted/60",
             activeFilter === 'aberto' 
@@ -986,6 +1007,34 @@ export default function InboxDarkMode() {
               </h2>
             </CardContent>
           </Card>
+
+          {/* Card de Tickets Excluídos */}
+          <Card className={cn(
+            "cursor-pointer transition-all duration-200 bg-card border rounded-xl hover:bg-muted/60",
+            activeFilter === 'excluido' 
+              ? 'border-destructive bg-destructive/10 ring-2 ring-destructive/30 shadow-md' 
+              : 'border-border/10 border-l-[2px] border-l-destructive/30'
+          )} onClick={() => {
+            const newFilter = activeFilter === 'excluido' ? 'all' : 'excluido';
+            setActiveFilter(newFilter);
+            // Quando card está ativo, desativar ordenação por criticidade e usar data mais recente
+            if (newFilter !== 'all') {
+              setCriticalitySort('none');
+              setDateSort('newest');
+            } else {
+              // Voltar ao padrão P0 no topo quando nenhum card ativo
+              setCriticalitySort('highest');
+              setDateSort('none');
+            }
+          }}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className={cn("text-sm", activeFilter === 'excluido' ? 'text-destructive font-medium' : 'text-muted-foreground')}>Excluídos</span>
+                <Trash2 className={cn("w-4 h-4", activeFilter === 'excluido' ? 'text-destructive' : 'text-muted-foreground')} />
+              </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{deletedCount}</h2>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Controls */}
@@ -999,7 +1048,9 @@ export default function InboxDarkMode() {
 
           <div className="flex items-center gap-4 text-sm text-muted-foreground dark:text-muted-foreground">
             <span className="mx-0 px-0 my-[5px] py-0 text-base text-center">
-              {totalTickets} tickets encontrados | Página {paginaAtual} de {totalPaginas}
+              {activeFilter === 'excluido' 
+                ? `${deletedCount} tickets excluídos` 
+                : `${totalTickets} tickets encontrados | Página ${paginaAtual} de ${totalPaginas}`}
             </span>
             {(searchTerm || activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'highest') && <Button variant="ghost" size="sm" onClick={() => {
             setSearchTerm('');
@@ -1017,16 +1068,31 @@ export default function InboxDarkMode() {
 
         {/* Tickets List */}
         <div className="space-y-4">
-          {loading ? <div className="text-center py-8">
+          {activeFilter === 'excluido' ? (
+            /* Lista de tickets excluídos */
+            <DeletedTicketsList 
+              tickets={deletedTickets} 
+              onRestore={() => {
+                loadDeletedTickets();
+                reloadTickets();
+                reloadStats();
+              }} 
+            />
+          ) : loading ? (
+            <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
               <p className="mt-2 text-muted-foreground dark:text-muted-foreground">Carregando tickets...</p>
-            </div> : error ? <Card className="border-destructive bg-destructive/10">
+            </div>
+          ) : error ? (
+            <Card className="border-destructive bg-destructive/10">
               <CardContent className="p-8 text-center">
                 <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-destructive mb-2">Falha ao carregar tickets</h3>
                 <p className="text-destructive text-sm">{error}</p>
               </CardContent>
-            </Card> : filteredTicketsWithStatus.length === 0 ? <Card className="border-dashed bg-card dark:bg-card">
+            </Card>
+          ) : filteredTicketsWithStatus.length === 0 ? (
+            <Card className="border-dashed bg-card dark:bg-card">
               <CardContent className="p-8 text-center">
                 <InboxIcon className="h-12 w-12 text-muted-foreground dark:text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground dark:text-foreground mb-2">
@@ -1036,12 +1102,28 @@ export default function InboxDarkMode() {
                   {searchTerm || activeFilter !== 'all' || setorFilter !== 'all' || tagFilter !== 'todas' || dateSort !== 'none' || criticalitySort !== 'highest' ? 'Tente ajustar os filtros de busca.' : 'Quando houver tickets, eles aparecerão aqui.'}
                 </p>
               </CardContent>
-            </Card> : ticketsPaginados.map(ticket => <JiraTicketCard key={ticket.id} ticket={ticket} onOpenDetail={handleOpenTicketDetail} onUpdateStatus={handleUpdateStatus} onEditTicket={handleEditTicket} onDeleteTicket={handleDeleteTicket} userCanEdit={canEdit} userCanDelete={canDelete} />)}
+            </Card>
+          ) : (
+            ticketsPaginados.map(ticket => (
+              <JiraTicketCard 
+                key={ticket.id} 
+                ticket={ticket} 
+                onOpenDetail={handleOpenTicketDetail} 
+                onUpdateStatus={handleUpdateStatus} 
+                onEditTicket={handleEditTicket} 
+                onDeleteTicket={handleDeleteTicket} 
+                userCanEdit={canEdit} 
+                userCanDelete={canDelete} 
+              />
+            ))
+          )}
 
-          {/* Paginação */}
-          {totalPaginas > 1 && <div className="flex justify-center py-6">
+          {/* Paginação - esconder quando mostrando tickets excluídos */}
+          {activeFilter !== 'excluido' && totalPaginas > 1 && (
+            <div className="flex justify-center py-6">
               <SmartPagination currentPage={paginaAtual} totalPages={totalPaginas} onPageChange={handlePageChange} />
-            </div>}
+            </div>
+          )}
         </div>
 
         {/* Modals */}

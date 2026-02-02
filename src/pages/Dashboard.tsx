@@ -9,7 +9,7 @@ import { BarChart3, TrendingUp, Settings, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/hooks/usePermissions";
 import { DashboardAIChat } from "@/components/DashboardAIChat";
-import DeletedTicketsCard from "@/components/DeletedTicketsCard";
+
 
 interface Setor {
   id: string;
@@ -69,7 +69,6 @@ const Dashboard = () => {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
-              <DeletedTicketsCard />
               <Card className="bg-card">
                 <CardContent className="p-6">
                   <DynamicDashboard />
