@@ -752,6 +752,8 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          migrated_at: string | null
+          migrated_from: string | null
           navbar_glass: boolean | null
           navbar_position: string | null
           nome_completo: string
@@ -768,6 +770,8 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          migrated_at?: string | null
+          migrated_from?: string | null
           navbar_glass?: boolean | null
           navbar_position?: string | null
           nome_completo: string
@@ -784,6 +788,8 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          migrated_at?: string | null
+          migrated_from?: string | null
           navbar_glass?: boolean | null
           navbar_position?: string | null
           nome_completo?: string
@@ -1036,7 +1042,12 @@ export type Database = {
           anexos: Json | null
           arquivos: Json | null
           assignee_user_id: string | null
+          created_by: string | null
           data_criacao: string
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
+          deletion_type: string | null
           descricao: string
           first_in_progress_at: string | null
           id: string
@@ -1069,7 +1080,12 @@ export type Database = {
           anexos?: Json | null
           arquivos?: Json | null
           assignee_user_id?: string | null
+          created_by?: string | null
           data_criacao?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          deletion_type?: string | null
           descricao: string
           first_in_progress_at?: string | null
           id?: string
@@ -1102,7 +1118,12 @@ export type Database = {
           anexos?: Json | null
           arquivos?: Json | null
           assignee_user_id?: string | null
+          created_by?: string | null
           data_criacao?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          deletion_type?: string | null
           descricao?: string
           first_in_progress_at?: string | null
           id?: string
