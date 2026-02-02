@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          ip_address: unknown
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          table_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       cargos: {
         Row: {
           ativo: boolean
@@ -62,6 +98,54 @@ export type Database = {
           id?: string
           reaction_type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      email_allowlist: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          email: string
+          id: string
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          revocation_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status: string
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -686,10 +770,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "password_recovery_tokens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_for_mentions"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "password_recovery_tokens_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "password_recovery_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_for_mentions"
             referencedColumns: ["user_id"]
           },
         ]
@@ -929,6 +1027,13 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "sla_action_logs_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_for_mentions"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "sla_action_logs_setor_destino_fkey"
             columns: ["setor_destino_id"]
             isOneToOne: false
@@ -961,6 +1066,20 @@ export type Database = {
             columns: ["sla_id"]
             isOneToOne: false
             referencedRelation: "sla_demandas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sla_action_logs_sla_id_fkey"
+            columns: ["sla_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sla_action_logs_sla_id_fkey"
+            columns: ["sla_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas_deleted"
             referencedColumns: ["id"]
           },
         ]
@@ -1008,6 +1127,13 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "sla_comentarios_internos_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_for_mentions"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "sla_comentarios_internos_setor_id_fkey"
             columns: ["setor_id"]
             isOneToOne: false
@@ -1022,6 +1148,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sla_comentarios_internos_sla_id_fkey"
+            columns: ["sla_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sla_comentarios_internos_sla_id_fkey"
+            columns: ["sla_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas_deleted"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "sla_comentarios_setor_id_fkey"
             columns: ["setor_id"]
             isOneToOne: false
@@ -1033,6 +1173,20 @@ export type Database = {
             columns: ["sla_id"]
             isOneToOne: false
             referencedRelation: "sla_demandas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sla_comentarios_sla_id_fkey"
+            columns: ["sla_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sla_comentarios_sla_id_fkey"
+            columns: ["sla_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas_deleted"
             referencedColumns: ["id"]
           },
         ]
@@ -1198,6 +1352,20 @@ export type Database = {
             referencedRelation: "sla_demandas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sla_logs_id_demanda_fkey"
+            columns: ["id_demanda"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sla_logs_id_demanda_fkey"
+            columns: ["id_demanda"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas_deleted"
+            referencedColumns: ["id"]
+          },
         ]
       }
       sla_policies: {
@@ -1287,10 +1455,38 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "subtickets_child_ticket_fk"
+            columns: ["child_ticket_id"]
+            isOneToOne: true
+            referencedRelation: "sla_demandas_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subtickets_child_ticket_fk"
+            columns: ["child_ticket_id"]
+            isOneToOne: true
+            referencedRelation: "sla_demandas_deleted"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "subtickets_parent_ticket_fk"
             columns: ["parent_ticket_id"]
             isOneToOne: false
             referencedRelation: "sla_demandas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subtickets_parent_ticket_fk"
+            columns: ["parent_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subtickets_parent_ticket_fk"
+            columns: ["parent_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas_deleted"
             referencedColumns: ["id"]
           },
         ]
@@ -1402,10 +1598,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ticket_attachments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_attachments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas_deleted"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ticket_attachments_uploaded_by_fkey"
             columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ticket_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_for_mentions"
             referencedColumns: ["user_id"]
           },
         ]
@@ -1545,6 +1762,20 @@ export type Database = {
             referencedRelation: "sla_demandas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ticket_sla_events_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_sla_events_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "sla_demandas_deleted"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_kyc: {
@@ -1668,6 +1899,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "user_setores_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_for_mentions"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       users: {
@@ -1690,7 +1928,203 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_for_mentions: {
+        Row: {
+          avatar_url: string | null
+          nome_completo: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          nome_completo?: string | null
+          status?: never
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          nome_completo?: string | null
+          status?: never
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      sla_demandas_active: {
+        Row: {
+          anexos: Json | null
+          arquivos: Json | null
+          assignee_user_id: string | null
+          created_by: string | null
+          data_criacao: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
+          deletion_type: string | null
+          descricao: string | null
+          first_in_progress_at: string | null
+          id: string | null
+          link_referencia: string | null
+          nivel_criticidade: string | null
+          observacoes: string | null
+          pontuacao_cliente: number | null
+          pontuacao_financeiro: number | null
+          pontuacao_operacional: number | null
+          pontuacao_reputacao: number | null
+          pontuacao_total: number | null
+          pontuacao_urgencia: number | null
+          prazo_interno: string | null
+          prioridade_operacional:
+            | Database["public"]["Enums"]["prioridade_operacional"]
+            | null
+          resolved_at: string | null
+          responsavel_interno: string | null
+          setor_id: string | null
+          solicitante: string | null
+          status: string | null
+          tags: string[] | null
+          ticket_number: string | null
+          time_responsavel: string | null
+          tipo_ticket: string | null
+          titulo: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          anexos?: Json | null
+          arquivos?: Json | null
+          assignee_user_id?: string | null
+          created_by?: string | null
+          data_criacao?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          deletion_type?: string | null
+          descricao?: string | null
+          first_in_progress_at?: string | null
+          id?: string | null
+          link_referencia?: string | null
+          nivel_criticidade?: string | null
+          observacoes?: string | null
+          pontuacao_cliente?: number | null
+          pontuacao_financeiro?: number | null
+          pontuacao_operacional?: number | null
+          pontuacao_reputacao?: number | null
+          pontuacao_total?: number | null
+          pontuacao_urgencia?: number | null
+          prazo_interno?: string | null
+          prioridade_operacional?:
+            | Database["public"]["Enums"]["prioridade_operacional"]
+            | null
+          resolved_at?: string | null
+          responsavel_interno?: string | null
+          setor_id?: string | null
+          solicitante?: string | null
+          status?: string | null
+          tags?: string[] | null
+          ticket_number?: string | null
+          time_responsavel?: string | null
+          tipo_ticket?: string | null
+          titulo?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          anexos?: Json | null
+          arquivos?: Json | null
+          assignee_user_id?: string | null
+          created_by?: string | null
+          data_criacao?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          deletion_type?: string | null
+          descricao?: string | null
+          first_in_progress_at?: string | null
+          id?: string | null
+          link_referencia?: string | null
+          nivel_criticidade?: string | null
+          observacoes?: string | null
+          pontuacao_cliente?: number | null
+          pontuacao_financeiro?: number | null
+          pontuacao_operacional?: number | null
+          pontuacao_reputacao?: number | null
+          pontuacao_total?: number | null
+          pontuacao_urgencia?: number | null
+          prazo_interno?: string | null
+          prioridade_operacional?:
+            | Database["public"]["Enums"]["prioridade_operacional"]
+            | null
+          resolved_at?: string | null
+          responsavel_interno?: string | null
+          setor_id?: string | null
+          solicitante?: string | null
+          status?: string | null
+          tags?: string[] | null
+          ticket_number?: string | null
+          time_responsavel?: string | null
+          tipo_ticket?: string | null
+          titulo?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sla_demandas_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sla_demandas_deleted: {
+        Row: {
+          anexos: Json | null
+          arquivos: Json | null
+          assignee_user_id: string | null
+          created_by: string | null
+          data_criacao: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_by_email: string | null
+          deleted_by_name: string | null
+          deletion_reason: string | null
+          deletion_type: string | null
+          descricao: string | null
+          first_in_progress_at: string | null
+          id: string | null
+          link_referencia: string | null
+          nivel_criticidade: string | null
+          observacoes: string | null
+          pontuacao_cliente: number | null
+          pontuacao_financeiro: number | null
+          pontuacao_operacional: number | null
+          pontuacao_reputacao: number | null
+          pontuacao_total: number | null
+          pontuacao_urgencia: number | null
+          prazo_interno: string | null
+          prioridade_operacional:
+            | Database["public"]["Enums"]["prioridade_operacional"]
+            | null
+          resolved_at: string | null
+          responsavel_interno: string | null
+          setor_id: string | null
+          solicitante: string | null
+          status: string | null
+          tags: string[] | null
+          ticket_number: string | null
+          time_responsavel: string | null
+          tipo_ticket: string | null
+          titulo: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sla_demandas_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       add_hidden_tag: { Args: { p_tag: string }; Returns: boolean }
@@ -1800,6 +2234,16 @@ export type Database = {
       }
       is_admin: { Args: { user_uuid?: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      log_audit: {
+        Args: {
+          p_action: string
+          p_new_data?: Json
+          p_old_data?: Json
+          p_record_id?: string
+          p_table_name?: string
+        }
+        Returns: string
+      }
       log_external_link_access: {
         Args: {
           p_ip_address?: unknown
@@ -1846,8 +2290,24 @@ export type Database = {
         Args: { p_team_id: string; p_ticket_ids: string[] }
         Returns: undefined
       }
+      restore_ticket: {
+        Args: { p_restore_reason: string; p_ticket_id: string }
+        Returns: Json
+      }
+      search_mentions: {
+        Args: { search_term: string }
+        Returns: {
+          avatar_url: string
+          nome_completo: string
+          user_id: string
+        }[]
+      }
       set_tag_team_assignment: {
         Args: { p_tag_name: string; p_team_id?: string }
+        Returns: Json
+      }
+      soft_delete_ticket: {
+        Args: { p_reason: string; p_ticket_id: string }
         Returns: Json
       }
       team_metrics: {
