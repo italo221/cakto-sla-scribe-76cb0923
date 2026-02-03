@@ -29,6 +29,9 @@ docs/00_mapeamento_banco_atual.md
 docs/*security*.md
 docs/ROTAS_SISTEMA.md
 
-supabase
-supabase/functions
-supabase/migrations
+/supabase/
+supabase/functions/
+supabase/migrations/
+supabase/config.toml
+.env.local
+.env
