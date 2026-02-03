@@ -317,106 +317,108 @@ export const SLAResolutionTimeChart = ({ dateFilter, selectedSetor, setores }: S
   };
 
   return (
-    <Card className="bg-card border-border col-span-full">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg font-semibold text-foreground">
-              Tempo de Resolução do SLA
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Considerando tickets que entraram em andamento e foram resolvidos no período
-            </p>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={localSetor} onValueChange={setLocalSetor}>
-              <SelectTrigger className="w-40 h-8">
-                <Filter className="h-3 w-3 mr-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os setores</SelectItem>
-                {setores.map(setor => (
-                  <SelectItem key={setor.id} value={setor.id}>
-                    {setor.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={viewMode} onValueChange={(value: 'geral' | 'por-tag' | 'todas-tags') => {
-              setViewMode(value);
-              if (value !== 'por-tag') setSelectedTag('');
-            }}>
-              <SelectTrigger className="w-36 h-8">
-                <Hash className="h-3 w-3 mr-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="geral">Geral</SelectItem>
-                <SelectItem value="por-tag">Por Tag</SelectItem>
-                <SelectItem value="todas-tags">Todas as Tags</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {viewMode === 'por-tag' && (
-              <Popover open={tagComboOpen} onOpenChange={setTagComboOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={tagComboOpen}
-                    className="w-48 h-8 justify-between text-xs"
-                  >
-                    {selectedTag || "Selecionar tag..."}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-48 p-0">
-                  <Command>
-                    <CommandInput placeholder="Buscar tag..." className="h-8" />
-                    <CommandEmpty>Nenhuma tag encontrada.</CommandEmpty>
-                    <CommandList>
-                      {availableTags.map((tag) => (
-                        <CommandItem
-                          key={tag}
-                          value={tag}
-                          onSelect={() => {
-                            setSelectedTag(tag);
-                            setTagComboOpen(false);
-                          }}
-                        >
-                          {tag}
-                        </CommandItem>
-                      ))}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            )}
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={exportCSV}
-              disabled={!resolutionData && viewMode !== 'todas-tags'}
-              className="h-8 px-2"
-            >
-              <Download className="h-3 w-3" />
-            </Button>
-          </div>
+    <div 
+      className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-xl p-8 col-span-full"
+      style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+    >
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-1">
+            Tempo de resolução do SLA
+          </h3>
+          <p className="text-sm text-gray-400">
+            Considerando tickets que entraram em andamento e foram resolvidos no período
+          </p>
         </div>
-      </CardHeader>
+        
+        <div className="flex flex-wrap items-center gap-3">
+          <Select value={localSetor} onValueChange={setLocalSetor}>
+            <SelectTrigger className="h-10 px-4 bg-gray-900/50 border-gray-800 rounded-lg text-sm text-gray-300 hover:bg-gray-800/50 transition-colors">
+              <Filter className="h-4 w-4 mr-2 text-gray-500" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-900 border-gray-800">
+              <SelectItem value="all">Todos os setores</SelectItem>
+              {setores.map(setor => (
+                <SelectItem key={setor.id} value={setor.id}>
+                  {setor.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-      <CardContent className="pt-0">
+          <Select value={viewMode} onValueChange={(value: 'geral' | 'por-tag' | 'todas-tags') => {
+            setViewMode(value);
+            if (value !== 'por-tag') setSelectedTag('');
+          }}>
+            <SelectTrigger className="h-10 px-4 bg-gray-900/50 border-gray-800 rounded-lg text-sm text-gray-300 hover:bg-gray-800/50 transition-colors">
+              <Hash className="h-4 w-4 mr-2 text-gray-500" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-900 border-gray-800">
+              <SelectItem value="geral">Geral</SelectItem>
+              <SelectItem value="por-tag">Por tag</SelectItem>
+              <SelectItem value="todas-tags">Todas as tags</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {viewMode === 'por-tag' && (
+            <Popover open={tagComboOpen} onOpenChange={setTagComboOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={tagComboOpen}
+                  className="h-10 px-4 bg-gray-900/50 border-gray-800 rounded-lg text-sm text-gray-300 hover:bg-gray-800/50 transition-colors justify-between min-w-[180px]"
+                >
+                  {selectedTag || "Selecionar tag..."}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[200px] p-0 bg-gray-900 border-gray-800">
+                <Command className="bg-transparent">
+                  <CommandInput placeholder="Buscar tag..." className="h-10 border-gray-800" />
+                  <CommandEmpty className="text-gray-400 text-sm py-4 text-center">Nenhuma tag encontrada.</CommandEmpty>
+                  <CommandList>
+                    {availableTags.map((tag) => (
+                      <CommandItem
+                        key={tag}
+                        value={tag}
+                        onSelect={() => {
+                          setSelectedTag(tag);
+                          setTagComboOpen(false);
+                        }}
+                        className="text-gray-300 hover:bg-gray-800"
+                      >
+                        {tag}
+                      </CommandItem>
+                    ))}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          )}
+
+          <Button
+            variant="outline"
+            onClick={exportCSV}
+            disabled={!resolutionData && viewMode !== 'todas-tags'}
+            className="h-10 px-4 bg-gray-900/50 border-gray-800 rounded-lg text-sm text-gray-300 hover:bg-gray-800/50 transition-colors"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div>
         {loading ? (
-          <div className="h-40 flex items-center justify-center">
-            <div className="text-muted-foreground">Carregando dados...</div>
+          <div className="h-48 flex items-center justify-center">
+            <div className="text-gray-400 text-sm">Carregando dados...</div>
           </div>
         ) : !resolutionData && viewMode !== 'todas-tags' ? (
-          <div className="h-40 flex items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <div className="text-lg font-medium">—</div>
+          <div className="h-48 flex items-center justify-center">
+            <div className="text-center text-gray-400">
+              <div className="text-2xl font-semibold text-gray-500 mb-2">—</div>
               <div className="text-sm">
                 {viewMode === 'por-tag' && selectedTag 
                   ? `Sem dados para a tag "${selectedTag}" no período/setor selecionado`
@@ -425,66 +427,88 @@ export const SLAResolutionTimeChart = ({ dateFilter, selectedSetor, setores }: S
             </div>
           </div>
         ) : viewMode === 'todas-tags' ? (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {resolutionData && (
-              <div className="text-center p-8 bg-muted/20 rounded-lg">
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  <Clock className="h-6 w-6 text-primary" />
-                  <span className="text-base font-medium text-muted-foreground">Tempo Médio Geral</span>
+              <div className="text-center py-10 px-8 bg-gray-800/20 rounded-xl">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <Clock className="h-6 w-6 text-green-500" />
+                  <span className="text-sm font-medium text-gray-400">Tempo médio geral</span>
                 </div>
-                <div className="text-5xl font-bold text-foreground mb-2">
+                <div className="text-6xl font-semibold text-white mb-3">
                   {resolutionData.averageFormatted}
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-xs text-gray-500">
                   {resolutionData.ticketCount} tickets • {getPeriodLabel(dateFilter)} • {localSetor === "all" ? "Todos os setores" : setores.find(s => s.id === localSetor)?.nome}
                 </div>
               </div>
             )}
             
             {tagResolutionData.length > 0 ? (
-              <div className="bg-muted/20 rounded-lg p-4">
-                <h4 className="font-medium text-foreground mb-4">Tempo Médio por Tag</h4>
+              <div className="bg-gray-800/20 rounded-xl p-6">
+                <h4 className="font-medium text-white mb-4 text-sm">Tempo médio por tag</h4>
                 <div className="space-y-2">
-                  {tagResolutionData.map((item, index) => (
-                    <div key={item.tag} className="flex items-center justify-between p-3 bg-background rounded border">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="font-mono">
+                  {tagResolutionData.map((item) => (
+                    <div key={item.tag} className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-800/50">
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className="font-mono text-xs text-gray-400 border-gray-700">
                           {item.tag === 'Sem tag' ? 'Sem tag' : `#${item.tag}`}
                         </Badge>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium text-foreground">{item.averageFormatted}</div>
-                        <div className="text-sm text-muted-foreground">{item.ticketCount} tickets</div>
+                        <div className="font-semibold text-white">{item.averageFormatted}</div>
+                        <div className="text-xs text-gray-500">{item.ticketCount} tickets</div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="text-center text-muted-foreground p-8">
-                <div className="text-lg font-medium">—</div>
+              <div className="text-center text-gray-400 py-10">
+                <div className="text-2xl font-semibold text-gray-500 mb-2">—</div>
                 <div className="text-sm">Sem dados por tag no período/setor selecionado</div>
               </div>
             )}
           </div>
         ) : (
-          <div className="text-center p-8 bg-muted/20 rounded-lg">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <Clock className="h-6 w-6 text-primary" />
-              <span className="text-base font-medium text-muted-foreground">
-                {viewMode === 'por-tag' && selectedTag ? `Tempo Médio - #${selectedTag}` : 'Tempo Médio de Resolução'}
-              </span>
+          <div className="space-y-8">
+            {/* Valor principal centralizado */}
+            <div className="text-center py-10 px-8 bg-gray-800/20 rounded-xl">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <Clock className="h-6 w-6 text-green-500" />
+                <span className="text-sm font-medium text-gray-400">
+                  {viewMode === 'por-tag' && selectedTag ? `Tempo médio - ${selectedTag}` : 'Tempo médio geral'}
+                </span>
+              </div>
+              <div className="text-6xl font-semibold text-white mb-3">
+                {resolutionData?.averageFormatted}
+              </div>
+              <div className="text-xs text-gray-500">
+                {resolutionData?.ticketCount} tickets • {getPeriodLabel(dateFilter)} • {localSetor === "all" ? "Todos os setores" : setores.find(s => s.id === localSetor)?.nome}
+              </div>
             </div>
-            <div className="text-5xl font-bold text-foreground mb-2">
-              {resolutionData.averageFormatted}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {resolutionData.ticketCount} tickets • {getPeriodLabel(dateFilter)} • {localSetor === "all" ? "Todos os setores" : setores.find(s => s.id === localSetor)?.nome}
-              {viewMode === 'por-tag' && selectedTag && ` • #${selectedTag}`}
-            </div>
+
+            {/* Breakdown por prioridade */}
+            {resolutionData && resolutionData.byPriority.length > 0 && (
+              <div className="bg-gray-800/20 rounded-xl p-6">
+                <h4 className="font-medium text-white mb-4 text-sm">Por nível de criticidade</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {resolutionData.byPriority.map((item) => (
+                    <div key={item.priority} className="bg-gray-900/50 rounded-lg p-4 border border-gray-800/50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge className={getPriorityColor(item.priority) + " text-xs"}>
+                          {item.priority}
+                        </Badge>
+                      </div>
+                      <div className="text-xl font-semibold text-white">{item.averageFormatted}</div>
+                      <div className="text-xs text-gray-500">{item.count} tickets</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
