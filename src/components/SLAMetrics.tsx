@@ -199,165 +199,154 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+      <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-xl p-8">
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-gray-400" />
             Métricas de SLA
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Setor</label>
-              <Select value={selectedSetorId} onValueChange={setSelectedSetorId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os setores" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os setores</SelectItem>
-                  {setores.map((setor) => (
-                    <SelectItem key={setor.id} value={setor.id}>
-                      {setor.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Período</label>
-              <Select value={dateRange} onValueChange={setDateRange}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">Últimos 7 dias</SelectItem>
-                  <SelectItem value="30">Últimos 30 dias</SelectItem>
-                  <SelectItem value="90">Últimos 90 dias</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-end">
-              <Button onClick={handleExportCSV} variant="outline" className="w-full">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar CSV
-              </Button>
-            </div>
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-400">Setor</label>
+            <Select value={selectedSetorId} onValueChange={setSelectedSetorId}>
+              <SelectTrigger className="h-10 bg-gray-900/50 border-gray-800 rounded-lg text-gray-300">
+                <SelectValue placeholder="Todos os setores" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-900 border-gray-800">
+                <SelectItem value="all">Todos os setores</SelectItem>
+                {setores.map((setor) => (
+                  <SelectItem key={setor.id} value={setor.id}>
+                    {setor.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {selectedPolicy && selectedSetorId !== 'all' && (
-            <div className="p-4 bg-muted rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="h-4 w-4" />
-                <span className="font-medium">Política Atual: {selectedPolicy.mode}</span>
-              </div>
-              {selectedPolicy.mode === 'FIXO' && (
-                <div className="text-sm text-muted-foreground">
-                  P0: {selectedPolicy.p0_hours}h | P1: {selectedPolicy.p1_hours}h | 
-                  P2: {selectedPolicy.p2_hours}h | P3: {selectedPolicy.p3_hours}h
-                </div>
-              )}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-400">Período</label>
+            <Select value={dateRange} onValueChange={setDateRange}>
+              <SelectTrigger className="h-10 bg-gray-900/50 border-gray-800 rounded-lg text-gray-300">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-900 border-gray-800">
+                <SelectItem value="7">Últimos 7 dias</SelectItem>
+                <SelectItem value="30">Últimos 30 dias</SelectItem>
+                <SelectItem value="90">Últimos 90 dias</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-end">
+            <Button 
+              onClick={handleExportCSV} 
+              variant="outline" 
+              className="w-full h-10 bg-gray-900/50 border-gray-800 rounded-lg text-gray-300 hover:bg-gray-800/50 hover:text-white transition-all"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Exportar CSV
+            </Button>
+          </div>
+        </div>
+
+        {selectedPolicy && selectedSetorId !== 'all' && (
+          <div className="mt-6 p-4 bg-gray-800/30 rounded-lg border border-gray-800/50">
+            <div className="flex items-center gap-2 mb-2">
+              <Target className="h-4 w-4 text-gray-400" />
+              <span className="font-medium text-white text-sm">Política atual: {selectedPolicy.mode}</span>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            {selectedPolicy.mode === 'FIXO' && (
+              <div className="text-xs text-gray-500">
+                P0: {selectedPolicy.p0_hours}h | P1: {selectedPolicy.p1_hours}h | 
+                P2: {selectedPolicy.p2_hours}h | P3: {selectedPolicy.p3_hours}h
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Indicadores Principais */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total de Tickets</p>
-                <p className="text-2xl font-bold">{slaMetrics.totalTickets}</p>
-              </div>
-              <Calendar className="h-8 w-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="min-h-[140px] p-6 rounded-xl bg-gradient-to-br from-gray-900/50 to-gray-900/30 backdrop-blur-sm border border-gray-800/50 hover:border-gray-700/50 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium text-gray-400">Total de tickets</p>
+            <Calendar className="h-5 w-5 text-gray-500" />
+          </div>
+          <p className="text-4xl font-semibold text-white">{slaMetrics.totalTickets}</p>
+        </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Conformidade SLA</p>
-                <p className="text-2xl font-bold">{slaMetrics.complianceRate.toFixed(1)}%</p>
-                <Progress value={slaMetrics.complianceRate} className="mt-2" />
-              </div>
-              <Target className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="min-h-[140px] p-6 rounded-xl bg-gradient-to-br from-gray-900/50 to-gray-900/30 backdrop-blur-sm border border-gray-800/50 hover:border-gray-700/50 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium text-gray-400">Conformidade SLA</p>
+            <Target className="h-5 w-5 text-green-400" />
+          </div>
+          <p className="text-4xl font-semibold text-white">{slaMetrics.complianceRate.toFixed(1)}%</p>
+          <Progress value={slaMetrics.complianceRate} className="mt-3 h-1.5 bg-gray-800" />
+        </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Atrasados</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {slaMetrics.totalTickets > 0 
-                    ? ((slaMetrics.overdue / slaMetrics.totalTickets) * 100).toFixed(1) + '%'
-                    : '0%'
-                  }
-                </p>
-              </div>
-              <TrendingDown className="h-8 w-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="min-h-[140px] p-6 rounded-xl bg-gradient-to-br from-gray-900/50 to-gray-900/30 backdrop-blur-sm border border-red-500/10 hover:border-red-500/20 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium text-gray-400">Atrasados</p>
+            <TrendingDown className="h-5 w-5 text-red-400" />
+          </div>
+          <p className="text-4xl font-semibold text-red-400">
+            {slaMetrics.totalTickets > 0 
+              ? ((slaMetrics.overdue / slaMetrics.totalTickets) * 100).toFixed(1) + '%'
+              : '0%'
+            }
+          </p>
+        </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Tempo Médio</p>
-                <p className="text-2xl font-bold">{formatDuration(slaMetrics.avgResolutionHours)}</p>
-              </div>
-              <Clock className="h-8 w-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="min-h-[140px] p-6 rounded-xl bg-gradient-to-br from-gray-900/50 to-gray-900/30 backdrop-blur-sm border border-blue-500/10 hover:border-blue-500/20 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium text-gray-400">Tempo médio</p>
+            <Clock className="h-5 w-5 text-blue-400" />
+          </div>
+          <p className="text-4xl font-semibold text-white">{formatDuration(slaMetrics.avgResolutionHours)}</p>
+        </div>
       </div>
 
       {/* Breakdown por Criticidade */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Desempenho por Nível de Criticidade</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {Object.entries(slaMetrics.criticityBreakdown).map(([level, data]) => (
-              <div key={level} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Badge variant={level === 'P0' ? 'destructive' : level === 'P1' ? 'secondary' : 'outline'}>
-                    {level}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {data.total} tickets
-                  </span>
+      <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-xl p-8">
+        <h3 className="text-lg font-semibold text-white mb-6">Desempenho por nível de criticidade</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {Object.entries(slaMetrics.criticityBreakdown).map(([level, data]) => (
+            <div key={level} className="bg-gray-800/30 rounded-lg p-4 border border-gray-800/50">
+              <div className="flex items-center justify-between mb-3">
+                <Badge 
+                  className={
+                    level === 'P0' ? 'bg-red-500 text-white' : 
+                    level === 'P1' ? 'bg-orange-500 text-white' : 
+                    level === 'P2' ? 'bg-yellow-500 text-black' : 
+                    'bg-green-500 text-white'
+                  }
+                >
+                  {level}
+                </Badge>
+                <span className="text-xs text-gray-500">
+                  {data.total} tickets
+                </span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Dentro do SLA:</span>
+                  <span className="text-white font-medium">{data.withinSLA}/{data.total}</span>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span>Dentro do SLA:</span>
-                    <span>{data.withinSLA}/{data.total}</span>
-                  </div>
-                  <Progress 
-                    value={data.total > 0 ? (data.withinSLA / data.total) * 100 : 0} 
-                    className="h-2"
-                  />
-                  <div className="text-xs text-muted-foreground">
-                    Tempo médio: {formatDuration(data.avgResolutionHours)}
-                  </div>
+                <Progress 
+                  value={data.total > 0 ? (data.withinSLA / data.total) * 100 : 0} 
+                  className="h-1.5 bg-gray-800"
+                />
+                <div className="text-xs text-gray-500">
+                  Tempo médio: {formatDuration(data.avgResolutionHours)}
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

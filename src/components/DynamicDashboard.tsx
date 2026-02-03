@@ -515,48 +515,28 @@ export default function DynamicDashboard() {
 
   const renderKPICard = (widget: DashboardWidget) => {
     let value: number | string = 0;
-    let subtitle = '';
-    let trend = null;
-    let glowColor = '';
-    let accentColor = '';
-    let shadowColor = '';
+    let iconColorClass = 'text-gray-400';
+    let cardAccentClass = '';
     
-    // Tendência real para SLA, sem tendência para outros widgets por enquanto
-    const trendValue = widget.id === 'sla-compliance' ? slaTrend : 0;
-    const isPositive = trendValue > 0;
-
     switch (widget.id) {
       case 'total-tickets':
         value = dashboardData.totalTickets;
-        subtitle = ''; // Removido: 'Total de tickets no período'
-        glowColor = 'total';
-        accentColor = 'from-kpi-total/20 via-kpi-total/10 to-transparent';
-        shadowColor = 'shadow-kpi-total/10';
+        iconColorClass = 'text-gray-400';
+        cardAccentClass = '';
         break;
       case 'open-tickets':
         value = dashboardData.openTickets;
-        subtitle = ''; // Removido: 'Tickets em aberto'
-        glowColor = 'open';
-        accentColor = 'from-kpi-open/20 via-kpi-open/10 to-transparent';
-        shadowColor = 'shadow-kpi-open/10';
+        iconColorClass = 'text-blue-400';
+        cardAccentClass = 'bg-blue-500/5 border-blue-500/20';
         break;
       case 'sla-compliance':
         value = Math.round(dashboardData.slaCompliance);
-        const totalResolvedForSubtitle = dashboardData.resolvedTickets + dashboardData.closedTickets;
-        subtitle = ''; // Removido o subtitle do SLA
-        
-        if (value >= 95) {
-          glowColor = 'resolved';
-          accentColor = 'from-kpi-resolved/20 via-kpi-resolved/10 to-transparent';
-          shadowColor = 'shadow-kpi-resolved/10';
-        } else if (value >= 80) {
-          glowColor = 'progress';
-          accentColor = 'from-kpi-progress/20 via-kpi-progress/10 to-transparent';
-          shadowColor = 'shadow-kpi-progress/10';
+        if (value < 80) {
+          iconColorClass = 'text-red-400';
+          cardAccentClass = 'bg-red-500/5 border-red-500/20';
         } else {
-          glowColor = 'overdue';
-          accentColor = 'from-kpi-overdue/20 via-kpi-overdue/10 to-transparent';
-          shadowColor = 'shadow-kpi-overdue/10';
+          iconColorClass = 'text-green-400';
+          cardAccentClass = 'bg-green-500/5 border-green-500/20';
         }
         break;
       case 'overdue-tickets':
@@ -564,81 +544,40 @@ export default function DynamicDashboard() {
           ? ((dashboardData.overdueTickets / dashboardData.totalTickets) * 100).toFixed(1) 
           : '0';
         value = overduePercentage;
-        subtitle = `Tickets em atraso (${dashboardData.overdueTickets} tickets)`;
-        glowColor = 'critical';
-        accentColor = 'from-kpi-critical/20 via-kpi-critical/10 to-transparent';
-        shadowColor = 'shadow-kpi-critical/10';
+        iconColorClass = 'text-red-400';
+        cardAccentClass = 'bg-red-500/5 border-red-500/20';
         break;
     }
 
-    const getGlowClasses = (color: string) => {
-      const glowMap = {
-        total: 'text-kpi-total drop-shadow-[0_0_8px_hsl(var(--kpi-total)/0.5)]',
-        open: 'text-kpi-open drop-shadow-[0_0_8px_hsl(var(--kpi-open)/0.5)]',
-        progress: 'text-kpi-progress drop-shadow-[0_0_8px_hsl(var(--kpi-progress)/0.5)]',
-        resolved: 'text-kpi-resolved drop-shadow-[0_0_8px_hsl(var(--kpi-resolved)/0.5)]',
-        overdue: 'text-kpi-overdue drop-shadow-[0_0_8px_hsl(var(--kpi-overdue)/0.5)]',
-        critical: 'text-kpi-critical drop-shadow-[0_0_8px_hsl(var(--kpi-critical)/0.5)]'
-      };
-      return glowMap[color] || glowMap.total;
-    };
-
-    const getIconGlowClasses = (color: string) => {
-      const iconGlowMap = {
-        total: 'text-kpi-total drop-shadow-[0_0_6px_hsl(var(--kpi-total)/0.4)]',
-        open: 'text-kpi-open drop-shadow-[0_0_6px_hsl(var(--kpi-open)/0.4)]',
-        progress: 'text-kpi-progress drop-shadow-[0_0_6px_hsl(var(--kpi-progress)/0.4)]',
-        resolved: 'text-kpi-resolved drop-shadow-[0_0_6px_hsl(var(--kpi-resolved)/0.4)]',
-        overdue: 'text-kpi-overdue drop-shadow-[0_0_6px_hsl(var(--kpi-overdue)/0.4)]',
-        critical: 'text-kpi-critical drop-shadow-[0_0_6px_hsl(var(--kpi-critical)/0.4)]'
-      };
-      return iconGlowMap[color] || iconGlowMap.total;
-    };
-
-    trend = (
-      <div className="flex items-center gap-1 text-sm font-medium text-foreground">
-        {trendValue === 0 ? (
-          <Minus className="w-4 h-4 text-dashboard-muted" />
-        ) : isPositive ? (
-          <TrendingUp className="w-4 h-4 text-kpi-resolved drop-shadow-[0_0_4px_hsl(var(--kpi-resolved)/0.3)]" />
-        ) : (
-          <TrendingDown className="w-4 h-4 text-kpi-overdue drop-shadow-[0_0_4px_hsl(var(--kpi-overdue)/0.3)]" />
-        )}
-        {trendValue !== 0 && (
-          <span className={isPositive ? 'text-kpi-resolved' : 'text-kpi-overdue'}>
-            {`${Math.abs(trendValue)}%`}
-          </span>
-        )}
-      </div>
-    );
+    const IconComponent = widget.icon;
 
     return (
       <div 
         key={widget.id} 
-        className={`relative overflow-hidden rounded-2xl backdrop-blur-md bg-background/60 border border-white/20 dark:border-white/10 hover:bg-background/70 transition-all duration-300 hover:scale-105 ${shadowColor} shadow-lg hover:shadow-xl`}
+        className={`
+          relative min-h-[160px] p-8 rounded-xl transition-all duration-300
+          bg-gradient-to-br from-gray-900/50 to-gray-900/30 backdrop-blur-sm
+          border border-gray-800/50 hover:border-gray-700/50 hover:shadow-lg
+          ${cardAccentClass}
+        `}
+        style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
       >
-        {/* Gradient accent overlay */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${accentColor} pointer-events-none`} />
+        {/* Ícone no canto superior direito */}
+        <div className="absolute top-6 right-6">
+          <div className="h-12 w-12 p-3 bg-gray-800/50 rounded-lg flex items-center justify-center">
+            <IconComponent className={`h-6 w-6 ${iconColorClass}`} />
+          </div>
+        </div>
         
-        {/* Glass effect overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/5 pointer-events-none" />
-        
-        {/* Content */}
-        <div className="relative p-6 h-full">
-          <div className="flex items-start justify-between h-full">
-            <div className="space-y-3 flex-1">
-              <p className="text-sm font-medium text-foreground/80">{widget.name}</p>
-              <div className="space-y-2">
-                <h3 className={`text-4xl font-bold tracking-tight ${getGlowClasses(glowColor)}`}>
-                  {widget.id === 'sla-compliance' || widget.id === 'overdue-tickets' ? `${value}%` : value.toLocaleString()}
-                </h3>
-                {trend}
-              </div>
-              <p className="text-xs text-foreground/60">{subtitle}</p>
-            </div>
-            <div className="p-3 rounded-2xl bg-white/10 dark:bg-white/5 backdrop-blur-sm border border-white/20 dark:border-white/10">
-              <widget.icon className={`w-8 h-8 ${getIconGlowClasses(glowColor)}`} />
-            </div>
+        {/* Conteúdo */}
+        <div className="flex flex-col h-full justify-between">
+          <p className="text-sm font-medium text-gray-400">
+            {widget.name}
+          </p>
+          <div className="mt-auto">
+            <h3 className="text-4xl font-semibold text-white tracking-tight">
+              {widget.id === 'sla-compliance' || widget.id === 'overdue-tickets' ? `${value}%` : value.toLocaleString()}
+            </h3>
           </div>
         </div>
       </div>
@@ -670,163 +609,161 @@ export default function DynamicDashboard() {
 
       case 'status-chart':
         return (
-          <div key={widget.id} className="relative overflow-hidden rounded-2xl backdrop-blur-md bg-background/60 border border-white/20 dark:border-white/10 shadow-2xl hover:shadow-primary/20 transition-all duration-500">
-            {/* Glassmorphism gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10 pointer-events-none" />
+          <div 
+            key={widget.id} 
+            className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-xl p-8"
+            style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+          >
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-white mb-1">Distribuição por status</h3>
+              <p className="text-sm text-gray-400">
+                Visualização dos tickets por status atual
+              </p>
+            </div>
             
-            <div className="relative p-6">
-              <div className="mb-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-3 rounded-xl bg-primary/20 backdrop-blur-sm border border-primary/30">
-                    <PieChart className="w-6 h-6 text-primary drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />
-                  </div>
-                  <h3 className="text-xl font-bold text-foreground">Distribuição por Status</h3>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Visualização completa dos tickets por status
-                </p>
-              </div>
-              
-              <div className="bg-background/40 rounded-xl p-4 backdrop-blur-sm border border-white/10">
-                <ResponsiveContainer width="100%" height={isMobile ? 250 : 350}>
-                  <RechartsPieChart>
-                      <Pie
-                        data={dashboardData.statusData}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={isMobile ? 70 : 95}
-                        innerRadius={isMobile ? 50 : 70}
-                        paddingAngle={2}
-                        strokeWidth={0}
-                        label={false}
-                        labelLine={false}
-                        animationBegin={0}
-                        animationDuration={1500}
-                        animationEasing="ease-out"
-                      >
-                        {dashboardData.statusData.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={entry.color}
-                            className="transition-all duration-300 ease-out hover:brightness-110 cursor-pointer"
-                          />
-                        ))}
-                     </Pie>
-                    <Tooltip 
-                      content={<GlassTooltip />}
-                      animationDuration={200}
-                    />
-                    <Legend 
-                      verticalAlign="bottom" 
-                      height={40}
-                      formatter={(value) => <span className="text-sm font-medium text-foreground drop-shadow-sm">{value}</span>}
-                      wrapperStyle={{
-                        paddingTop: '20px',
-                        fontSize: '14px'
-                      }}
-                    />
-                  </RechartsPieChart>
-                </ResponsiveContainer>
-              </div>
+            <div className="min-h-[300px]">
+              <ResponsiveContainer width="100%" height={isMobile ? 280 : 320}>
+                <RechartsPieChart>
+                  <Pie
+                    data={dashboardData.statusData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={isMobile ? 80 : 100}
+                    innerRadius={isMobile ? 50 : 65}
+                    paddingAngle={2}
+                    strokeWidth={0}
+                    label={false}
+                    labelLine={false}
+                    animationBegin={0}
+                    animationDuration={1200}
+                    animationEasing="ease-out"
+                  >
+                    {dashboardData.statusData.map((entry, index) => {
+                      // Cores refinadas para status
+                      const statusColors: Record<string, string> = {
+                        'Abertos': '#6b7280',
+                        'Atrasados': '#ef4444',
+                        'Em Andamento': '#3b82f6',
+                        'Fechados': '#374151',
+                        'Resolvidos': '#22c55e',
+                      };
+                      return (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={statusColors[entry.name] || entry.color}
+                          opacity={0.9}
+                          className="transition-opacity duration-200 hover:opacity-100 cursor-pointer"
+                        />
+                      );
+                    })}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: '#1f2937',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      padding: '8px 12px',
+                    }}
+                    itemStyle={{ color: '#e5e7eb' }}
+                  />
+                  <Legend 
+                    verticalAlign="bottom" 
+                    height={48}
+                    formatter={(value) => (
+                      <span className="text-xs text-gray-400" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+                        {value}
+                      </span>
+                    )}
+                    wrapperStyle={{ paddingTop: '16px' }}
+                    iconType="square"
+                    iconSize={12}
+                  />
+                </RechartsPieChart>
+              </ResponsiveContainer>
             </div>
           </div>
         );
 
       case 'priority-chart':
         return (
-          <div key={widget.id} className="relative overflow-hidden rounded-2xl backdrop-blur-md bg-background/60 border border-white/20 dark:border-white/10 shadow-2xl hover:shadow-primary/20 transition-all duration-500">
-            {/* Glassmorphism gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-secondary/5 pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10 pointer-events-none" />
+          <div 
+            key={widget.id} 
+            className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-xl p-8"
+            style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+          >
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-white mb-1">Tickets por prioridade</h3>
+              <p className="text-sm text-gray-400">
+                Distribuição por nível de criticidade
+              </p>
+            </div>
             
-            <div className="relative p-6">
-              <div className="mb-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-3 rounded-xl bg-secondary/20 backdrop-blur-sm border border-secondary/30">
-                    <BarChart3 className="w-6 h-6 text-secondary drop-shadow-[0_0_8px_rgba(var(--secondary-rgb),0.5)]" />
-                  </div>
-                  <h3 className="text-xl font-bold text-foreground">Tickets por Prioridade</h3>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Distribuição de tickets por nível de criticidade
-                </p>
-              </div>
-              
-              <div className="bg-background/40 rounded-xl p-4 backdrop-blur-sm border border-white/10">
-                 <ResponsiveContainer width="100%" height={350}>
-                   <BarChart data={dashboardData.priorityData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }} maxBarSize={40}>
-                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
-                     <XAxis 
-                       dataKey="name" 
-                       stroke="hsl(var(--foreground))"
-                       fontSize={13}
-                       tickLine={false}
-                       axisLine={false}
-                       tick={{ fontWeight: 500 }}
-                     />
-                     <YAxis 
-                       stroke="hsl(var(--foreground))"
-                       fontSize={13}
-                       tickLine={false}
-                       axisLine={false}
-                       tick={{ fontWeight: 500 }}
-                     />
-                     <Tooltip 
-                       content={<GlassTooltip />}
-                       cursor={{
-                         fill: 'hsl(var(--primary))',
-                         fillOpacity: 0.08,
-                         strokeWidth: 2,
-                         stroke: 'hsl(var(--primary))',
-                         radius: 8
-                       }}
-                       animationDuration={200}
-                     />
-                    <Legend 
-                      formatter={(value) => <span className="text-sm font-medium text-foreground drop-shadow-sm">Quantidade de Tickets</span>}
-                      wrapperStyle={{
-                        paddingTop: '15px',
-                        fontSize: '14px'
-                      }}
-                    />
-                     <Bar 
-                       dataKey="value" 
-                       radius={[10, 10, 0, 0]}
-                       animationBegin={200}
-                       animationDuration={1800}
-                       animationEasing="ease-out"
-                     >
-                       {dashboardData.priorityData.map((entry, index) => {
-                         // Create gradient definition for each bar
-                         const gradientId = `gradient-${entry.name.replace(/\s+/g, '-')}`;
-                         return (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={`url(#${gradientId})`}
-                              className="transition-all duration-300 ease-out hover:brightness-110 cursor-pointer"
-                            />
-                         );
-                       })}
-                     </Bar>
-                     
-                     {/* Define gradients for each bar */}
-                     <defs>
-                       {dashboardData.priorityData.map((entry, index) => {
-                         const gradientId = `gradient-${entry.name.replace(/\s+/g, '-')}`;
-                         return (
-                           <linearGradient key={gradientId} id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                             <stop offset="0%" stopColor={entry.color} stopOpacity={0.9} />
-                             <stop offset="100%" stopColor={entry.color} stopOpacity={0.6} />
-                           </linearGradient>
-                         );
-                       })}
-                     </defs>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+            <div className="min-h-[320px]">
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={dashboardData.priorityData} margin={{ top: 20, right: 20, left: 20, bottom: 20 }} maxBarSize={48}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" opacity={0.3} />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#9ca3af"
+                    fontSize={13}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: '#d1d5db', fontWeight: 500 }}
+                    style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+                  />
+                  <YAxis 
+                    stroke="#9ca3af"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: '#9ca3af' }}
+                    label={{ 
+                      value: 'Quantidade de tickets', 
+                      angle: -90, 
+                      position: 'insideLeft',
+                      style: { fill: '#6b7280', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }
+                    }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: '#1f2937',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      padding: '8px 12px',
+                    }}
+                    itemStyle={{ color: '#e5e7eb' }}
+                    cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                  />
+                  <Bar 
+                    dataKey="value" 
+                    radius={[6, 6, 0, 0]}
+                    animationBegin={100}
+                    animationDuration={1200}
+                    animationEasing="ease-out"
+                  >
+                    {dashboardData.priorityData.map((entry, index) => {
+                      // Cores para prioridades
+                      const priorityColors: Record<string, string> = {
+                        'P0 - Crítico': '#ef4444',
+                        'P1 - Alto': '#f87171',
+                        'P2 - Médio': '#eab308',
+                        'P3 - Baixo': '#22c55e',
+                      };
+                      return (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={priorityColors[entry.name] || '#6b7280'}
+                          className="transition-opacity duration-200 hover:opacity-80 cursor-pointer"
+                        />
+                      );
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         );
@@ -916,116 +853,113 @@ export default function DynamicDashboard() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
-      {/* Header with controls */}
-      <div className="block">
-        {/* Header Content */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Dashboard Dinâmico</h2>
-            <p className="text-muted-foreground">Configure e visualize suas métricas principais</p>
-          </div>
+    <div className="space-y-8" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+      {/* Header com controles estilo Resend */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+        <div>
+          <h2 className="text-xl font-semibold text-white mb-1">Dashboard dinâmico</h2>
+          <p className="text-sm text-gray-400">Configure e visualize suas métricas principais</p>
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-3">
+          <Select value={dateFilter} onValueChange={setDateFilter}>
+            <SelectTrigger className="h-10 px-4 bg-gray-900/50 border-gray-800 rounded-lg text-sm text-gray-300 hover:bg-gray-800/50 transition-colors">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-900 border-gray-800">
+              <SelectItem value="7days">Últimos 7 dias</SelectItem>
+              <SelectItem value="30days">Últimos 30 dias</SelectItem>
+              <SelectItem value="90days">Últimos 90 dias</SelectItem>
+            </SelectContent>
+          </Select>
           
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={dateFilter} onValueChange={setDateFilter}>
-              <SelectTrigger className="w-32 sm:w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7days">Últimos 7 dias</SelectItem>
-                <SelectItem value="30days">Últimos 30 dias</SelectItem>
-                <SelectItem value="90days">Últimos 90 dias</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            
-            {isSuperAdmin && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowCustomizer(true)}
-                  className="gap-2"
-                >
-                  <Palette className="w-4 h-4" />
-                  Editar Dashboard
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowSettings(!showSettings)}
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Configurar
-                </Button>
-              </>
-            )}
-            
-            <Button 
-              onClick={() => window.open('/dashboard/tv', '_blank')}
-              variant="outline" 
-              size="sm"
-              className="gap-2"
-            >
-              <Monitor className="w-4 h-4" />
-              Modo TV
-            </Button>
-            
-            <Button onClick={loadDashboardData} variant="outline" size="sm" disabled={loading}>
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Atualizar
-            </Button>
-          </div>
+          {isSuperAdmin && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setShowCustomizer(true)}
+                className="h-10 px-4 bg-gray-900/50 border-gray-800 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-800/50 hover:text-white transition-all duration-200"
+              >
+                <Palette className="h-4 w-4 mr-2" />
+                Editar dashboard
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowSettings(!showSettings)}
+                className="h-10 px-4 bg-gray-900/50 border-gray-800 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-800/50 hover:text-white transition-all duration-200"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Configurar
+              </Button>
+            </>
+          )}
+          
+          <Button 
+            onClick={() => window.open('/dashboard/tv', '_blank')}
+            variant="outline"
+            className="h-10 px-4 bg-gray-900/50 border-gray-800 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-800/50 hover:text-white transition-all duration-200"
+          >
+            <Monitor className="h-4 w-4 mr-2" />
+            Modo TV
+          </Button>
+          
+          <Button 
+            onClick={loadDashboardData} 
+            variant="outline" 
+            disabled={loading}
+            className="h-10 px-4 bg-gray-900/50 border-gray-800 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-800/50 hover:text-white transition-all duration-200"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
         </div>
       </div>
 
-      {/* Settings Panel */}
+      {/* Settings Panel - estilo Resend */}
       {showSettings && (
-        <div className="bg-gradient-to-br from-card to-card/50 rounded-2xl p-6 shadow-lg border border-border/50 backdrop-blur-sm animate-fade-in">
+        <div 
+          className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-xl p-8 animate-in fade-in duration-300"
+          style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+        >
           <div className="mb-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-xl bg-primary/10">
-                <Settings className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground">Configurar Widgets</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="text-lg font-semibold text-white mb-1">Configurar widgets</h3>
+            <p className="text-sm text-gray-400">
               Escolha quais widgets deseja exibir no seu dashboard
             </p>
           </div>
-          <div className="bg-background/30 rounded-xl p-4 backdrop-blur-sm space-y-4">
+          <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {widgets.map((widget) => (
-                <div key={widget.id} className="flex items-center space-x-3 p-3 rounded-xl bg-background/50 hover:bg-background/70 transition-all duration-200 border border-border/30">
+                <div 
+                  key={widget.id} 
+                  className="flex items-center space-x-3 p-4 rounded-lg bg-gray-800/30 hover:bg-gray-800/50 transition-all duration-200 border border-gray-800/50"
+                >
                   <Checkbox
                     id={widget.id}
                     checked={widget.visible}
                     onCheckedChange={() => toggleWidget(widget.id)}
-                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
                   />
-                  <Label htmlFor={widget.id} className="flex items-center gap-2 cursor-pointer text-sm flex-1">
-                    <div className="p-1.5 rounded-lg bg-primary/10">
-                      <widget.icon className="w-4 h-4 text-primary shrink-0" />
-                    </div>
-                    <span className="truncate font-medium">{widget.name}</span>
+                  <Label htmlFor={widget.id} className="flex items-center gap-3 cursor-pointer text-sm flex-1">
+                    <widget.icon className="w-4 h-4 text-gray-400 shrink-0" />
+                    <span className="text-gray-300 font-medium">{widget.name}</span>
                     {widget.visible ? (
-                      <div className="p-1 rounded-full bg-green-100 dark:bg-green-900/30">
-                        <Eye className="w-3 h-3 text-green-600 dark:text-green-400 shrink-0" />
-                      </div>
+                      <Eye className="w-4 h-4 text-green-400 shrink-0 ml-auto" />
                     ) : (
-                      <div className="p-1 rounded-full bg-gray-100 dark:bg-gray-800">
-                        <EyeOff className="w-3 h-3 text-gray-500 shrink-0" />
-                      </div>
+                      <EyeOff className="w-4 h-4 text-gray-500 shrink-0 ml-auto" />
                     )}
                   </Label>
                 </div>
               ))}
             </div>
-            <Separator className="my-4 bg-border/50" />
+            <Separator className="bg-gray-800" />
             <div className="flex justify-end">
-              <Button onClick={saveUserPreferences} size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200">
+              <Button 
+                onClick={saveUserPreferences} 
+                className="h-10 px-5 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-all duration-200"
+              >
                 <Save className="w-4 h-4 mr-2" />
-                Salvar Preferências
+                Salvar preferências
               </Button>
             </div>
           </div>
@@ -1034,52 +968,45 @@ export default function DynamicDashboard() {
 
       {/* Dashboard Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
-            <Card key={i} className="bg-card">
-              <CardContent className="p-4 sm:p-6">
-                <div className="animate-pulse space-y-3">
-                  <div className="h-4 bg-muted rounded w-3/4"></div>
-                  <div className="h-8 bg-muted rounded w-1/2"></div>
-                  <div className="h-3 bg-muted rounded w-full"></div>
-                </div>
-              </CardContent>
-            </Card>
+            <div 
+              key={i} 
+              className="min-h-[160px] p-8 rounded-xl bg-gray-900/50 border border-gray-800/50"
+            >
+              <div className="animate-pulse space-y-4">
+                <div className="h-4 bg-gray-800 rounded w-3/4"></div>
+                <div className="h-10 bg-gray-800 rounded w-1/2 mt-8"></div>
+              </div>
+            </div>
           ))}
         </div>
       ) : (
         <>
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {/* KPI Cards - Grid com espaçamento Resend */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {visibleWidgets.filter(w => w.type === 'kpi').map((widget) => renderKPICard(widget))}
           </div>
 
-          {/* SLA Resolution Time Chart - First */}
+          {/* SLA Resolution Time Chart */}
           {visibleWidgets.find(w => w.id === 'sla-resolution-time')?.visible && (
-            <div className="mt-6">
+            <div className="mb-8">
               {renderChart(visibleWidgets.find(w => w.id === 'sla-resolution-time')!)}
             </div>
           )}
 
-          {/* Tag Analytics Chart - Second */}
+          {/* Tag Analytics Chart */}
           {visibleWidgets.find(w => w.id === 'tag-analytics')?.visible && (
-            <div className="mt-6">
+            <div className="mb-8">
               {renderChart(visibleWidgets.find(w => w.id === 'tag-analytics')!)}
             </div>
           )}
 
-          {/* Status and Priority charts side by side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-6">
+          {/* Status and Priority charts lado a lado */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {visibleWidgets.filter(w => w.type === 'chart' && ['status-chart', 'priority-chart'].includes(w.id)).map((widget) => renderChart(widget))}
           </div>
         </>
-      )}
-
-      {/* Tag Trend Chart - positioned between widgets and team chart */}
-      {!loading && (
-        <div className="mt-6">
-          <TagTrendChart />
-        </div>
       )}
 
       {/* Dashboard Customizer */}
