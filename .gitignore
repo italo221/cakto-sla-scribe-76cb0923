@@ -30,3 +30,5 @@ docs/*security*.md
 docs/ROTAS_SISTEMA.md
 
 supabase
+supabase/functions
+supabase/migrations
