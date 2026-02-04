@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_activity_logs: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          setor_id: string | null
+          setor_name: string | null
+          target_email: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          setor_id?: string | null
+          setor_name?: string | null
+          target_email?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          setor_id?: string | null
+          setor_name?: string | null
+          target_email?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -848,6 +893,9 @@ export type Database = {
           avatar_url: string | null
           cargo_id: string | null
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
           email: string
           id: string
           migrated_at: string | null
@@ -866,6 +914,9 @@ export type Database = {
           avatar_url?: string | null
           cargo_id?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           email: string
           id?: string
           migrated_at?: string | null
@@ -884,6 +935,9 @@ export type Database = {
           avatar_url?: string | null
           cargo_id?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           email?: string
           id?: string
           migrated_at?: string | null
@@ -2152,6 +2206,10 @@ export type Database = {
         Returns: boolean
       }
       cleanup_old_recovery_attempts: { Args: never; Returns: undefined }
+      deactivate_user: {
+        Args: { p_reason: string; p_user_id: string }
+        Returns: Json
+      }
       delete_ticket_cascade: { Args: { ticket_id: string }; Returns: boolean }
       generate_recovery_token: {
         Args: { p_expiration_minutes?: number; p_target_user_id: string }
@@ -2233,7 +2291,21 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { user_uuid?: string }; Returns: boolean }
+      is_not_viewer: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      log_admin_activity: {
+        Args: {
+          p_action: string
+          p_details?: Json
+          p_new_value?: string
+          p_old_value?: string
+          p_setor_id?: string
+          p_setor_name?: string
+          p_target_email?: string
+          p_target_user_id?: string
+        }
+        Returns: string
+      }
       log_audit: {
         Args: {
           p_action: string
@@ -2278,6 +2350,7 @@ export type Database = {
         Args: { p_team_id: string; p_ticket_id: string }
         Returns: boolean
       }
+      reactivate_user: { Args: { p_user_id: string }; Returns: Json }
       record_recovery_attempt: {
         Args: {
           p_attempt_type: string
