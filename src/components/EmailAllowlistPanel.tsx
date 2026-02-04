@@ -35,6 +35,7 @@ export default function EmailAllowlistPanel() {
   const [newEmail, setNewEmail] = useState("");
   const [addingEmail, setAddingEmail] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected' | 'revoked'>('all');
   
   // Rejection modal state
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -283,10 +284,15 @@ export default function EmailAllowlistPanel() {
     }
   };
 
-  const filteredEmails = emails.filter(e => 
-    e.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.status.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredEmails = emails.filter(e => {
+    const matchesSearch = 
+      e.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      e.status.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || e.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   if (!isSuperAdmin) {
     return null;
@@ -325,12 +331,51 @@ export default function EmailAllowlistPanel() {
           </Button>
         </div>
 
+        {/* Status filter buttons */}
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant={statusFilter === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setStatusFilter('all')}
+          >
+            Todos ({emails.length})
+          </Button>
+          <Button
+            variant={statusFilter === 'approved' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setStatusFilter('approved')}
+          >
+            Aprovados ({emails.filter(e => e.status === 'approved').length})
+          </Button>
+          <Button
+            variant={statusFilter === 'pending' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setStatusFilter('pending')}
+          >
+            Pendentes ({emails.filter(e => e.status === 'pending').length})
+          </Button>
+          <Button
+            variant={statusFilter === 'rejected' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setStatusFilter('rejected')}
+          >
+            Rejeitados ({emails.filter(e => e.status === 'rejected').length})
+          </Button>
+          <Button
+            variant={statusFilter === 'revoked' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setStatusFilter('revoked')}
+          >
+            Revogados ({emails.filter(e => e.status === 'revoked').length})
+          </Button>
+        </div>
+
         {/* Search and refresh */}
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por email ou status..."
+              placeholder="Buscar por email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"

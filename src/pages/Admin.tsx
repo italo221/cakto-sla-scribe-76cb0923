@@ -5,15 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImprovedPermissionsPanel from "@/components/ImprovedPermissionsPanel";
-import EnhancedPermissionsLogs from "@/components/EnhancedPermissionsLogs";
 import AdminPasswordRecovery from "@/components/AdminPasswordRecovery";
 import EmailAllowlistPanel from "@/components/EmailAllowlistPanel";
 import SetorDetailPanel from "@/components/SetorDetailPanel";
+import AdminLogsPanel from "@/components/AdminLogsPanel";
+import DeactivateUserModal from "@/components/DeactivateUserModal";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Building2, UserPlus, Building, Shield, Trash2, Edit, Check, X, AlertCircle, Plus, UserX, Save, Loader2 } from "lucide-react";
+import { Users, Building2, UserPlus, Building, Shield, Trash2, Edit, Check, X, AlertCircle, Plus, UserX, Save, Loader2, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -56,6 +57,10 @@ const Admin = () => {
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [adminUserEditorOpen, setAdminUserEditorOpen] = useState(false);
   const [selectedUserForEdit, setSelectedUserForEdit] = useState<string | null>(null);
+  
+  // Deactivate user modal state
+  const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
+  const [userToDeactivate, setUserToDeactivate] = useState<{ userId: string; userName: string; userEmail: string } | null>(null);
   const [creatingUser, setCreatingUser] = useState(false);
 
   // Form states
@@ -130,22 +135,35 @@ const Admin = () => {
         });
       }
     };
-    const handleToggleActive = async () => {
+    const handleDeactivateClick = () => {
+      if (user.ativo) {
+        // Abre modal de desativação com motivo
+        setUserToDeactivate({
+          userId: user.user_id,
+          userName: user.nome_completo,
+          userEmail: user.email
+        });
+        setDeactivateModalOpen(true);
+      } else {
+        // Reativar diretamente
+        handleReactivate();
+      }
+    };
+    
+    const handleReactivate = async () => {
       try {
-        const {
-          error
-        } = await supabase.from('profiles').update({
-          ativo: !user.ativo
-        }).eq('id', user.id);
+        const { data, error } = await supabase.rpc('reactivate_user', {
+          p_user_id: user.user_id
+        });
         if (error) throw error;
         toast({
-          title: user.ativo ? "Usuário desativado" : "Usuário ativado",
-          description: `${user.nome_completo} foi ${user.ativo ? 'desativado' : 'ativado'} com sucesso.`
+          title: "Usuário reativado",
+          description: `${user.nome_completo} foi reativado com sucesso.`
         });
         onUserUpdate();
       } catch (error: any) {
         toast({
-          title: "Erro ao alterar status",
+          title: "Erro ao reativar usuário",
           description: error.message,
           variant: "destructive"
         });
@@ -198,7 +216,7 @@ const Admin = () => {
           <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)} disabled={isEditing}>
             <Edit className="h-3 w-3" />
           </Button>
-           <Button variant={user.ativo ? "destructive" : "default"} size="sm" onClick={handleToggleActive}>
+           <Button variant={user.ativo ? "destructive" : "default"} size="sm" onClick={handleDeactivateClick}>
              {user.ativo ? <>
                  <UserX className="h-3 w-3 mr-1" />
                  {isMobile ? '' : 'Desativar'}
@@ -562,21 +580,25 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-6'} ${isMobile ? 'mb-4' : ''}`}>
+          <TabsList className={`grid w-full ${isMobile ? 'grid-cols-3' : 'grid-cols-6'} ${isMobile ? 'mb-4' : ''}`}>
             <TabsTrigger value="users" className={isMobile ? 'text-xs' : ''}>Usuários</TabsTrigger>
             <TabsTrigger value="setores" className={isMobile ? 'text-xs' : ''}>Setores</TabsTrigger>
-            {!isMobile && <TabsTrigger value="assignments">Atribuições</TabsTrigger>}
             {!isMobile && <TabsTrigger value="permissions">Permissões</TabsTrigger>}
             {!isMobile && <TabsTrigger value="recovery">Recuperação</TabsTrigger>}
             {!isMobile && <TabsTrigger value="allowlist">Allowlist</TabsTrigger>}
+            {!isMobile && <TabsTrigger value="logs" className="flex items-center gap-1">
+              <History className="h-3 w-3" />
+              Logs
+            </TabsTrigger>}
+            {isMobile && <TabsTrigger value="more" className="text-xs">Mais</TabsTrigger>}
           </TabsList>
           
           {/* Mobile secondary tabs */}
           {isMobile && <TabsList className="grid w-full grid-cols-4 mb-4">
-              <TabsTrigger value="assignments" className="text-xs">Atribuições</TabsTrigger>
               <TabsTrigger value="permissions" className="text-xs">Permissões</TabsTrigger>
               <TabsTrigger value="recovery" className="text-xs">Recuperação</TabsTrigger>
               <TabsTrigger value="allowlist" className="text-xs">Allowlist</TabsTrigger>
+              <TabsTrigger value="logs" className="text-xs">Logs</TabsTrigger>
             </TabsList>}
 
           <TabsContent value="users" className="space-y-6">
@@ -731,88 +753,8 @@ const Admin = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="assignments" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserPlus className="h-5 w-5" />
-                  Atribuições de Setores
-                </CardTitle>
-                <CardDescription>
-                  Gerencie quais usuários têm acesso a quais setores
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Atribuir Usuário a Setor
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Atribuir Usuário a Setor</DialogTitle>
-                        <DialogDescription>
-                          Selecione um usuário e um setor para criar a atribuição
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="user-select">Usuário</Label>
-                          <Select value={selectedUser} onValueChange={setSelectedUser}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione um usuário" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {users.filter(u => u.user_type === 'colaborador_setor').map(user => <SelectItem key={user.user_id} value={user.user_id}>
-                                  {user.nome_completo} ({user.email})
-                                </SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="setor-select">Setor</Label>
-                          <Select value={selectedSetor} onValueChange={setSelectedSetor}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione um setor" />
-                            </SelectTrigger>
-                            <SelectContent>
-                               {setores.filter(s => s.ativo).map(setor => <SelectItem key={setor.id} value={setor.id}>
-                                  {setor.nome}
-                                </SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button onClick={handleAssignUserToSetor} className="flex-1">
-                            Atribuir
-                          </Button>
-                          <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                            Cancelar
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                  <div className="space-y-4">
-                    {userSetores.map(userSetor => <div key={userSetor.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="space-y-1">
-                          <p className="font-medium">{userSetor.profile?.nome_completo}</p>
-                          <p className="text-sm text-muted-foreground">{userSetor.profile?.email}</p>
-                          <Badge variant="outline">{userSetor.setor?.nome}</Badge>
-                        </div>
-                        <Button variant="outline" size="sm" onClick={() => handleRemoveUserFromSetor(userSetor.id)}>
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Remover
-                        </Button>
-                      </div>)}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="logs" className="space-y-6">
+            <AdminLogsPanel />
           </TabsContent>
 
           <TabsContent value="permissions" className="space-y-6">
@@ -838,6 +780,23 @@ const Admin = () => {
 
         {/* Admin User Editor Modal */}
         <AdminUserEditor open={adminUserEditorOpen} onOpenChange={setAdminUserEditorOpen} userId={selectedUserForEdit} onUserUpdated={fetchData} />
+        
+        {/* Deactivate User Modal */}
+        {userToDeactivate && (
+          <DeactivateUserModal
+            userId={userToDeactivate.userId}
+            userName={userToDeactivate.userName}
+            userEmail={userToDeactivate.userEmail}
+            isOpen={deactivateModalOpen}
+            onClose={() => {
+              setDeactivateModalOpen(false);
+              setUserToDeactivate(null);
+            }}
+            onSuccess={() => {
+              fetchData();
+            }}
+          />
+        )}
       </div>
     </div>;
 };
