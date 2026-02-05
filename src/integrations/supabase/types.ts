@@ -2409,6 +2409,10 @@ export type Database = {
         }
         Returns: Json
       }
+      user_belongs_to_ticket_sector: {
+        Args: { ticket_setor_id: string }
+        Returns: boolean
+      }
       user_has_setor_access: {
         Args: { setor_uuid: string; user_uuid?: string }
         Returns: boolean
