@@ -52,8 +52,8 @@ interface LinkData {
   ticket_id: string;
   include_attachments: boolean;
   has_password: boolean;
-  password_hash: string | null;
   view_count: number;
+  // Note: password_hash is intentionally NOT included - validation happens server-side
 }
 
 export const SharedTicket: React.FC = () => {

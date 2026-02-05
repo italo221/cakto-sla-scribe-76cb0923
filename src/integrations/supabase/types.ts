@@ -2418,7 +2418,6 @@ export type Database = {
         Returns: {
           has_password: boolean
           include_attachments: boolean
-          password_hash: string
           ticket_id: string
           view_count: number
         }[]
