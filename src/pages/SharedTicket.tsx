@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { sanitizeExternalContent } from '@/lib/sanitize';
 import { 
   Eye, 
   Calendar, 
@@ -122,26 +123,33 @@ export const SharedTicket: React.FC = () => {
 
     setIsVerifyingPassword(true);
     try {
-      // Verificar senha (comparar com hash base64)
-      const providedHash = btoa(password);
-      
-      if (providedHash !== linkData.password_hash) {
+      // Server-side password verification via edge function
+      const { data, error } = await supabase.functions.invoke('verify-ticket-link-password', {
+        body: { token, password }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Erro ao verificar senha');
+      }
+
+      if (!data.valid) {
         toast({
           title: "Senha incorreta",
-          description: "A senha informada está incorreta.",
+          description: data.error || "A senha informada está incorreta.",
           variant: "destructive",
         });
         return;
       }
 
+      // Password verified server-side - load ticket data
       setIsPasswordRequired(false);
-      await loadTicketData(linkData.ticket_id, linkData.include_attachments);
+      await loadTicketData(data.ticket_id, data.include_attachments);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao verificar senha:', error);
       toast({
         title: "Erro",
-        description: "Erro ao verificar a senha.",
+        description: error.message || "Erro ao verificar a senha.",
         variant: "destructive",
       });
     } finally {
@@ -231,14 +239,8 @@ export const SharedTicket: React.FC = () => {
   };
 
   const renderCommentContent = (content: string) => {
-    // Processar menções removendo dados sensíveis
-    return content.replace(
-      /data-user-id="[^"]*"/g, 
-      ''
-    ).replace(
-      /@([^@]*?)@/g, 
-      '<span class="mention">@$1</span>'
-    );
+    // Use secure sanitization for external content
+    return sanitizeExternalContent(content);
   };
 
   if (isValidating) {
