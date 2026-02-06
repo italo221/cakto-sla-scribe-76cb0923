@@ -284,15 +284,22 @@ export default function EmailAllowlistPanel() {
     }
   };
 
-  const filteredEmails = emails.filter(e => {
-    const matchesSearch = 
-      e.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.status.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || e.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  const filteredEmails = emails
+    .filter(e => {
+      const matchesSearch = 
+        e.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        e.status.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || e.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      // Revoked users always go to the bottom
+      if (a.status === 'revoked' && b.status !== 'revoked') return 1;
+      if (a.status !== 'revoked' && b.status === 'revoked') return -1;
+      return 0;
+    });
 
   if (!isSuperAdmin) {
     return null;
