@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MetricCard } from '@/components/ui/metric-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -269,44 +270,32 @@ export const SLAMetrics = ({ setores }: SLAMetricsProps) => {
       </div>
 
       {/* Indicadores Principais */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="min-h-[140px] p-6 rounded-xl bg-gradient-to-br from-gray-900/50 to-gray-900/30 backdrop-blur-sm border border-gray-800/50 hover:border-gray-700/50 transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-medium text-gray-400">Total de tickets</p>
-            <Calendar className="h-5 w-5 text-gray-500" />
-          </div>
-          <p className="text-4xl font-semibold text-white">{slaMetrics.totalTickets}</p>
-        </div>
-
-        <div className="min-h-[140px] p-6 rounded-xl bg-gradient-to-br from-gray-900/50 to-gray-900/30 backdrop-blur-sm border border-gray-800/50 hover:border-gray-700/50 transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-medium text-gray-400">Conformidade SLA</p>
-            <Target className="h-5 w-5 text-green-400" />
-          </div>
-          <p className="text-4xl font-semibold text-white">{slaMetrics.complianceRate.toFixed(1)}%</p>
-          <Progress value={slaMetrics.complianceRate} className="mt-3 h-1.5 bg-gray-800" />
-        </div>
-
-        <div className="min-h-[140px] p-6 rounded-xl bg-gradient-to-br from-gray-900/50 to-gray-900/30 backdrop-blur-sm border border-red-500/10 hover:border-red-500/20 transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-medium text-gray-400">Atrasados</p>
-            <TrendingDown className="h-5 w-5 text-red-400" />
-          </div>
-          <p className="text-4xl font-semibold text-red-400">
-            {slaMetrics.totalTickets > 0 
-              ? ((slaMetrics.overdue / slaMetrics.totalTickets) * 100).toFixed(1) + '%'
-              : '0%'
-            }
-          </p>
-        </div>
-
-        <div className="min-h-[140px] p-6 rounded-xl bg-gradient-to-br from-gray-900/50 to-gray-900/30 backdrop-blur-sm border border-blue-500/10 hover:border-blue-500/20 transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-medium text-gray-400">Tempo médio</p>
-            <Clock className="h-5 w-5 text-blue-400" />
-          </div>
-          <p className="text-4xl font-semibold text-white">{formatDuration(slaMetrics.avgResolutionHours)}</p>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard
+          label="Total de tickets"
+          value={slaMetrics.totalTickets}
+          icon={Calendar}
+        />
+        <MetricCard
+          label="Conformidade SLA"
+          value={`${slaMetrics.complianceRate.toFixed(1)}%`}
+          icon={Target}
+        >
+          <Progress value={slaMetrics.complianceRate} className="mt-3 h-1.5 bg-neutral-800" />
+        </MetricCard>
+        <MetricCard
+          label="Atrasados"
+          value={slaMetrics.totalTickets > 0 
+            ? `${((slaMetrics.overdue / slaMetrics.totalTickets) * 100).toFixed(1)}%`
+            : '0%'
+          }
+          icon={TrendingDown}
+        />
+        <MetricCard
+          label="Tempo médio"
+          value={formatDuration(slaMetrics.avgResolutionHours)}
+          icon={Clock}
+        />
       </div>
 
       {/* Breakdown por Criticidade */}
