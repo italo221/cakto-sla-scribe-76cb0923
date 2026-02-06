@@ -173,16 +173,16 @@ export default function AdminLogsPanel() {
         </div>
 
         {/* Table */}
-        <div className="border rounded-lg">
+        <div className="border rounded-lg overflow-x-auto">
           <ScrollArea className="h-[500px]">
-            <Table>
+            <Table className="min-w-[800px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[160px]">Data/Hora</TableHead>
-                  <TableHead className="w-[200px]">Ação</TableHead>
-                  <TableHead>Executado por</TableHead>
-                  <TableHead>Usuário alvo</TableHead>
-                  <TableHead>Detalhes</TableHead>
+                  <TableHead className="w-[160px] min-w-[160px]">Data/Hora</TableHead>
+                  <TableHead className="w-[200px] min-w-[200px]">Ação</TableHead>
+                  <TableHead className="min-w-[180px]">Executado por</TableHead>
+                  <TableHead className="min-w-[180px]">Usuário alvo</TableHead>
+                  <TableHead className="min-w-[300px]">Detalhes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -211,7 +211,7 @@ export default function AdminLogsPanel() {
                       <TableCell className="text-sm">
                         {log.target_email || '-'}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground max-w-[300px] truncate">
+                      <TableCell className="text-sm text-muted-foreground min-w-[300px] whitespace-normal">
                         {getDetails(log)}
                       </TableCell>
                     </TableRow>
