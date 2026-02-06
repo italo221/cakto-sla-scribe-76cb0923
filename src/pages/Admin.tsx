@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Building2, UserPlus, Building, Shield, Trash2, Edit, Check, X, AlertCircle, Plus, UserX, Save, Loader2, History } from "lucide-react";
+import { Users, Building2, UserPlus, Building, Shield, Trash2, Edit, Check, X, AlertCircle, Plus, UserX, Save, Loader2, History, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -62,6 +62,11 @@ const Admin = () => {
   const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
   const [userToDeactivate, setUserToDeactivate] = useState<{ userId: string; userName: string; userEmail: string } | null>(null);
   const [creatingUser, setCreatingUser] = useState(false);
+
+  // User search & filter states
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [userStatusFilter, setUserStatusFilter] = useState<"todos" | "ativo" | "inativo">("todos");
+  const [userRoleFilter, setUserRoleFilter] = useState<"todos" | "super_admin" | "operador" | "viewer">("todos");
 
   // Form states
   const [selectedUser, setSelectedUser] = useState("");
@@ -692,9 +697,70 @@ const Admin = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                 <div className="space-y-4">
-                   {users.map(user => <UserCard key={user.id} user={user} onUserUpdate={fetchData} />)}
-                 </div>
+                {/* Search & Filters */}
+                <div className="space-y-3 mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por nome ou e-mail..."
+                      value={userSearchQuery}
+                      onChange={e => setUserSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <div className={`flex gap-2 ${isMobile ? 'flex-col' : 'flex-row'}`}>
+                    <Select value={userStatusFilter} onValueChange={v => setUserStatusFilter(v as any)}>
+                      <SelectTrigger className={isMobile ? 'w-full' : 'w-[160px]'}>
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos os status</SelectItem>
+                        <SelectItem value="ativo">Ativo</SelectItem>
+                        <SelectItem value="inativo">Inativo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={userRoleFilter} onValueChange={v => setUserRoleFilter(v as any)}>
+                      <SelectTrigger className={isMobile ? 'w-full' : 'w-[180px]'}>
+                        <SelectValue placeholder="Role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todas as roles</SelectItem>
+                        <SelectItem value="super_admin">Super Admin</SelectItem>
+                        <SelectItem value="operador">Operador</SelectItem>
+                        <SelectItem value="viewer">Viewer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {(() => {
+                  const filteredUsers = users.filter(user => {
+                    const query = userSearchQuery.toLowerCase().trim();
+                    const matchesSearch = !query || 
+                      user.nome_completo.toLowerCase().includes(query) || 
+                      user.email.toLowerCase().includes(query);
+                    const matchesStatus = userStatusFilter === "todos" || 
+                      (userStatusFilter === "ativo" && user.ativo) || 
+                      (userStatusFilter === "inativo" && !user.ativo);
+                    const matchesRole = userRoleFilter === "todos" || user.role === userRoleFilter;
+                    return matchesSearch && matchesStatus && matchesRole;
+                  });
+                  
+                  return (
+                    <>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {filteredUsers.length} de {users.length} usuário(s)
+                      </p>
+                      <div className="space-y-4">
+                        {filteredUsers.length > 0 ? (
+                          filteredUsers.map(user => <UserCard key={user.id} user={user} onUserUpdate={fetchData} />)
+                        ) : (
+                          <p className="text-center text-muted-foreground py-6">Nenhum usuário encontrado com os filtros aplicados.</p>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
