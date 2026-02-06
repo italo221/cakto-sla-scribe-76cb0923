@@ -173,7 +173,7 @@ export default function AdminLogsPanel() {
         </div>
 
         {/* Table */}
-        <div className="border rounded-lg max-h-[500px] overflow-auto">
+        <div className="border rounded-lg max-h-[500px] overflow-auto [&>div]:!overflow-visible">
           <Table className="min-w-[1100px] w-max">
             <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
