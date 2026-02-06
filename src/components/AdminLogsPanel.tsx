@@ -174,9 +174,9 @@ export default function AdminLogsPanel() {
 
         {/* Table */}
         <div className="border rounded-lg overflow-x-auto">
-          <ScrollArea className="h-[500px]">
+          <div className="max-h-[500px] overflow-y-auto">
             <Table className="min-w-[800px]">
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-background">
                 <TableRow>
                   <TableHead className="w-[160px] min-w-[160px]">Data/Hora</TableHead>
                   <TableHead className="w-[200px] min-w-[200px]">Ação</TableHead>
@@ -219,7 +219,7 @@ export default function AdminLogsPanel() {
                 )}
               </TableBody>
             </Table>
-          </ScrollArea>
+          </div>
         </div>
 
         {/* Stats */}
