@@ -173,53 +173,51 @@ export default function AdminLogsPanel() {
         </div>
 
         {/* Table */}
-        <div className="border rounded-lg overflow-x-auto">
-          <div className="max-h-[500px] overflow-y-auto">
-            <Table className="min-w-[1100px] w-max">
-              <TableHeader className="sticky top-0 z-10 bg-background">
+        <div className="border rounded-lg max-h-[500px] overflow-auto">
+          <Table className="min-w-[1100px] w-max">
+            <TableHeader className="sticky top-0 z-10 bg-background">
+              <TableRow>
+                <TableHead className="w-[170px] min-w-[170px]">Data/Hora</TableHead>
+                <TableHead className="w-[210px] min-w-[210px]">Ação</TableHead>
+                <TableHead className="w-[220px] min-w-[220px]">Executado por</TableHead>
+                <TableHead className="w-[220px] min-w-[220px]">Usuário alvo</TableHead>
+                <TableHead className="w-[350px] min-w-[350px]">Detalhes</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
                 <TableRow>
-                  <TableHead className="w-[170px] min-w-[170px]">Data/Hora</TableHead>
-                  <TableHead className="w-[210px] min-w-[210px]">Ação</TableHead>
-                  <TableHead className="w-[220px] min-w-[220px]">Executado por</TableHead>
-                  <TableHead className="w-[220px] min-w-[220px]">Usuário alvo</TableHead>
-                  <TableHead className="w-[350px] min-w-[350px]">Detalhes</TableHead>
+                  <TableCell colSpan={5} className="text-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+              ) : filteredLogs?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    Nenhum log encontrado
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredLogs?.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell className="text-sm">
+                      {format(new Date(log.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                    </TableCell>
+                    <TableCell>{getActionBadge(log.action)}</TableCell>
+                    <TableCell className="text-sm">
+                      {log.actor_email || 'Sistema'}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {log.target_email || '-'}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground w-[350px] min-w-[350px] whitespace-normal">
+                      {getDetails(log)}
                     </TableCell>
                   </TableRow>
-                ) : filteredLogs?.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      Nenhum log encontrado
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredLogs?.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell className="text-sm">
-                        {format(new Date(log.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                      </TableCell>
-                      <TableCell>{getActionBadge(log.action)}</TableCell>
-                      <TableCell className="text-sm">
-                        {log.actor_email || 'Sistema'}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {log.target_email || '-'}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground w-[350px] min-w-[350px] whitespace-normal">
-                        {getDetails(log)}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
 
         {/* Stats */}
