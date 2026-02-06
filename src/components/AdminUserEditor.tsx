@@ -105,7 +105,7 @@ export default function AdminUserEditor({
       const updateData = {
         nome_completo: formData.nome_completo,
         telefone: formData.telefone,
-        role: formData.role as 'super_admin' | 'operador' | 'viewer' | 'pendente_aprovacao',
+        role: formData.role as 'super_admin' | 'operador' | 'viewer',
         ativo: formData.ativo,
         avatar_url: formData.avatar_url,
         updated_at: new Date().toISOString()

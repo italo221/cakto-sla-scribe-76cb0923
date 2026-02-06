@@ -31,7 +31,7 @@ interface Profile {
   user_id: string;
   email: string;
   nome_completo: string;
-  role: 'super_admin' | 'operador' | 'viewer' | 'pendente_aprovacao';
+  role: 'super_admin' | 'operador' | 'viewer';
 }
 
 interface UserSetor {

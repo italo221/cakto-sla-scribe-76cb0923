@@ -66,7 +66,7 @@ const Admin = () => {
   // User search & filter states
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [userStatusFilter, setUserStatusFilter] = useState<"todos" | "ativo" | "inativo">("todos");
-  const [userRoleFilter, setUserRoleFilter] = useState<"todos" | "super_admin" | "operador" | "viewer" | "pendente_aprovacao">("todos");
+  const [userRoleFilter, setUserRoleFilter] = useState<"todos" | "super_admin" | "operador" | "viewer">("todos");
 
   // Form states
   const [selectedUser, setSelectedUser] = useState("");
@@ -123,7 +123,7 @@ const Admin = () => {
           error
         } = await supabase.from('profiles').update({
           nome_completo: editedName.trim(),
-          role: editedRole as 'super_admin' | 'operador' | 'viewer' | 'pendente_aprovacao'
+          role: editedRole as 'super_admin' | 'operador' | 'viewer'
         }).eq('id', user.id);
         if (error) throw error;
         toast({

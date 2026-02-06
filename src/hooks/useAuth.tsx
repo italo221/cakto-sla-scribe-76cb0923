@@ -8,7 +8,7 @@ interface Profile {
   email: string;
   nome_completo: string;
   user_type: 'administrador_master' | 'colaborador_setor';
-  role: 'super_admin' | 'operador' | 'viewer' | 'pendente_aprovacao';
+  role: 'super_admin' | 'operador' | 'viewer';
   ativo: boolean;
   created_at: string;
   updated_at: string;

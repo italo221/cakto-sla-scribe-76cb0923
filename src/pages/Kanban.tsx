@@ -7,7 +7,6 @@ import TicketDetailModal from "@/components/TicketDetailModal";
 import TicketEditModal from "@/components/TicketEditModal";
 import SetorValidationAlert from "@/components/SetorValidationAlert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MetricCard } from "@/components/ui/metric-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -416,13 +415,66 @@ export default function KanbanPage() {
         </div>
 
         {/* Stats Cards - Usando dados centralizados */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-          <MetricCard label="Abertos" value={stats.abertos} icon={Circle} />
-          <MetricCard label="Em andamento" value={stats.em_andamento} icon={Activity} />
-          <MetricCard label="Resolvidos" value={stats.resolvidos} icon={CheckCircle} />
-          <MetricCard label="Fechados" value={stats.fechados} icon={X} />
-          <MetricCard label="Críticos" value={stats.criticos} icon={AlertTriangle} />
-          <MetricCard label="Atrasados" value={stats.atrasados} icon={Clock} />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <Card className={cn("cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-blue-500/30")}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Abertos</span>
+                <Circle className="text-muted-foreground w-4 h-4" />
+              </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.abertos}</h2>
+            </CardContent>
+          </Card>
+
+          <Card className={cn("cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-blue-400/30")}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Em Andamento</span>
+                <Activity className="text-muted-foreground w-4 h-4" />
+              </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.em_andamento}</h2>
+            </CardContent>
+          </Card>
+
+          <Card className={cn("cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-green-500/30")}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Resolvidos</span>
+                <CheckCircle className="text-muted-foreground w-4 h-4" />
+              </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.resolvidos}</h2>
+            </CardContent>
+          </Card>
+
+          <Card className={cn("cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-neutral-500/20")}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Fechados</span>
+                <X className="text-muted-foreground w-4 h-4" />
+              </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.fechados}</h2>
+            </CardContent>
+          </Card>
+
+          <Card className={cn("cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-red-600/35")}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Críticos</span>
+                <AlertTriangle className="text-muted-foreground w-4 h-4" />
+              </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.criticos}</h2>
+            </CardContent>
+          </Card>
+
+          <Card className={cn("cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60 border-l-[2px] border-l-red-500/30")}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Atrasados</span>
+                <Clock className="text-muted-foreground w-4 h-4" />
+              </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{stats.atrasados}</h2>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Kanban Board */}
