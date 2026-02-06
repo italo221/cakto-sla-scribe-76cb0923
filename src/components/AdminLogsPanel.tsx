@@ -175,14 +175,14 @@ export default function AdminLogsPanel() {
         {/* Table */}
         <div className="border rounded-lg overflow-x-auto">
           <div className="max-h-[500px] overflow-y-auto">
-            <Table className="min-w-[800px]">
+            <Table className="min-w-[1100px] w-max">
               <TableHeader className="sticky top-0 z-10 bg-background">
                 <TableRow>
-                  <TableHead className="w-[160px] min-w-[160px]">Data/Hora</TableHead>
-                  <TableHead className="w-[200px] min-w-[200px]">Ação</TableHead>
-                  <TableHead className="min-w-[180px]">Executado por</TableHead>
-                  <TableHead className="min-w-[180px]">Usuário alvo</TableHead>
-                  <TableHead className="min-w-[300px]">Detalhes</TableHead>
+                  <TableHead className="w-[170px] min-w-[170px]">Data/Hora</TableHead>
+                  <TableHead className="w-[210px] min-w-[210px]">Ação</TableHead>
+                  <TableHead className="w-[220px] min-w-[220px]">Executado por</TableHead>
+                  <TableHead className="w-[220px] min-w-[220px]">Usuário alvo</TableHead>
+                  <TableHead className="w-[350px] min-w-[350px]">Detalhes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -211,7 +211,7 @@ export default function AdminLogsPanel() {
                       <TableCell className="text-sm">
                         {log.target_email || '-'}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground min-w-[300px] whitespace-normal">
+                      <TableCell className="text-sm text-muted-foreground w-[350px] min-w-[350px] whitespace-normal">
                         {getDetails(log)}
                       </TableCell>
                     </TableRow>
