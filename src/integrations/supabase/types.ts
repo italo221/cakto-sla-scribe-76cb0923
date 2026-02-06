@@ -2437,7 +2437,7 @@ export type Database = {
         | "UPDATE_POLICY"
       sla_level: "P0" | "P1" | "P2" | "P3"
       sla_mode: "FIXO" | "PERSONALIZADO"
-      user_role: "super_admin" | "operador" | "viewer"
+      user_role: "super_admin" | "operador" | "viewer" | "pendente_aprovacao"
       user_type: "administrador_master" | "colaborador_setor"
     }
     CompositeTypes: {
@@ -2576,7 +2576,7 @@ export const Constants = {
       ],
       sla_level: ["P0", "P1", "P2", "P3"],
       sla_mode: ["FIXO", "PERSONALIZADO"],
-      user_role: ["super_admin", "operador", "viewer"],
+      user_role: ["super_admin", "operador", "viewer", "pendente_aprovacao"],
       user_type: ["administrador_master", "colaborador_setor"],
     },
   },
