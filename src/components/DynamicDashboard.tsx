@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MetricCard } from "@/components/ui/metric-card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -552,35 +553,12 @@ export default function DynamicDashboard() {
     const IconComponent = widget.icon;
 
     return (
-      <div 
-        key={widget.id} 
-        className={`
-          relative min-h-[160px] p-8 rounded-xl transition-all duration-300
-          bg-gradient-to-br from-gray-900/50 to-gray-900/30 backdrop-blur-sm
-          border border-gray-800/50 hover:border-gray-700/50 hover:shadow-lg
-          ${cardAccentClass}
-        `}
-        style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
-      >
-        {/* Ícone no canto superior direito */}
-        <div className="absolute top-6 right-6">
-          <div className="h-12 w-12 p-3 bg-gray-800/50 rounded-lg flex items-center justify-center">
-            <IconComponent className={`h-6 w-6 ${iconColorClass}`} />
-          </div>
-        </div>
-        
-        {/* Conteúdo */}
-        <div className="flex flex-col h-full justify-between">
-          <p className="text-sm font-medium text-gray-400">
-            {widget.name}
-          </p>
-          <div className="mt-auto">
-            <h3 className="text-4xl font-semibold text-white tracking-tight">
-              {widget.id === 'sla-compliance' || widget.id === 'overdue-tickets' ? `${value}%` : value.toLocaleString()}
-            </h3>
-          </div>
-        </div>
-      </div>
+      <MetricCard
+        key={widget.id}
+        label={widget.name}
+        value={widget.id === 'sla-compliance' || widget.id === 'overdue-tickets' ? `${value}%` : value.toLocaleString()}
+        icon={IconComponent}
+      />
     );
   };
 

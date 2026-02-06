@@ -6,6 +6,7 @@ import TicketDetailModal from "@/components/TicketDetailModal";
 import TicketEditModal from "@/components/TicketEditModal";
 import MelhoriaTicketCreator from "@/components/MelhoriaTicketCreator";
 import { Card, CardContent } from "@/components/ui/card";
+import { MetricCard } from "@/components/ui/metric-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -321,56 +322,12 @@ export default function MelhoriasPage() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Total</span>
-                <Activity className="text-muted-foreground w-4 h-4" />
-              </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{melhoriaStats.total}</h2>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Abertos</span>
-                <Circle className="text-muted-foreground w-4 h-4" />
-              </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{melhoriaStats.abertos}</h2>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Em Andamento</span>
-                <Activity className="text-muted-foreground w-4 h-4" />
-              </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{melhoriaStats.em_andamento}</h2>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Finalizado</span>
-                <CheckCircle className="text-muted-foreground w-4 h-4" />
-              </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{melhoriaStats.resolvidos}</h2>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer transition-colors duration-150 bg-card border border-border/10 rounded-xl hover:bg-muted/60">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Excluídos</span>
-                <X className="text-muted-foreground w-4 h-4" />
-              </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground">{melhoriaStats.excluidos}</h2>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          <MetricCard label="Total" value={melhoriaStats.total} icon={Activity} />
+          <MetricCard label="Abertos" value={melhoriaStats.abertos} icon={Circle} />
+          <MetricCard label="Em andamento" value={melhoriaStats.em_andamento} icon={Activity} />
+          <MetricCard label="Finalizado" value={melhoriaStats.resolvidos} icon={CheckCircle} />
+          <MetricCard label="Excluídos" value={melhoriaStats.excluidos} icon={X} />
         </div>
 
         <div className="relative">
