@@ -86,13 +86,13 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
         className={`
           sidebar-item flex items-center gap-3 px-3 h-10 rounded-md transition-all duration-150
           ${active 
-            ? 'active bg-white/[0.08]' 
-            : 'hover:bg-white/[0.04] hover:text-[#D1D5DB]'
+            ? 'active sidebar-item-active' 
+            : 'sidebar-item-hover'
           }
           ${shouldExpand ? '' : 'justify-center px-2'}
         `}
       >
-        <item.icon className={`h-4 w-4 flex-shrink-0 ${active ? 'text-[#E5E7EB]' : 'text-[#6B7280]'}`} />
+        <item.icon className={`h-4 w-4 flex-shrink-0 ${active ? 'sidebar-icon-active' : 'sidebar-icon'}`} />
         {shouldExpand && <span className="truncate">{item.label}</span>}
       </Link>
     );
@@ -114,19 +114,18 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
     <>
       <div 
         className={`
-          sidebar-typography
+          sidebar-typography sidebar-container
           fixed left-0 top-0 h-full z-40 transition-all duration-300 ease-in-out flex flex-col
           ${shouldExpand ? 'w-56' : 'w-14'}
-          bg-[#0A0A0B] border-r border-white/[0.08]
         `}
         onMouseEnter={() => setExpanded(true)}
         onMouseLeave={() => !userMenuOpen && setExpanded(false)}
       >
         {/* Header - Logo */}
-        <div className="p-3 border-b border-white/[0.06]">
+        <div className="p-3 border-b sidebar-border">
           <div className="flex items-center justify-between min-w-0">
             {shouldExpand && (
-              <span className="sidebar-title text-white truncate">
+              <span className="sidebar-title sidebar-title-color truncate">
                 {systemName}
               </span>
             )}
@@ -146,7 +145,7 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
         </div>
 
         {/* Footer - Theme Toggle & User Card */}
-        <div className="mt-auto p-2 border-t border-white/[0.06]">
+        <div className="mt-auto p-2 border-t sidebar-border">
           {/* Theme Toggle */}
           <div className={`flex items-center ${shouldExpand ? 'px-2' : 'justify-center'} mb-1`}>
             <ThemeToggle />
@@ -157,13 +156,13 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
               <div 
                 className={`
                   flex items-center gap-2 flex-1 min-w-0 p-2 rounded-md
-                  hover:bg-white/[0.04] cursor-pointer transition-colors
+                  sidebar-item-hover cursor-pointer transition-colors
                   ${shouldExpand ? '' : 'justify-center'}
                 `}
                 onClick={() => setProfileSettingsOpen(true)}
               >
                 <Avatar className="h-7 w-7 flex-shrink-0">
-                  <AvatarFallback className="bg-white/10 text-[#A1A1AA] text-[11px] font-normal">
+                  <AvatarFallback className="sidebar-avatar text-[11px] font-normal">
                     {getUserInitials()}
                   </AvatarFallback>
                 </Avatar>
@@ -177,41 +176,41 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
               {shouldExpand && (
                 <DropdownMenu open={userMenuOpen} onOpenChange={setUserMenuOpen}>
                   <DropdownMenuTrigger asChild>
-                    <button className="p-1.5 rounded hover:bg-white/[0.04] text-[#6B7280] hover:text-[#9CA3AF] transition-colors">
+                    <button className="p-1.5 rounded sidebar-item-hover sidebar-icon hover:opacity-80 transition-colors">
                       <MoreHorizontal className="h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 bg-[#18181B] border-white/10">
+                  <DropdownMenuContent align="end" className="w-48 sidebar-dropdown">
                     <DropdownMenuItem 
                       onClick={() => setProfileSettingsOpen(true)}
-                      className="text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] cursor-pointer"
+                      className="sidebar-dropdown-item cursor-pointer"
                     >
                       <UserCog className="mr-2 h-4 w-4" />
                       Configurações
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => setCustomizationOpen(true)}
-                      className="text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] cursor-pointer"
+                      className="sidebar-dropdown-item cursor-pointer"
                     >
                       <Palette className="mr-2 h-4 w-4" />
                       Customização
                     </DropdownMenuItem>
                     {isSuperAdmin && (
                       <>
-                        <DropdownMenuSeparator className="bg-white/[0.06]" />
+                        <DropdownMenuSeparator className="sidebar-separator" />
                         <DropdownMenuItem 
                           onClick={() => navigate('/admin')}
-                          className="text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] cursor-pointer"
+                          className="sidebar-dropdown-item cursor-pointer"
                         >
                           <User className="mr-2 h-4 w-4" />
                           Gerenciar Usuários
                         </DropdownMenuItem>
                       </>
                     )}
-                    <DropdownMenuSeparator className="bg-white/[0.06]" />
+                    <DropdownMenuSeparator className="sidebar-separator" />
                     <DropdownMenuItem 
                       onClick={handleSignOut}
-                      className="text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] cursor-pointer"
+                      className="sidebar-dropdown-item cursor-pointer"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
                       Sair
