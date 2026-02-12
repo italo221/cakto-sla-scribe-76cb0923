@@ -23,6 +23,7 @@ import { useSystemConfig } from "@/contexts/SystemConfigContext";
 import UserProfileSettings from "@/components/UserProfileSettings";
 import NotificationCenter from "@/components/NotificationCenter";
 import NavbarCustomization from "@/components/NavbarCustomization";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface NavItem {
@@ -144,8 +145,12 @@ export default function LateralSidebar({ glassEffect = false }: LateralSidebarPr
           ))}
         </div>
 
-        {/* Footer - User Card */}
+        {/* Footer - Theme Toggle & User Card */}
         <div className="mt-auto p-2 border-t border-white/[0.06]">
+          {/* Theme Toggle */}
+          <div className={`flex items-center ${shouldExpand ? 'px-2' : 'justify-center'} mb-1`}>
+            <ThemeToggle />
+          </div>
           {/* User Card */}
           {user && (
             <div className="flex items-center gap-2">
