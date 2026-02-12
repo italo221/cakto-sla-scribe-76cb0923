@@ -25,25 +25,26 @@ All colors MUST be HSL.
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  color: #A1A1AA;
 }
 
-.sidebar-item.active {
-  font-weight: 500;
-  color: #E5E7EB;
+/* Light theme sidebar colors */
+.sidebar-container {
+  background-color: hsl(0 0% 98%);
+  border-right: 1px solid hsl(0 0% 90%);
 }
-
-.sidebar-title {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
-
+.sidebar-item { color: hsl(0 0% 45%); }
+.sidebar-item.active { font-weight: 500; }
+.sidebar-item-active { background-color: hsl(0 0% 0% / 0.05); }
+.sidebar-item-hover:hover { background-color: hsl(0 0% 0% / 0.03); }
+.sidebar-icon { color: hsl(0 0% 45%); }
+.sidebar-icon-active { color: hsl(0 0% 15%); }
+.sidebar-title-color { color: hsl(0 0% 10%); }
+.sidebar-border { border-color: hsl(0 0% 90%); }
+.sidebar-avatar { background-color: hsl(0 0% 90%); color: hsl(0 0% 45%); }
+.sidebar-dropdown { background-color: hsl(0 0% 100%); border-color: hsl(0 0% 90%); }
+.sidebar-dropdown-item { color: hsl(0 0% 40%); }
+.sidebar-dropdown-item:hover { color: hsl(0 0% 10%); background-color: hsl(0 0% 96%); }
+.sidebar-separator { background-color: hsl(0 0% 92%); }
 .sidebar-user-name {
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 13px;
@@ -53,8 +54,28 @@ All colors MUST be HSL.
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  color: #A1A1AA;
+  color: hsl(0 0% 45%);
 }
+
+/* Dark theme sidebar colors */
+.dark .sidebar-container {
+  background-color: hsl(0 0% 4%);
+  border-right: 1px solid hsl(0 0% 100% / 0.08);
+}
+.dark .sidebar-item { color: hsl(240 5% 65%); }
+.dark .sidebar-item.active { color: hsl(220 14% 90%); }
+.dark .sidebar-item-active { background-color: hsl(0 0% 100% / 0.08); }
+.dark .sidebar-item-hover:hover { background-color: hsl(0 0% 100% / 0.04); }
+.dark .sidebar-icon { color: hsl(220 9% 46%); }
+.dark .sidebar-icon-active { color: hsl(220 14% 90%); }
+.dark .sidebar-title-color { color: hsl(0 0% 100%); }
+.dark .sidebar-border { border-color: hsl(0 0% 100% / 0.06); }
+.dark .sidebar-avatar { background-color: hsl(0 0% 100% / 0.1); color: hsl(240 5% 65%); }
+.dark .sidebar-dropdown { background-color: hsl(240 6% 10%); border-color: hsl(0 0% 100% / 0.1); }
+.dark .sidebar-dropdown-item { color: hsl(0 0% 65%); }
+.dark .sidebar-dropdown-item:hover { color: hsl(0 0% 100%); background-color: hsl(0 0% 100% / 0.06); }
+.dark .sidebar-separator { background-color: hsl(0 0% 100% / 0.06); }
+.dark .sidebar-user-name { color: hsl(240 5% 65%); }
 
 /* Theme transition animation */
 ::view-transition-new(root) {
