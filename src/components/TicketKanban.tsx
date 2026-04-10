@@ -67,7 +67,7 @@ const KanbanCard = memo(({
   const [isDragActive, setIsDragActive] = useState(false);
   const [commentsCount, setCommentsCount] = useState<number>(0);
   const pointerEventRef = useRef<any>(null);
-  const dragTimeout = useRef<NodeJS.Timeout | null>(null);
+  const dragTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startPosition = useRef<{
     x: number;
     y: number;

@@ -7,8 +7,8 @@ interface Profile {
   user_id: string;
   email: string;
   nome_completo: string;
-  user_type: 'administrador_master' | 'colaborador_setor';
-  role: 'super_admin' | 'operador' | 'viewer' | 'pendente_aprovacao';
+  user_type: string;
+  role: string;
   ativo: boolean;
   created_at: string;
   updated_at: string;
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isRevoked, setIsRevoked] = useState(false);
 
   // Debounce para evitar múltiplas chamadas consecutivas
-  const [fetchProfileTimer, setFetchProfileTimer] = useState<NodeJS.Timeout | null>(null);
+  const [fetchProfileTimer, setFetchProfileTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchProfile = async (userId: string, userEmail?: string) => {
     try {

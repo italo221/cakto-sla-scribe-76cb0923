@@ -109,7 +109,7 @@ const KanbanCard = memo(({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const pointerEventRef = useRef<any>(null);
-  const dragTimeout = useRef<NodeJS.Timeout | null>(null);
+  const dragTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startPosition = useRef<{
     x: number;
     y: number;

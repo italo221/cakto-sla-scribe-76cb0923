@@ -1072,7 +1072,7 @@ export default function TicketChat() {
       // Aplicar atualização
       const {
         error
-      } = await supabase.from('sla_demandas').update(alteracoes).eq('id', id);
+      } = await supabase.from('sla_demandas').update(alteracoes as any).eq('id', id);
       if (error) {
         throw new Error(`Erro ao atualizar SLA: ${error.message}`);
       }
