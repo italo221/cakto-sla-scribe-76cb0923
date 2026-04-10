@@ -200,7 +200,7 @@ export default function ImprovedPermissionsPanel() {
     try {
       const { error } = await supabase
         .from('permissoes_cargo')
-        .update({ [permissao]: valor })
+        .update({ [permissao]: valor } as any)
         .eq('cargo_id', cargoId);
 
       if (error) throw error;

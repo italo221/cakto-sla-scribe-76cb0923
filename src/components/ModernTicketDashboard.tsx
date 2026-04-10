@@ -298,8 +298,8 @@ export default function ModernSLADashboard() {
   // Modo TV
   const [isTVMode, setIsTVMode] = useState(false);
   const [tvCurrentView, setTvCurrentView] = useState<'overview' | 'teams'>('overview');
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null);
-  const [viewRotationInterval, setViewRotationInterval] = useState<NodeJS.Timeout | null>(null);
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<ReturnType<typeof setInterval> | null>(null);
+  const [viewRotationInterval, setViewRotationInterval] = useState<ReturnType<typeof setInterval> | null>(null);
 
   // Ícones para diferentes times
   const getTeamIcon = (teamName: string) => {

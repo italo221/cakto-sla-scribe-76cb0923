@@ -83,7 +83,7 @@ export default function SetorPermissionsPanel() {
       if (existingPermission) {
         const { error } = await supabase
           .from('setor_permissoes')
-          .update({ [permissao]: valor })
+          .update({ [permissao]: valor } as any)
           .eq('setor_id', setorId);
 
         if (error) throw error;
