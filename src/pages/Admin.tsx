@@ -328,25 +328,21 @@ const Admin = () => {
     }
     setCreatingUser(true);
     try {
-      const redirectUrl = `${window.location.origin}/`;
-      const {
-        data,
-        error
-      } = await supabase.auth.signUp({
-        email: newUserEmail.trim(),
-        password: newUserPassword,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            nome_completo: newUserName.trim(),
-            user_type: newUserType
-          }
+      // Usar edge function com validação de allowlist
+      const { data, error } = await supabase.functions.invoke('signup-with-allowlist', {
+        body: { 
+          email: newUserEmail.trim().toLowerCase(),
+          password: newUserPassword,
+          nome_completo: newUserName.trim()
         }
       });
+
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
       toast({
         title: "Usuário criado com sucesso!",
-        description: `O usuário "${newUserName}" foi criado. Um e-mail de confirmação foi enviado.`
+        description: `O usuário "${newUserName}" foi criado.`
       });
       setNewUserName("");
       setNewUserEmail("");
